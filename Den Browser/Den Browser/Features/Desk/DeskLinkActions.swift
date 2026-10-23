@@ -2,6 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenPresentationModels
+import Foundation
 import UniformTypeIdentifiers
 
 @MainActor
@@ -33,21 +34,19 @@ enum DeskLinkOutput {
     }
 }
 
-extension DenController {
-    var canExportFocusedDeskLinks: Bool {
-        guard let focusedDesk else { return false }
-        return canExportDeskLinks(for: focusedDesk.id)
-    }
+@MainActor
+final class DeskLinkActions {
+    private let context: WindowNativeContext
+    private var state: DenState { context.storage.state }
+    private var focusedDesk: DeskState? { context.focusedDesk }
 
-    func canExportDeskLinks(for deskID: DeskID) -> Bool {
-        state.desks.first(where: { $0.id == deskID })?.boards.contains {
-            $0.currentSheetURL != nil
-        } == true
+    init(context: WindowNativeContext) {
+        self.context = context
     }
 
     func exportFocusedDeskLinks() {
         guard let focusedDesk else {
-            reportFeedback("No Focused Desk.", severity: .warning)
+            context.feedback.publish("No Focused Desk.", severity: .warning)
             return
         }
         exportDeskLinks(for: focusedDesk.id)
@@ -55,7 +54,7 @@ extension DenController {
 
     func copyFocusedDeskLinks() {
         guard let focusedDesk else {
-            reportFeedback("No Focused Desk.", severity: .warning)
+            context.feedback.publish("No Focused Desk.", severity: .warning)
             return
         }
         copyDeskLinks(for: focusedDesk.id)
@@ -66,7 +65,7 @@ extension DenController {
             let desk = state.desks.first(where: { $0.id == deskID }),
             let markdown = DeskLinkExport.markdown(for: desk)
         else {
-            reportFeedback("Desk has no Current Sheet links.", severity: .warning)
+            context.feedback.publish("Desk has no Current Sheet links.", severity: .warning)
             return
         }
 
@@ -79,10 +78,10 @@ extension DenController {
                     suggestedFilename: filename,
                     attachedTo: NSApp.keyWindow)
                 {
-                    reportFeedback("Saved \(destination.lastPathComponent).", severity: .success)
+                    context.feedback.publish("Saved \(destination.lastPathComponent).", severity: .success)
                 }
             } catch {
-                reportFeedback("Desk links export failed: \(error.localizedDescription)", severity: .error)
+                context.feedback.publish("Desk links export failed: \(error.localizedDescription)", severity: .error)
             }
         }
     }
@@ -92,12 +91,12 @@ extension DenController {
             let desk = state.desks.first(where: { $0.id == deskID }),
             let markdown = DeskLinkExport.markdown(for: desk)
         else {
-            reportFeedback("Desk has no Current Sheet links.", severity: .warning)
+            context.feedback.publish("Desk has no Current Sheet links.", severity: .warning)
             return
         }
 
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(markdown, forType: .string)
-        reportFeedback("Copied Desk Links as Markdown.", severity: .success)
+        context.feedback.publish("Copied Desk Links as Markdown.", severity: .success)
     }
 }

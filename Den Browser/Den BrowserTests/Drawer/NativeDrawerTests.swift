@@ -12,13 +12,16 @@ import WebKit
 
 @MainActor
 @Suite(.serialized)
-struct DenControllerDrawerTests {
+struct NativeDrawerTests {
     @Test func drawerModelKeepsLiveInputsObservable() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let source = desk("Desk")
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         let itemChanged = Mutex(false)
         let styleChanged = Mutex(false)
@@ -34,8 +37,8 @@ struct DenControllerDrawerTests {
             styleChanged.withLock { $0 = true }
         }
 
-        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        controller.preferences.toggleDrawerStyle()
+        session.drawer.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        session.configuration.preferences.toggleDrawerStyle()
 
         #expect(itemChanged.withLock { $0 })
         #expect(styleChanged.withLock { $0 })
@@ -45,12 +48,14 @@ struct DenControllerDrawerTests {
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let last = DrawerItem(url: try #require(URL(string: "https://last.example/")))
         let source = desk("Desk")
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [first, last]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [first, last]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -67,23 +72,28 @@ struct DenControllerDrawerTests {
         let existingBoard = board("Existing", url: "https://desk.example/")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         var savedState: DenState?
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            onSave: { savedState = $0 })
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id)),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { savedState = $0 }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let url = try #require(URL(string: "https://drawer.example/first"))
 
-        controller.keepInDrawer(url)
+        session.drawer.keepInDrawer(url)
 
-        #expect(controller.focusedDesk == source)
-        #expect(controller.state.drawerItems.map(\.url) == [url])
-        #expect(windowModel.drawer.selectedItemID == controller.state.drawerItems[0].id)
-        #expect(windowModel.drawer.expandedItemID == controller.state.drawerItems[0].id)
+        #expect(session.navigation.focusedDesk == source)
+        #expect(session.resources.state.drawerItems.map(\.url) == [url])
+        #expect(windowModel.drawer.selectedItemID == session.resources.state.drawerItems[0].id)
+        #expect(windowModel.drawer.expandedItemID == session.resources.state.drawerItems[0].id)
         #expect(windowModel.isDrawerOpen)
-        #expect(savedState == controller.state)
+        #expect(savedState == session.resources.state)
     }
 
     @Test func externalURLCanOpenToRightOfFocusedBoard() throws {
@@ -95,79 +105,85 @@ struct DenControllerDrawerTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
         preferences.setExternalLinkDestination(.focusedBoard)
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: makeTestSheetNavigationManager(),
-            preferences: preferences)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration(
+                sheetNavigation: makeTestSheetNavigationManager(), preferences: preferences))
         let url = try #require(URL(string: "https://external.example/path"))
 
-        controller.handleExternalURL(url)
+        session.input.handleExternalURL(url)
 
-        #expect(controller.focusedDesk?.boards.map(\.label) == ["First", "Focused", "external.example"])
-        #expect(controller.focusedDesk?.boards[2].width == focused.width)
-        #expect(controller.focusedDesk?.focusedBoardID == controller.focusedDesk?.boards[2].id)
-        #expect(controller.state.drawerItems.isEmpty)
-        #expect(controller.recentItems == [.url(url)])
+        #expect(session.navigation.focusedDesk?.boards.map(\.label) == ["First", "Focused", "external.example"])
+        #expect(session.navigation.focusedDesk?.boards[2].width == focused.width)
+        #expect(session.navigation.focusedDesk?.focusedBoardID == session.navigation.focusedDesk?.boards[2].id)
+        #expect(session.resources.state.drawerItems.isEmpty)
+        #expect(session.resources.recentItems == [.url(url)])
     }
 
     @Test func duplicateURLsRemainDistinctAndNewestComesFirst() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
         let url = try #require(URL(string: "https://example.com/"))
 
-        controller.keepInDrawer(url)
-        let firstID = try #require(controller.state.drawerItems.first?.id)
-        controller.keepInDrawer(url)
+        session.drawer.keepInDrawer(url)
+        let firstID = try #require(session.resources.state.drawerItems.first?.id)
+        session.drawer.keepInDrawer(url)
 
-        #expect(controller.state.drawerItems.count == 2)
-        #expect(controller.state.drawerItems[0].id != firstID)
-        #expect(controller.state.drawerItems[1].id == firstID)
+        #expect(session.resources.state.drawerItems.count == 2)
+        #expect(session.resources.state.drawerItems[0].id != firstID)
+        #expect(session.resources.state.drawerItems[1].id == firstID)
     }
 
     @Test func backgroundKeepPreservesCurrentPeekSelection() throws {
         let source = desk("Desk")
         let currentItem = DrawerItem(url: try #require(URL(string: "https://current.example/")))
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [currentItem]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [currentItem]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.drawer.selectedItemID = currentItem.id
         windowModel.drawer.expandedItemID = currentItem.id
-        let runtime = controller.drawerRuntime(for: currentItem)
+        let runtime = session.drawer.drawerRuntime(for: currentItem)
 
         let backgroundURL = try #require(URL(string: "https://background.example/"))
-        controller.keepInDrawerInBackground(backgroundURL)
+        session.drawer.keepInDrawerInBackground(backgroundURL)
 
-        #expect(controller.state.drawerItems.map(\.url) == [backgroundURL, currentItem.url])
+        #expect(session.resources.state.drawerItems.map(\.url) == [backgroundURL, currentItem.url])
         #expect(windowModel.drawer.selectedItemID == currentItem.id)
         #expect(windowModel.drawer.expandedItemID == currentItem.id)
-        #expect(controller.drawerPeekRuntime === runtime)
+        #expect(session.windowResources.drawerPeek === runtime)
     }
 
     @Test func drawerPeekPresentationIsWindowLocalAndSharedMetadataUsesLatestUpdate() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://initial.example/")))
-        try withSharedDrawerControllers(items: [item]) { first, second in
-            let firstComposition = DenWindowComposition(controller: first)
+        try withSharedDrawerSessions(items: [item]) { first, second in
+            let firstComposition = DenWindowComposition(session: first)
             let firstWindowModel = firstComposition.model
             firstComposition.connect()
             defer { firstComposition.disconnect() }
-            let secondComposition = DenWindowComposition(controller: second)
+            let secondComposition = DenWindowComposition(session: second)
             let secondWindowModel = secondComposition.model
             secondComposition.connect()
             defer { secondComposition.disconnect() }
             firstWindowModel.focusDrawerItem(item.id)
-            let firstRuntime = first.drawerRuntime(for: item)
+            let firstRuntime = first.drawer.drawerRuntime(for: item)
 
             #expect(firstWindowModel.drawer.expandedItemID == item.id)
             #expect(secondWindowModel.drawer.expandedItemID == nil)
 
             secondWindowModel.focusDrawerItem(item.id)
-            let secondRuntime = second.drawerRuntime(for: item)
+            let secondRuntime = second.drawer.drawerRuntime(for: item)
             #expect(secondWindowModel.drawer.expandedItemID == item.id)
             #expect(firstRuntime !== secondRuntime)
 
@@ -176,37 +192,37 @@ struct DenControllerDrawerTests {
             firstRuntime.handleURLOrTitleChange(url: firstURL, title: "First")
             secondRuntime.handleURLOrTitleChange(url: secondURL, title: "Second")
 
-            #expect(first.state.drawerItems[0].url == secondURL)
-            #expect(first.state.drawerItems[0].title == "Second")
+            #expect(first.resources.state.drawerItems[0].url == secondURL)
+            #expect(first.resources.state.drawerItems[0].title == "Second")
         }
     }
 
     @Test func discardingSharedItemRepairsEveryWindowPresentation() throws {
         let firstItem = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let secondItem = DrawerItem(url: try #require(URL(string: "https://second.example/")))
-        withSharedDrawerControllers(items: [firstItem, secondItem]) { first, second in
-            let firstComposition = DenWindowComposition(controller: first)
+        withSharedDrawerSessions(items: [firstItem, secondItem]) { first, second in
+            let firstComposition = DenWindowComposition(session: first)
             let firstWindowModel = firstComposition.model
             firstComposition.connect()
             defer { firstComposition.disconnect() }
-            let secondComposition = DenWindowComposition(controller: second)
+            let secondComposition = DenWindowComposition(session: second)
             let secondWindowModel = secondComposition.model
             secondComposition.connect()
             defer { secondComposition.disconnect() }
             firstWindowModel.focusDrawerItem(firstItem.id)
             secondWindowModel.focusDrawerItem(firstItem.id)
-            let firstRuntime = first.drawerRuntime(for: firstItem)
-            let secondRuntime = second.drawerRuntime(for: firstItem)
+            let firstRuntime = first.drawer.drawerRuntime(for: firstItem)
+            let secondRuntime = second.drawer.drawerRuntime(for: firstItem)
 
-            first.discardDrawerItem(firstItem.id)
+            first.drawer.discardDrawerItem(firstItem.id)
 
-            #expect(first.state.drawerItems.map(\.id) == [secondItem.id])
+            #expect(first.resources.state.drawerItems.map(\.id) == [secondItem.id])
             #expect(firstWindowModel.drawer.selectedItemID == secondItem.id)
             #expect(secondWindowModel.drawer.selectedItemID == secondItem.id)
             #expect(firstWindowModel.drawer.expandedItemID == secondItem.id)
             #expect(secondWindowModel.drawer.expandedItemID == secondItem.id)
-            #expect(first.drawerPeekRuntime == nil)
-            #expect(second.drawerPeekRuntime == nil)
+            #expect(first.windowResources.drawerPeek == nil)
+            #expect(second.windowResources.drawerPeek == nil)
             #expect(firstRuntime.webView.navigationDelegate == nil)
             #expect(secondRuntime.webView.navigationDelegate == nil)
         }
@@ -215,31 +231,31 @@ struct DenControllerDrawerTests {
     @Test func clearingSharedDrawerClearsEveryWindowPresentation() throws {
         let firstItem = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let secondItem = DrawerItem(url: try #require(URL(string: "https://second.example/")))
-        withSharedDrawerControllers(items: [firstItem, secondItem]) { first, second in
-            let firstComposition = DenWindowComposition(controller: first)
+        withSharedDrawerSessions(items: [firstItem, secondItem]) { first, second in
+            let firstComposition = DenWindowComposition(session: first)
             let firstWindowModel = firstComposition.model
             firstComposition.connect()
             defer { firstComposition.disconnect() }
-            let secondComposition = DenWindowComposition(controller: second)
+            let secondComposition = DenWindowComposition(session: second)
             let secondWindowModel = secondComposition.model
             secondComposition.connect()
             defer { secondComposition.disconnect() }
             firstWindowModel.focusDrawerItem(firstItem.id)
             secondWindowModel.focusDrawerItem(secondItem.id)
-            _ = first.drawerRuntime(for: firstItem)
-            _ = second.drawerRuntime(for: secondItem)
-            first.requestDrawerClearConfirmation()
+            _ = first.drawer.drawerRuntime(for: firstItem)
+            _ = second.drawer.drawerRuntime(for: secondItem)
+            first.drawer.requestDrawerClearConfirmation()
 
             #expect(firstWindowModel.drawerPendingDeletionCount == 2)
             firstWindowModel.confirmDrawerClear()
 
-            #expect(first.state.drawerItems.isEmpty)
+            #expect(first.resources.state.drawerItems.isEmpty)
             #expect(firstWindowModel.drawer.selectedItemID == nil)
             #expect(secondWindowModel.drawer.selectedItemID == nil)
             #expect(firstWindowModel.drawer.expandedItemID == nil)
             #expect(secondWindowModel.drawer.expandedItemID == nil)
-            #expect(first.drawerPeekRuntime == nil)
-            #expect(second.drawerPeekRuntime == nil)
+            #expect(first.windowResources.drawerPeek == nil)
+            #expect(second.windowResources.drawerPeek == nil)
             #expect(!firstWindowModel.isDrawerOpen)
             #expect(!secondWindowModel.isDrawerOpen)
         }
@@ -253,9 +269,12 @@ struct DenControllerDrawerTests {
                 title: "Swift Guide"),
             DrawerItem(url: try #require(URL(string: "https://news.example.org/releases"))),
         ]
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -275,9 +294,12 @@ struct DenControllerDrawerTests {
     @Test func closingDrawerClearsFilterState() throws {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -295,17 +317,20 @@ struct DenControllerDrawerTests {
     @Test func keepCurrentSheetCopiesWithoutOpeningDrawerOrChangingBoard() {
         let existingBoard = board("Reference", url: "https://example.com/reference")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        controller.keepFocusedSheetInDrawer()
+        session.drawer.keepFocusedSheetInDrawer()
 
-        #expect(controller.focusedBoard == existingBoard)
-        #expect(controller.state.drawerItems.first?.url == existingBoard.currentSheetURL)
-        #expect(controller.state.drawerItems.first?.title == existingBoard.displayName)
+        #expect(session.navigation.focusedBoard == existingBoard)
+        #expect(session.resources.state.drawerItems.first?.url == existingBoard.currentSheetURL)
+        #expect(session.resources.state.drawerItems.first?.title == existingBoard.displayName)
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.temporaryContext == nil)
     }
@@ -313,23 +338,27 @@ struct DenControllerDrawerTests {
     @Test func placementCreatesFocusedBoardAndRemovesItem() throws {
         let existingBoard = board("Existing", width: 2_480)
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let url = try #require(URL(string: "https://placed.example/"))
-        controller.keepInDrawer(url)
+        session.drawer.keepInDrawer(url)
         let itemID = try #require(windowModel.drawer.selectedItemID)
 
         windowModel.placeDrawerItemAsBoard(itemID)
 
-        #expect(controller.state.drawerItems.isEmpty)
-        #expect(controller.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
-        #expect(controller.focusedBoard?.currentSheetURL == url)
-        #expect(controller.focusedBoard?.width == existingBoard.width)
-        #expect(controller.recentItems == [.url(url)])
-        #expect(controller.recentlyDiscardedDrawerItems.isEmpty)
+        #expect(session.resources.state.drawerItems.isEmpty)
+        #expect(
+            session.navigation.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
+        #expect(session.navigation.focusedBoard?.currentSheetURL == url)
+        #expect(session.navigation.focusedBoard?.width == existingBoard.width)
+        #expect(session.resources.recentItems == [.url(url)])
+        #expect(session.resources.recentlyDiscardedDrawerItems.isEmpty)
         #expect(!windowModel.isDrawerOpen)
     }
 
@@ -343,17 +372,20 @@ struct DenControllerDrawerTests {
             to: url, atomically: true, encoding: .utf8)
         let item = DrawerItem(url: url)
         let source = desk("Desk")
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration(
+                sheetNavigation: makeTestSheetNavigationManager(scriptSource: "")))
+        let composition = DenWindowComposition(session: session)
         composition.connect()
         defer {
             composition.disconnect()
-            controller.releaseRuntimes()
+            session.runtimes.releaseRuntimes()
         }
         composition.model.focusDrawerItem(item.id)
-        let peek = controller.drawerRuntime(for: item)
+        let peek = session.drawer.drawerRuntime(for: item)
         for _ in 0..<200 where peek.webView.title != "Live Peek" || peek.webView.isLoading {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -362,8 +394,8 @@ struct DenControllerDrawerTests {
             try await peek.webView.evaluateJavaScript("window.documentToken = crypto.randomUUID()") as? String)
 
         // Act
-        let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
-        let placed = try #require(controller.webRuntimes[boardID])
+        let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))
+        let placed = try #require(session.resources.webRuntimes[boardID])
         let transferredToken = try await placed.webView.evaluateJavaScript("window.documentToken") as? String
 
         // Assert
@@ -373,19 +405,22 @@ struct DenControllerDrawerTests {
         #expect(placed.webView.uiDelegate === placed)
         #expect(transferredToken == documentToken)
         #expect(!placed.webView.isLoading)
-        #expect(controller.focusedBoard?.label == "Live Peek")
-        #expect(controller.drawerPeekRuntime == nil)
-        #expect(controller.state.drawerItems.isEmpty)
+        #expect(session.navigation.focusedBoard?.label == "Live Peek")
+        #expect(session.windowResources.drawerPeek == nil)
+        #expect(session.resources.state.drawerItems.isEmpty)
     }
 
     @Test func placementPreservesDownloadsAndRoutesSubsequentChangesToBoard() throws {
         // Arrange
         let item = DrawerItem(url: try #require(URL(string: "https://peek.example/")))
         let source = desk("Desk")
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
-        defer { controller.releaseRuntimes() }
-        let peek = controller.drawerRuntime(for: item)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        defer { session.runtimes.releaseRuntimes() }
+        let peek = session.drawer.drawerRuntime(for: item)
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -399,20 +434,20 @@ struct DenControllerDrawerTests {
         let nextURL = try #require(URL(string: "https://peek.example/next"))
 
         // Act
-        let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
-        controller.releaseWindowResources()
+        let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))
+        session.runtimes.releaseWindowResources()
         peek.handleURLOrTitleChange(url: nextURL, title: "Continued")
         let downloadCompleted = peek.downloadHandler.completeDownload(for: key)
 
         // Assert
-        #expect(controller.webRuntimes[boardID] === peek)
+        #expect(session.resources.webRuntimes[boardID] === peek)
         #expect(peek.webView.navigationDelegate === peek)
-        #expect(controller.focusedBoard?.currentSheetURL == nextURL)
-        #expect(controller.focusedBoard?.label == "Continued")
+        #expect(session.navigation.focusedBoard?.currentSheetURL == nextURL)
+        #expect(session.navigation.focusedBoard?.label == "Continued")
         #expect(downloadCompleted)
         #expect(try Data(contentsOf: destinationURL) == Data("download contents".utf8))
         #expect(!peek.downloadHandler.activeActivities.contains { $0.id == downloadID })
-        #expect(controller.state.drawerItems.isEmpty)
+        #expect(session.resources.state.drawerItems.isEmpty)
     }
 
     @Test func placementSwitchesPeekActionsAndFocusToBoard() throws {
@@ -421,15 +456,17 @@ struct DenControllerDrawerTests {
         let source = desk("Desk")
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         manager.setEnabled(true)
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
-            sheetNavigation: manager)
-        defer { controller.releaseRuntimes() }
-        let peek = controller.drawerRuntime(for: item)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+        defer { session.runtimes.releaseRuntimes() }
+        let peek = session.drawer.drawerRuntime(for: item)
         let destination = try #require(URL(string: "https://board.example/"))
 
         // Act
-        let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
+        let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))
         let handled = peek.handleLinkNavigation(
             destination,
             navigationType: .linkActivated,
@@ -438,101 +475,110 @@ struct DenControllerDrawerTests {
             opensNewContext: false)
         let webView = try #require(peek.webView as? RuntimeWKWebView)
         let focusAllowedAfterLeaving = webView.isFocusAllowed()
-        controller.focusBoard(boardID)
+        session.boardNavigation.focusBoard(boardID)
         let focusAllowedAfterReturning = webView.isFocusAllowed()
         let boardIDCopied = manager.handleScriptMessage(["action": "copyBoardID"], from: webView)
 
         // Assert
         #expect(handled)
-        #expect(controller.focusedDesk?.boards.count == 2)
-        #expect(controller.focusedDesk?.boards.last?.currentSheetURL == destination)
-        #expect(controller.state.drawerItems.isEmpty)
+        #expect(session.navigation.focusedDesk?.boards.count == 2)
+        #expect(session.navigation.focusedDesk?.boards.last?.currentSheetURL == destination)
+        #expect(session.resources.state.drawerItems.isEmpty)
         #expect(!focusAllowedAfterLeaving)
         #expect(focusAllowedAfterReturning)
         #expect(boardIDCopied)
-        #expect(controller.pasteboard.string(forType: .string) == boardID.rawValue.uuidString.lowercased())
+        #expect(session.pasteboard.string(forType: .string) == boardID.rawValue.uuidString.lowercased())
     }
 
     @Test func failedPlacementKeepsPeekAndDrawerItem() throws {
         // Arrange
         let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
         let source = desk("Desk")
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
-        defer { controller.releaseRuntimes() }
-        let peek = controller.drawerRuntime(for: item)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        defer { session.runtimes.releaseRuntimes() }
+        let peek = session.drawer.drawerRuntime(for: item)
 
         // Act
-        let boardID = controller.placeDrawerItemAsBoard(item.id, deskID: DeskID())
+        let boardID = session.drawer.placeDrawerItemAsBoard(item.id, deskID: DeskID())
 
         // Assert
         #expect(boardID == nil)
-        #expect(controller.drawerPeekRuntime === peek)
+        #expect(session.windowResources.drawerPeek === peek)
         #expect(peek.webView.navigationDelegate === peek)
-        #expect(controller.state.drawerItems == [item])
-        #expect(controller.webRuntimes.isEmpty)
+        #expect(session.resources.state.drawerItems == [item])
+        #expect(session.resources.webRuntimes.isEmpty)
     }
 
     @Test func sharedPlacementTransfersInvokingWindowsPeekAndDisposesOtherPeek() throws {
         // Arrange
         let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
-        try withSharedDrawerControllers(items: [item]) { first, second in
-            let firstPeek = first.drawerRuntime(for: item)
-            let secondPeek = second.drawerRuntime(for: item)
+        try withSharedDrawerSessions(items: [item]) { first, second in
+            let firstPeek = first.drawer.drawerRuntime(for: item)
+            let secondPeek = second.drawer.drawerRuntime(for: item)
 
             // Act
-            let boardID = try #require(first.placeDrawerItemAsBoard(item.id))
+            let boardID = try #require(first.drawer.placeDrawerItemAsBoard(item.id))
 
             // Assert
-            #expect(first.webRuntimes[boardID] === firstPeek)
-            #expect(second.webRuntimes[boardID] === firstPeek)
+            #expect(first.resources.webRuntimes[boardID] === firstPeek)
+            #expect(second.resources.webRuntimes[boardID] === firstPeek)
             #expect(firstPeek.webView.navigationDelegate === firstPeek)
             #expect(secondPeek.webView.navigationDelegate == nil)
-            #expect(first.drawerPeekRuntime == nil)
-            #expect(second.drawerPeekRuntime == nil)
+            #expect(first.windowResources.drawerPeek == nil)
+            #expect(second.windowResources.drawerPeek == nil)
         }
     }
 
     @Test func keepAndPlaceReturnIdentifiersAndDiscardReturnsSuccess() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
         let url = try #require(URL(string: "https://drawer.example/item"))
 
-        let itemID = controller.keepInDrawer(url, title: "Test Item")
+        let itemID = session.drawer.keepInDrawer(url, title: "Test Item")
         #expect(itemID != nil)
-        #expect(controller.state.drawerItems.first?.id == itemID)
+        #expect(session.resources.state.drawerItems.first?.id == itemID)
 
-        let placedBoardID = controller.placeDrawerItemAsBoard(try #require(itemID))
+        let placedBoardID = session.drawer.placeDrawerItemAsBoard(try #require(itemID))
         #expect(placedBoardID != nil)
-        #expect(controller.focusedBoard?.id == placedBoardID)
-        #expect(controller.state.drawerItems.isEmpty)
+        #expect(session.navigation.focusedBoard?.id == placedBoardID)
+        #expect(session.resources.state.drawerItems.isEmpty)
 
         let secondURL = try #require(URL(string: "https://drawer.example/discard-me"))
-        let secondItemID = try #require(controller.keepInDrawer(secondURL))
-        #expect(controller.discardDrawerItem(secondItemID))
-        #expect(!controller.discardDrawerItem(secondItemID))
+        let secondItemID = try #require(session.drawer.keepInDrawer(secondURL))
+        #expect(session.drawer.discardDrawerItem(secondItemID))
+        #expect(!session.drawer.discardDrawerItem(secondItemID))
     }
 
     @Test func discardingSelectedItemSelectsItsNeighborAndClosesWhenEmpty() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://second.example/")))
 
         windowModel.drawer.discardSelectedItem()
 
-        #expect(controller.state.drawerItems.count == 1)
-        #expect(windowModel.drawer.selectedItemID == controller.state.drawerItems[0].id)
+        #expect(session.resources.state.drawerItems.count == 1)
+        #expect(windowModel.drawer.selectedItemID == session.resources.state.drawerItems[0].id)
         #expect(windowModel.isDrawerOpen)
 
         windowModel.drawer.discardSelectedItem()
 
-        #expect(controller.state.drawerItems.isEmpty)
-        #expect(controller.recentlyDiscardedDrawerItems.count == 2)
+        #expect(session.resources.state.drawerItems.isEmpty)
+        #expect(session.resources.recentlyDiscardedDrawerItems.count == 2)
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.selectedItemID == nil)
     }
@@ -541,19 +587,27 @@ struct DenControllerDrawerTests {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://discarded.example/")))
         var savedState: DenState?
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
-            onSave: { savedState = $0 })
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { savedState = $0 }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
 
-        controller.discardDrawerItem(item.id)
+        session.drawer.discardDrawerItem(item.id)
 
-        #expect(controller.recentlyDiscardedDrawerItems.map(\.id) == [item.id])
-        let recontrollerdController = DenController(state: try #require(savedState))
-        #expect(recontrollerdController.recentlyDiscardedDrawerItems.isEmpty)
+        #expect(session.resources.recentlyDiscardedDrawerItems.map(\.id) == [item.id])
+        let restoredSession = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(try #require(savedState))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        #expect(restoredSession.resources.recentlyDiscardedDrawerItems.isEmpty)
 
-        controller.restoreRecentlyDiscardedDrawerItem()
-        controller.resetDen()
-        #expect(controller.recentlyDiscardedDrawerItems.isEmpty)
+        session.drawer.restoreRecentlyDiscardedDrawerItem()
+        session.reset.resetDen()
+        #expect(session.resources.recentlyDiscardedDrawerItems.isEmpty)
     }
 
     @Test func discardHistoryKeepsAtMostTenItemsAndRestoresNewestFirst() throws {
@@ -561,41 +615,47 @@ struct DenControllerDrawerTests {
         let items = try (0..<12).map { index in
             DrawerItem(url: try #require(URL(string: "https://drawer-\(index).example/")))
         }
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))),
+            configuration: makeTestBoardRuntimeConfiguration())
 
         for item in items.prefix(11) {
-            controller.discardDrawerItem(item.id)
+            session.drawer.discardDrawerItem(item.id)
         }
 
-        #expect(controller.state.drawerItems.map(\.id) == [items[11].id])
-        #expect(controller.recentlyDiscardedDrawerItems.count == DrawerItems.maximumDiscardHistoryCount)
+        #expect(session.resources.state.drawerItems.map(\.id) == [items[11].id])
+        #expect(session.resources.recentlyDiscardedDrawerItems.count == DrawerItems.maximumDiscardHistoryCount)
         #expect(
-            controller.recentlyDiscardedDrawerItems.map(\.id)
+            session.resources.recentlyDiscardedDrawerItems.map(\.id)
                 == Array(items[1...10].reversed()).map(\.id))
 
         for _ in 0..<DrawerItems.maximumDiscardHistoryCount {
-            controller.restoreRecentlyDiscardedDrawerItem()
+            session.drawer.restoreRecentlyDiscardedDrawerItem()
         }
 
-        #expect(controller.recentlyDiscardedDrawerItems.isEmpty)
-        #expect(controller.state.drawerItems.map(\.id) == Array(items[1...11]).map(\.id))
+        #expect(session.resources.recentlyDiscardedDrawerItems.isEmpty)
+        #expect(session.resources.state.drawerItems.map(\.id) == Array(items[1...11]).map(\.id))
     }
 
     @Test func discardingExpandedItemDisposesItsPeekRuntime() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://preview.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://preview.example/")))
         let item = try #require(windowModel.drawer.selectedItem)
-        let runtime = controller.drawerRuntime(for: item)
+        let runtime = session.drawer.drawerRuntime(for: item)
 
-        controller.discardDrawerItem(item.id)
+        session.drawer.discardDrawerItem(item.id)
 
-        #expect(controller.drawerPeekRuntime == nil)
+        #expect(session.windowResources.drawerPeek == nil)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
     }
@@ -605,21 +665,23 @@ struct DenControllerDrawerTests {
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
         let third = DrawerItem(url: try #require(URL(string: "https://third.example/")))
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [first, second, third]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [first, second, third]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         windowModel.toggleDrawer()
         windowModel.drawer.toggleItem(second.id)
-        controller.discardDrawerItem(second.id)
+        session.drawer.discardDrawerItem(second.id)
 
-        #expect(controller.state.drawerItems.map(\.id) == [first.id, third.id])
+        #expect(session.resources.state.drawerItems.map(\.id) == [first.id, third.id])
         #expect(windowModel.drawer.selectedItemID == third.id)
         #expect(windowModel.drawer.expandedItemID == third.id)
         #expect(windowModel.isDrawerOpen)
@@ -629,21 +691,23 @@ struct DenControllerDrawerTests {
         let source = desk("Desk")
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [first, second]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [first, second]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         windowModel.toggleDrawer()
         windowModel.drawer.toggleItem(second.id)
-        controller.discardDrawerItem(second.id)
+        session.drawer.discardDrawerItem(second.id)
 
-        #expect(controller.state.drawerItems.map(\.id) == [first.id])
+        #expect(session.resources.state.drawerItems.map(\.id) == [first.id])
         #expect(windowModel.drawer.selectedItemID == first.id)
         #expect(windowModel.drawer.expandedItemID == first.id)
     }
@@ -652,12 +716,14 @@ struct DenControllerDrawerTests {
         let source = desk("Desk")
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [first, second]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [first, second]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -666,35 +732,38 @@ struct DenControllerDrawerTests {
         windowModel.drawer.toggleItem(second.id)
         windowModel.placeDrawerItemAsBoard(second.id)
 
-        #expect(controller.state.drawerItems.map(\.id) == [first.id])
+        #expect(session.resources.state.drawerItems.map(\.id) == [first.id])
         #expect(windowModel.drawer.expandedItemID == nil)
         #expect(!windowModel.isDrawerOpen)
     }
 
     @Test func clearingDrawerRequiresConfirmationAndDisposesAllItems() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        _ = controller.drawerRuntime(for: try #require(windowModel.drawer.selectedItem))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        _ = session.drawer.drawerRuntime(for: try #require(windowModel.drawer.selectedItem))
 
-        controller.requestDrawerClearConfirmation()
+        session.drawer.requestDrawerClearConfirmation()
 
-        #expect(controller.state.drawerItems.count == 2)
+        #expect(session.resources.state.drawerItems.count == 2)
         #expect(windowModel.drawerPendingDeletionCount == 2)
 
         windowModel.confirmDrawerClear()
 
-        #expect(controller.state.drawerItems.isEmpty)
+        #expect(session.resources.state.drawerItems.isEmpty)
         #expect(windowModel.drawerPendingDeletionCount == nil)
         #expect(windowModel.drawer.selectedItemID == nil)
         #expect(windowModel.drawer.expandedItemID == nil)
-        #expect(controller.drawerPeekRuntime == nil)
-        #expect(controller.recentlyDiscardedDrawerItems.count == 2)
+        #expect(session.windowResources.drawerPeek == nil)
+        #expect(session.resources.recentlyDiscardedDrawerItems.count == 2)
         #expect(!windowModel.isDrawerOpen)
     }
 
@@ -713,66 +782,74 @@ struct DenControllerDrawerTests {
     @Test func closingDrawerKeepsExpandedPeekForNextOpen() throws {
         let source = desk("Desk")
         var savedState: DenState?
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            onSave: { savedState = $0 })
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id)),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { savedState = $0 }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://preview.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://preview.example/")))
         let itemID = try #require(windowModel.drawer.expandedItemID)
 
         windowModel.drawer.toggleItem(itemID)
 
-        #expect(savedState == controller.state)
+        #expect(savedState == session.resources.state)
 
         windowModel.drawer.toggleItem(itemID)
 
-        #expect(savedState == controller.state)
+        #expect(savedState == session.resources.state)
         let item = try #require(windowModel.drawer.selectedItem)
-        let runtime = controller.drawerRuntime(for: item)
+        let runtime = session.drawer.drawerRuntime(for: item)
 
         windowModel.closeDrawer()
 
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == itemID)
-        #expect(controller.drawerPeekRuntime === runtime)
-        #expect(savedState == controller.state)
+        #expect(session.windowResources.drawerPeek === runtime)
+        #expect(savedState == session.resources.state)
 
         windowModel.toggleDrawer()
 
         #expect(windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == itemID)
-        #expect(controller.drawerRuntime(for: item) === runtime)
+        #expect(session.drawer.drawerRuntime(for: item) === runtime)
 
         windowModel.drawer.toggleItem(itemID)
 
-        #expect(controller.drawerPeekRuntime == nil)
+        #expect(session.windowResources.drawerPeek == nil)
     }
 
     @Test func denModeKeyboardControlsOpenDrawer() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://second.example/")))
         windowModel.isDenMode = true
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.downArrow, keyCode: 125), controller: controller, windowModel: windowModel))
-        #expect(windowModel.drawer.selectedItemID == controller.state.drawerItems[1].id)
-        #expect(windowModel.drawer.expandedItemID == controller.state.drawerItems[1].id)
+                try keyEvent(.downArrow, keyCode: 125), session: session, windowModel: windowModel))
+        #expect(windowModel.drawer.selectedItemID == session.resources.state.drawerItems[1].id)
+        #expect(windowModel.drawer.expandedItemID == session.resources.state.drawerItems[1].id)
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), controller: controller, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
         #expect(windowModel.drawer.expandedItemID == nil)
         #expect(
-            KeyboardController.handle(try keyEvent(.tab, keyCode: 48), controller: controller, windowModel: windowModel)
+            KeyboardController.handle(try keyEvent(.tab, keyCode: 48), session: session, windowModel: windowModel)
         )
         #expect(!windowModel.isDrawerOpen)
 
@@ -785,12 +862,14 @@ struct DenControllerDrawerTests {
     @Test func openingDrawerExitsDenModeOnlyForExpandedPeek() throws {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [item]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [item]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -814,12 +893,14 @@ struct DenControllerDrawerTests {
         let second = DrawerItem(
             url: try #require(URL(string: "https://second.example/")),
             title: "Second")
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [first, second]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [first, second]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -827,20 +908,20 @@ struct DenControllerDrawerTests {
         windowModel.toggleDrawer()
 
         #expect(
-            KeyboardController.handle(try keyEvent("/", keyCode: 44), controller: controller, windowModel: windowModel))
+            KeyboardController.handle(try keyEvent("/", keyCode: 44), session: session, windowModel: windowModel))
         #expect(windowModel.drawer.filterPhase == .filtering)
 
         windowModel.drawer.setQuery("second")
         #expect(windowModel.drawer.selectedItemID == second.id)
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), controller: controller, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
         #expect(windowModel.drawer.filterPhase == .selecting)
         #expect(windowModel.drawer.expandedItemID == nil)
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), controller: controller, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
         #expect(windowModel.drawer.filterPhase == .inactive)
         #expect(windowModel.drawer.expandedItemID == second.id)
         #expect(windowModel.drawer.query.isEmpty)
@@ -848,7 +929,7 @@ struct DenControllerDrawerTests {
 
         #expect(
             KeyboardController.handle(
-                try keyEvent("\u{1B}", keyCode: 53), controller: controller, windowModel: windowModel))
+                try keyEvent("\u{1B}", keyCode: 53), session: session, windowModel: windowModel))
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == second.id)
     }
@@ -856,12 +937,14 @@ struct DenControllerDrawerTests {
     @Test func drawerFilterKeepsSelectingPhaseWhenThereAreNoMatches() throws {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
-        let controller = DenController(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                drawerItems: [item]))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [source],
+                        focusedDeskID: source.id,
+                        drawerItems: [item]))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -884,28 +967,31 @@ struct DenControllerDrawerTests {
 
     @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://third.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://fourth.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://third.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://fourth.example/")))
         windowModel.isDenMode = true
-        let itemIDs = controller.state.drawerItems.map(\.id)
+        let itemIDs = session.resources.state.drawerItems.map(\.id)
         windowModel.drawer.selectItem(by: 2)
 
         #expect(windowModel.isDrawerOpen)
         #expect(windowModel.drawer.selectedItemID == itemIDs[2])
         #expect(
-            KeyboardController.handle(try keyEvent("x", keyCode: 7), controller: controller, windowModel: windowModel))
-        #expect(controller.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[1], itemIDs[3]])
+            KeyboardController.handle(try keyEvent("x", keyCode: 7), session: session, windowModel: windowModel))
+        #expect(session.resources.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[1], itemIDs[3]])
         #expect(windowModel.drawer.selectedItemID == itemIDs[1])
         #expect(
-            KeyboardController.handle(try keyEvent("d", keyCode: 2), controller: controller, windowModel: windowModel))
-        #expect(controller.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[3]])
+            KeyboardController.handle(try keyEvent("d", keyCode: 2), session: session, windowModel: windowModel))
+        #expect(session.resources.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[3]])
         #expect(windowModel.drawer.selectedItemID == itemIDs[3])
         #expect(windowModel.isDrawerOpen)
     }
@@ -913,24 +999,27 @@ struct DenControllerDrawerTests {
     @Test func denModeKeyboardRestoresNewestDiscardedDrawerItemWithU() throws {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://restore.example/")))
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+            configuration: makeTestBoardRuntimeConfiguration())
 
-        let composition = DenWindowComposition(controller: controller)
+        let composition = DenWindowComposition(session: session)
 
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.openDrawer()
         windowModel.isDenMode = true
-        controller.discardDrawerItem(item.id)
+        session.drawer.discardDrawerItem(item.id)
         windowModel.openDrawer()
         windowModel.isDenMode = true
 
         #expect(
-            KeyboardController.handle(try keyEvent("u", keyCode: 32), controller: controller, windowModel: windowModel))
-        #expect(controller.state.drawerItems.map(\.id) == [item.id])
-        #expect(controller.recentlyDiscardedDrawerItems.isEmpty)
+            KeyboardController.handle(try keyEvent("u", keyCode: 32), session: session, windowModel: windowModel))
+        #expect(session.resources.state.drawerItems.map(\.id) == [item.id])
+        #expect(session.resources.recentlyDiscardedDrawerItems.isEmpty)
         #expect(windowModel.drawer.selectedItemID == item.id)
         #expect(windowModel.drawer.expandedItemID == item.id)
         #expect(windowModel.isDenMode)
@@ -938,31 +1027,34 @@ struct DenControllerDrawerTests {
 
     @Test func sheetInputLeavesVimStyleDrawerKeysUnclaimed() throws {
         let source = desk("Desk")
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        session.drawer.keepInDrawer(try #require(URL(string: "https://second.example/")))
 
-        #expect(controller.state.drawerItems.count == 2)
+        #expect(session.resources.state.drawerItems.count == 2)
         #expect(windowModel.isDrawerOpen)
         #expect(!windowModel.isDenMode)
 
         for (key, keyCode) in [("d", 2), ("x", 7), ("j", 38), ("k", 40), ("p", 35), ("/", 44)] {
             let event = try keyEvent(key, keyCode: UInt16(keyCode))
             #expect(
-                KeyboardController.decision(for: event, controller: controller, windowModel: windowModel)
+                KeyboardController.decision(for: event, session: session, windowModel: windowModel)
                     == .consume(.exclusiveContext))
-            #expect(KeyboardController.handle(event, controller: controller, windowModel: windowModel))
+            #expect(KeyboardController.handle(event, session: session, windowModel: windowModel))
         }
         let tab = try keyEvent(.tab, keyCode: 48)
         #expect(
-            KeyboardController.decision(for: tab, controller: controller, windowModel: windowModel)
+            KeyboardController.decision(for: tab, session: session, windowModel: windowModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(tab, controller: controller, windowModel: windowModel))
-        #expect(controller.state.drawerItems.count == 2)
+        #expect(KeyboardController.handle(tab, session: session, windowModel: windowModel))
+        #expect(session.resources.state.drawerItems.count == 2)
         #expect(windowModel.isDrawerOpen)
     }
 
@@ -1014,9 +1106,9 @@ struct DenControllerDrawerTests {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 
-    private func withSharedDrawerControllers<T>(
+    private func withSharedDrawerSessions<T>(
         items: [DrawerItem],
-        body: (DenController, DenController) throws -> T
+        body: (ProfileWindowSession, ProfileWindowSession) throws -> T
     ) rethrows -> T {
         let suiteName = "SharedDrawerStoreTests-\(UUID())"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
@@ -1032,17 +1124,14 @@ struct DenControllerDrawerTests {
         let websiteDataStore = WKWebsiteDataStore.nonPersistent()
         let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        let makeController = { (deskID: DeskID) -> DenController in
-            DenController(
-                storage: storage,
-                presentedDeskID: deskID,
-                websiteDataStore: websiteDataStore,
-                sheetNavigation: sheetNavigation,
-                preferences: preferences,
-                canPresentDesk: { _ in true },
-                onDeskPresentationRequest: { _ in true },
+        let makeSession = { (deskID: DeskID) -> ProfileWindowSession in
+            ProfileWindowSession(
+                resources: storage,
+                configuration: makeTestBoardRuntimeConfiguration(
+                    websiteDataStore: websiteDataStore, sheetNavigation: sheetNavigation, preferences: preferences),
+                presentedDeskID: deskID, canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true },
                 onWillResetDen: {})
         }
-        return try body(makeController(desks[0].id), makeController(desks[1].id))
+        return try body(makeSession(desks[0].id), makeSession(desks[1].id))
     }
 }

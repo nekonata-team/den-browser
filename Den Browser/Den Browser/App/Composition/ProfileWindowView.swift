@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenInfrastructure
 import DenPresentationModels
@@ -38,18 +39,18 @@ struct ProfileWindowView: View {
     private var content: some View {
         let activeProfileID = profileManager.resolvedProfileID(route.profileID)
         if let profile = profileManager.profile(id: activeProfileID),
-            let controller = profileManager.controller(for: route)
+            let session = profileManager.session(for: route)
         {
             ProfileDenWindow(
                 route: route,
                 profile: profile,
                 activeProfileID: activeProfileID,
-                controller: controller,
+                session: session,
                 isPrivateDen: profileManager.isPrivateDen,
                 registerKeyboardWindow: registerKeyboardWindow,
                 unregisterKeyboardWindow: unregisterKeyboardWindow
             )
-            .id(ObjectIdentifier(controller))
+            .id(ObjectIdentifier(session))
             .sheet(
                 isPresented: Binding(
                     get: {
@@ -88,7 +89,7 @@ private struct ProfileDenWindow: View {
     let route: ProfileWindowRoute
     let profile: ProfileState
     let activeProfileID: ProfileID
-    let controller: DenController
+    let session: ProfileWindowSession
     let isPrivateDen: Bool
     let registerKeyboardWindow: @MainActor (NSWindow, DenWindowModel) -> Void
     let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
@@ -102,7 +103,7 @@ private struct ProfileDenWindow: View {
         route: ProfileWindowRoute,
         profile: ProfileState,
         activeProfileID: ProfileID,
-        controller: DenController,
+        session: ProfileWindowSession,
         isPrivateDen: Bool,
         registerKeyboardWindow: @escaping @MainActor (NSWindow, DenWindowModel) -> Void,
         unregisterKeyboardWindow: @escaping @MainActor (NSWindow) -> Void
@@ -110,11 +111,11 @@ private struct ProfileDenWindow: View {
         self.route = route
         self.profile = profile
         self.activeProfileID = activeProfileID
-        self.controller = controller
+        self.session = session
         self.isPrivateDen = isPrivateDen
         self.registerKeyboardWindow = registerKeyboardWindow
         self.unregisterKeyboardWindow = unregisterKeyboardWindow
-        _composition = State(initialValue: DenWindowComposition(controller: controller))
+        _composition = State(initialValue: DenWindowComposition(session: session))
     }
 
     var body: some View {
@@ -127,7 +128,7 @@ private struct ProfileDenWindow: View {
             DenHeader(profile: profile, windowID: route.windowID)
         }
         .tint(profileDisplayColor(for: profile.color))
-        .focusedSceneValue(\.denController, controller)
+        .focusedSceneValue(\.profileWindowSession, session)
         .focusedSceneValue(\.denWindowModel, windowModel)
         .focusedSceneValue(\.profileID, activeProfileID)
         .focusedSceneValue(\.profileWindowID, route.windowID)
@@ -138,13 +139,13 @@ private struct ProfileDenWindow: View {
                 registerKeyboardWindow: registerKeyboardWindow,
                 unregisterKeyboardWindow: unregisterKeyboardWindow)
         )
-        .environment(controller)
+        .environment(session)
         .environment(windowModel)
         .toolbarVisibility(windowModel.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .ignoresSafeArea(.container, edges: windowModel.isZenViewPresented ? .top : [])
         .onOpenURL { url in
-            controller.handleExternalURL(url)
+            session.input.handleExternalURL(url)
         }
         .onAppear {
             PerformanceTrace.mark("ProfileWindowView.onAppear (window content presented)", category: "Launch")
@@ -253,8 +254,8 @@ private struct WindowRegistration: NSViewRepresentable {
     }
 }
 
-struct DenControllerFocusedValueKey: FocusedValueKey {
-    typealias Value = DenController
+struct ProfileWindowSessionFocusedValueKey: FocusedValueKey {
+    typealias Value = ProfileWindowSession
 }
 
 struct DenWindowModelFocusedValueKey: FocusedValueKey {
@@ -270,9 +271,9 @@ struct ProfileWindowIDFocusedValueKey: FocusedValueKey {
 }
 
 extension FocusedValues {
-    var denController: DenController? {
-        get { self[DenControllerFocusedValueKey.self] }
-        set { self[DenControllerFocusedValueKey.self] = newValue }
+    var profileWindowSession: ProfileWindowSession? {
+        get { self[ProfileWindowSessionFocusedValueKey.self] }
+        set { self[ProfileWindowSessionFocusedValueKey.self] = newValue }
     }
 
     var denWindowModel: DenWindowModel? {

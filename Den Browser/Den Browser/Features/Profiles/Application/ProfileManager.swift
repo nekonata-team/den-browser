@@ -103,17 +103,17 @@ final class ProfileManager {
         profile(id: requestedID) == nil ? personalProfileID : requestedID
     }
 
-    func controller(for profileID: ProfileID) -> DenController? {
-        controller(for: ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID))
+    func session(for profileID: ProfileID) -> ProfileWindowSession? {
+        session(for: ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID))
     }
 
-    func controller(for route: ProfileWindowRoute) -> DenController? {
+    func session(for route: ProfileWindowRoute) -> ProfileWindowSession? {
         guard !deletingProfileIDs.contains(route.profileID) else { return nil }
         let profileID = resolvedProfileID(route.profileID)
-        if let controller = windowRegistry.controller(for: route.windowID),
+        if let session = windowRegistry.session(for: route.windowID),
             windowRegistry.profileID(for: route.windowID) == profileID
         {
-            return controller
+            return session
         }
         guard let storage = storage(for: profileID) else { return nil }
         let requestedDeskID = route.deskID ?? storage.state.focusedDeskID
@@ -122,20 +122,20 @@ final class ProfileManager {
             profileID: profileID,
             excludingWindowID: route.windowID)
         guard let presentedDeskID else { return nil }
-        let controller = DenController(
-            storage: storage,
-            presentedDeskID: presentedDeskID,
-            websiteDataStore: profileWebsiteDataStore(for: profileID),
-            sheetNavigation: sheetNavigation,
-            preferences: preferences,
-            requestWebExtensionContext: { [weak self] in
-                guard let self,
-                    let host = self.extensionCoordinator.host(
-                        for: profileID,
-                        websiteDataStore: self.profileWebsiteDataStore(for: profileID))
-                else { return nil }
-                return (host, host.window(for: route.windowID))
-            },
+        let session = ProfileWindowSession(
+            resources: storage,
+            configuration: BoardRuntimeConfiguration(
+                websiteDataStore: profileWebsiteDataStore(for: profileID), sheetNavigation: sheetNavigation,
+                preferences: preferences, profileID: profileID, ipcSocketPath: ipcSocketPath,
+                terminalCommandRunner: SubprocessCommandRunner(),
+                requestWebExtensionContext: { [weak self] in
+                    guard let self,
+                        let host = self.extensionCoordinator.host(
+                            for: profileID,
+                            websiteDataStore: self.profileWebsiteDataStore(for: profileID))
+                    else { return nil }
+                    return (host, host.window(for: route.windowID))
+                }), presentedDeskID: presentedDeskID,
             canPresentDesk: { [weak self] deskID in
                 self?.canPresent(deskID, profileID: profileID, excludingWindowID: route.windowID) ?? true
             },
@@ -147,11 +147,9 @@ final class ProfileManager {
             },
             onWillResetDen: { [weak self] in
                 self?.closeOtherWindows(profileID: profileID, excludingWindowID: route.windowID)
-            },
-            profileID: profileID,
-            ipcSocketPath: ipcSocketPath)
-        windowRegistry.setController(controller, windowID: route.windowID, profileID: profileID)
-        return controller
+            })
+        windowRegistry.setSession(session, windowID: route.windowID, profileID: profileID)
+        return session
     }
 
     @discardableResult
@@ -210,7 +208,7 @@ final class ProfileManager {
             let profile = profile(id: profileID),
             case .identified = profile.webProfileStore
         else { return false }
-        return !windowRegistry.hasController(for: profileID) && !windowRegistry.hasWindow(for: profileID)
+        return !windowRegistry.hasSession(for: profileID) && !windowRegistry.hasWindow(for: profileID)
     }
 
     func deleteProfile(_ profileID: ProfileID) async -> Bool {
@@ -270,7 +268,7 @@ final class ProfileManager {
     func clearError() { errorMessage = nil }
 
     func setUBOLiteEnabled(_ enabled: Bool) {
-        extensionCoordinator.setEnabled(enabled, controllers: windowRegistry.controllerEntries())
+        extensionCoordinator.setEnabled(enabled, sessions: windowRegistry.sessionEntries())
     }
 
     func focusWebExtensionWindow(for route: ProfileWindowRoute) {
@@ -301,7 +299,7 @@ final class ProfileManager {
 
     @discardableResult
     func updateUBOLite() async -> Bool {
-        await extensionCoordinator.updateUBOLite(controllers: windowRegistry.controllerEntries())
+        await extensionCoordinator.updateUBOLite(sessions: windowRegistry.sessionEntries())
     }
 
     func register(window: NSWindow, for route: ProfileWindowRoute) {
@@ -318,9 +316,9 @@ final class ProfileManager {
         releaseSharedResourcesIfUnused(for: profileID)
     }
 
-    func controller(for window: NSWindow?) -> DenController? {
+    func session(for window: NSWindow?) -> ProfileWindowSession? {
         guard let window else { return nil }
-        return windowRegistry.controller(for: window)
+        return windowRegistry.session(for: window)
     }
 
     func activateWindow(for profileID: ProfileID) -> Bool {
@@ -358,7 +356,7 @@ final class ProfileManager {
     ) -> Bool {
         _ = windowAssignmentRevision
         guard canPresent(deskID, profileID: profileID, excludingWindowID: sourceWindowID),
-            let source = windowRegistry.controller(for: sourceWindowID)
+            let source = windowRegistry.session(for: sourceWindowID)
         else { return false }
         return source.navigation.presentedDeskID != deskID
             || availableReplacementDeskID(
@@ -382,7 +380,7 @@ final class ProfileManager {
         sourceWindowID: UUID
     ) -> ProfileWindowRoute? {
         guard canOpenDeskInNewWindow(deskID, profileID: profileID, sourceWindowID: sourceWindowID),
-            let source = windowRegistry.controller(for: sourceWindowID)
+            let source = windowRegistry.session(for: sourceWindowID)
         else { return nil }
         if source.navigation.presentedDeskID == deskID {
             guard
@@ -391,10 +389,10 @@ final class ProfileManager {
                     profileID: profileID,
                     excludingWindowID: sourceWindowID)
             else { return nil }
-            source.focusDesk(replacementDeskID)
+            source.boardNavigation.focusDesk(replacementDeskID)
         }
         let route = ProfileWindowRoute(profileID: profileID, deskID: deskID)
-        guard controller(for: route)?.navigation.presentedDeskID == deskID else { return nil }
+        guard session(for: route)?.navigation.presentedDeskID == deskID else { return nil }
         return route
     }
 
@@ -455,36 +453,36 @@ final class ProfileManager {
     }
 
     var ipcWindows: [IPCWindowBindings] {
-        windowRegistry.controllerEntries().compactMap { entry in
+        windowRegistry.sessionEntries().compactMap { entry in
             guard let profileID = entry.profileID else { return nil }
-            return IPCWindowBindings(id: entry.windowID, profileID: profileID, controller: entry.controller)
+            return IPCWindowBindings(id: entry.windowID, profileID: profileID, session: entry.session)
         }
     }
 
     func activeIPCWindow(profileID: ProfileID? = nil) -> IPCWindowBindings? {
-        let controller: DenController?
+        let session: ProfileWindowSession?
         if let profileID {
-            controller = self.controller(forProfileID: profileID)
+            session = self.session(forProfileID: profileID)
         } else {
-            controller = activeController()
+            session = activeSession()
         }
-        guard let controller,
-            let entry = windowRegistry.controllerEntries().first(where: { $0.controller === controller }),
+        guard let session,
+            let entry = windowRegistry.sessionEntries().first(where: { $0.session === session }),
             let profileID = entry.profileID
         else { return nil }
-        return IPCWindowBindings(id: entry.windowID, profileID: profileID, controller: controller)
+        return IPCWindowBindings(id: entry.windowID, profileID: profileID, session: session)
     }
 
-    func activeController() -> DenController? {
-        windowRegistry.activeController(preferredWindowID: extensionPresentationTarget()?.windowID)
+    func activeSession() -> ProfileWindowSession? {
+        windowRegistry.activeSession(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
     func activeProfileID() -> ProfileID? {
         windowRegistry.activeProfileID(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func controller(forProfileID profileID: ProfileID) -> DenController? {
-        windowRegistry.controller(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
+    func session(forProfileID profileID: ProfileID) -> ProfileWindowSession? {
+        windowRegistry.session(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
     func profileID(for storage: DenProfileResources) -> ProfileID? {
@@ -494,48 +492,48 @@ final class ProfileManager {
         return nil
     }
 
-    func profileID(for controller: DenController) -> ProfileID? {
-        windowRegistry.profileID(for: controller) ?? profileID(for: controller.storage)
+    func profileID(for session: ProfileWindowSession) -> ProfileID? {
+        windowRegistry.profileID(for: session) ?? profileID(for: session.resources)
     }
 
-    func controllers(for profileID: ProfileID) -> [DenController] {
-        windowRegistry.controllers(for: profileID)
+    func sessions(for profileID: ProfileID) -> [ProfileWindowSession] {
+        windowRegistry.sessions(for: profileID)
     }
 
-    func controller(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenController? {
-        let profileControllers = controllers(for: profileID)
+    func session(for profileID: ProfileID, presentingDeskID: DeskID?) -> ProfileWindowSession? {
+        let profileSessions = sessions(for: profileID)
         if let presentingDeskID,
-            let presentingController = profileControllers.first(where: {
+            let presentingSession = profileSessions.first(where: {
                 $0.navigation.presentedDeskID == presentingDeskID
             })
         {
-            return presentingController
+            return presentingSession
         }
-        return controller(forProfileID: profileID)
+        return session(forProfileID: profileID)
     }
 
     func hasWindow(for profileID: ProfileID) -> Bool {
-        windowRegistry.hasController(for: profileID)
+        windowRegistry.hasSession(for: profileID)
     }
 
-    var allControllers: [DenController] {
-        windowRegistry.allControllers()
+    var allSessions: [ProfileWindowSession] {
+        windowRegistry.allSessions()
     }
 
     private func canPresent(_ deskID: DeskID, profileID: ProfileID, excludingWindowID: UUID) -> Bool {
-        !windowRegistry.controllerEntries().contains { entry in
+        !windowRegistry.sessionEntries().contains { entry in
             entry.windowID != excludingWindowID
                 && entry.profileID == profileID
-                && entry.controller.navigation.presentedDeskID == deskID
+                && entry.session.navigation.presentedDeskID == deskID
         }
     }
 
     private func requestDeskPresentation(_ deskID: DeskID, profileID: ProfileID, windowID: UUID) -> Bool {
         guard
-            let ownerWindowID = windowRegistry.controllerEntries().first(where: { entry in
+            let ownerWindowID = windowRegistry.sessionEntries().first(where: { entry in
                 entry.windowID != windowID
                     && entry.profileID == profileID
-                    && entry.controller.navigation.presentedDeskID == deskID
+                    && entry.session.navigation.presentedDeskID == deskID
             })?.windowID
         else { return true }
         windowRegistry.registeredWindow(for: ownerWindowID)?.makeKeyAndOrderFront(nil)
@@ -583,8 +581,8 @@ final class ProfileManager {
             return nil
         }
         let removedWindow = windowRegistry.removeWindow(windowID: windowID)
-        removedWindow.controller?.runtimeConnection.disconnect()
-        removedWindow.controller?.releaseWindowResources()
+        removedWindow.session?.connection.disconnect()
+        removedWindow.session?.runtimes.releaseWindowResources()
         let profileID = removedWindow.profileID
         if let profileID {
             extensionCoordinator.closeWindow(profileID: profileID, windowID: windowID)
@@ -598,7 +596,7 @@ final class ProfileManager {
 
     private func releaseSharedResourcesIfUnused(for profileID: ProfileID) {
         let profileID = resolvedProfileID(profileID)
-        guard !windowRegistry.hasController(for: profileID),
+        guard !windowRegistry.hasSession(for: profileID),
             !windowRegistry.hasWindow(for: profileID)
         else { return }
         if let storage = storages.removeValue(forKey: profileID) {
@@ -611,7 +609,7 @@ final class ProfileManager {
     private func closeWindows(for profileID: ProfileID, excludingWindowID: UUID? = nil) {
         var targetWindowIDs = Set<UUID>()
         targetWindowIDs.formUnion(windowRegistry.windowIDs(for: profileID))
-        targetWindowIDs.formUnion(windowRegistry.controllerWindowIDs(for: profileID))
+        targetWindowIDs.formUnion(windowRegistry.sessionWindowIDs(for: profileID))
         if let excludingWindowID {
             targetWindowIDs.remove(excludingWindowID)
         }
@@ -792,8 +790,8 @@ final class ProfileManager {
     private func reportSaveError(_ error: Error) {
         let message = "Could not save Profiles: \(error.localizedDescription)"
         errorMessage = message
-        for entry in windowRegistry.controllerEntries() {
-            entry.controller.reportFeedback(message, severity: .error)
+        for entry in windowRegistry.sessionEntries() {
+            entry.session.context.feedback.publish(message, severity: .error)
         }
     }
 

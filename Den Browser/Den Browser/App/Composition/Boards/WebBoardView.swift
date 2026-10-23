@@ -5,7 +5,7 @@ import DenViews
 import SwiftUI
 
 struct WebBoardView: View {
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     let board: BoardState
     let isFocused: Bool
     let focusRequest: BoardFocusRequest?
@@ -26,7 +26,7 @@ struct WebBoardView: View {
 
     var body: some View {
         DenViews.WebBoardView(
-            model: controller.boardSurfaceModel(for: board),
+            model: BoardSurfaceModel(board: board, session: session),
             board: board,
             isFocused: isFocused,
             focusRequest: focusRequest,
@@ -57,9 +57,9 @@ struct WebBoardView: View {
                 return window.makeFirstResponder(runtime.webView)
             },
             onBeforeHide: {
-                guard controller.storage.data.snapshot.activeDrag == nil else { return }
-                guard controller.webRuntimes[board.id] === runtime else { return }
-                await controller.facingCapture.captureWeb(
+                guard session.resources.data.snapshot.activeDrag == nil else { return }
+                guard session.resources.webRuntimes[board.id] === runtime else { return }
+                await session.resources.facingCapture.captureWeb(
                     boardID: board.id, webView: runtime.webView)
             },
             faviconURL: runtime.faviconURL,
@@ -71,11 +71,11 @@ struct WebBoardView: View {
             highlightID: runtime.actionHighlight?.id,
             highlightRect: runtime.actionHighlight?.rect,
             onAppear: {
-                guard controller.runtimeConnection.controller === controller,
-                    controller.webRuntimes[board.id] === runtime
+                guard session.connection.runtimes === session.runtimes,
+                    session.resources.webRuntimes[board.id] === runtime
                 else { return }
-                _ = controller.webRuntime(for: board)
-                controller.sheetNavigation.refreshConfiguration(for: runtime.webView)
+                _ = session.runtimes.webRuntime(for: board)
+                session.configuration.sheetNavigation.refreshConfiguration(for: runtime.webView)
             },
             onActivate: { runtime.activateWebExtensionTab() },
             onReload: { runtime.webView.reload() },

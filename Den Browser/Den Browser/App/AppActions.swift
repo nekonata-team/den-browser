@@ -176,7 +176,7 @@ enum DrawerAction: Equatable {
 enum AppActionHandler {
     static func perform(
         _ action: AppAction,
-        controller: DenController?,
+        session: ProfileWindowSession?,
         windowModel: DenWindowModel?,
         openSettings: () -> Void = {}
     ) {
@@ -184,7 +184,7 @@ enum AppActionHandler {
             openSettings()
             return
         }
-        guard let controller, let windowModel else { return }
+        guard let session, let windowModel else { return }
 
         switch action {
         case .application(let action):
@@ -192,7 +192,7 @@ enum AppActionHandler {
             case .showUniversalSearch(let commandsOnly): windowModel.showUniversalSearch(commandsOnly: commandsOnly)
             case .hideUniversalSearch:
                 windowModel.hideUniversalSearch()
-                controller.restoreFocusedFirstResponder()
+                session.runtimes.restoreFocusedFirstResponder()
             case .moveSearchSelection(let offset): windowModel.universalSearch.moveSelection(by: offset)
             case .submitSearch: windowModel.universalSearch.submit()
             case .submitSearchInDrawer: windowModel.universalSearch.submit(inDrawer: true)
@@ -229,14 +229,14 @@ enum AppActionHandler {
                 case "\u{8}", "\u{7F}": label = "Delete"
                 default: label = key
                 }
-                controller.reportFeedback("No Essential assigned to '\(label)'.", severity: .warning)
+                session.context.feedback.publish("No Essential assigned to '\(label)'.", severity: .warning)
             case .launch(let id): windowModel.launchEssential(id: id)
             case .saveFocusedBoardAsEssential: windowModel.saveFocusedBoardAsEssential()
             }
         case .desk(let action):
             switch action {
-            case .focusPrevious: controller.focusPreviousDesk()
-            case .focusNext: controller.focusNextDesk()
+            case .focusPrevious: session.boardNavigation.focusPreviousDesk()
+            case .focusNext: session.boardNavigation.focusNextDesk()
             case .movePrevious:
                 if let deskID = windowModel.focusedDesk?.id {
                     windowModel.desks.moveDesk(deskID, by: -1)
@@ -245,8 +245,8 @@ enum AppActionHandler {
                 if let deskID = windowModel.focusedDesk?.id {
                     windowModel.desks.moveDesk(deskID, by: 1)
                 }
-            case .returnToPrevious: controller.returnToPreviousDesk()
-            case .focus(let number): controller.focusDesk(number: number)
+            case .returnToPrevious: session.boardNavigation.returnToPreviousDesk()
+            case .focus(let number): session.boardNavigation.focusDesk(number: number)
             case .showNewPanel: windowModel.showNewDeskPanel()
             case .showSavePresetPanel: windowModel.showSaveDeskPresetPanel()
             case .showReplacePanel: windowModel.showReplaceDeskPanel()
@@ -255,7 +255,7 @@ enum AppActionHandler {
             case .delete: windowModel.desks.deleteFocusedDesk()
             case .adjustBoardWidths(let amount): windowModel.adjustFocusedDeskBoardWidths(by: amount)
             case .resizeBoards(let count): windowModel.resizeFocusedDeskBoards(toFit: count)
-            case .reloadSheets: controller.reloadFocusedDeskSheets()
+            case .reloadSheets: session.boardOpening.reloadFocusedDeskSheets()
             case .enterFilter: windowModel.deskFilter.enter()
             case .dismissFilter: windowModel.deskFilter.dismiss()
             case .confirmFilterQuery: windowModel.deskFilter.confirmQuery()
@@ -265,19 +265,20 @@ enum AppActionHandler {
             }
         case .board(let action):
             switch action {
-            case .focusPrevious: controller.focusPreviousBoard()
-            case .focusNext: controller.focusNextBoard()
-            case .moveLeft: controller.moveFocusedBoardLeft()
-            case .moveRight: controller.moveFocusedBoardRight()
-            case .increaseSheetSize: controller.adjustFocusedSheetSize(by: 1)
-            case .decreaseSheetSize: controller.adjustFocusedSheetSize(by: -1)
-            case .resetSheetSize: controller.resetFocusedSheetSize()
-            case .toggleAnchor: controller.toggleAnchorBoard()
-            case .jumpToAnchor: controller.jumpToAnchorBoard()
-            case .moveToDesk(let number): controller.moveFocusedBoard(toDeskNumber: number)
+            case .focusPrevious: session.boardNavigation.focusPreviousBoard()
+            case .focusNext: session.boardNavigation.focusNextBoard()
+            case .moveLeft: session.boardNavigation.moveFocusedBoardLeft()
+            case .moveRight: session.boardNavigation.moveFocusedBoardRight()
+            case .increaseSheetSize: session.runtimes.adjustFocusedSheetSize(by: 1)
+            case .decreaseSheetSize: session.runtimes.adjustFocusedSheetSize(by: -1)
+            case .resetSheetSize: session.runtimes.resetFocusedSheetSize()
+            case .toggleAnchor: session.boardNavigation.toggleAnchorBoard()
+            case .jumpToAnchor: session.boardNavigation.jumpToAnchorBoard()
+            case .moveToDesk(let number): session.boardNavigation.moveFocusedBoard(toDeskNumber: number)
             case .showOpenPanel: windowModel.showOpenBoardPanel()
-            case .openFromClipboard: controller.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)
-            case .openClipboardInDrawer: controller.openBoardFromClipboard(inDrawer: true)
+            case .openFromClipboard:
+                session.input.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)
+            case .openClipboardInDrawer: session.input.openBoardFromClipboard(inDrawer: true)
             case .showWidthPanel: windowModel.showBoardWidthPanel()
             case .hideWidthPanel: windowModel.hideBoardWidthPanel()
             case .adjustWidth(let amount): windowModel.adjustFocusedBoardWidth(by: amount)
@@ -285,32 +286,32 @@ enum AppActionHandler {
             case .center: windowModel.centerFocusedBoard()
             case .revealPrevious: windowModel.revealPreviousBoard()
             case .revealNext: windowModel.revealNextBoard()
-            case .toggleSheetNavigationPause: controller.toggleFocusedBoardSheetNavigationPause()
-            case .reloadFromOrigin: controller.reloadFocusedBoardFromOrigin()
-            case .reload: controller.reloadFocusedBoard()
-            case .goBack: controller.goBackInFocusedBoard()
-            case .goForward: controller.goForwardInFocusedBoard()
-            case .goToFirstSheet: controller.goToFirstSheetInFocusedBoard()
-            case .goToLatestSheet: controller.goToLatestSheetInFocusedBoard()
-            case .captureSheet: controller.captureFocusedSheetScreenshot()
-            case .copySheetScreenshot: controller.copyFocusedSheetScreenshot()
-            case .copyLocation: controller.copyBoardLocation()
+            case .toggleSheetNavigationPause: session.boardNavigation.toggleFocusedBoardSheetNavigationPause()
+            case .reloadFromOrigin: session.boardOpening.reloadFocusedBoardFromOrigin()
+            case .reload: session.boardOpening.reloadFocusedBoard()
+            case .goBack: session.boardOpening.goBackInFocusedBoard()
+            case .goForward: session.boardOpening.goForwardInFocusedBoard()
+            case .goToFirstSheet: session.boardOpening.goToFirstSheetInFocusedBoard()
+            case .goToLatestSheet: session.boardOpening.goToLatestSheetInFocusedBoard()
+            case .captureSheet: session.screenshots.captureFocusedSheetScreenshot()
+            case .copySheetScreenshot: session.screenshots.copyFocusedSheetScreenshot()
+            case .copyLocation: session.boardNavigation.copyBoardLocation()
             case .copyID:
                 if let boardID = windowModel.focusedBoard?.id {
-                    controller.copyBoardID(boardID)
+                    session.boardNavigation.copyBoardID(boardID)
                 }
-            case .keepSheetInDrawer: controller.keepFocusedSheetInDrawer()
-            case .remove: controller.removeFocusedBoard()
-            case .quit: controller.quitFocusedBoard()
-            case .removeAndFocusNext: controller.removeFocusedBoard(focusNext: true)
-            case .restore: controller.restoreRecentlyRemovedBoard()
+            case .keepSheetInDrawer: session.drawer.keepFocusedSheetInDrawer()
+            case .remove: session.boardRemoval.removeFocusedBoard()
+            case .quit: session.zmx.quitFocusedBoard()
+            case .removeAndFocusNext: session.boardRemoval.removeFocusedBoard(focusNext: true)
+            case .restore: session.boardRemoval.restoreRecentlyRemovedBoard()
             case .showRenamePanel: windowModel.showRenameBoardPanel()
             case .showEditLinkPanel: windowModel.showEditBoardLinkPanel()
-            case .duplicate: controller.duplicateFocusedBoard()
-            case .duplicateFirstSheet: controller.duplicateFocusedBoardFromFirstSheet()
+            case .duplicate: session.zmx.duplicateFocusedBoard()
+            case .duplicateFirstSheet: session.zmx.duplicateFocusedBoardFromFirstSheet()
             case .createTerminalSideBoard:
                 if let boardID = windowModel.focusedBoard?.id {
-                    controller.createTerminalSideBoard(targetBoardID: boardID)
+                    session.sideBoards.createTerminalSideBoard(targetBoardID: boardID)
                 }
             case .requestDragCancellation: windowModel.requestBoardDragCancellation()
             }
@@ -366,9 +367,9 @@ enum AppActionHandler {
             case .toggleSelectedItem: windowModel.drawer.toggleSelectedItem()
             case .discardSelectedItem(let focusNext):
                 windowModel.drawer.discardSelectedItem(focusNext: focusNext)
-            case .restoreDiscardedItem: controller.restoreRecentlyDiscardedDrawerItem()
+            case .restoreDiscardedItem: session.drawer.restoreRecentlyDiscardedDrawerItem()
             case .placeSelectedItemAsBoard: windowModel.placeSelectedDrawerItemAsBoard()
-            case .requestClearConfirmation: controller.requestDrawerClearConfirmation()
+            case .requestClearConfirmation: session.drawer.requestDrawerClearConfirmation()
             }
         }
     }

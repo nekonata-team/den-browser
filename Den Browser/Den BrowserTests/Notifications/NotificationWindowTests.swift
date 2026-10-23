@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -13,30 +14,33 @@ struct NotificationWindowTests {
         // Arrange
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
         var effects: [String] = []
-        controller.onWindowEffect = { effect in
+        session.connection.onWindowEffect = { effect in
             switch effect {
             case .notificationAdded(let id):
-                #expect(controller.notifications.first?.id == id)
+                #expect(session.resources.notifications.first?.id == id)
                 effects.append("notification")
             case .feedback:
                 effects.append("feedback")
             default: break
             }
         }
-        defer { controller.onWindowEffect = nil }
+        defer { session.connection.onWindowEffect = nil }
 
         // Act
-        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        session.notifications.recordNotification(title: "Build", body: "Finished", boardID: target.id)
 
         // Assert
-        #expect(controller.notifications.count == 1)
-        #expect(controller.notifications[0].title == "Build")
-        #expect(controller.notifications[0].body == "Finished")
-        #expect(controller.notifications[0].boardID == target.id)
-        #expect(controller.unreadNotificationCount == 1)
-        #expect(controller.latestFeedback?.target == .notification(controller.notifications[0].id))
+        #expect(session.resources.notifications.count == 1)
+        #expect(session.resources.notifications[0].title == "Build")
+        #expect(session.resources.notifications[0].body == "Finished")
+        #expect(session.resources.notifications[0].boardID == target.id)
+        #expect(session.resources.notificationOperations.unreadCount() == 1)
+        #expect(session.feedback.latest?.target == .notification(session.resources.notifications[0].id))
         #expect(effects == ["notification", "feedback"])
     }
 
@@ -45,19 +49,22 @@ struct NotificationWindowTests {
         let currentBoard = board("Current")
         let targetBoard = board("Target")
         let desk = desk("Desk", boards: [currentBoard, targetBoard], focusedBoardID: currentBoard.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        controller.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
-        controller.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
-        controller.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.notifications.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
+        session.notifications.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
+        session.notifications.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
 
         // Act
-        controller.focusBoard(targetBoard.id)
+        session.boardNavigation.focusBoard(targetBoard.id)
 
         // Assert
-        #expect(controller.focusedBoard?.id == targetBoard.id)
-        #expect(controller.unreadNotificationCount(for: targetBoard.id) == 0)
-        #expect(controller.unreadNotificationCount(for: currentBoard.id) == 1)
-        #expect(controller.unreadNotificationCount == 1)
+        #expect(session.navigation.focusedBoard?.id == targetBoard.id)
+        #expect(session.resources.notificationOperations.unreadCount(for: targetBoard.id) == 0)
+        #expect(session.resources.notificationOperations.unreadCount(for: currentBoard.id) == 1)
+        #expect(session.resources.notificationOperations.unreadCount() == 1)
     }
 
     @Test func focusingDeskMarksItsFocusedBoardNotificationsRead() {
@@ -66,33 +73,39 @@ struct NotificationWindowTests {
         let targetBoard = board("Target")
         let currentDesk = desk("Current", boards: [currentBoard], focusedBoardID: currentBoard.id)
         let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
-        let controller = DenController(
-            state: DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id))
-        controller.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.notifications.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
 
         // Act
-        controller.focusDesk(targetDesk.id)
+        session.boardNavigation.focusDesk(targetDesk.id)
 
         // Assert
-        #expect(controller.unreadNotificationCount(for: targetBoard.id) == 0)
-        #expect(controller.unreadNotificationCount == 0)
+        #expect(session.resources.notificationOperations.unreadCount(for: targetBoard.id) == 0)
+        #expect(session.resources.notificationOperations.unreadCount() == 0)
     }
 
     @Test func clearingNotificationsRemovesSessionHistoryAfterConfirmation() {
         // Arrange
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        session.notifications.recordNotification(title: "Build", body: "Finished", boardID: target.id)
         windowModel.toggleNotificationList()
         var confirmationEffects = 0
-        let deliverEffect = controller.onWindowEffect
-        controller.onWindowEffect = { effect in
+        let deliverEffect = session.connection.onWindowEffect
+        session.connection.onWindowEffect = { effect in
             if case .requestConfirmation = effect { confirmationEffects += 1 }
             deliverEffect?(effect)
         }
@@ -105,11 +118,11 @@ struct NotificationWindowTests {
         // Assert
         #expect(confirmationCount == 1)
         #expect(confirmationEffects == 0)
-        #expect(controller.notifications.isEmpty)
-        #expect(controller.unreadNotificationCount == 0)
+        #expect(session.resources.notifications.isEmpty)
+        #expect(session.resources.notificationOperations.unreadCount() == 0)
         #expect(!windowModel.isNotificationListPresented)
         #expect(windowModel.notificationPendingDeletionCount == nil)
-        #expect(controller.latestFeedback == nil)
+        #expect(session.feedback.latest == nil)
     }
 
     @Test func openingNotificationFocusesItsBoardAcrossDesksAndMarksItRead() {
@@ -117,24 +130,27 @@ struct NotificationWindowTests {
         let target = board("Terminal")
         let first = desk("First")
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
-        let controller = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
-        let notification = controller.notifications[0]
+        session.notifications.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        let notification = session.resources.notifications[0]
         windowModel.toggleNotificationList()
 
         // Act
         windowModel.notificationList.open(notification)
 
         // Assert
-        #expect(controller.presentedDeskID == second.id)
-        #expect(controller.focusedBoard?.id == target.id)
-        #expect(controller.notifications[0].isRead)
-        #expect(controller.unreadNotificationCount == 0)
+        #expect(session.navigation.presentedDeskID == second.id)
+        #expect(session.navigation.focusedBoard?.id == target.id)
+        #expect(session.resources.notifications[0].isRead)
+        #expect(session.resources.notificationOperations.unreadCount() == 0)
         #expect(!windowModel.isNotificationListPresented)
     }
 
@@ -143,22 +159,25 @@ struct NotificationWindowTests {
         let target = board("Terminal")
         let first = desk("First")
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
-        let controller = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        session.notifications.recordNotification(title: "Build", body: "Finished", boardID: target.id)
         windowModel.toggleNotificationList()
 
         // Act
-        controller.openFeedbackTarget(controller.latestFeedback?.target)
+        session.notifications.openFeedbackTarget(session.feedback.latest?.target)
 
         // Assert
-        #expect(controller.presentedDeskID == second.id)
-        #expect(controller.focusedBoard?.id == target.id)
-        #expect(controller.notifications[0].isRead)
+        #expect(session.navigation.presentedDeskID == second.id)
+        #expect(session.navigation.focusedBoard?.id == target.id)
+        #expect(session.resources.notifications[0].isRead)
         #expect(!windowModel.isNotificationListPresented)
     }
 
@@ -173,21 +192,23 @@ struct NotificationWindowTests {
         let defaults = makeTestDefaults()
         let navigation = makeTestSheetNavigationManager(defaults: defaults, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        func controller() -> DenController {
-            DenController(
-                storage: storage, presentedDeskID: firstDesk.id, websiteDataStore: .nonPersistent(),
-                sheetNavigation: navigation, preferences: preferences,
-                canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true }, onWillResetDen: {})
+        func session() -> ProfileWindowSession {
+            ProfileWindowSession(
+                resources: storage,
+                configuration: makeTestBoardRuntimeConfiguration(
+                    websiteDataStore: .nonPersistent(), sheetNavigation: navigation, preferences: preferences),
+                presentedDeskID: firstDesk.id, canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true },
+                onWillResetDen: {})
         }
-        let first = DenWindowComposition(controller: controller())
-        let second = DenWindowComposition(controller: controller())
+        let first = DenWindowComposition(session: session())
+        let second = DenWindowComposition(session: session())
         first.connect()
         second.connect()
         defer {
             first.disconnect()
             second.disconnect()
         }
-        first.controller.recordNotification(title: "Build", body: "Finished", boardID: board.id)
+        first.session.notifications.recordNotification(title: "Build", body: "Finished", boardID: board.id)
         let notification = try #require(storage.notifications.first)
         first.model.isDenMode = true
         second.model.isDenMode = true
@@ -199,17 +220,17 @@ struct NotificationWindowTests {
 
         // Assert
         #expect(storage.notifications.first?.isRead == true)
-        #expect(second.controller.presentedDeskID == firstDesk.id)
+        #expect(second.session.navigation.presentedDeskID == firstDesk.id)
         #expect(second.model.isDenMode)
         #expect(second.model.isNotificationListPresented)
         #expect(second.model.displayedFeedback == nil)
         if sourceExists {
-            #expect(first.controller.presentedDeskID == secondDesk.id)
-            #expect(first.controller.focusedBoard?.id == board.id)
+            #expect(first.session.navigation.presentedDeskID == secondDesk.id)
+            #expect(first.session.navigation.focusedBoard?.id == board.id)
             #expect(!first.model.isNotificationListPresented)
             #expect(!first.model.isDenMode)
         } else {
-            #expect(first.controller.presentedDeskID == firstDesk.id)
+            #expect(first.session.navigation.presentedDeskID == firstDesk.id)
             #expect(first.model.displayedFeedback?.body == "Notification source Board no longer exists.")
             #expect(first.model.displayedFeedback?.severity == .warning)
             #expect(first.model.isNotificationListPresented)

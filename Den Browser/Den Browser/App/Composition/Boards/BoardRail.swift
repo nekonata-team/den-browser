@@ -1,31 +1,29 @@
 import DenApplication
 import DenDomain
+import DenPresentationModels
 import DenViews
 import SwiftUI
 
 struct BoardRail: View {
     let profileColor: Color
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     var body: some View {
         DenViews.BoardRail(
             profileColor: profileColor,
-            boardModel: { controller.boardSurfaceModel(for: $0) },
-            focusBoard: { controller.focusBoard($0) },
+            boardModel: { BoardSurfaceModel(board: $0, session: session) },
+            focusBoard: { session.boardNavigation.focusBoard($0) },
             reorderBoard: { boardID, index, deskID, overview in
                 if overview {
-                    guard
-                        let deskIndex = controller.storage.data.snapshot.den.desks.firstIndex(where: { $0.id == deskID }
-                        )
-                    else { return }
-                    controller.reorderBoardGroup(containing: boardID, to: index, in: DeskIndex(rawValue: deskIndex))
+                    session.resources.boardMovement.reorder(boardID, to: index, in: deskID)
                 } else {
-                    controller.focusBoard(boardID)
-                    controller.previewBoardMove(boardID, to: index)
+                    session.boardNavigation.focusBoard(boardID)
+                    session.resources.boardMovement.preview(
+                        boardID, to: index, in: session.navigation.presentedDeskID)
                 }
-                controller.save()
-            }, toggleAnchor: { controller.toggleAnchorBoard($0, in: $1) },
+                session.resources.save()
+            }, toggleAnchor: { session.boardNavigation.toggleAnchorBoard($0, in: $1) },
             favicon: { id in
-                if let runtime = controller.webRuntimes[id] {
+                if let runtime = session.resources.webRuntimes[id] {
                     ObservedBoardRailFavicon(runtime: runtime)
                 } else {
                     DenViews.BoardRailFavicon(url: nil)

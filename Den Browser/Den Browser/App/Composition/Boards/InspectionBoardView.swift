@@ -1,10 +1,11 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
 import SwiftUI
 
 struct InspectionBoardView: View {
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     let board: BoardState
     let isFocused: Bool
     let focusRequest: BoardFocusRequest?
@@ -20,7 +21,7 @@ struct InspectionBoardView: View {
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
     var body: some View {
-        if let runtime = controller.webRuntimes[targetBoardID] {
+        if let runtime = session.resources.webRuntimes[targetBoardID] {
             ObservedInspectionBoard(
                 runtime: runtime, content: { generation in display(generation: generation, runtime: runtime) }
             )
@@ -32,9 +33,9 @@ struct InspectionBoardView: View {
 
     private func display(generation: Int, runtime: WebRuntime?) -> some View {
         DenViews.InspectionBoardView(
-            model: InspectionBoardModel(controller: controller, targetBoardID: targetBoardID, runtime: runtime),
-            surfaceModel: controller.boardSurfaceModel(for: board), runtimeGeneration: generation,
-            focusTarget: { controller.focusBoard(targetBoardID, exitsDenMode: true) },
+            model: InspectionBoardModel(session: session, targetBoardID: targetBoardID, runtime: runtime),
+            surfaceModel: BoardSurfaceModel(board: board, session: session), runtimeGeneration: generation,
+            focusTarget: { session.boardNavigation.focusBoard(targetBoardID, exitsDenMode: true) },
             board: board,
             isFocused: isFocused,
             focusRequest: focusRequest,
@@ -59,10 +60,10 @@ private struct ObservedInspectionBoard<Content: View>: View {
 }
 
 extension InspectionBoardModel {
-    convenience init(controller: DenController, targetBoardID: BoardID, runtime: WebRuntime?) {
+    convenience init(session: ProfileWindowSession, targetBoardID: BoardID, runtime: WebRuntime?) {
         self.init(
             runtimeID: runtime?.id,
-            targetBoard: { [weak controller] in controller?.board(for: targetBoardID) },
+            targetBoard: { [weak session] in session?.resources.state.board(for: targetBoardID) },
             pageGeneration: { [weak runtime] in runtime?.inspectionPageGeneration ?? 0 },
             hasPage: { [weak runtime] in runtime?.webView.url != nil },
             isActive: { [weak runtime] in runtime?.isInspectionActive ?? false },

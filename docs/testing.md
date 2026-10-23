@@ -20,7 +20,7 @@ for a Terminal Board).
 
 For this boundary, a UI test qualifies only when it sends input after a pointer click, Den Mode
 toggle, Desk switch, or Overview confirmation and observes a target-specific result. Board selection,
-`DenController` focus state, window titles, and routing decisions do not by themselves justify a UI test.
+window navigation state, window titles, and routing decisions do not by themselves justify a UI test.
 Unit tests cover the focus state machine; UI tests cover actual input delivery through the mounted
 native surface.
 
@@ -42,7 +42,7 @@ Unit tests must never read or write shared user defaults (`UserDefaults.standard
 Test files under `Den Browser/Den BrowserTests` are grouped by the responsibility they verify,
 such as `Den`, `Desk`, `Board`, `Drawer`, `Profiles`, `Web`, `IPC`, and `CLI`. Board-kind-specific
 tests belong under `Board/Web`, `Board/Terminal`, or `Board/Inspection`. Class names do not determine
-placement: for example, `DenControllerBoardTests` belongs under `Board` because it protects Board operations.
+placement: for example, `NativeBoardTests` belongs under `Board` because it protects Board operations.
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
@@ -51,7 +51,7 @@ Application package. Keep WebRuntime identity, Peek release, download/navigation
 window presentation repair and IPC routing in the App integration suite.
 
 Test EssentialEditing quick-save/confirmation revalidation, InputOpening routing, BoardUpdates,
-TutorialProgress and pure link formatting independently of Controller. FeedbackModel tests protect
+TutorialProgress and pure link formatting independently of native adapters. FeedbackModel tests protect
 window-local feedback state; App integration tests retain zmx client/window cancellation, native
 Screenshot output cancellation and the existing launch/confirmation/clipboard contracts.
 
@@ -67,7 +67,7 @@ App tests retain Native cleanup, reference invalidation and window presentation 
 Desk lifecycle, Desk movement, reset ordering and existing Preset calculations also run in the
 independent Application target; confirmation, Profile-window assignment and Native Facing remain
 in their existing App integration suites.
-Test migrated notification operations directly through `NotificationOperations`; test remaining application operations and persistence through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
+Test migrated notification operations directly through `NotificationOperations`; test shared operations directly, and native adapters and Profile persistence at their own boundaries; test the shared-state source directly through `DenStateStore` and its write capability. Native integration tests explicitly assemble Profile resources, native configuration and the adapters under test; broad window-construction helpers do not hide these dependencies. Test window presentation
 transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
 by its observable result rather than the Task object used to produce it. Presentation suites use Model names; moving UI state does not require routing unrelated

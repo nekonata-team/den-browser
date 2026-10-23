@@ -1052,11 +1052,7 @@ final class DenIPCService {
         if let dir = payload.path {
             switch BoardInputResolver.validateTerminalWorkingDirectory(
                 dir,
-                directoryExists: { path in
-                    var isDirectory: ObjCBool = false
-                    return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
-                        && isDirectory.boolValue
-                })
+                directoryExists: TerminalWorkingDirectory.exists)
             {
             case .success(let path):
                 resolvedDir = path

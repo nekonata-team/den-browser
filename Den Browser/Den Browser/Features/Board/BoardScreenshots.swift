@@ -1,6 +1,8 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
+import Foundation
 
 private enum FocusedScreenshotTarget {
     case web(WebRuntime)
@@ -23,7 +25,16 @@ private enum FocusedScreenshotTarget {
     }
 }
 
-extension DenController {
+@MainActor
+final class BoardScreenshots {
+    private let context: WindowNativeContext
+    private var runtimes: BoardRuntimeAccess { context.runtimes }
+    private var focusedBoard: BoardState? { context.focusedBoard }
+
+    init(context: WindowNativeContext) {
+        self.context = context
+    }
+
     func captureFocusedSheetScreenshot() {
         guard let target = focusedScreenshotTarget() else { return }
         performSheetScreenshot(
@@ -40,35 +51,35 @@ extension DenController {
         capture: @escaping @MainActor () async throws -> NSImage,
         destination: ScreenshotOutput.Destination
     ) {
-        startScreenshotOperation { [weak self] in
+        context.windowResources.startScreenshotOperation { [weak self] in
             guard let self else { return }
             do {
                 guard
                     let message = try await ScreenshotOutput.captureAndOutput(
                         capture: capture, destination: destination)
                 else { return }
-                reportFeedback(message, severity: .success)
+                context.feedback.publish(message, severity: .success)
             } catch is CancellationError {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                reportFeedback("Screenshot failed: \(error.localizedDescription)", severity: .error)
+                context.feedback.publish("Screenshot failed: \(error.localizedDescription)", severity: .error)
             }
         }
     }
 
     private func focusedScreenshotTarget() -> FocusedScreenshotTarget? {
         guard let board = focusedBoard else {
-            reportFeedback("No focused Board.", severity: .warning)
+            context.feedback.publish("No focused Board.", severity: .warning)
             return nil
         }
         if board.isWeb {
-            return .web(webRuntime(for: board))
+            return .web(runtimes.webRuntime(for: board))
         }
         if board.isTerminal {
-            return .terminal(terminalRuntime(for: board))
+            return .terminal(runtimes.terminalRuntime(for: board))
         }
-        reportFeedback("Focused Board cannot be captured.", severity: .warning)
+        context.feedback.publish("Focused Board cannot be captured.", severity: .warning)
         return nil
     }
 }

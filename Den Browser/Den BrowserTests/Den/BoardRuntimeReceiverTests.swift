@@ -11,20 +11,23 @@ struct BoardRuntimeReceiverTests {
         // Arrange
         let board = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let runtime = controller.terminalRuntime(for: board)
-        weak let receiver = controller.storage.boardRuntimes.receivers[board.id]
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let runtime = session.runtimes.terminalRuntime(for: board)
+        weak let receiver = session.resources.boardRuntimes.receivers[board.id]
 
         // Act
-        controller.removeBoard(board.id)
+        session.boardRemoval.removeBoard(board.id)
         runtime.terminalDidChangeTitle("Late title")
         runtime.terminalDidRequestDesktopNotification(title: "Late notification", body: "Ignored")
 
         // Assert
         #expect(receiver == nil)
-        #expect(controller.storage.boardRuntimes.receivers.isEmpty)
-        #expect(controller.storage.notifications.isEmpty)
-        #expect(controller.focusedDesk?.boards.isEmpty == true)
+        #expect(session.resources.boardRuntimes.receivers.isEmpty)
+        #expect(session.resources.notifications.isEmpty)
+        #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
     }
 
     @Test func backgroundRuntimeExitAfterWindowDisconnectRemovesBoardWithoutChangingOtherWindowFocus() {
@@ -33,9 +36,12 @@ struct BoardRuntimeReceiverTests {
         let remaining = BoardState(label: "Remaining", width: 520, workingDirectory: "/tmp")
         let backgroundDesk = DeskState(label: "Background", boards: [terminal], focusedBoardID: terminal.id)
         let presentedDesk = DeskState(label: "Presented", boards: [remaining], focusedBoardID: remaining.id)
-        let controller = DenController(
-            state: DenState(desks: [backgroundDesk, presentedDesk], focusedDeskID: presentedDesk.id))
-        let receiver = BoardRuntimeReceiver(storage: controller.storage, boardID: terminal.id)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [backgroundDesk, presentedDesk], focusedDeskID: presentedDesk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let receiver = BoardRuntimeReceiver(storage: session.resources, boardID: terminal.id)
         let disconnected = RuntimeWindowConnection()
         let events = receiver.terminalEvents(for: terminal, connection: disconnected)
 
@@ -43,28 +49,30 @@ struct BoardRuntimeReceiverTests {
         events.onClose()
 
         // Assert
-        #expect(controller.state.desks[0].boards.isEmpty)
-        #expect(controller.presentedDeskID == presentedDesk.id)
-        #expect(controller.focusedDesk?.focusedBoardID == remaining.id)
-        #expect(controller.storage.recentlyRemovedBoards.first?.board.id == terminal.id)
+        #expect(session.resources.state.desks[0].boards.isEmpty)
+        #expect(session.navigation.presentedDeskID == presentedDesk.id)
+        #expect(session.navigation.focusedDesk?.focusedBoardID == remaining.id)
+        #expect(session.resources.recentlyRemovedBoards.first?.board.id == terminal.id)
     }
     @Test func denResetKeepsTheOpenWindowConnectedToNewRuntimeEvents() {
         // Arrange
-        let controller = DenController()
-        controller.resetDen()
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.reset.resetDen()
         let board = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        controller.storage.state = DenState(desks: [desk], focusedDeskID: desk.id)
-        controller.focusDesk(desk.id)
-        let runtime = controller.terminalRuntime(for: board)
+        session.resources.state = DenState(desks: [desk], focusedDeskID: desk.id)
+        session.boardNavigation.focusDesk(desk.id)
+        let runtime = session.runtimes.terminalRuntime(for: board)
         var focused: [BoardID] = []
-        controller.onWindowEffect = { if case .runtimeFocusedBoard(let id) = $0 { focused.append(id) } }
+        session.connection.onWindowEffect = { if case .runtimeFocusedBoard(let id) = $0 { focused.append(id) } }
 
         // Act
         runtime.terminalDidChangeFocus(true)
 
         // Assert
         #expect(focused == [board.id])
-        #expect(controller.runtimeConnection.controller === controller)
+        #expect(session.connection.runtimes === session.runtimes)
     }
 }

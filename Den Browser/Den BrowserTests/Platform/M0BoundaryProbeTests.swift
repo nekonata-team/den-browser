@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -13,8 +14,10 @@ import WebKit
 struct M0BoundaryProbeTests {
     @Test func appConstructsNotificationViewWithTheWindowModel() {
         // Arrange
-        let controller = DenController(state: .sample)
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
 
         // Act
         let view = NotificationListView(profileColor: .blue).environment(composition.model.notificationList)
@@ -27,9 +30,12 @@ struct M0BoundaryProbeTests {
         // Arrange
         let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let runtime = controller.webRuntime(for: board)
-        defer { controller.releaseRuntimes() }
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let runtime = session.runtimes.webRuntime(for: board)
+        defer { session.runtimes.releaseRuntimes() }
         let window = TestWindow()
         defer { window.contentView = nil }
 
@@ -47,7 +53,7 @@ struct M0BoundaryProbeTests {
 
         // Assert
         #expect(runtime.webView.window === window)
-        #expect(controller.webRuntime(for: board) === runtime)
+        #expect(session.runtimes.webRuntime(for: board) === runtime)
         #expect(runtime.webView.title == "Boundary")
         let text = try await runtime.webView.evaluateJavaScript("document.body.textContent") as? String
         #expect(text == "Native Web surface")

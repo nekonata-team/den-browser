@@ -1,5 +1,7 @@
 import AppKit
+import DenApplication
 import DenDomain
+import DenPresentationModels
 import WebKit
 
 @MainActor
@@ -43,10 +45,11 @@ final class ProfileExtensionCoordinator {
         return host
     }
 
-    func setEnabled(_ enabled: Bool, controllers: [(windowID: UUID, profileID: ProfileID?, controller: DenController)])
-    {
+    func setEnabled(
+        _ enabled: Bool, sessions: [(windowID: UUID, profileID: ProfileID?, session: ProfileWindowSession)]
+    ) {
         preferences.setUBOLiteEnabled(enabled)
-        updateControllers(controllers)
+        updateSessions(sessions)
         if !enabled { disposeAllHosts() }
     }
 
@@ -82,12 +85,13 @@ final class ProfileExtensionCoordinator {
         hosts.removeValue(forKey: profileID)?.dispose()
     }
 
-    func updateUBOLite(controllers: [(windowID: UUID, profileID: ProfileID?, controller: DenController)]) async -> Bool
+    func updateUBOLite(sessions: [(windowID: UUID, profileID: ProfileID?, session: ProfileWindowSession)]) async
+        -> Bool
     {
         let success = await installer.install()
         guard success, preferences.uBOLiteEnabled else { return success }
         disposeAllHosts()
-        updateControllers(controllers)
+        updateSessions(sessions)
         return true
     }
 
@@ -96,16 +100,17 @@ final class ProfileExtensionCoordinator {
         return installer.descriptor.map { [$0] } ?? []
     }
 
-    private func updateControllers(_ controllers: [(windowID: UUID, profileID: ProfileID?, controller: DenController)])
-    {
-        for (windowID, profileID, controller) in controllers {
+    private func updateSessions(
+        _ sessions: [(windowID: UUID, profileID: ProfileID?, session: ProfileWindowSession)]
+    ) {
+        for (windowID, profileID, session) in sessions {
             let host: MV3WebExtensionHost?
-            if controller.hasWebExtensionDemand, let profileID {
-                host = self.host(for: profileID, websiteDataStore: controller.websiteDataStore)
+            if session.runtimes.hasWebExtensionDemand, let profileID {
+                host = self.host(for: profileID, websiteDataStore: session.configuration.websiteDataStore)
             } else {
                 host = nil
             }
-            controller.updateWebExtensionHost(host, window: host?.window(for: windowID))
+            session.runtimes.updateWebExtensionHost(host, window: host?.window(for: windowID))
         }
     }
 

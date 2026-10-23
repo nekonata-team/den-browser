@@ -2,9 +2,9 @@ import AppKit
 import Darwin
 import DenApplication
 import DenDomain
-import DenPresentationModels
 import DenViews
 import Foundation
+import Observation
 import WebKit
 
 private struct TerminalSignalError: LocalizedError {
@@ -12,7 +12,73 @@ private struct TerminalSignalError: LocalizedError {
     var errorDescription: String? { message }
 }
 
-extension DenController {
+@MainActor
+struct BoardRuntimeConfiguration {
+    let websiteDataStore: WKWebsiteDataStore
+    let sheetNavigation: SheetNavigationManager
+    let preferences: AppPreferences
+    let profileID: ProfileID?
+    let ipcSocketPath: String
+    let terminalCommandRunner: any TerminalCommandRunning
+    let requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)?
+}
+
+@MainActor
+@Observable
+final class BoardRuntimeAccess {
+    private let storage: DenProfileResources
+    private let windowResources: DenWindowResources
+    let runtimeConnection: RuntimeWindowConnection
+    private let configuration: BoardRuntimeConfiguration
+    private let readFocusedDesk: () -> DeskState?
+    private(set) var webExtensionHost: WebExtensionHost?
+    private(set) var webExtensionWindow: MV3WebExtensionWindow?
+
+    init(
+        storage: DenProfileResources, windowResources: DenWindowResources,
+        connection: RuntimeWindowConnection, configuration: BoardRuntimeConfiguration,
+        webExtensionHost: WebExtensionHost? = nil, webExtensionWindow: MV3WebExtensionWindow? = nil,
+        focusedDesk: @escaping () -> DeskState?
+    ) {
+        self.storage = storage
+        self.windowResources = windowResources
+        runtimeConnection = connection
+        self.configuration = configuration
+        readFocusedDesk = focusedDesk
+        self.webExtensionHost = webExtensionHost
+        self.webExtensionWindow = webExtensionWindow
+    }
+
+    private var preferences: AppPreferences { configuration.preferences }
+    private var websiteDataStore: WKWebsiteDataStore { configuration.websiteDataStore }
+    private var sheetNavigation: SheetNavigationManager { configuration.sheetNavigation }
+    private var profileID: ProfileID? { configuration.profileID }
+    private var ipcSocketPath: String { configuration.ipcSocketPath }
+    private var requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)? {
+        configuration.requestWebExtensionContext
+    }
+    private var focusedDesk: DeskState? { readFocusedDesk() }
+    private var focusedBoard: BoardState? {
+        guard let desk = focusedDesk else { return nil }
+        return desk.boards.first { $0.id == desk.focusedBoardID }
+    }
+    private var zellijClient: ZellijClient { ZellijClient(executablePath: preferences.zellijPath) }
+    private var zmxClient: ZmxClient {
+        ZmxClient(executablePath: preferences.zmxPath, commandRunner: configuration.terminalCommandRunner)
+    }
+    private var webRuntimes: [BoardID: WebRuntime] {
+        get { storage.webRuntimes }
+        set { storage.webRuntimes = newValue }
+    }
+    private var terminalRuntimes: [BoardID: TerminalRuntime] {
+        get { storage.terminalRuntimes }
+        set { storage.terminalRuntimes = newValue }
+    }
+    private var drawerPeekRuntime: WebRuntime? {
+        get { windowResources.drawerPeek }
+        set { windowResources.drawerPeek = newValue }
+    }
+
     func runtimeReceiver(for board: BoardState) -> BoardRuntimeReceiver {
         if let receiver = storage.boardRuntimes.receivers[board.id] { return receiver }
         let receiver = BoardRuntimeReceiver(storage: storage, boardID: board.id)
@@ -105,28 +171,6 @@ extension DenController {
         }
     }
 
-    func handleTerminalURL(_ rawURL: String, boardID: BoardID) {
-        guard
-            let board = board(for: boardID),
-            let link = TerminalLinkResolver.resolve(
-                rawURL,
-                relativeTo: board.terminalWorkingDirectory
-                    ?? FileManager.default.homeDirectoryForCurrentUser.path)
-        else { return }
-
-        switch link {
-        case .localFile(let fileURL):
-            _ = NSWorkspace.shared.open(fileURL)
-        case .web(let resolvedURL):
-            _ = createBoard(
-                urlString: resolvedURL.absoluteString,
-                preferredWidth: board.width,
-                afterBoardID: board.id,
-                focus: true,
-                recentItem: .url(resolvedURL))
-        }
-    }
-
     func applySheetScale(_ scale: Int) {
         for runtime in webRuntimes.values {
             runtime.webView.magnification = 1
@@ -179,7 +223,7 @@ extension DenController {
     }
 
     func releaseWindowResources() {
-        cancelWindowOperationTasks()
+        windowResources.cancelTasks()
         releaseDrawerPeek()
     }
 
@@ -226,5 +270,35 @@ extension DenController {
         }
         let err = String(cString: strerror(errno))
         throw TerminalSignalError(message: "Failed to send signal \(signal) to process \(pid): \(err)")
+    }
+
+    func updateWebExtensionHost(
+        _ host: WebExtensionHost?,
+        window: MV3WebExtensionWindow?
+    ) {
+        guard webExtensionHost !== host || webExtensionWindow !== window else { return }
+        releaseWebRuntimes()
+        releaseDrawerPeek()
+        webExtensionHost = host
+        webExtensionWindow = window
+    }
+
+    var hasWebExtensionDemand: Bool {
+        !webRuntimes.isEmpty || drawerPeekRuntime != nil
+    }
+
+    func ensureWebExtensionContext() {
+        guard webExtensionHost == nil, let (host, window) = requestWebExtensionContext?() else { return }
+        webExtensionHost = host
+        webExtensionWindow = window
+    }
+
+    func releaseDrawerPeek() {
+        guard let runtime = drawerPeekRuntime else { return }
+        runtime.dispose()
+        drawerPeekRuntime = nil
+        if let focusedBoardID = focusedBoard?.id, let focusedWebRuntime = webRuntimes[focusedBoardID] {
+            webExtensionHost?.activate(webView: focusedWebRuntime.webView)
+        }
     }
 }

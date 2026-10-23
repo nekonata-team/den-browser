@@ -5,30 +5,30 @@ import Foundation
 
 @MainActor
 final class DenWindowComposition {
-    let controller: DenController
+    let session: ProfileWindowSession
     let model: DenWindowModel
 
-    init(controller: DenController, feedbackDuration: Duration = .seconds(5)) {
-        self.controller = controller
-        let state = controller.storage.data
-        let navigation = controller.navigation
-        let preferences = controller.preferences
+    init(session: ProfileWindowSession, feedbackDuration: Duration = .seconds(5)) {
+        self.session = session
+        let state = session.resources.data
+        let navigation = session.navigation
+        let preferences = session.configuration.preferences
         let boardEditing = BoardEditingModel(
-            state: controller.storage.data, updates: controller.storage.boardUpdates,
-            recents: controller.storage.recents, movement: controller.storage.boardMovement,
+            state: session.resources.data, updates: session.resources.boardUpdates,
+            recents: session.resources.recents, movement: session.resources.boardMovement,
             focusedBoard: { navigation.focusedBoard }, essentials: { preferences.essentials },
-            searchEngine: { controller.preferences.searchEngine },
+            searchEngine: { session.configuration.preferences.searchEngine },
             finishEditing: {
-                controller.onWindowEffect?(.dismissTemporaryPresentation)
-                controller.onWindowEffect?(.exitDenMode)
+                session.connection.onWindowEffect?(.dismissTemporaryPresentation)
+                session.connection.onWindowEffect?(.exitDenMode)
             },
-            loadURL: { controller.webRuntimes[$0]?.load($1) },
-            restoreInput: { controller.restoreFocusedFirstResponder() },
-            duplicateZmx: { controller.duplicateFocusedZmxBoard(suffix: $0) },
-            focus: { controller.focusBoard($0) }, center: { controller.centerFocusedBoard() })
+            loadURL: { session.resources.webRuntimes[$0]?.load($1) },
+            restoreInput: { session.runtimes.restoreFocusedFirstResponder() },
+            duplicateZmx: { session.zmx.duplicateFocusedZmxBoard(suffix: $0) },
+            focus: { session.boardNavigation.focusBoard($0) }, center: { session.boardNavigation.centerFocusedBoard() })
         let overview = OverviewModel(
             desks: { state.snapshot.den.desks },
-            presentedDeskID: { [navigation = controller.navigation] in navigation.presentedDeskID },
+            presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
             focusedDesk: { navigation.focusedDesk },
             activeBoardID: {
                 guard case .board(let id)? = state.snapshot.activeDrag else { return nil }
@@ -37,40 +37,40 @@ final class DenWindowComposition {
             isDragging: { state.snapshot.activeDrag != nil },
             actions: OverviewModel.Actions(
                 removeBoard: {
-                    controller.storage.boardRemoval.remove(
+                    session.resources.boardRemoval.remove(
                         $0, presentedDeskID: navigation.presentedDeskID, focusNext: $1,
-                        notify: controller.boardRemovalNotifications())
+                        notify: session.boardRemoval.boardRemovalNotifications())
                 },
                 restoreBoard: {
-                    let result = controller.storage.boardRemoval.restore(
+                    let result = session.resources.boardRemoval.restore(
                         presentedDeskID: navigation.presentedDeskID, present: false,
-                        notify: controller.boardRemovalNotifications())
-                    return controller.handleBoardRestorationResult(result, present: false)
+                        notify: session.boardRemoval.boardRemovalNotifications())
+                    return session.boardRemoval.handleBoardRestorationResult(result, present: false)
                 },
-                enterSelection: { controller.enterOverviewSelection(deskID: $0, boardID: $1) },
-                beginDrag: { controller.storage.boardMovement.beginOverviewDrag($0) },
-                finishDrag: { controller.storage.boardMovement.finishOverviewDrag($0, to: $1, at: $2) },
-                cancelDrag: { controller.storage.boardMovement.cancelOverviewDrag() },
-                moveBoard: { controller.storage.boardMovement.shiftInOverview($0, by: $1) },
-                moveBoardToDesk: { controller.storage.boardMovement.transferInOverview($0, by: $1) }))
+                enterSelection: { session.boardNavigation.enterOverviewSelection(deskID: $0, boardID: $1) },
+                beginDrag: { session.resources.boardMovement.beginOverviewDrag($0) },
+                finishDrag: { session.resources.boardMovement.finishOverviewDrag($0, to: $1, at: $2) },
+                cancelDrag: { session.resources.boardMovement.cancelOverviewDrag() },
+                moveBoard: { session.resources.boardMovement.shiftInOverview($0, by: $1) },
+                moveBoardToDesk: { session.resources.boardMovement.transferInOverview($0, by: $1) }))
         let drawer = DrawerModel(
             items: { state.snapshot.den.drawerItems },
-            isBottomStyle: { controller.preferences.drawerStyle == .bottom },
-            releasePeek: { controller.releaseDrawerPeek() },
+            isBottomStyle: { session.configuration.preferences.drawerStyle == .bottom },
+            releasePeek: { session.runtimes.releaseDrawerPeek() },
             discardItem: { itemID, focusNext in
-                controller.storage.drawerItems.discard(
-                    itemID, focusNext: focusNext, notify: controller.drawerItemNotifications())
+                session.resources.drawerItems.discard(
+                    itemID, focusNext: focusNext, notify: session.drawer.drawerItemNotifications())
             },
-            toggleStyle: { controller.preferences.toggleDrawerStyle() },
-            requestClearConfirmation: { controller.requestDrawerClearConfirmation() })
+            toggleStyle: { session.configuration.preferences.toggleDrawerStyle() },
+            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() })
         let zmxSessions = ZmxSessionsModel {
-            let client = controller.zmxClient
+            let client = session.context.zmxClient
             return ZmxSessionsModel.Operations(
                 load: { try await client.sessionSnapshot() },
                 kill: { try await client.killSession($0) })
         }
         let openBoard = OpenBoardModel(
-            creation: controller.storage.boardCreation,
+            creation: session.resources.boardCreation,
             openingRequest: { input, width, afterBoardID in
                 let rootSessionName: String?
                 if case .session(let sessionName)? = BoardInputResolver.resolveZmxInput(input) {
@@ -78,69 +78,83 @@ final class DenWindowComposition {
                 } else {
                     rootSessionName = nil
                 }
-                return controller.boardOpeningRequest(
+                return session.boardOpening.boardOpeningRequest(
                     input: input, preferredWidth: width, afterBoardID: afterBoardID,
                     zmxRootSessionName: rootSessionName)
             },
-            notify: controller.boardCreationNotifications(returnsToOpenBoard: true),
-            openInDrawer: { controller.openInDrawer(input: $0) })
+            notify: session.boardOpening.boardCreationNotifications(returnsToOpenBoard: true),
+            openInDrawer: { session.input.openInDrawer(input: $0) })
         let deskFilter = DeskFilterModel(
             focusedDesk: { navigation.focusedDesk },
-            focusBoard: { controller.focusBoard($0, exitsDenMode: true) })
+            focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: true) })
         let notificationList = NotificationListModel(
-            state: controller.storage.data,
-            operations: controller.storage.notificationOperations,
-            openSource: controller.openNotificationSource)
+            state: session.resources.data,
+            operations: session.resources.notificationOperations,
+            openSource: session.notifications.openNotificationSource)
         let desks = DeskListModel(
-            state: controller.storage.data, lifecycle: controller.storage.deskLifecycle,
-            movement: controller.storage.deskMovement, updates: controller.storage.deskUpdates,
-            navigation: controller.navigation,
-            isAvailable: { controller.canPresentDesk?($0) ?? true }, select: { controller.focusDesk($0) },
-            notify: controller.deskLifecycleNotifications(),
+            state: session.resources.data, lifecycle: session.resources.deskLifecycle,
+            movement: session.resources.deskMovement, updates: session.resources.deskUpdates,
+            navigation: session.navigation,
+            isAvailable: { session.context.canPresentDesk?($0) ?? true },
+            select: { session.boardNavigation.focusDesk($0) },
+            notify: session.desks.deskLifecycleNotifications(),
             didDuplicate: { source, copy in
                 for (original, duplicate) in zip(source.boards.filter { !$0.isTutorial }, copy.boards) {
-                    if let image = controller.facingCache.image(for: original.id) {
-                        controller.facingCache.setFacing(image, for: duplicate.id, at: nil)
+                    if let image = session.resources.facingCache.image(for: original.id) {
+                        session.resources.facingCache.setFacing(image, for: duplicate.id, at: nil)
                     }
                 }
             },
-            requestDeletion: { controller.onWindowEffect?(.requestConfirmation(.deleteDesk($0))) },
-            warn: { controller.reportFeedback($0, severity: .warning) },
+            requestDeletion: { session.connection.onWindowEffect?(.requestConfirmation(.deleteDesk($0))) },
+            warn: { session.context.feedback.publish($0, severity: .warning) },
             finishEditing: {
-                controller.onWindowEffect?(.dismissTemporaryPresentation)
-                controller.onWindowEffect?(.exitDenMode)
+                session.connection.onWindowEffect?(.dismissTemporaryPresentation)
+                session.connection.onWindowEffect?(.exitDenMode)
             },
-            copyID: { controller.copyDeskID($0) }, exportLinks: { controller.exportDeskLinks(for: $0) },
-            copyLinks: { controller.copyDeskLinks(for: $0) },
+            copyID: { session.desks.copyDeskID($0) }, exportLinks: { session.deskLinks.exportDeskLinks(for: $0) },
+            copyLinks: { session.deskLinks.copyDeskLinks(for: $0) },
             create: { label, selection in
                 switch selection {
-                case .builtIn(let preset): controller.createDesk(label: label, preset: preset)
-                case .personal(let id): controller.createDesk(label: label, personalPresetID: id)
-                case .newDesk: controller.createDesk(label: label, preset: .empty)
+                case .builtIn(let preset): session.desks.createDesk(label: label, preset: preset)
+                case .personal(let id): session.desks.createDesk(label: label, personalPresetID: id)
+                case .newDesk: session.desks.createDesk(label: label, preset: .empty)
                 }
             },
             replace: { label, selection in
                 switch selection {
-                case .builtIn(let preset): controller.replaceFocusedDesk(label: label, preset: preset)
-                case .personal(let id): controller.replaceFocusedDesk(label: label, personalPresetID: id)
+                case .builtIn(let preset): session.desks.replaceFocusedDesk(label: label, preset: preset)
+                case .personal(let id): session.desks.replaceFocusedDesk(label: label, personalPresetID: id)
                 case .newDesk: .unavailable
                 }
             })
         let model = DenWindowModel(
             boardEditing: boardEditing,
-            desks: desks, downloads: controller.downloads,
+            desks: desks, downloads: session.downloads,
             overview: overview,
             drawer: drawer,
             openBoard: openBoard,
             deskFilter: deskFilter,
             notificationList: notificationList,
             zmxSessions: zmxSessions,
-            onLaunchEssential: { controller.launchEssential(id: $0, preferredWidth: $1, inDrawer: $2) },
-            onSaveEssential: { controller.saveEssential(name: $0, key: $1, input: $2) },
-            onConfirmOperation: { controller.performConfirmedOperation($0) },
+            onLaunchEssential: { session.essentials.launchEssential(id: $0, preferredWidth: $1, inDrawer: $2) },
+            onSaveEssential: { session.essentials.saveEssential(name: $0, key: $1, input: $2) },
+            onConfirmOperation: { request in
+                switch request {
+                case .resetDen: session.reset.resetDen()
+                case .deleteDesk(let desk): session.desks.confirmDeskDeletion(desk.id)
+                case .replaceDesk(let replacement): session.desks.confirmDeskReplacement(replacement)
+                case .deleteDeskPreset(let preset): session.presets.deleteDeskPreset(preset.id)
+                case .replaceDeskPreset(let replacement): return session.presets.replaceDeskPreset(replacement)
+                case .replaceEssential(_, let replacement): return session.essentials.replaceEssential(replacement)
+                case .endZmxSession(let name): session.zmx.endZmxSession(name)
+                case .clearDrawer: session.drawer.clearDrawer()
+                case .clearNotifications: session.notifications.clearNotifications()
+                }
+                return true
+            },
             inputs: DenWindowModel.Inputs(
                 essentials: { preferences.essentials },
-                isBoardRailPresented: { controller.preferences.isBoardRailPresented },
+                isBoardRailPresented: { session.configuration.preferences.isBoardRailPresented },
                 isBoardDragging: {
                     guard case .board? = state.snapshot.activeDrag else { return false }
                     return true
@@ -150,22 +164,22 @@ final class DenWindowComposition {
                     return true
                 }),
             windowActions: DenWindowModel.WindowActions(
-                setBoardRailPresented: { controller.preferences.setBoardRailPresented($0) },
-                openFeedbackTarget: { controller.openFeedbackTarget($0) },
-                reportWarning: { controller.reportFeedback($0, severity: .warning) },
-                didEnterDenMode: { controller.dispatchDenOperationEvent(.denModeEntered) },
-                didShowKeyboardShortcuts: { controller.dispatchDenOperationEvent(.keyboardShortcutsShown) }),
-            boardSizing: controller.storage.boardSizing,
+                setBoardRailPresented: { session.configuration.preferences.setBoardRailPresented($0) },
+                openFeedbackTarget: { session.notifications.openFeedbackTarget($0) },
+                reportWarning: { session.context.feedback.publish($0, severity: .warning) },
+                didEnterDenMode: { session.resources.recordOperation(.denModeEntered) },
+                didShowKeyboardShortcuts: { session.resources.recordOperation(.keyboardShortcutsShown) }),
+            boardSizing: session.resources.boardSizing,
             boardActions: DenWindowModel.BoardActions(
-                placeDrawerItem: { controller.placeDrawerItemAsBoard($0, preferredWidth: $1) },
-                focusBoard: { controller.focusBoard($0, exitsDenMode: $1) },
-                centerFocusedBoard: { controller.centerFocusedBoard() },
-                cancelBoardDrag: { controller.requestBoardDragCancellation() },
-                cancelDeskDrag: { controller.requestDeskDragCancellation() }),
+                placeDrawerItem: { session.drawer.placeDrawerItemAsBoard($0, preferredWidth: $1) },
+                focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: $1) },
+                centerFocusedBoard: { session.boardNavigation.centerFocusedBoard() },
+                cancelBoardDrag: { session.boardNavigation.requestBoardDragCancellation() },
+                cancelDeskDrag: { session.boardNavigation.requestDeskDragCancellation() }),
             zmxActions: DenWindowModel.ZmxActions(
-                canPresentSessions: { controller.canPresentZmxSessions() },
+                canPresentSessions: { session.zmx.canPresentZmxSessions() },
                 openSession: {
-                    controller.openZmxSession(
+                    session.zmx.openZmxSession(
                         $0, preferredWidth: $1,
                         rootSessionName: { zmxSessions.rootSessionName(for: $0) },
                         opensFromOpenBoardPanel: $2)
@@ -178,11 +192,11 @@ final class DenWindowComposition {
                     }
                     return nil
                 },
-                cancelDuplication: { controller.cancelZmxDuplicationRequest() }),
+                cancelDuplication: { session.zmx.cancelZmxDuplicationRequest() }),
             deskPresetActions: DeskPresetActions(
-                save: { controller.saveFocusedDeskAsPreset(label: $0) },
-                rename: { controller.renameDeskPreset($0, to: $1) },
-                requestDeletion: { controller.requestDeskPresetDeletion($0) }),
+                save: { session.presets.saveFocusedDeskAsPreset(label: $0) },
+                rename: { session.presets.renameDeskPreset($0, to: $1) },
+                requestDeletion: { session.presets.requestDeskPresetDeletion($0) }),
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }
@@ -196,14 +210,14 @@ final class DenWindowComposition {
     }
 
     func connect() {
-        controller.onWindowEffect = { [weak model] effect in
+        session.connection.onWindowEffect = { [weak model] effect in
             model?.receive(effect)
         }
-        model.receive(.feedback(controller.feedback.latest))
+        model.receive(.feedback(session.feedback.latest))
     }
 
     func disconnect() {
-        controller.onWindowEffect = nil
+        session.connection.onWindowEffect = nil
         model.endWindowPresentation()
     }
 }

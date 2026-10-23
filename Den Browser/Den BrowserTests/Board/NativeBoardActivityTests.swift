@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -7,18 +8,20 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct DenControllerBoardActivityTests {
+struct NativeBoardActivityTests {
     @Test func enteringBoardFromActivityFocusesItsDeskAndClosesActivity() {
         // Arrange
         let first = BoardState(label: "First", width: 520, currentSheetURL: nil)
         let second = BoardState(label: "Second", width: 520, currentSheetURL: nil)
         let firstDesk = DeskState(label: "First Desk", boards: [first], focusedBoardID: first.id)
         let secondDesk = DeskState(label: "Second Desk", boards: [second], focusedBoardID: second.id)
-        let controller = DenController(
-            state: DenState(
-                desks: [firstDesk, secondDesk],
-                focusedDeskID: firstDesk.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(
+                        desks: [firstDesk, secondDesk],
+                        focusedDeskID: firstDesk.id))), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -29,8 +32,8 @@ struct DenControllerBoardActivityTests {
 
         // Assert
         #expect(!windowModel.isBoardActivityPresented)
-        #expect(controller.focusedDesk?.id == secondDesk.id)
-        #expect(controller.focusedBoard?.id == second.id)
+        #expect(session.navigation.focusedDesk?.id == secondDesk.id)
+        #expect(session.navigation.focusedBoard?.id == second.id)
         #expect(!windowModel.isDenMode)
     }
 }

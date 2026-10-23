@@ -78,10 +78,10 @@ struct InputContext {
     let hasFocusedBoard: Bool
     let focusedBoardIsTerminal: Bool
 
-    init(controller: DenController, windowModel: DenWindowModel, event: NSEvent? = nil) {
+    init(session: ProfileWindowSession, windowModel: DenWindowModel, event: NSEvent? = nil) {
         isFullscreenActive = windowModel.isFullscreenActive
         hasPendingConfirmation = windowModel.hasPendingConfirmation
-        activeDrag = controller.storage.data.snapshot.activeDrag
+        activeDrag = session.resources.data.snapshot.activeDrag
         mode = windowModel.isDenMode ? .den : .sheet
         if windowModel.isNotificationListPresented {
             surface = .notifications
@@ -100,7 +100,7 @@ struct InputContext {
                 case .drawer:
                     .drawer(
                         filterPhase: windowModel.drawer.filterPhase,
-                        peekFirstResponder: Self.isDrawerPeekFirstResponder(event, controller: controller))
+                        peekFirstResponder: Self.isDrawerPeekFirstResponder(event, session: session))
                 case .zmxSessions:
                     .zmxSessions(
                         filterPhase: windowModel.zmxSessions.filterPhase,
@@ -118,9 +118,9 @@ struct InputContext {
         focusedBoardIsTerminal = windowModel.focusedBoard?.isTerminal == true
     }
 
-    private static func isDrawerPeekFirstResponder(_ event: NSEvent?, controller: DenController) -> Bool {
+    private static func isDrawerPeekFirstResponder(_ event: NSEvent?, session: ProfileWindowSession) -> Bool {
         guard
-            let webView = controller.drawerPeekRuntime?.webView,
+            let webView = session.windowResources.drawerPeek?.webView,
             var view = event?.window?.firstResponder as? NSView
         else { return false }
 

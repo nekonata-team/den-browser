@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -6,7 +7,7 @@ import SwiftUI
 struct DenHeader: View {
     let profile: ProfileState
     let windowID: UUID
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
@@ -28,8 +29,8 @@ struct DenHeader: View {
                 openWindow(value: route)
             },
             onNotificationKeyPress: {
-                KeyboardController.handleNotificationKeyPress($0, controller: controller, windowModel: windowModel)
-            }, restoreInput: { controller.restoreFocusedFirstResponder() },
+                KeyboardController.handleNotificationKeyPress($0, session: session, windowModel: windowModel)
+            }, restoreInput: { session.runtimes.restoreFocusedFirstResponder() },
             profileMenu: {
                 ProfileMenu(
                     profile: profile, profiles: profileManager.profiles,

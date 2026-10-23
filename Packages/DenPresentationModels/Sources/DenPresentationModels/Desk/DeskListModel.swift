@@ -67,6 +67,10 @@ public final class DeskListModel {
     public var canCreateDesk: Bool { lifecycle.canCreate }
     public var canDeleteFocusedDesk: Bool { lifecycle.canDelete(presentedDeskID, isAvailable: available) }
     public func canSelectDesk(_ id: DeskID) -> Bool { id == presentedDeskID || available(id) }
+    public var canExportFocusedDeskLinks: Bool {
+        guard let desk = focusedDesk else { return false }
+        return canExportDeskLinks(for: desk.id)
+    }
     public func canExportDeskLinks(for id: DeskID) -> Bool {
         desks.first { $0.id == id }?.boards.contains { $0.currentSheetURL != nil } == true
     }

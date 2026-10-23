@@ -10,7 +10,7 @@ struct DenView<Header: View>: View {
     private let isPrivateDen: Bool
     private let shouldShowHeader: Bool
     private let header: Header
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(AppPreferences.self) private var preferences
 
@@ -30,9 +30,9 @@ struct DenView<Header: View>: View {
             shouldShowHeader: shouldShowHeader, motionPreference: preferences.motionPreference,
             drawerStyle: preferences.drawerStyle, sheetScale: preferences.sheetScale,
             activities: windowModel.downloads.activities,
-            onScaleChange: { controller.applySheetScale($0) },
-            onMotionChange: { controller.sheetNavigation.setReduceMotion($0) },
-            onOpenTutorial: { controller.openTutorialBoard(preferredWidth: $0) },
+            onScaleChange: { session.runtimes.applySheetScale($0) },
+            onMotionChange: { session.configuration.sheetNavigation.setReduceMotion($0) },
+            onOpenTutorial: { session.boardOpening.openTutorialBoard(preferredWidth: $0) },
             header: { header }, rail: { BoardRail(profileColor: profileColor) },
             strip: { size in
                 BoardStrip(
@@ -64,7 +64,7 @@ private struct DenDrawerOverlay: View {
     let profileColor: Color
     let shouldShowHeader: Bool
 
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
@@ -86,9 +86,10 @@ private struct DenDrawerOverlay: View {
                     isDrawerOpen: { windowModel.isDrawerOpen },
                     motionPreference: preferences.motionPreference,
                     peek: { item, isFocused in
-                        DrawerWebSurface(webView: controller.drawerRuntime(for: item).webView, isFocused: isFocused)
+                        DrawerWebSurface(
+                            webView: session.drawer.drawerRuntime(for: item).webView, isFocused: isFocused)
                     },
-                    placeFromContextMenu: { _ = controller.placeDrawerItemAsBoard($0) },
+                    placeFromContextMenu: { _ = session.drawer.placeDrawerItemAsBoard($0) },
                     placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
                 )
                 .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)
@@ -119,7 +120,7 @@ private struct DenActivePanelOverlay: View {
     let shouldShowHeader: Bool
 
     @Environment(\.openSettings) private var openSettings
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(AppPreferences.self) private var preferences
@@ -133,7 +134,7 @@ private struct DenActivePanelOverlay: View {
 
             activePanel(
                 newBoardWidth: DenLayout.newBoardWidth(
-                    in: size, focusedBoardWidth: controller.navigation.focusedBoard?.width),
+                    in: size, focusedBoardWidth: session.navigation.focusedBoard?.width),
                 boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
             )
             .zIndex(DenOverlayLayer.activePanel)
@@ -148,23 +149,23 @@ private struct DenActivePanelOverlay: View {
                 UniversalSearchPanel(
                     profileColor: profileColor,
                     sourceItems: UniversalSearchModel.sourceItems(
-                        state: controller.storage.data.snapshot.den, essentials: preferences.essentials,
-                        hasRemovedBoards: !controller.storage.data.snapshot.recentlyRemovedBoards.isEmpty,
+                        state: session.resources.data.snapshot.den, essentials: preferences.essentials,
+                        hasRemovedBoards: !session.resources.data.snapshot.recentlyRemovedBoards.isEmpty,
                         profiles: profileManager.profiles, profileName: profileName ?? ""),
-                    recentItems: controller.storage.data.snapshot.recentItems,
-                    boards: controller.storage.data.snapshot.den.desks.flatMap(\.boards),
+                    recentItems: session.resources.data.snapshot.recentItems,
+                    boards: session.resources.data.snapshot.den.desks.flatMap(\.boards),
                     perform: { target, inDrawer in
                         UniversalSearchActions.perform(
-                            target, controller: controller, windowModel: windowModel, inDrawer: inDrawer,
+                            target, session: session, windowModel: windowModel, inDrawer: inDrawer,
                             openProfile: { id in
                                 profileManager.profile(id: id) != nil && profileManager.openWindow(for: id)
                             }, openSettings: { openSettings() })
-                    }, restoreInput: { controller.restoreFocusedFirstResponder() }))
+                    }, restoreInput: { session.runtimes.restoreFocusedFirstResponder() }))
         case .essentialsPrefix:
             panelOverlay(
                 EssentialsPrefixPanel(
                     profileColor: profileColor,
-                    essentials: controller.preferences.essentials,
+                    essentials: session.configuration.preferences.essentials,
                     selectedEssentialID: windowModel.selectedEssentialID,
                     onSelect: { windowModel.selectEssential($0) },
                     onOpenInDrawer: { windowModel.launchEssential(id: $0, inDrawer: true) }
@@ -185,7 +186,7 @@ private struct DenActivePanelOverlay: View {
                 DeskPresetManagementPanel(
                     isStandalone: true,
                     profileColor: profileColor,
-                    presets: controller.storage.data.snapshot.deskPresets,
+                    presets: session.resources.data.snapshot.deskPresets,
                     boardHeight: boardHeight,
                     renamePreset: windowModel.deskPresetActions.rename,
                     requestDeletion: windowModel.deskPresetActions.requestDeletion
@@ -198,8 +199,8 @@ private struct DenActivePanelOverlay: View {
         case .saveDeskPreset:
             panelOverlay(
                 SaveDeskPresetPanel(
-                    initialLabel: controller.navigation.focusedDesk?.label ?? "",
-                    previewBoards: DeskPresetBoard.capture(from: controller.navigation.focusedDesk?.boards ?? []),
+                    initialLabel: session.navigation.focusedDesk?.label ?? "",
+                    previewBoards: DeskPresetBoard.capture(from: session.navigation.focusedDesk?.boards ?? []),
                     boardHeight: boardHeight,
                     savePreset: windowModel.deskPresetActions.save,
                     onClose: { windowModel.hideSaveDeskPresetPanel() }
@@ -251,20 +252,20 @@ private struct DenActivePanelOverlay: View {
         switch windowModel.temporaryContext {
         case .universalSearch:
             windowModel.hideUniversalSearch()
-            controller.restoreFocusedFirstResponder()
+            session.runtimes.restoreFocusedFirstResponder()
         case .essentialsPrefix:
             windowModel.exitEssentialsPrefix()
         case .openBoard:
             windowModel.hideOpenBoardPanel()
-            controller.restoreFocusedFirstResponder()
+            session.runtimes.restoreFocusedFirstResponder()
         case .zmxSessions:
             windowModel.hideZmxSessions()
         case .zmxDuplication:
             windowModel.hideZmxDuplicationPanel()
-            controller.restoreFocusedFirstResponder()
+            session.runtimes.restoreFocusedFirstResponder()
         case .editBoardLink:
             windowModel.hideEditBoardLinkPanel()
-            controller.restoreFocusedFirstResponder()
+            session.runtimes.restoreFocusedFirstResponder()
         case .newDesk, .replaceDesk:
             windowModel.hideNewDeskPanel()
         case .deskPresetManagement:

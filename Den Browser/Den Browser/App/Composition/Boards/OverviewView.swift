@@ -1,18 +1,20 @@
+import DenApplication
 import DenDomain
+import DenPresentationModels
 import DenViews
 import SwiftUI
 
 struct OverviewView: View {
     let profileColor: Color
     let boardHeight: CGFloat
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     @Environment(AppPreferences.self) private var preferences
 
     var body: some View {
         DenViews.OverviewView(
             profileColor: profileColor, boardHeight: boardHeight,
             motionPreference: preferences.motionPreference,
-            facing: { controller.facingCache.image(for: $0) },
-            loadFacing: { await controller.facingCache.loadFacing(for: $0) })
+            facing: { session.resources.facingCache.image(for: $0) },
+            loadFacing: { await session.resources.facingCache.loadFacing(for: $0) })
     }
 }

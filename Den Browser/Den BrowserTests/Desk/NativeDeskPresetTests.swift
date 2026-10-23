@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -8,7 +9,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct DenControllerDeskPresetTests {
+struct NativeDeskPresetTests {
     @Test func selectionNavigationWrapsAndStartsAtTheDirectionalEdge() {
         let values = ["first", "middle", "last"]
 
@@ -126,20 +127,23 @@ struct DenControllerDeskPresetTests {
         let inspection = BoardState(width: 360, targetBoardID: first.id)
         let second = board("Notes", width: 760, url: "")
         let source = desk("Morning", boards: [first, inspection, second], focusedBoardID: inspection.id)
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
         // Act
-        let saveResult = controller.saveFocusedDeskAsPreset(label: "  Morning  ")
+        let saveResult = session.presets.saveFocusedDeskAsPreset(label: "  Morning  ")
 
         // Assert - preset captured
         #expect(saveResult == .created)
         #expect(!windowModel.isDenMode)
-        let preset = try #require(controller.deskPresets.first)
+        let preset = try #require(session.resources.deskPresets.first)
         #expect(preset.label == "Morning")
         #expect(preset.boards.map(\.label) == ["Mail", "Inspection Board", "Notes"])
         #expect(preset.boards.map(\.width) == [420, 360, 760])
@@ -152,10 +156,10 @@ struct DenControllerDeskPresetTests {
         #expect(preset.focusedBoardIndex?.rawValue == 1)
 
         // Act - instantiate new desk from preset
-        controller.createDesk(label: "Copy", personalPresetID: preset.id)
+        session.desks.createDesk(label: "Copy", personalPresetID: preset.id)
 
         // Assert - independent desk created
-        let copy = try #require(controller.focusedDesk)
+        let copy = try #require(session.navigation.focusedDesk)
         #expect(Set(copy.boards.map(\.id)).isDisjoint(with: source.boards.map(\.id)))
         #expect(copy.boards.map(\.label) == source.boards.map(\.label))
         #expect(copy.boards.map(\.firstSheetURL) == preset.boards.map(\.initialSheetURL))
@@ -173,21 +177,22 @@ struct DenControllerDeskPresetTests {
         let preset = PersonalDeskPreset(label: "Research", desk: presetSource)
         let oldBoard = board("Old")
         let oldDesk = desk("Old Desk", boards: [oldBoard], focusedBoardID: oldBoard.id)
-        let controller = DenController(
-            state: DenState(desks: [oldDesk], focusedDeskID: oldDesk.id),
-            deskPresets: [preset])
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [oldDesk], focusedDeskID: oldDesk.id)),
+                deskPresets: [preset]), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        let result = controller.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
+        let result = session.desks.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
         windowModel.confirmDeskReplacement()
 
         // Assert
         #expect(result == .confirmationPending)
-        let replaced = try #require(controller.focusedDesk)
+        let replaced = try #require(session.navigation.focusedDesk)
         #expect(replaced.id == oldDesk.id)
         #expect(replaced.boards.map(\.width) == [620, 360])
         #expect(Set(replaced.boards.map(\.id)).isDisjoint(with: [target.id, inspection.id, oldBoard.id]))
@@ -200,39 +205,45 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let terminal = BoardState(width: 700, workingDirectory: "/tmp", customLabel: "Build")
         let source = desk("Development", boards: [terminal], focusedBoardID: terminal.id)
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        let saveResult = controller.saveFocusedDeskAsPreset(label: "Terminal")
-        let preset = try #require(controller.deskPresets.first)
-        controller.createDesk(label: "Copy", personalPresetID: preset.id)
+        let saveResult = session.presets.saveFocusedDeskAsPreset(label: "Terminal")
+        let preset = try #require(session.resources.deskPresets.first)
+        session.desks.createDesk(label: "Copy", personalPresetID: preset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(preset.boards.first?.kind == .terminal(.shell(workingDirectory: "/tmp")))
-        #expect(controller.focusedBoard?.id != terminal.id)
-        #expect(controller.focusedBoard?.terminalWorkingDirectory == "/tmp")
-        #expect(controller.focusedBoard?.customLabel == "Build")
+        #expect(session.navigation.focusedBoard?.id != terminal.id)
+        #expect(session.navigation.focusedBoard?.terminalWorkingDirectory == "/tmp")
+        #expect(session.navigation.focusedBoard?.customLabel == "Build")
     }
 
     @Test func personalPresetRestoresZellijBoardSession() throws {
         // Arrange
         let zellij = BoardState(width: 700, zellijSessionName: "project-a", customLabel: "Project")
         let source = desk("Development", boards: [zellij], focusedBoardID: zellij.id)
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        let saveResult = controller.saveFocusedDeskAsPreset(label: "Zellij")
-        let preset = try #require(controller.deskPresets.first)
-        controller.createDesk(label: "Copy", personalPresetID: preset.id)
+        let saveResult = session.presets.saveFocusedDeskAsPreset(label: "Zellij")
+        let preset = try #require(session.resources.deskPresets.first)
+        session.desks.createDesk(label: "Copy", personalPresetID: preset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(preset.boards.first?.kind == .terminal(.zellij(sessionName: "project-a")))
-        #expect(controller.focusedBoard?.id != zellij.id)
-        #expect(controller.focusedBoard?.isZellij == true)
-        #expect(controller.focusedBoard?.zellijSessionName == "project-a")
-        #expect(controller.focusedBoard?.customLabel == "Project")
+        #expect(session.navigation.focusedBoard?.id != zellij.id)
+        #expect(session.navigation.focusedBoard?.isZellij == true)
+        #expect(session.navigation.focusedBoard?.zellijSessionName == "project-a")
+        #expect(session.navigation.focusedBoard?.customLabel == "Project")
     }
 
     @Test func personalPresetRestoresZmxBoardSession() throws {
@@ -243,103 +254,119 @@ struct DenControllerDeskPresetTests {
             rootSessionName: "project",
             customLabel: "Project")
         let source = desk("Development", boards: [zmx], focusedBoardID: zmx.id)
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        let saveResult = controller.saveFocusedDeskAsPreset(label: "zmx")
-        let preset = try #require(controller.deskPresets.first)
+        let saveResult = session.presets.saveFocusedDeskAsPreset(label: "zmx")
+        let preset = try #require(session.resources.deskPresets.first)
         let restoredPreset = try JSONDecoder().decode(PersonalDeskPreset.self, from: JSONEncoder().encode(preset))
-        let recontrollerdController = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            deskPresets: [restoredPreset])
-        recontrollerdController.createDesk(label: "Copy", personalPresetID: restoredPreset.id)
+        let restoredSession = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id)),
+                deskPresets: [restoredPreset]), configuration: makeTestBoardRuntimeConfiguration())
+        restoredSession.desks.createDesk(label: "Copy", personalPresetID: restoredPreset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(
             restoredPreset.boards.first?.kind
                 == .terminal(.zmx(sessionName: "project-a", rootSessionName: "project")))
-        #expect(recontrollerdController.focusedBoard?.id != zmx.id)
-        #expect(recontrollerdController.focusedBoard?.isZmx == true)
-        #expect(recontrollerdController.focusedBoard?.zmxSessionName == "project-a")
-        #expect(recontrollerdController.focusedBoard?.zmxRootSessionName == "project")
-        #expect(recontrollerdController.focusedBoard?.customLabel == "Project")
+        #expect(restoredSession.navigation.focusedBoard?.id != zmx.id)
+        #expect(restoredSession.navigation.focusedBoard?.isZmx == true)
+        #expect(restoredSession.navigation.focusedBoard?.zmxSessionName == "project-a")
+        #expect(restoredSession.navigation.focusedBoard?.zmxRootSessionName == "project")
+        #expect(restoredSession.navigation.focusedBoard?.customLabel == "Project")
     }
 
     @Test func personalPresetRejectsReservedLabels() {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        let emptyResult = controller.saveFocusedDeskAsPreset(label: "Empty")
-        let chatGPTResult = controller.saveFocusedDeskAsPreset(label: "ChatGPT")
+        let emptyResult = session.presets.saveFocusedDeskAsPreset(label: "Empty")
+        let chatGPTResult = session.presets.saveFocusedDeskAsPreset(label: "ChatGPT")
 
         // Assert
         #expect(emptyResult == .reservedLabel)
         #expect(chatGPTResult == .reservedLabel)
-        #expect(controller.deskPresets.isEmpty)
+        #expect(session.resources.deskPresets.isEmpty)
     }
 
     @Test func personalPresetReplacementUpdatesExistingPreset() throws {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        let routineID = try #require(controller.deskPresets.first?.id)
-        controller.storage.state.desks[0].boards[0].width = 900
+        #expect(session.presets.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        let routineID = try #require(session.resources.deskPresets.first?.id)
+        session.resources.state.desks[0].boards[0].width = 900
         windowModel.isDenMode = true
 
         // Act
-        let pending = controller.saveFocusedDeskAsPreset(label: " routine ")
+        let pending = session.presets.saveFocusedDeskAsPreset(label: " routine ")
         #expect(pending == .replacementPending)
         windowModel.confirmDeskPresetReplacement()
 
         // Assert
         #expect(!windowModel.isDenMode)
-        #expect(controller.deskPresets.first?.id == routineID)
-        #expect(controller.deskPresets.first?.boards[0].width == 900)
+        #expect(session.resources.deskPresets.first?.id == routineID)
+        #expect(session.resources.deskPresets.first?.boards[0].width == 900)
     }
 
     @Test func personalPresetDeletionRemovesPreset() throws {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        #expect(controller.saveFocusedDeskAsPreset(label: "Other") == .created)
-        let routineID = try #require(controller.deskPresets.last?.id)
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        #expect(session.presets.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(session.presets.saveFocusedDeskAsPreset(label: "Other") == .created)
+        let routineID = try #require(session.resources.deskPresets.last?.id)
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        controller.requestDeskPresetDeletion(routineID)
+        session.presets.requestDeskPresetDeletion(routineID)
         windowModel.confirmDeskPresetDeletion()
 
         // Assert
-        #expect(controller.deskPresets.map(\.label) == ["Other"])
+        #expect(session.resources.deskPresets.map(\.label) == ["Other"])
     }
 
     @Test func renamingPersonalPresetPreservesCapturedStateAndRejectsReservedOrDuplicateLabels() throws {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        #expect(controller.saveFocusedDeskAsPreset(label: "Other") == .created)
-        let presetID = try #require(controller.deskPresets.last?.id)
-        let originalBoards = try #require(controller.deskPresets.last?.boards)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        #expect(session.presets.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(session.presets.saveFocusedDeskAsPreset(label: "Other") == .created)
+        let presetID = try #require(session.resources.deskPresets.last?.id)
+        let originalBoards = try #require(session.resources.deskPresets.last?.boards)
 
         // Act
-        let renamed = controller.renameDeskPreset(presetID, to: "  Daily  ")
-        let duplicate = controller.renameDeskPreset(presetID, to: "ＯＴＨＥＲ")
-        let reserved = controller.renameDeskPreset(presetID, to: "ChatGPT")
-        let empty = controller.renameDeskPreset(presetID, to: "   ")
-        let preset = try #require(controller.deskPresets.last)
+        let renamed = session.presets.renameDeskPreset(presetID, to: "  Daily  ")
+        let duplicate = session.presets.renameDeskPreset(presetID, to: "ＯＴＨＥＲ")
+        let reserved = session.presets.renameDeskPreset(presetID, to: "ChatGPT")
+        let empty = session.presets.renameDeskPreset(presetID, to: "   ")
+        let preset = try #require(session.resources.deskPresets.last)
 
         // Assert
         #expect(renamed == .renamed)
@@ -354,8 +381,11 @@ struct DenControllerDeskPresetTests {
     @Test func finishingPresetManagementExitsDenMode() {
         // Arrange
         let source = desk("Desk", boards: [board("Board")])
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -374,13 +404,22 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let empty = desk("Empty")
 
-        withController(desks: [empty]) { controller in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let session = denWindowSession
+
             // Act
-            let result = controller.saveFocusedDeskAsPreset(label: "Saved")
+            let result = session.presets.saveFocusedDeskAsPreset(label: "Saved")
 
             // Assert
             #expect(result == .emptyDesk)
-            #expect(controller.deskPresets.isEmpty)
+            #expect(session.resources.deskPresets.isEmpty)
         }
     }
 
@@ -388,7 +427,19 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let empty = desk("Empty")
 
-        withTestWindowModel(desks: [empty]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             // Act
             windowModel.showSaveDeskPresetPanel()
 
@@ -401,81 +452,80 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let deskState = desk("Desk", boards: [board("Board")])
         var saveCallCount = 0
-        let controller = DenController(
-            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
-            deskPresets: [],
-            onDeskPresetsSave: { _ in
-                saveCallCount += 1
-                return false
-            }
-        )
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id)),
+                deskPresets: [],
+                onDeskPresetsSave: { _ in
+                    saveCallCount += 1
+                    return false
+                }), configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        let result = controller.saveFocusedDeskAsPreset(label: "Test Preset")
+        let result = session.presets.saveFocusedDeskAsPreset(label: "Test Preset")
 
         // Assert
         #expect(result == .created)
         #expect(saveCallCount == 1)
-        #expect(controller.latestFeedback?.message == "Could not save Desk Preset.")
-        #expect(controller.latestFeedback?.severity == DenFeedback.Severity.error)
+        #expect(session.feedback.latest?.message == "Could not save Desk Preset.")
+        #expect(session.feedback.latest?.severity == DenFeedback.Severity.error)
     }
 
     @Test func saveDeskPresetShowsSuccessFeedbackWhenPersistenceSucceeds() {
         // Arrange
         let deskState = desk("Desk", boards: [board("Board")])
         var saveCallCount = 0
-        let controller = DenController(
-            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
-            deskPresets: [],
-            onDeskPresetsSave: { _ in
-                saveCallCount += 1
-                return true
-            }
-        )
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id)),
+                deskPresets: [],
+                onDeskPresetsSave: { _ in
+                    saveCallCount += 1
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        let result = controller.saveFocusedDeskAsPreset(label: "Test Preset")
+        let result = session.presets.saveFocusedDeskAsPreset(label: "Test Preset")
 
         // Assert
         #expect(result == .created)
         #expect(saveCallCount == 1)
-        #expect(controller.latestFeedback?.message == "Saved Desk Preset.")
-        #expect(controller.latestFeedback?.severity == DenFeedback.Severity.success)
+        #expect(session.feedback.latest?.message == "Saved Desk Preset.")
+        #expect(session.feedback.latest?.severity == DenFeedback.Severity.success)
     }
 
     @Test func saveDeskPresetSavesFacingsFromCacheAndRemovesOnDelete() throws {
         // Arrange
         let boardState = board("Board")
         let deskState = desk("Desk", boards: [boardState])
-        let controller = DenController(
-            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
-            deskPresets: [],
-            onDeskPresetsSave: { _ in true }
-        )
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id)),
+                deskPresets: [], onDeskPresetsSave: { _ in true }), configuration: makeTestBoardRuntimeConfiguration())
         let context = try #require(
             CGContext(
                 data: nil, width: 10, height: 10, bitsPerComponent: 8, bytesPerRow: 40,
                 space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
         let raster = try #require(context.makeImage())
         let sampleImage = NSImage(cgImage: raster, size: CGSize(width: 10, height: 10))
-        controller.facingCache.setFacing(sampleImage, for: boardState.id)
+        session.resources.facingCache.setFacing(sampleImage, for: boardState.id)
 
         // Act - Save
-        let saveResult = controller.saveFocusedDeskAsPreset(label: "Routine")
+        let saveResult = session.presets.saveFocusedDeskAsPreset(label: "Routine")
         #expect(saveResult == .created)
 
-        let preset = controller.deskPresets.first(where: { $0.label == "Routine" })
+        let preset = session.resources.deskPresets.first(where: { $0.label == "Routine" })
         #expect(preset != nil)
         guard let presetID = preset?.id else { return }
 
         // Assert - Facing cached in PresetFacingStore
-        #expect(controller.presetFacingStore.image(for: presetID, at: 0) != nil)
+        #expect(session.resources.presetFacingStore.image(for: presetID, at: 0) != nil)
 
         // Act - Delete
-        controller.deleteDeskPreset(presetID)
+        session.presets.deleteDeskPreset(presetID)
 
         // Assert - Facing removed from PresetFacingStore
-        #expect(controller.presetFacingStore.image(for: presetID, at: 0) == nil)
+        #expect(session.resources.presetFacingStore.image(for: presetID, at: 0) == nil)
     }
 
     private static func sampleChoices() -> [DeskPresetChoice] {

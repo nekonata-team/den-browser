@@ -7,7 +7,7 @@ import Foundation
 enum UniversalSearchActions {
     static func perform(
         _ target: UniversalSearchItem.Target,
-        controller: DenController,
+        session: ProfileWindowSession,
         windowModel: DenWindowModel,
         inDrawer: Bool = false,
         openProfile: (ProfileID) -> Bool,
@@ -22,37 +22,37 @@ enum UniversalSearchActions {
         switch target {
         case .board(let id):
             guard
-                controller.storage.data.snapshot.den.desks.contains(where: {
+                session.resources.data.snapshot.den.desks.contains(where: {
                     $0.boards.contains(where: { $0.id == id })
                 })
             else {
                 return "This Board is no longer available."
             }
             windowModel.hideUniversalSearch()
-            controller.focusBoard(id, exitsDenMode: true)
+            session.boardNavigation.focusBoard(id, exitsDenMode: true)
         case .desk(let id):
-            guard controller.storage.data.snapshot.den.desks.contains(where: { $0.id == id }) else {
+            guard session.resources.data.snapshot.den.desks.contains(where: { $0.id == id }) else {
                 return "This Desk is no longer available."
             }
             windowModel.hideUniversalSearch()
-            controller.focusDesk(id)
+            session.boardNavigation.focusDesk(id)
         case .profile(let id):
             guard openProfile(id) else {
                 return "This Profile could not be opened."
             }
             windowModel.hideUniversalSearch()
         case .essential(let id):
-            guard let essential = controller.preferences.essentials.first(where: { $0.id == id }) else {
+            guard let essential = session.configuration.preferences.essentials.first(where: { $0.id == id }) else {
                 return "This Essential is no longer available."
             }
-            return open(essential.input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
+            return open(essential.input, session: session, windowModel: windowModel, inDrawer: inDrawer)
         case .recent(let item):
-            guard controller.storage.data.snapshot.recentItems.contains(item) else {
+            guard session.resources.data.snapshot.recentItems.contains(item) else {
                 return "This Recent Item is no longer available."
             }
-            return open(item.displayText, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
+            return open(item.displayText, session: session, windowModel: windowModel, inDrawer: inDrawer)
         case .createBoard(let input):
-            return open(input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
+            return open(input, session: session, windowModel: windowModel, inDrawer: inDrawer)
         case .command(let command):
             windowModel.hideUniversalSearch()
             let action: AppAction
@@ -67,16 +67,16 @@ enum UniversalSearchActions {
             case .restoreBoard: action = .board(.restore)
             }
             AppActionHandler.perform(
-                action, controller: controller, windowModel: windowModel, openSettings: openSettings)
+                action, session: session, windowModel: windowModel, openSettings: openSettings)
         }
         return nil
     }
 
     private static func open(
-        _ input: String, controller: DenController, windowModel: DenWindowModel, inDrawer: Bool
+        _ input: String, session: ProfileWindowSession, windowModel: DenWindowModel, inDrawer: Bool
     ) -> String? {
-        if inDrawer { return controller.openInDrawer(input: input) }
-        switch controller.requestOpenBoard(input: input, preferredWidth: windowModel.defaultBoardWidth) {
+        if inDrawer { return session.input.openInDrawer(input: input) }
+        switch session.boardOpening.requestOpenBoard(input: input, preferredWidth: windowModel.defaultBoardWidth) {
         case .accepted:
             windowModel.hideUniversalSearch()
             return nil

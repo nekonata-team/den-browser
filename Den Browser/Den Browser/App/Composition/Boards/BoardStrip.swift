@@ -1,10 +1,11 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
 import SwiftUI
 
 struct BoardStrip: View {
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     let size: CGSize
     let shouldShowHeader: Bool
     let profileColor: Color
@@ -15,16 +16,16 @@ struct BoardStrip: View {
     var body: some View {
         DenViews.BoardStrip(
             model: BoardStripModel(
-                state: controller.storage.data, movement: controller.storage.boardMovement,
-                sizing: controller.storage.boardSizing, deskUpdates: controller.storage.deskUpdates,
-                presentedDeskID: { [navigation = controller.navigation] in navigation.presentedDeskID },
-                prepareDrag: { controller.onWindowEffect?(.clearMaximizedBoard) },
-                focus: { controller.focusBoard($0, exitsDenMode: true) },
-                remove: { controller.removeBoard($0) },
-                hasWebRuntime: { controller.webRuntimes[$0] != nil },
-                activateWebRuntime: { _ = controller.webRuntime(for: $0) },
-                centering: { controller.preferences.boardCentering },
-                motion: { controller.preferences.motionPreference }),
+                state: session.resources.data, movement: session.resources.boardMovement,
+                sizing: session.resources.boardSizing, deskUpdates: session.resources.deskUpdates,
+                presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
+                prepareDrag: { session.connection.onWindowEffect?(.clearMaximizedBoard) },
+                focus: { session.boardNavigation.focusBoard($0, exitsDenMode: true) },
+                remove: { session.boardRemoval.removeBoard($0) },
+                hasWebRuntime: { session.resources.webRuntimes[$0] != nil },
+                activateWebRuntime: { _ = session.runtimes.webRuntime(for: $0) },
+                centering: { session.configuration.preferences.boardCentering },
+                motion: { session.configuration.preferences.motionPreference }),
             size: size, shouldShowHeader: shouldShowHeader, profileColor: profileColor,
             boardSpacing: boardSpacing, boardHorizontalPadding: boardHorizontalPadding,
             onOpenBoardAtEnd: onOpenBoardAtEnd

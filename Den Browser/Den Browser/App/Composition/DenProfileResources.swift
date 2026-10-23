@@ -75,7 +75,7 @@ final class DenProfileResources {
     @ObservationIgnored let facingCapture: BoardFacingCapture
     @ObservationIgnored let presetFacingStore: PresetFacingStore
 
-    @ObservationIgnored let drawerPresentations = NSHashTable<DenController>.weakObjects()
+    @ObservationIgnored let windowConnections = NSHashTable<RuntimeWindowConnection>.weakObjects()
     @ObservationIgnored let onSave: ((DenState) -> Bool)?
     @ObservationIgnored let onDeferredSave: (() -> Void)?
     @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
@@ -121,10 +121,7 @@ final class DenProfileResources {
         boardCreation = BoardCreation(
             store: shared.store, writer: shared.writer, recents: recents,
             persist: persistState,
-            directoryExists: { path in
-                var isDirectory: ObjCBool = false
-                return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
-            })
+            directoryExists: TerminalWorkingDirectory.exists)
         drawerItems = DrawerItems(store: shared.store, writer: shared.writer, persist: persistState)
         drawerPlacement = DrawerPlacement(store: shared.store, creation: boardCreation, items: drawerItems)
         inputOpening = InputOpening(creation: boardCreation, drawer: drawerItems)

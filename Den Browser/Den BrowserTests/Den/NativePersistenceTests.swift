@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -8,7 +9,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct DenControllerPersistenceTests {
+struct NativePersistenceTests {
     @Test func sheetScaleAndContentSizeAdjustmentsApplyToWebRuntime() throws {
         // Arrange
         let suiteName = "SheetScaleAndContentSizeTests-\(UUID())"
@@ -19,78 +20,69 @@ struct DenControllerPersistenceTests {
         let sheetNavigation = SheetNavigationManager(defaults: defaults)
         let board = board("Board")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: sheetNavigation,
-            preferences: preferences)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: sheetNavigation, preferences: preferences)
+        )
 
         // 1. Initial global scale applied to new board runtime (80%)
-        let runtime = controller.webRuntime(for: board)
+        let runtime = session.runtimes.webRuntime(for: board)
         #expect(runtime.webView.pageZoom == 0.8)
 
         // 2. Adjust individual sheet size (+1 step from 80% -> 90%)
         runtime.webView.magnification = 1.2
-        controller.adjustFocusedSheetSize(by: 1)
+        session.runtimes.adjustFocusedSheetSize(by: 1)
         #expect(runtime.webView.pageZoom == 0.9)
         #expect(runtime.webView.magnification == 1)
-        #expect(controller.state.desks[0].boards[0] == board)
+        #expect(session.resources.state.desks[0].boards[0] == board)
 
         // 3. Reset individual sheet size back to global scale (80%)
         runtime.webView.magnification = 1.2
-        controller.resetFocusedSheetSize()
+        session.runtimes.resetFocusedSheetSize()
         #expect(runtime.webView.pageZoom == 0.8)
         #expect(runtime.webView.magnification == 1)
 
         // 4. Change global sheet scale and apply to live runtime (100%)
         preferences.setSheetScale(100)
         runtime.webView.magnification = 1.2
-        controller.applySheetScale(preferences.sheetScale)
+        session.runtimes.applySheetScale(preferences.sheetScale)
         #expect(runtime.webView.pageZoom == 1.0)
         #expect(runtime.webView.magnification == 1)
 
         // 5. Adjust individual sheet size from 100% (+1 step -> 1.1)
-        controller.adjustFocusedSheetSize(by: 1)
+        session.runtimes.adjustFocusedSheetSize(by: 1)
         #expect(runtime.webView.pageZoom == 1.1)
         #expect(runtime.webView.magnification == 1)
-    }
-
-    @Test func emptyPersistedDenRecoversAndSavesOneDesk() {
-        // Arrange
-        var savedState: DenState?
-
-        // Act
-        let controller = DenController(
-            state: DenState(desks: [], focusedDeskID: DeskID()),
-            onSave: { savedState = $0 })
-
-        // Assert
-        #expect(controller.state.desks.count == 1)
-        #expect(controller.focusedDesk != nil)
-        #expect(savedState == controller.state)
     }
 
     @Test func tutorialBoardAndProgressStayInMemory() throws {
         // Arrange
         var savedState: DenState?
         var saveCount = 0
-        let controller = DenController(
-            state: .sample,
-            onSave: { state in
-                savedState = state
-                saveCount += 1
-            })
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(.sample),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { state in
+                        savedState = state
+                        saveCount += 1
+                    }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        #expect(controller.openTutorialBoard())
+        #expect(session.boardOpening.openTutorialBoard())
         let saveCountAfterOpening = saveCount
-        controller.dispatchDenOperationEvent(.webBoardOpened)
+        session.resources.recordOperation(.webBoardOpened)
 
         // Assert
-        #expect(controller.state.desks[0].boards.first?.isTutorial == true)
+        #expect(session.resources.state.desks[0].boards.first?.isTutorial == true)
         #expect(
-            controller.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true)
+            session.resources.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true)
         #expect(saveCount == saveCountAfterOpening)
-        #expect(controller.save())
+        #expect(session.resources.save())
         #expect(savedState?.desks[0].boards.isEmpty == true)
 
         let encodedContent = try JSONEncoder().encode(
@@ -121,16 +113,21 @@ struct DenControllerPersistenceTests {
         let first = desk("First", boards: firstBoards, focusedBoardID: firstBoards[1].id)
         let second = desk("Second", boards: secondBoards, focusedBoardID: secondBoards[0].id)
         var persistedState: DenState?
-        let writer = DenController(state: DenState(desks: [first, second], focusedDeskID: second.id)) {
-            persistedState = $0
-        }
+        let writer = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: second.id)),
+                onSave: { state in
+                    persistedState = state
+                    return true
+                }),
+            configuration: makeTestBoardRuntimeConfiguration())
 
         // Act
-        writer.focusDesk(first.id)
+        writer.boardNavigation.focusDesk(first.id)
 
         // Assert
         let restored = try #require(persistedState)
-        #expect(restored == writer.state)
+        #expect(restored == writer.resources.state)
         #expect(restored.desks.map(\.id) == [first.id, second.id])
         #expect(restored.desks[0].boards.map(\.id) == firstBoards.map(\.id))
         #expect(restored.desks.map(\.label) == ["First", "Second"])
@@ -148,12 +145,15 @@ struct DenControllerPersistenceTests {
         // Arrange
         let first = desk("First", boards: [board("One")])
         var persistedState: DenState?
-        let writer = DenController(state: DenState(desks: [first], focusedDeskID: first.id)) {
-            persistedState = $0
-        }
+        let writer = DenProfileResources(
+            state: DenStateNormalization.normalize(DenState(desks: [first], focusedDeskID: first.id)),
+            onSave: { state in
+                persistedState = state
+                return true
+            })
 
         // Act
-        writer.saveDeskScrollOffset(350.0, for: first.id)
+        writer.deskUpdates.saveScrollOffset(350.0, for: first.id)
 
         // Assert
         let restored = try #require(persistedState)
@@ -164,13 +164,16 @@ struct DenControllerPersistenceTests {
         // Arrange
         let first = desk("First", boards: [board("One")])
         var persistedState: DenState?
-        let writer = DenController(state: DenState(desks: [first], focusedDeskID: first.id)) {
-            persistedState = $0
-        }
-        writer.saveDeskScrollOffset(350.0, for: first.id)
+        let writer = DenProfileResources(
+            state: DenStateNormalization.normalize(DenState(desks: [first], focusedDeskID: first.id)),
+            onSave: { state in
+                persistedState = state
+                return true
+            })
+        writer.deskUpdates.saveScrollOffset(350.0, for: first.id)
 
         // Act
-        writer.saveDeskScrollOffset(nil, for: first.id)
+        writer.deskUpdates.saveScrollOffset(nil, for: first.id)
 
         // Assert
         let cleared = try #require(persistedState)

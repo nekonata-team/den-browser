@@ -1,5 +1,7 @@
 import AppKit
+import DenApplication
 import DenDomain
+import DenPresentationModels
 import Testing
 
 @testable import Den_Browser
@@ -12,8 +14,20 @@ struct WebBoardPointerFocusTests {
         let current = BoardState(label: "Current", width: 520, currentSheetURL: nil)
         let target = BoardState(label: "Target", width: 520, currentSheetURL: nil)
         let desk = DeskState(label: "Desk", boards: [current, target], focusedBoardID: current.id)
-        try withTestWindowModel(desks: [desk]) { _, controller in
-            let webView = controller.webRuntime(for: target).webView
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let session = denWindowSession
+
+            let webView = session.runtimes.webRuntime(for: target).webView
             let event = try #require(
                 NSEvent.mouseEvent(
                     with: eventType,
@@ -34,7 +48,7 @@ struct WebBoardPointerFocusTests {
             }
 
             // Assert
-            #expect(controller.focusedBoard?.id == current.id)
+            #expect(session.navigation.focusedBoard?.id == current.id)
         }
     }
 }

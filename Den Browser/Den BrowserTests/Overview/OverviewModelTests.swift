@@ -14,17 +14,34 @@ struct OverviewModelTests {
         // Arrange
         let first = board("First")
         let second = board("Second")
-        try withTestWindowModel(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) {
-            windowModel, controller in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(
+                        makeNativeTestState(desks: [
+                            desk("Desk", boards: [first, second], focusedBoardID: first.id)
+                        ]))), configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+            let session = denWindowSession
+
             windowModel.showOverview()
             let openBoard = try #require(keyEvent("t", keyCode: 17))
             let editLink = try #require(keyEvent("l", keyCode: 37))
             let removeBoard = try #require(keyEvent("w", keyCode: 13))
 
             // Act
-            let openHandled = KeyboardController.handle(openBoard, controller: controller, windowModel: windowModel)
-            let editHandled = KeyboardController.handle(editLink, controller: controller, windowModel: windowModel)
-            let removeHandled = KeyboardController.handle(removeBoard, controller: controller, windowModel: windowModel)
+            let openHandled = KeyboardController.handle(
+                openBoard, session: session, windowModel: windowModel)
+            let editHandled = KeyboardController.handle(
+                editLink, session: session, windowModel: windowModel)
+            let removeHandled = KeyboardController.handle(
+                removeBoard, session: session, windowModel: windowModel)
 
             // Assert
             #expect(openHandled)
@@ -33,14 +50,27 @@ struct OverviewModelTests {
             #expect(windowModel.isOverviewPresented)
             #expect(!windowModel.isOpenBoardPanelPresented)
             #expect(!windowModel.isEditBoardLinkPanelPresented)
-            #expect(controller.focusedDesk?.boards.map(\.id) == [first.id, second.id])
+            #expect(session.navigation.focusedDesk?.boards.map(\.id) == [first.id, second.id])
         }
     }
 
     @Test func temporaryContextsAreExclusiveAndClearOverviewSelection() {
         // Arrange
         let board = board("Board")
-        withTestWindowModel(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(
+                        makeNativeTestState(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
             #expect(windowModel.temporaryContext == .overview)
             #expect(windowModel.overview.selectionBoardID == board.id)
@@ -62,7 +92,19 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
         // Act
-        withTestWindowModel(desks: [desk1]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
 
             // Assert
@@ -80,7 +122,19 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
-        withTestWindowModel(desks: [desk1, desk2]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
 
             // Act
@@ -99,7 +153,20 @@ struct OverviewModelTests {
         let otherBoard = board("Other")
         let currentDesk = desk("Current Desk", boards: [currentBoard], focusedBoardID: currentBoard.id)
         let otherDesk = desk("Other Desk", boards: [otherBoard], focusedBoardID: otherBoard.id)
-        withTestWindowModel(desks: [currentDesk, otherDesk]) { windowModel, controller in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk, otherDesk]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+            let session = denWindowSession
+
             windowModel.showOverview()
             let overview = windowModel.overview
             overview.enterFilterMode()
@@ -115,7 +182,7 @@ struct OverviewModelTests {
             #expect(overview.selectionDeskID == currentDesk.id)
             #expect(overview.selectionBoardID == currentBoard.id)
             #expect(overview.canvasResetRequest == resetRequest + 1)
-            #expect(controller.focusedDesk?.id == currentDesk.id)
+            #expect(session.navigation.focusedDesk?.id == currentDesk.id)
             #expect(windowModel.isOverviewPresented)
         }
     }
@@ -129,7 +196,20 @@ struct OverviewModelTests {
         let last = board("Last")
         let activeDesk = desk("Active Desk", boards: [active], focusedBoardID: active.id)
         let otherDesk = desk("Other Desk", boards: [first, selected, last], focusedBoardID: first.id)
-        withTestWindowModel(desks: [activeDesk, otherDesk]) { model, controller in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [activeDesk, otherDesk]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let model = denWindowComposition.model
+            let session = denWindowSession
+
             model.showOverview()
             model.overview.selectBoard(selected.id)
 
@@ -137,9 +217,9 @@ struct OverviewModelTests {
             model.overview.removeSelectedBoard(focusNext: focusNext)
 
             // Assert
-            #expect(controller.state.desks[1].boards.map(\.id) == [first.id, last.id])
+            #expect(session.resources.state.desks[1].boards.map(\.id) == [first.id, last.id])
             #expect(model.overview.selectionBoardID == (focusNext ? last.id : first.id))
-            #expect(controller.presentedDeskID == activeDesk.id)
+            #expect(session.navigation.presentedDeskID == activeDesk.id)
             #expect(model.isOverviewPresented)
         }
     }
@@ -150,7 +230,20 @@ struct OverviewModelTests {
         let removed = board("Removed")
         let activeDesk = desk("Active Desk", boards: [active], focusedBoardID: active.id)
         let otherDesk = desk("Other Desk", boards: [removed], focusedBoardID: removed.id)
-        withTestWindowModel(desks: [activeDesk, otherDesk]) { model, controller in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [activeDesk, otherDesk]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let model = denWindowComposition.model
+            let session = denWindowSession
+
             model.showOverview()
             model.overview.selectBoard(removed.id)
             model.overview.removeSelectedBoard(focusNext: false)
@@ -160,10 +253,10 @@ struct OverviewModelTests {
             model.overview.restoreRemovedBoard()
 
             // Assert
-            #expect(controller.state.desks[1].boards.map(\.id) == [removed.id])
+            #expect(session.resources.state.desks[1].boards.map(\.id) == [removed.id])
             #expect(model.overview.selectionBoardID == removed.id)
             #expect(model.overview.query.isEmpty)
-            #expect(controller.presentedDeskID == activeDesk.id)
+            #expect(session.navigation.presentedDeskID == activeDesk.id)
             #expect(model.isOverviewPresented)
         }
     }
@@ -175,7 +268,19 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
-        withTestWindowModel(desks: [desk1, desk2]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
 
             // Act
@@ -194,7 +299,19 @@ struct OverviewModelTests {
         let googleBoard = board("Google", url: "https://google.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
 
             // Act
@@ -211,7 +328,19 @@ struct OverviewModelTests {
         let googleBoard = board("Google", url: "https://google.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
 
             // Act
@@ -233,7 +362,19 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
-        withTestWindowModel(desks: [desk1, desk2]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
             windowModel.overview.setQuery("git")
 
@@ -253,7 +394,19 @@ struct OverviewModelTests {
         let googleBoard = board("Google", url: "https://google.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
             windowModel.overview.enterFilterMode()
             windowModel.overview.setQuery("goog")
@@ -272,8 +425,20 @@ struct OverviewModelTests {
         // Arrange
         let first = board("First")
         let second = board("Second")
-        withTestWindowModel(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) {
-            windowModel, _ in
+        do {
+            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
+            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
+            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
+            let denWindowSession = ProfileWindowSession(
+                resources: DenProfileResources(
+                    state: DenStateNormalization.normalize(
+                        makeNativeTestState(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]))),
+                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
+            let denWindowComposition = DenWindowComposition(session: denWindowSession)
+            denWindowComposition.connect()
+            defer { denWindowComposition.disconnect() }
+            let windowModel = denWindowComposition.model
+
             windowModel.showOverview()
             let overview = windowModel.overview
             let selectedID = alreadySelected ? first.id : second.id
@@ -297,10 +462,15 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         var saveCount = 0
-        let controller = DenController(
-            state: DenState(desks: [main, other], focusedDeskID: main.id),
-            onSave: { _ in saveCount += 1 })
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main, other], focusedDeskID: main.id)),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { _ in saveCount += 1 }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -312,7 +482,7 @@ struct OverviewModelTests {
 
         // Assert - drag begun without mutating order yet
         #expect(dragBegun)
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id, second.id])
         #expect(windowModel.overview.selectionBoardID == first.id)
         #expect(windowModel.overview.selectionCenterRequest == centerRequest)
 
@@ -320,8 +490,8 @@ struct OverviewModelTests {
         windowModel.overview.finishBoardDrag(second.id, toDeskID: other.id, at: BoardIndex(rawValue: 0))
 
         // Assert - order committed
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(controller.state.desks[1].boards.map(\.id) == [second.id, third.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [second.id, third.id])
         #expect(windowModel.overview.selectionDeskID == other.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
         #expect(windowModel.overview.selectionCenterRequest == centerRequest)
@@ -335,8 +505,11 @@ struct OverviewModelTests {
         let second = board("Second")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let empty = desk("Empty")
-        let controller = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -347,9 +520,9 @@ struct OverviewModelTests {
         windowModel.overview.finishBoardDrag(second.id, toDeskID: empty.id, at: BoardIndex(rawValue: 0))
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(controller.state.desks[1].boards.map(\.id) == [second.id])
-        #expect(controller.state.desks[1].focusedBoardID == second.id)
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [second.id])
+        #expect(session.resources.state.desks[1].focusedBoardID == second.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
     }
 
@@ -359,8 +532,11 @@ struct OverviewModelTests {
         let second = board("Second")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let empty = desk("Empty")
-        let controller = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -371,9 +547,9 @@ struct OverviewModelTests {
         windowModel.overview.moveSelectionBoardToNextDesk()
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(controller.state.desks[1].boards.map(\.id) == [second.id])
-        #expect(controller.state.desks[1].focusedBoardID == second.id)
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [second.id])
+        #expect(session.resources.state.desks[1].focusedBoardID == second.id)
         #expect(windowModel.overview.selectionDeskID == empty.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
     }
@@ -383,8 +559,12 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
-        let controller = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source, destination], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -393,8 +573,8 @@ struct OverviewModelTests {
 
         windowModel.overview.moveSelectionBoardToNextDesk()
 
-        #expect(controller.state.desks[0].boards.isEmpty)
-        #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(session.resources.state.desks[0].boards.isEmpty)
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [target.id, side.id])
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
@@ -405,8 +585,12 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
-        let controller = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [source, destination], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -419,8 +603,8 @@ struct OverviewModelTests {
             side.id, toDeskID: destination.id, at: BoardIndex(rawValue: 0))
 
         // Assert
-        #expect(controller.state.desks[0].boards.isEmpty)
-        #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(session.resources.state.desks[0].boards.isEmpty)
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [target.id, side.id])
         #expect(windowModel.overview.selectionDeskID == destination.id)
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
@@ -431,8 +615,11 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let after = board("After")
         let source = desk("Desk", boards: [before, target, side, after])
-        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -441,7 +628,7 @@ struct OverviewModelTests {
 
         windowModel.overview.moveSelectionBoardLeft()
 
-        #expect(controller.state.desks[0].boards.map(\.id) == [target.id, side.id, before.id, after.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [target.id, side.id, before.id, after.id])
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
@@ -453,10 +640,15 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         var saveCount = 0
-        let controller = DenController(
-            state: DenState(desks: [main, other], focusedDeskID: main.id),
-            onSave: { _ in saveCount += 1 })
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main, other], focusedDeskID: main.id)),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { _ in saveCount += 1 }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -468,10 +660,10 @@ struct OverviewModelTests {
         windowModel.overview.cancelBoardDrag()
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
-        #expect(controller.state.desks[1].boards.map(\.id) == [third.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [third.id])
         #expect(windowModel.overview.selectionBoardID == first.id)
-        #expect(controller.activeDrag == nil)
+        #expect(session.resources.activeDrag == nil)
         #expect(saveCount == 0)
     }
 
@@ -482,10 +674,15 @@ struct OverviewModelTests {
         let third = board("Third")
         let main = desk("Main", boards: [first, second, third], focusedBoardID: first.id)
         var saveCount = 0
-        let controller = DenController(
-            state: DenState(desks: [main], focusedDeskID: main.id),
-            onSave: { _ in saveCount += 1 })
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id)),
+                onSave: { state in
+                    let callback: (DenState) -> Void = { _ in saveCount += 1 }
+                    callback(state)
+                    return true
+                }), configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -498,7 +695,7 @@ struct OverviewModelTests {
         windowModel.overview.moveSelectionBoardRight()
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id, third.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id, second.id, third.id])
         #expect(saveCount == 0)
     }
 
@@ -506,8 +703,11 @@ struct OverviewModelTests {
         // Arrange
         let first = board("First")
         let desk = desk("Desk", boards: [first], focusedBoardID: first.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -519,7 +719,7 @@ struct OverviewModelTests {
 
         // Assert
         #expect(!begun)
-        #expect(controller.activeDrag == nil)
+        #expect(session.resources.activeDrag == nil)
     }
 
     @Test func overviewMovementActionsMoveSelectedBoardWithinAndAcrossDesks() {
@@ -529,8 +729,11 @@ struct OverviewModelTests {
         let third = board("Third")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
-        let controller = DenController(state: DenState(desks: [main, other], focusedDeskID: main.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main, other], focusedDeskID: main.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -541,15 +744,15 @@ struct OverviewModelTests {
         windowModel.overview.moveSelectionBoardLeft()
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [second.id, first.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [second.id, first.id])
         #expect(windowModel.overview.selectionBoardID == second.id)
 
         // Act - move to next desk
         windowModel.overview.moveSelectionBoardToNextDesk()
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(controller.state.desks[1].boards.map(\.id) == [third.id, second.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(session.resources.state.desks[1].boards.map(\.id) == [third.id, second.id])
         #expect(windowModel.overview.selectionDeskID == other.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
     }
@@ -559,9 +762,11 @@ struct OverviewModelTests {
         let board = board("Board")
         let main = desk("Main", boards: [board], focusedBoardID: board.id)
         let empty = desk("Empty")
-        let controller = DenController(
-            state: DenState(desks: [main, empty], focusedDeskID: main.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -571,9 +776,9 @@ struct OverviewModelTests {
         windowModel.overview.enterDesk(empty.id)
 
         // Assert
-        #expect(controller.presentedDeskID == empty.id)
-        #expect(controller.focusedDesk?.id == empty.id)
-        #expect(controller.focusedBoard == nil)
+        #expect(session.navigation.presentedDeskID == empty.id)
+        #expect(session.navigation.focusedDesk?.id == empty.id)
+        #expect(session.navigation.focusedBoard == nil)
         #expect(!windowModel.isOverviewPresented)
         #expect(!windowModel.isDenMode)
     }
@@ -584,8 +789,11 @@ struct OverviewModelTests {
         let second = board("Second")
         let third = board("Third")
         let main = desk("Main", boards: [first, second, third], focusedBoardID: second.id)
-        let controller = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -593,10 +801,10 @@ struct OverviewModelTests {
         #expect(windowModel.overview.selectionBoardID == second.id)
 
         // Act
-        controller.removeBoard(second.id)
+        session.boardRemoval.removeBoard(second.id)
 
         // Assert
-        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, third.id])
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [first.id, third.id])
         #expect(windowModel.overview.selectionDeskID == main.id)
         #expect(windowModel.overview.selectionBoardID == third.id)
         #expect(windowModel.isOverviewPresented)
@@ -606,8 +814,11 @@ struct OverviewModelTests {
         // Arrange
         let onlyBoard = board("Only")
         let main = desk("Main", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
-        let controller = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -615,10 +826,10 @@ struct OverviewModelTests {
         #expect(windowModel.overview.selectionBoardID == onlyBoard.id)
 
         // Act
-        controller.removeBoard(onlyBoard.id)
+        session.boardRemoval.removeBoard(onlyBoard.id)
 
         // Assert
-        #expect(controller.state.desks[0].boards.isEmpty)
+        #expect(session.resources.state.desks[0].boards.isEmpty)
         #expect(windowModel.overview.selectionDeskID == main.id)
         #expect(windowModel.overview.selectionBoardID == nil)
         #expect(windowModel.isOverviewPresented)
@@ -628,8 +839,11 @@ struct OverviewModelTests {
         let board1 = board("Board1")
         let first = desk("First", boards: [board1], focusedBoardID: board1.id)
         let empty = desk("Empty")
-        let controller = DenController(state: DenState(desks: [first, empty], focusedDeskID: first.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [first, empty], focusedDeskID: first.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -658,8 +872,11 @@ struct OverviewModelTests {
         let desk1 = desk("Desk 1", boards: [board1], focusedBoardID: board1.id)
         let desk2 = desk("Desk 2", boards: [board2, board3], focusedBoardID: board2.id)
 
-        let controller = DenController(state: DenState(desks: [desk1, desk2], focusedDeskID: desk1.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk1, desk2], focusedDeskID: desk1.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }

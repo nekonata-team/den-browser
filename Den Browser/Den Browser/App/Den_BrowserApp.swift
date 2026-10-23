@@ -167,12 +167,12 @@ private struct DenCommands: Commands {
 
     @Environment(\.openWindow) private var openWindow
     @FocusedValue(\.denWindowModel) private var windowModel
-    @FocusedValue(\.denController) private var controller
+    @FocusedValue(\.profileWindowSession) private var session
     @FocusedValue(\.profileID) private var profileID
     @FocusedValue(\.profileWindowID) private var profileWindowID
 
     private func perform(_ action: AppAction) {
-        AppActionHandler.perform(action, controller: controller, windowModel: windowModel)
+        AppActionHandler.perform(action, session: session, windowModel: windowModel)
     }
 
     var body: some Commands {
@@ -185,7 +185,7 @@ private struct DenCommands: Commands {
         CommandGroup(replacing: .newItem) {}
 
         CommandGroup(replacing: .saveItem) {
-            if controller == nil {
+            if session == nil {
                 Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
                     .keyboardShortcut("w", modifiers: [.command])
             } else {
@@ -201,7 +201,7 @@ private struct DenCommands: Commands {
             Button("Board Activity") { perform(.overview(.toggleActivity)) }
                 .keyboardShortcut(.escape, modifiers: [.shift])
                 .disabled(
-                    controller == nil
+                    session == nil
                         || windowModel?.pendingConfirmation != nil
                         || windowModel?.isFullscreenActive == true)
         }
@@ -244,21 +244,21 @@ private struct DenCommands: Commands {
         CommandMenu("Den") {
             Button("Universal Search…") { perform(.application(.showUniversalSearch(commandsOnly: false))) }
                 .keyboardShortcut("p", modifiers: [.command])
-                .disabled(controller == nil)
+                .disabled(session == nil)
             Button("Commands…") { perform(.application(.showUniversalSearch(commandsOnly: true))) }
                 .keyboardShortcut("p", modifiers: [.command, .shift])
-                .disabled(controller == nil)
+                .disabled(session == nil)
 
             Button("Toggle Den Mode") { perform(.application(.toggleDenMode)) }
-                .disabled(controller == nil)
+                .disabled(session == nil)
 
             Menu("Board") {
                 Button("Open Board") { perform(.board(.showOpenPanel)) }
                     .keyboardShortcut("t", modifiers: [.command])
-                    .disabled(controller == nil)
+                    .disabled(session == nil)
                 Button("Inspect Current Sheet") {
                     guard let board = windowModel?.focusedBoard, board.isWeb else { return }
-                    controller?.createInspectionBoard(targetBoardID: board.id)
+                    session?.sideBoards.createInspectionBoard(targetBoardID: board.id)
                 }
                 .keyboardShortcut("i", modifiers: [.command, .option])
                 .disabled(windowModel?.focusedBoard?.isWeb != true)
@@ -320,17 +320,17 @@ private struct DenCommands: Commands {
                         windowModel?.focusedDesk?.focusedBoardID == nil
                             || windowModel?.pendingConfirmation != nil)
                 Button("Restore Removed Board") { perform(.board(.restore)) }
-                    .disabled(controller?.storage.data.snapshot.recentlyRemovedBoards.isEmpty ?? true)
+                    .disabled(session?.resources.data.snapshot.recentlyRemovedBoards.isEmpty ?? true)
             }
 
             Button("zmx Sessions…") { windowModel?.showZmxSessions() }
-                .disabled(controller?.zmxClient.isConfigured != true)
+                .disabled(session?.context.zmxClient.isConfigured != true)
 
             Menu("Drawer") {
                 Button("Restore Discarded Drawer Item") {
                     perform(.drawer(.restoreDiscardedItem))
                 }
-                .disabled(controller?.storage.data.snapshot.recentlyDiscardedDrawerItems.isEmpty ?? true)
+                .disabled(session?.resources.data.snapshot.recentlyDiscardedDrawerItems.isEmpty ?? true)
             }
 
             Menu("Desk") {
@@ -341,16 +341,16 @@ private struct DenCommands: Commands {
 
                 Menu("Export") {
                     Button("Save Desk Links as Markdown…") {
-                        controller?.exportFocusedDeskLinks()
+                        session?.deskLinks.exportFocusedDeskLinks()
                     }
-                    .disabled(controller?.canExportFocusedDeskLinks != true)
+                    .disabled(windowModel?.desks.canExportFocusedDeskLinks != true)
 
                     Button("Copy Desk Links as Markdown") {
-                        controller?.copyFocusedDeskLinks()
+                        session?.deskLinks.copyFocusedDeskLinks()
                     }
-                    .disabled(controller?.canExportFocusedDeskLinks != true)
+                    .disabled(windowModel?.desks.canExportFocusedDeskLinks != true)
                 }
-                .disabled(controller == nil)
+                .disabled(session == nil)
 
                 Menu("Resize Boards to Fit") {
                     ForEach(1...9, id: \.self) { count in
@@ -360,7 +360,7 @@ private struct DenCommands: Commands {
                         .disabled(windowModel?.canResizeFocusedDeskBoards(toFit: count) != true)
                     }
                 }
-                .disabled(controller == nil)
+                .disabled(session == nil)
 
                 Button("Reload Focused Desk Sheets") {
                     perform(.desk(.reloadSheets))
@@ -376,9 +376,9 @@ private struct DenCommands: Commands {
 
             Menu("Presentation") {
                 Button("Toggle Overview") { windowModel?.toggleOverview() }
-                    .disabled(controller == nil)
+                    .disabled(session == nil)
                 Button("Toggle Zen View") { perform(.application(.toggleZenView)) }
-                    .disabled(controller == nil)
+                    .disabled(session == nil)
                 Toggle(
                     "Focus Mode",
                     isOn: Binding(
@@ -388,17 +388,17 @@ private struct DenCommands: Commands {
                             perform(.application(.toggleFocusMode))
                         })
                 )
-                .disabled(controller == nil || windowModel?.temporaryContext != nil)
+                .disabled(session == nil || windowModel?.temporaryContext != nil)
                 Button("Toggle Drawer") { perform(.drawer(.toggle)) }
-                    .disabled(controller == nil)
+                    .disabled(session == nil)
             }
 
             Button("Keyboard Shortcuts…") { perform(.application(.showKeyboardShortcuts)) }
-                .disabled(controller == nil)
+                .disabled(session == nil)
             Button("Settings…") {
                 AppActionHandler.perform(
                     .application(.openSettings),
-                    controller: controller,
+                    session: session,
                     windowModel: windowModel,
                     openSettings: { openSettingsCoordinator.open() })
             }
@@ -407,7 +407,7 @@ private struct DenCommands: Commands {
 
             Divider()
             Button("Reset Den") { windowModel?.requestResetDenConfirmation() }
-                .disabled(controller == nil || windowModel?.pendingConfirmation != nil)
+                .disabled(session == nil || windowModel?.pendingConfirmation != nil)
         }
     }
 }

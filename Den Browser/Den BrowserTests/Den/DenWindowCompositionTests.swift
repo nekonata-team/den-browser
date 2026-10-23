@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -9,45 +10,51 @@ import Testing
 struct DenWindowCompositionTests {
     @Test func constructionDoesNotConnectWindowEffects() {
         // Arrange
-        let controller = DenController(state: .sample)
-        controller.reportFeedback("Ready")
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.context.feedback.publish("Ready")
 
         // Act
-        let composition = DenWindowComposition(controller: controller)
+        let composition = DenWindowComposition(session: session)
 
         // Assert
-        #expect(controller.onWindowEffect == nil)
+        #expect(session.connection.onWindowEffect == nil)
         #expect(composition.model.displayedFeedback == nil)
     }
 
     @Test func connectingDeliversCurrentFeedbackAndSynchronousWindowEffects() {
         // Arrange
-        let controller = DenController(state: .sample)
-        controller.reportFeedback("Ready")
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.context.feedback.publish("Ready")
+        let composition = DenWindowComposition(session: session)
         defer { composition.disconnect() }
 
         // Act
         composition.connect()
-        controller.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
+        session.connection.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
 
         // Assert
-        #expect(composition.model.displayedFeedback?.id == controller.latestFeedback?.id)
+        #expect(composition.model.displayedFeedback?.id == session.feedback.latest?.id)
         #expect(composition.model.isOpenBoardPanelPresented)
     }
 
     @Test func disconnectingRemovesWindowEffectsAndEndsFeedbackPresentation() {
         // Arrange
-        let controller = DenController(state: .sample)
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         composition.connect()
-        controller.reportFeedback("Ready")
+        session.context.feedback.publish("Ready")
 
         // Act
         composition.disconnect()
 
         // Assert
-        #expect(controller.onWindowEffect == nil)
+        #expect(session.connection.onWindowEffect == nil)
         #expect(composition.model.displayedFeedback == nil)
     }
 }

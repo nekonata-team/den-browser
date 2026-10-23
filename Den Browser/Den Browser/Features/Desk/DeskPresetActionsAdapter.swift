@@ -3,7 +3,20 @@ import DenDomain
 import DenPresentationModels
 import Foundation
 
-extension DenController {
+@MainActor
+final class DeskPresetActionsAdapter {
+    private let context: WindowNativeContext
+    private let facings: DeskFacings
+    private var storage: DenProfileResources { context.storage }
+    private var focusedDesk: DeskState? { context.focusedDesk }
+    private var deskPresets: [PersonalDeskPreset] { context.storage.deskPresets }
+    private var onWindowEffect: ((DenWindowEffect) -> Void)? { context.connection.onWindowEffect }
+
+    init(context: WindowNativeContext, facings: DeskFacings) {
+        self.context = context
+        self.facings = facings
+    }
+
     func saveFocusedDeskAsPreset(label: String) -> DeskPresetSaveResult {
         switch storage.deskPresetOperations.save(label: label, desk: focusedDesk) {
         case .invalidLabel: return .invalidLabel
@@ -16,7 +29,7 @@ extension DenController {
             if persisted, let preset = storage.deskPresets.first(where: { $0.label == label }),
                 let boards = focusedDesk?.boards
             {
-                savePresetFacings(for: preset.id, boards: boards)
+                facings.savePresetFacings(for: preset.id, boards: boards)
             }
             onWindowEffect?(.exitDenMode)
             reportPresetSave(persisted)
@@ -30,7 +43,7 @@ extension DenController {
         case .unavailable: return false
         case .replaced(let persisted):
             if persisted, let boards = focusedDesk?.boards {
-                savePresetFacings(for: replacement.id, boards: boards)
+                facings.savePresetFacings(for: replacement.id, boards: boards)
             }
             onWindowEffect?(.exitDenMode)
             reportPresetSave(persisted)
@@ -51,21 +64,21 @@ extension DenController {
         case .unavailable: return .unavailable
         case .unchanged: return .unchanged
         case .renamed(let persisted):
-            if !persisted { reportFeedback("Could not rename Desk Preset.", severity: .error) }
+            if !persisted { context.feedback.publish("Could not rename Desk Preset.", severity: .error) }
             return .renamed
         }
     }
 
     func deleteDeskPreset(_ id: UUID) {
         if !storage.deskPresetOperations.delete(id) {
-            reportFeedback("Could not delete Desk Preset.", severity: .error)
+            context.feedback.publish("Could not delete Desk Preset.", severity: .error)
         } else {
-            removePresetFacings(for: id)
+            facings.removePresetFacings(for: id)
         }
     }
 
     private func reportPresetSave(_ persisted: Bool) {
-        reportFeedback(
+        context.feedback.publish(
             persisted ? "Saved Desk Preset." : "Could not save Desk Preset.",
             severity: persisted ? .success : .error)
     }

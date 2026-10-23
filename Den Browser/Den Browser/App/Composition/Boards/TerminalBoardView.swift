@@ -5,7 +5,7 @@ import DenViews
 import SwiftUI
 
 struct TerminalBoardView: View {
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
 
     let board: BoardState
     let isFocused: Bool
@@ -24,7 +24,7 @@ struct TerminalBoardView: View {
 
     var body: some View {
         DenViews.TerminalBoardView(
-            model: controller.boardSurfaceModel(for: board),
+            model: BoardSurfaceModel(board: board, session: session),
             board: board,
             isFocused: isFocused,
             focusRequest: focusRequest,
@@ -49,10 +49,11 @@ struct TerminalBoardView: View {
                 return window.makeFirstResponder(runtime.terminalView)
             },
             onBeforeHide: {
-                guard controller.storage.data.snapshot.activeDrag == nil,
-                    controller.terminalRuntimes[board.id] === runtime
+                guard session.resources.data.snapshot.activeDrag == nil,
+                    session.resources.terminalRuntimes[board.id] === runtime
                 else { return }
-                controller.facingCapture.captureTerminal(boardID: board.id, terminalView: runtime.terminalView)
+                session.resources.facingCapture.captureTerminal(
+                    boardID: board.id, terminalView: runtime.terminalView)
             },
             onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
             onAdjustFontSize: { runtime.adjustFontSize(by: $0) }

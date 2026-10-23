@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenPresentationModels
 import Foundation
 import SwiftUI
@@ -26,14 +27,14 @@ final class KeyboardController {
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
             [weak self, weak profileManager, weak preferences] event in
             guard let self,
-                let controller = profileManager?.controller(for: event.window),
+                let session = profileManager?.session(for: event.window),
                 let window = event.window,
                 let windowModel = self.windowModels[ObjectIdentifier(window)],
                 let preferences
             else { return event }
             return Self.handle(
                 event,
-                controller: controller,
+                session: session,
                 windowModel: windowModel,
                 preferences: preferences,
                 openSettings: openSettings) ? nil : event
@@ -51,55 +52,55 @@ final class KeyboardController {
     @discardableResult
     static func handle(
         _ event: NSEvent,
-        controller: DenController,
+        session: ProfileWindowSession,
         windowModel: DenWindowModel,
         preferences: AppPreferences? = nil,
         openSettings: @MainActor () -> Void = {}
     ) -> Bool {
         let decision = decision(
             for: event,
-            controller: controller,
+            session: session,
             windowModel: windowModel,
             preferences: preferences)
-        apply(decision, controller: controller, windowModel: windowModel, openSettings: openSettings)
+        apply(decision, session: session, windowModel: windowModel, openSettings: openSettings)
         return !decision.isForwarded
     }
 
     static func decision(
         for event: NSEvent,
-        controller: DenController,
+        session: ProfileWindowSession,
         windowModel: DenWindowModel,
         preferences: AppPreferences? = nil
     ) -> InputDecision {
-        let preferences = preferences ?? controller.preferences
+        let preferences = preferences ?? session.configuration.preferences
         return KeyboardRouter.route(
             event: KeyEvent(event),
-            context: InputContext(controller: controller, windowModel: windowModel, event: event),
+            context: InputContext(session: session, windowModel: windowModel, event: event),
             shortcuts: ShortcutConfiguration(preferences: preferences))
     }
 
     static func handleNotificationKeyPress(
         _ press: KeyPress,
-        controller: DenController,
+        session: ProfileWindowSession,
         windowModel: DenWindowModel
     ) -> KeyPress.Result {
         guard windowModel.isNotificationListPresented else { return .ignored }
         let decision = KeyboardRouter.route(
             event: KeyEvent(notificationKeyPress: press),
-            context: InputContext(controller: controller, windowModel: windowModel),
-            shortcuts: ShortcutConfiguration(preferences: controller.preferences))
-        apply(decision, controller: controller, windowModel: windowModel, openSettings: {})
+            context: InputContext(session: session, windowModel: windowModel),
+            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences))
+        apply(decision, session: session, windowModel: windowModel, openSettings: {})
         return decision.isForwarded ? .ignored : .handled
     }
 
     private static func apply(
         _ decision: InputDecision,
-        controller: DenController,
+        session: ProfileWindowSession,
         windowModel: DenWindowModel,
         openSettings: @MainActor () -> Void
     ) {
         guard case .perform(let action) = decision else { return }
-        AppActionHandler.perform(action, controller: controller, windowModel: windowModel, openSettings: openSettings)
+        AppActionHandler.perform(action, session: session, windowModel: windowModel, openSettings: openSettings)
     }
 }
 

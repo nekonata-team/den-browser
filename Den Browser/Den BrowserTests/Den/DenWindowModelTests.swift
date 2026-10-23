@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -20,16 +21,19 @@ struct DenWindowModelTests {
             ? BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
             : BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://target.example/"))
         let desk = DeskState(label: "Desk", boards: [current, target], focusedBoardID: current.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        controller.onWindowEffect?(.runtimeFocusedBoard(target.id))
+        session.connection.onWindowEffect?(.runtimeFocusedBoard(target.id))
 
         // Assert
-        #expect(controller.focusedBoard?.id == (isTerminal ? current.id : target.id))
+        #expect(session.navigation.focusedBoard?.id == (isTerminal ? current.id : target.id))
     }
 
     @Test func deletionInAnotherWindowInvalidatesSelectionAndInsertionReferences() {
@@ -47,20 +51,16 @@ struct DenWindowModelTests {
         let sheetNavigation = SheetNavigationManager(
             defaults: defaults, pasteboard: pasteboard, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        func makeController(presenting deskID: DeskID) -> DenController {
-            DenController(
-                storage: storage,
-                presentedDeskID: deskID,
-                websiteDataStore: .nonPersistent(),
-                sheetNavigation: sheetNavigation,
-                preferences: preferences,
-                pasteboard: pasteboard,
-                canPresentDesk: { _ in true },
-                onDeskPresentationRequest: { _ in true },
-                onWillResetDen: {})
+        func makeSession(presenting deskID: DeskID) -> ProfileWindowSession {
+            ProfileWindowSession(
+                resources: storage,
+                configuration: makeTestBoardRuntimeConfiguration(
+                    websiteDataStore: .nonPersistent(), sheetNavigation: sheetNavigation, preferences: preferences),
+                pasteboard: pasteboard, presentedDeskID: deskID, canPresentDesk: { _ in true },
+                onDeskPresentationRequest: { _ in true }, onWillResetDen: {})
         }
-        let deletingController = makeController(presenting: mainDesk.id)
-        let otherWindowComposition = DenWindowComposition(controller: makeController(presenting: otherDesk.id))
+        let deletingSession = makeSession(presenting: mainDesk.id)
+        let otherWindowComposition = DenWindowComposition(session: makeSession(presenting: otherDesk.id))
         let otherWindow = otherWindowComposition.model
         otherWindowComposition.connect()
         defer { otherWindowComposition.disconnect() }
@@ -68,7 +68,7 @@ struct DenWindowModelTests {
         otherWindow.openBoard.preparePresentation(afterBoardID: board.id)
 
         // Act - another window removes the Board.
-        deletingController.removeBoard(board.id)
+        deletingSession.boardRemoval.removeBoard(board.id)
 
         // Assert
         #expect(otherWindow.overview.selectionBoardID == nil)
@@ -76,7 +76,7 @@ struct DenWindowModelTests {
 
         // Act - another window removes the Desk currently selected in Overview.
         otherWindow.overview.preparePresentation(deskID: selectedDesk.id, boardID: selectedBoard.id)
-        deletingController.confirmDeskDeletion(selectedDesk.id)
+        deletingSession.desks.confirmDeskDeletion(selectedDesk.id)
 
         // Assert
         #expect(otherWindow.overview.selectionDeskID == nil)
@@ -85,16 +85,18 @@ struct DenWindowModelTests {
 
     @Test func latestFeedbackIsDisplayedAndPreviousTimerCannotDismissReplacement() async {
         // Arrange
-        let controller = DenController(state: .sample)
-        let composition = DenWindowComposition(controller: controller, feedbackDuration: .milliseconds(30))
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session, feedbackDuration: .milliseconds(30))
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        controller.reportFeedback("First")
+        session.context.feedback.publish("First")
         try? await Task.sleep(for: .milliseconds(20))
-        controller.reportFeedback("Latest")
+        session.context.feedback.publish("Latest")
         try? await Task.sleep(for: .milliseconds(15))
 
         // Assert
@@ -109,8 +111,10 @@ struct DenWindowModelTests {
 
     @Test func receivingSameFeedbackAgainDoesNotRedisplayAfterDismissal() {
         // Arrange
-        let controller = DenController(state: .sample)
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -130,34 +134,38 @@ struct DenWindowModelTests {
         let board = BoardState(label: "Target", width: 520, currentSheetURL: URL(string: "https://example.com/"))
         let first = DeskState(label: "Empty", boards: [])
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(
-            state: DenState(desks: [first, desk], focusedDeskID: first.id))
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [first, desk], focusedDeskID: first.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        controller.reportFeedback(title: "Build", body: "Finished", target: .board(board.id))
+        session.context.feedback.publish(title: "Build", body: "Finished", target: .board(board.id))
         let feedback = try #require(windowModel.displayedFeedback)
 
         // Act
         windowModel.handleTap(on: feedback)
 
         // Assert
-        #expect(controller.focusedBoard?.id == board.id)
+        #expect(session.navigation.focusedBoard?.id == board.id)
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.displayedFeedback == nil)
     }
 
     @Test func tappingUntargetedFeedbackDismissesItWithoutChangingState() throws {
         // Arrange
-        let controller = DenController(state: .sample)
-        let initialState = controller.state
-        let composition = DenWindowComposition(controller: controller)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let initialState = session.resources.state
+        let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.reportFeedback("Saved")
+        session.context.feedback.publish("Saved")
         let feedback = try #require(windowModel.displayedFeedback)
 
         // Act
@@ -165,6 +173,6 @@ struct DenWindowModelTests {
 
         // Assert
         #expect(windowModel.displayedFeedback == nil)
-        #expect(controller.state == initialState)
+        #expect(session.resources.state == initialState)
     }
 }

@@ -4,7 +4,31 @@ import DenDomain
 import DenPresentationModels
 import Foundation
 
-extension DenController {
+@MainActor
+final class DeskActions {
+    private let context: WindowNativeContext
+    private let boardNavigation: BoardNavigation
+    private var runtimes: BoardRuntimeAccess { context.runtimes }
+    private var storage: DenProfileResources { context.storage }
+    private var state: DenState { context.storage.state }
+    private var pasteboard: NSPasteboard { context.pasteboard }
+    private var focusedDesk: DeskState? { context.focusedDesk }
+    private var presentedDeskID: DeskID { context.navigation.presentedDeskID }
+    private var navigation: WindowNavigationBindings { context.navigation }
+    private var deskPresets: [PersonalDeskPreset] { context.storage.deskPresets }
+    private var facingCache: BoardFacingCache { context.storage.facingCache }
+    private var canDeleteFocusedDesk: Bool {
+        context.storage.deskLifecycle.canDelete(
+            context.navigation.presentedDeskID, isAvailable: { context.canPresentDesk?($0) ?? true })
+    }
+    private var canPresentDesk: ((DeskID) -> Bool)? { context.canPresentDesk }
+    private var onWindowEffect: ((DenWindowEffect) -> Void)? { context.connection.onWindowEffect }
+
+    init(context: WindowNativeContext, boardNavigation: BoardNavigation) {
+        self.context = context
+        self.boardNavigation = boardNavigation
+    }
+
     @discardableResult
     func createDesk(
         label: String, preset: BuiltInDeskPreset, after deskID: DeskID? = nil, focus: Bool = true
@@ -97,12 +121,12 @@ extension DenController {
                 replacement.deskID, label: replacement.label, boards: replacement.boards,
                 focusedBoardIndex: replacement.focusedBoardIndex, notify: deskLifecycleNotifications())
         else { return }
-        reportFeedback("Replaced Desk with Preset.", severity: .success)
+        context.feedback.publish("Replaced Desk with Preset.", severity: .success)
     }
 
     func deleteFocusedDesk() {
         guard canDeleteFocusedDesk else {
-            reportFeedback("The last desk cannot be deleted.", severity: .warning)
+            context.feedback.publish("The last desk cannot be deleted.", severity: .warning)
             return
         }
         guard let focusedDesk else { return }
@@ -143,6 +167,36 @@ extension DenController {
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
         pasteboard.clearContents()
         pasteboard.setString(deskID.rawValue.uuidString.lowercased(), forType: .string)
-        reportFeedback("Copied Desk ID.", severity: .success)
+        context.feedback.publish("Copied Desk ID.", severity: .success)
+    }
+
+    func deskLifecycleNotifications() -> (DeskLifecycle.Notice) -> Void {
+        { [self] notice in
+            switch notice {
+            case .presentCreatedDesk(let id):
+                boardNavigation.setFocusedDesk(id)
+                onWindowEffect?(.dismissTemporaryPresentation)
+                onWindowEffect?(.exitDenMode)
+            case .didCreateDesk:
+                storage.recordOperation(.deskCreated)
+            case .willReplace(let boards):
+                onWindowEffect?(.suppressBoardMutationAnimation)
+                for board in boards { runtimes.disposeRuntime(for: board.id) }
+            case .didReplace(let deskID, let boards):
+                navigation.anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
+                storage.invalidateReferences(toRemovedBoardIDs: Set(boards.map(\.id)))
+                onWindowEffect?(.dismissTemporaryPresentation)
+                onWindowEffect?(.exitDenMode)
+            case .willDelete(let desk, let replacementID, let wasPresented):
+                onWindowEffect?(.suppressBoardMutationAnimation)
+                for board in desk.boards { runtimes.disposeRuntime(for: board.id) }
+                if wasPresented { boardNavigation.setFocusedDesk(replacementID, autoPIP: false) }
+            case .didDelete(let desk, let wasPresented):
+                navigation.anchorJumpOriginBoardIDByDesk.removeValue(forKey: desk.id)
+                storage.invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
+                storage.invalidateReferences(toRemovedDeskID: desk.id)
+                if wasPresented { onWindowEffect?(.exitDenMode) }
+            }
+        }
     }
 }

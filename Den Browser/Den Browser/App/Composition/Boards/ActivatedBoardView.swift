@@ -1,10 +1,11 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
 import SwiftUI
 
 struct ActivatedBoardView: View {
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
 
     let board: BoardState
     let isFocused: Bool
@@ -34,7 +35,7 @@ struct ActivatedBoardView: View {
                     isVisibleInViewport: isVisible,
                     targetBoardID: targetBoardID,
                     onFocus: onFocus,
-                    onRemove: { controller.removeBoard(board.id) },
+                    onRemove: { session.boardRemoval.removeBoard(board.id) },
                     onDragChanged: onDragChanged,
                     onDragEnded: onDragEnded
                 )
@@ -51,7 +52,7 @@ struct ActivatedBoardView: View {
                 height: size.height,
                 isPointerFocusEnabled: isPointerFocusEnabled,
                 onFocus: onFocus,
-                onRemove: { controller.removeBoard(board.id) },
+                onRemove: { session.boardRemoval.removeBoard(board.id) },
                 onDragChanged: onDragChanged,
                 onDragEnded: onDragEnded
             )
@@ -61,19 +62,19 @@ struct ActivatedBoardView: View {
                 isFocused: isFocused,
                 focusRequest: focusRequest,
                 isDragging: isDragging,
-                runtime: controller.terminalRuntime(for: board),
+                runtime: session.runtimes.terminalRuntime(for: board),
                 profileColor: profileColor,
                 width: size.width,
                 height: size.height,
                 isPointerFocusEnabled: isPointerFocusEnabled,
                 isVisibleInViewport: isVisible,
                 onFocus: onFocus,
-                onRemove: { controller.removeBoard(board.id) },
+                onRemove: { session.boardRemoval.removeBoard(board.id) },
                 onDragChanged: onDragChanged,
                 onDragEnded: onDragEnded
             )
         case .web:
-            if let runtime = controller.webRuntimes[board.id] {
+            if let runtime = session.resources.webRuntimes[board.id] {
                 WebBoardView(
                     board: board,
                     isFocused: isFocused,
@@ -86,10 +87,10 @@ struct ActivatedBoardView: View {
                     isPointerFocusEnabled: isPointerFocusEnabled,
                     isVisibleInViewport: isVisible,
                     onFocus: onFocus,
-                    onGoToFirst: { controller.goToFirstSheetInBoard(board.id) },
-                    onGoBack: { controller.goBackInBoard(board.id) },
-                    onGoForward: { controller.goForwardInBoard(board.id) },
-                    onRemove: { controller.removeBoard(board.id) },
+                    onGoToFirst: { session.boardOpening.goToFirstSheetInBoard(board.id) },
+                    onGoBack: { session.boardOpening.goBackInBoard(board.id) },
+                    onGoForward: { session.boardOpening.goForwardInBoard(board.id) },
+                    onRemove: { session.boardRemoval.removeBoard(board.id) },
                     onDragChanged: onDragChanged,
                     onDragEnded: onDragEnded
                 )

@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -7,7 +8,7 @@ import SwiftUI
 
 struct BoardActivityView: View {
     let profileColor: Color
-    @Environment(DenController.self) private var controller
+    @Environment(ProfileWindowSession.self) private var session
     @Environment(DenWindowModel.self) private var windowModel
     @State private var sampler = ProcessResourceSampler()
     @State private var webUsage: [pid_t: ProcessResourceUsage] = [:]
@@ -20,18 +21,18 @@ struct BoardActivityView: View {
                 processLabel: processLabel(for: board), processIdentifier: processIdentifier(for: board),
                 sharedWebBoardCount: sharedWebBoardCount(for: board), profileColor: profileColor,
                 onOpen: { windowModel.enterBoardFromActivity(board.id) },
-                onRemove: { controller.removeBoard(board.id) },
+                onRemove: { session.boardRemoval.removeBoard(board.id) },
                 stateIcon: {
-                    if let runtime = controller.webRuntimes[board.id] {
+                    if let runtime = session.resources.webRuntimes[board.id] {
                         ObservedWebActivityIcon(runtime: runtime)
-                    } else if controller.terminalRuntimes[board.id] != nil {
+                    } else if session.resources.terminalRuntimes[board.id] != nil {
                         DenViews.TerminalActivityStateIcon()
                     } else {
                         Image(systemSymbol: .circle).foregroundStyle(.secondary).accessibilityLabel("Not active")
                     }
                 },
                 status: {
-                    if let runtime = controller.terminalRuntimes[board.id] {
+                    if let runtime = session.resources.terminalRuntimes[board.id] {
                         ObservedTerminalActivityStatus(runtime: runtime)
                     }
                 })
@@ -45,35 +46,35 @@ struct BoardActivityView: View {
     }
 
     private func usage(for board: BoardState) -> ProcessResourceUsage? {
-        if let processID = controller.webRuntimes[board.id]?.webProcessIdentifier {
+        if let processID = session.resources.webRuntimes[board.id]?.webProcessIdentifier {
             return webUsage[processID]
         }
         return terminalUsage[board.id]
     }
 
     private func sharedWebBoardCount(for board: BoardState) -> Int {
-        guard let processID = controller.webRuntimes[board.id]?.webProcessIdentifier else { return 0 }
-        return controller.webRuntimes.values.count { $0.webProcessIdentifier == processID }
+        guard let processID = session.resources.webRuntimes[board.id]?.webProcessIdentifier else { return 0 }
+        return session.resources.webRuntimes.values.count { $0.webProcessIdentifier == processID }
     }
 
     private func processLabel(for board: BoardState) -> String? {
-        if let processID = controller.webRuntimes[board.id]?.webProcessIdentifier {
+        if let processID = session.resources.webRuntimes[board.id]?.webProcessIdentifier {
             return "Web PID \(processID)"
         }
-        if let processGroupID = controller.terminalRuntimes[board.id]?.foregroundProcessGroupID {
+        if let processGroupID = session.resources.terminalRuntimes[board.id]?.foregroundProcessGroupID {
             return "Terminal PGID \(processGroupID)"
         }
         return nil
     }
 
     private func processIdentifier(for board: BoardState) -> pid_t? {
-        controller.webRuntimes[board.id]?.webProcessIdentifier
-            ?? controller.terminalRuntimes[board.id]?.foregroundProcessGroupID
+        session.resources.webRuntimes[board.id]?.webProcessIdentifier
+            ?? session.resources.terminalRuntimes[board.id]?.foregroundProcessGroupID
     }
 
     private func refreshResourceUsage() {
         var activeSamplerKeys = Set<String>()
-        let webProcessIDs = Set(controller.webRuntimes.values.compactMap(\.webProcessIdentifier))
+        let webProcessIDs = Set(session.resources.webRuntimes.values.compactMap(\.webProcessIdentifier))
         webUsage = Dictionary(
             uniqueKeysWithValues: webProcessIDs.compactMap { processID in
                 let key = "web:\(processID)"
@@ -82,7 +83,7 @@ struct BoardActivityView: View {
             })
 
         terminalUsage = Dictionary(
-            uniqueKeysWithValues: controller.terminalRuntimes.compactMap { boardID, runtime in
+            uniqueKeysWithValues: session.resources.terminalRuntimes.compactMap { boardID, runtime in
                 guard let processGroupID = runtime.foregroundProcessGroupID else { return nil }
                 let pids = ProcessResourceSampler.processGroupPIDs(processGroupID)
                 let key = "terminal:\(boardID)"

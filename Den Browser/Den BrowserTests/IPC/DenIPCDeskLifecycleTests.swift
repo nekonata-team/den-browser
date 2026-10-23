@@ -1,5 +1,7 @@
+import DenApplication
 import DenDomain
 import DenIPCProtocol
+import DenPresentationModels
 import Foundation
 import Testing
 
@@ -14,13 +16,13 @@ struct DenIPCDeskLifecycleTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeManager(directory: directory)
-        let controller = try #require(manager.controller(for: manager.personalProfileID))
-        let visibleDeskID = controller.presentedDeskID
-        let visibleBoardID = try #require(controller.createBoard(urlString: "https://example.com/"))
-        controller.createDesk(label: "Caller", preset: .empty)
-        let callerDeskID = controller.presentedDeskID
-        let callerBoardID = try #require(controller.createBoard(urlString: "https://example.com/caller"))
-        #expect(controller.setFocusedDesk(visibleDeskID))
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let visibleDeskID = session.navigation.presentedDeskID
+        let visibleBoardID = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
+        session.desks.createDesk(label: "Caller", preset: .empty)
+        let callerDeskID = session.navigation.presentedDeskID
+        let callerBoardID = try #require(session.boardOpening.createBoard(urlString: "https://example.com/caller"))
+        #expect(session.boardNavigation.setFocusedDesk(visibleDeskID))
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -31,12 +33,12 @@ struct DenIPCDeskLifecycleTests {
 
         // Assert
         #expect(response.result.isOk)
-        let created = try #require(controller.state.desks.last)
-        #expect(controller.state.desks.map(\.id) == [visibleDeskID, callerDeskID, created.id])
+        let created = try #require(session.resources.state.desks.last)
+        #expect(session.resources.state.desks.map(\.id) == [visibleDeskID, callerDeskID, created.id])
         #expect(created.label == "New")
         #expect(created.boards.isEmpty)
-        #expect(controller.presentedDeskID == (focus ? created.id : visibleDeskID))
-        if !focus { #expect(controller.focusedBoard?.id == visibleBoardID) }
+        #expect(session.navigation.presentedDeskID == (focus ? created.id : visibleDeskID))
+        if !focus { #expect(session.navigation.focusedBoard?.id == visibleBoardID) }
         guard case .createdDesk(let id) = response.result.payload else {
             Issue.record("Expected created Desk identity")
             return
@@ -50,11 +52,11 @@ struct DenIPCDeskLifecycleTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeManager(directory: directory)
-        let controller = try #require(manager.controller(for: manager.personalProfileID))
-        let originalDeskID = controller.presentedDeskID
-        controller.createDesk(label: "Remove", preset: .empty)
-        let targetID = controller.presentedDeskID
-        if !visible { #expect(controller.setFocusedDesk(originalDeskID)) }
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let originalDeskID = session.navigation.presentedDeskID
+        session.desks.createDesk(label: "Remove", preset: .empty)
+        let targetID = session.navigation.presentedDeskID
+        if !visible { #expect(session.boardNavigation.setFocusedDesk(originalDeskID)) }
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -64,8 +66,8 @@ struct DenIPCDeskLifecycleTests {
 
         // Assert
         #expect(result.isOk)
-        #expect(controller.state.desks.map(\.id) == [originalDeskID])
-        #expect(controller.presentedDeskID == originalDeskID)
+        #expect(session.resources.state.desks.map(\.id) == [originalDeskID])
+        #expect(session.navigation.presentedDeskID == originalDeskID)
         guard case .removedDesk(let id) = result.payload else {
             Issue.record("Expected removed Desk identity")
             return
@@ -79,10 +81,10 @@ struct DenIPCDeskLifecycleTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeManager(directory: directory)
-        let controller = try #require(manager.controller(for: manager.personalProfileID))
-        controller.createDesk(label: "Occupied", preset: .empty)
-        let targetID = controller.presentedDeskID
-        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        session.desks.createDesk(label: "Occupied", preset: .empty)
+        let targetID = session.navigation.presentedDeskID
+        let boardID = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -92,8 +94,8 @@ struct DenIPCDeskLifecycleTests {
 
         // Assert
         #expect(result.isOk == force)
-        #expect(controller.state.desks.contains(where: { $0.id == targetID }) == !force)
-        #expect((controller.board(for: boardID) != nil) == !force)
+        #expect(session.resources.state.desks.contains(where: { $0.id == targetID }) == !force)
+        #expect((session.resources.state.board(for: boardID) != nil) == !force)
         if !force {
             #expect(result.error?.contains("Boards: 1") == true)
             #expect(result.error?.contains("--force") == true)
@@ -106,8 +108,8 @@ struct DenIPCDeskLifecycleTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeManager(directory: directory)
-        let controller = try #require(manager.controller(for: manager.personalProfileID))
-        let targetID = controller.presentedDeskID
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let targetID = session.navigation.presentedDeskID
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -118,7 +120,7 @@ struct DenIPCDeskLifecycleTests {
         // Assert
         #expect(!result.isOk)
         #expect(result.error == "The last Desk cannot be removed")
-        #expect(controller.state.desks.map(\.id) == [targetID])
+        #expect(session.resources.state.desks.map(\.id) == [targetID])
     }
 
     @Test(arguments: ["", " \n "])
@@ -127,8 +129,8 @@ struct DenIPCDeskLifecycleTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeManager(directory: directory)
-        let controller = try #require(manager.controller(for: manager.personalProfileID))
-        let deskIDs = controller.state.desks.map(\.id)
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let deskIDs = session.resources.state.desks.map(\.id)
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -137,7 +139,7 @@ struct DenIPCDeskLifecycleTests {
 
         // Assert
         #expect(!result.isOk)
-        #expect(controller.state.desks.map(\.id) == deskIDs)
+        #expect(session.resources.state.desks.map(\.id) == deskIDs)
     }
 
     private func makeManager(directory: URL) -> ProfileManager {

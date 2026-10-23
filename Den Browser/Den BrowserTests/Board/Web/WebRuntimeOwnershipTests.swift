@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -17,16 +18,22 @@ struct WebRuntimeOwnershipTests {
         // Arrange
         let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let original = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let runtime = original.webRuntime(for: board)
-        defer { original.releaseRuntimes() }
-        let receiver = original.storage.boardRuntimes.receivers[board.id]
-        let next = DenController(
-            storage: original.storage, presentedDeskID: desk.id, websiteDataStore: original.websiteDataStore,
-            sheetNavigation: original.sheetNavigation, preferences: original.preferences, pasteboard: .withUniqueName(),
-            canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true }, onWillResetDen: {})
-        if disconnected { next.runtimeConnection.disconnect() }
-        let composition = DenWindowComposition(controller: next)
+        let original = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let runtime = original.runtimes.webRuntime(for: board)
+        defer { original.runtimes.releaseRuntimes() }
+        let receiver = original.resources.boardRuntimes.receivers[board.id]
+        let next = ProfileWindowSession(
+            resources: original.resources,
+            configuration: makeTestBoardRuntimeConfiguration(
+                websiteDataStore: original.configuration.websiteDataStore,
+                sheetNavigation: original.configuration.sheetNavigation, preferences: original.configuration.preferences
+            ), pasteboard: .withUniqueName(), presentedDeskID: desk.id, canPresentDesk: { _ in true },
+            onDeskPresentationRequest: { _ in true }, onWillResetDen: {})
+        if disconnected { next.connection.disconnect() }
+        let composition = DenWindowComposition(session: next)
         let key = NSObject()
         let destination = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let activityID = runtime.downloadHandler.registerPendingDownload(
@@ -56,10 +63,10 @@ struct WebRuntimeOwnershipTests {
         _ = try #require(await iterator.next())
 
         // Assert
-        #expect(original.activeDownloads.map(\.id) == (disconnected ? [activityID] : []))
-        #expect(next.activeDownloads.map(\.id) == (disconnected ? [] : [activityID]))
-        #expect(next.storage.webRuntimes[board.id] === runtime)
-        #expect(next.storage.boardRuntimes.receivers[board.id] === receiver)
+        #expect(original.downloads.activities.map(\.id) == (disconnected ? [activityID] : []))
+        #expect(next.downloads.activities.map(\.id) == (disconnected ? [] : [activityID]))
+        #expect(next.resources.webRuntimes[board.id] === runtime)
+        #expect(next.resources.boardRuntimes.receivers[board.id] === receiver)
         #expect(runtime.webView.window === window)
         #expect(runtime.webView.url == nil)
     }

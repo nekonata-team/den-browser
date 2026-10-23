@@ -1,11 +1,13 @@
 import AppKit
+import DenApplication
 import DenDomain
+import DenPresentationModels
 
 @MainActor
 final class ProfileWindowRegistry {
     private var windows: [UUID: RegisteredWindow] = [:]
-    private var controllers: [UUID: DenController] = [:]
-    private var controllerProfileIDs: [UUID: ProfileID] = [:]
+    private var sessions: [UUID: ProfileWindowSession] = [:]
+    private var sessionProfileIDs: [UUID: ProfileID] = [:]
     var openWindowAction: ((ProfileWindowRoute) -> Void)?
 
     func register(window: NSWindow, profileID: ProfileID, windowID: UUID) {
@@ -19,87 +21,87 @@ final class ProfileWindowRegistry {
 
     func removeWindow(windowID: UUID) -> RemovedProfileWindow {
         let registration = windows.removeValue(forKey: windowID)
-        let controller = controllers.removeValue(forKey: windowID)
-        let profileID = controllerProfileIDs.removeValue(forKey: windowID) ?? registration?.profileID
-        return RemovedProfileWindow(registration: registration, controller: controller, profileID: profileID)
+        let session = sessions.removeValue(forKey: windowID)
+        let profileID = sessionProfileIDs.removeValue(forKey: windowID) ?? registration?.profileID
+        return RemovedProfileWindow(registration: registration, session: session, profileID: profileID)
     }
 
-    func setController(_ controller: DenController, windowID: UUID, profileID: ProfileID) {
-        controllers[windowID] = controller
-        controllerProfileIDs[windowID] = profileID
+    func setSession(_ session: ProfileWindowSession, windowID: UUID, profileID: ProfileID) {
+        sessions[windowID] = session
+        sessionProfileIDs[windowID] = profileID
     }
 
-    func controller(for windowID: UUID) -> DenController? {
-        controllers[windowID]
+    func session(for windowID: UUID) -> ProfileWindowSession? {
+        sessions[windowID]
     }
 
     func profileID(for windowID: UUID) -> ProfileID? {
-        controllerProfileIDs[windowID]
+        sessionProfileIDs[windowID]
     }
 
-    func controller(for window: NSWindow) -> DenController? {
-        windowID(for: window).flatMap { controllers[$0] }
+    func session(for window: NSWindow) -> ProfileWindowSession? {
+        windowID(for: window).flatMap { sessions[$0] }
     }
 
-    func controllerEntries() -> [(windowID: UUID, profileID: ProfileID?, controller: DenController)] {
-        controllers.map { windowID, controller in
-            (windowID, controllerProfileIDs[windowID], controller)
+    func sessionEntries() -> [(windowID: UUID, profileID: ProfileID?, session: ProfileWindowSession)] {
+        sessions.map { windowID, session in
+            (windowID, sessionProfileIDs[windowID], session)
         }
     }
 
-    func activeController(preferredWindowID: UUID?) -> DenController? {
+    func activeSession(preferredWindowID: UUID?) -> ProfileWindowSession? {
         if let preferredWindowID {
-            return controllers[preferredWindowID]
+            return sessions[preferredWindowID]
         }
-        return controllers.values.first
+        return sessions.values.first
     }
 
     func activeProfileID(preferredWindowID: UUID?) -> ProfileID? {
         if let preferredWindowID {
-            return controllerProfileIDs[preferredWindowID]
+            return sessionProfileIDs[preferredWindowID]
         }
-        return controllers.keys.first.flatMap { controllerProfileIDs[$0] }
+        return sessions.keys.first.flatMap { sessionProfileIDs[$0] }
     }
 
-    func controller(forProfileID profileID: ProfileID, preferredWindowID: UUID?) -> DenController? {
+    func session(forProfileID profileID: ProfileID, preferredWindowID: UUID?) -> ProfileWindowSession? {
         if let preferredWindowID,
-            controllerProfileIDs[preferredWindowID] == profileID,
-            let controller = controllers[preferredWindowID]
+            sessionProfileIDs[preferredWindowID] == profileID,
+            let session = sessions[preferredWindowID]
         {
-            return controller
+            return session
         }
-        for (windowID, candidateProfileID) in controllerProfileIDs where candidateProfileID == profileID {
-            if let controller = controllers[windowID] {
-                return controller
+        for (windowID, candidateProfileID) in sessionProfileIDs where candidateProfileID == profileID {
+            if let session = sessions[windowID] {
+                return session
             }
         }
         return nil
     }
 
-    func profileID(for controller: DenController) -> ProfileID? {
-        for (windowID, candidateController) in controllers where candidateController === controller {
-            return controllerProfileIDs[windowID]
+    func profileID(for session: ProfileWindowSession) -> ProfileID? {
+        for (windowID, candidateSession) in sessions where candidateSession === session {
+            return sessionProfileIDs[windowID]
         }
         return nil
     }
 
-    func controllers(for profileID: ProfileID) -> [DenController] {
-        controllerProfileIDs.compactMap { windowID, candidateProfileID in
-            candidateProfileID == profileID ? controllers[windowID] : nil
+    func sessions(for profileID: ProfileID) -> [ProfileWindowSession] {
+        sessionProfileIDs.compactMap { windowID, candidateProfileID in
+            candidateProfileID == profileID ? sessions[windowID] : nil
         }
     }
 
-    func allControllers() -> [DenController] {
-        Array(controllers.values)
+    func allSessions() -> [ProfileWindowSession] {
+        Array(sessions.values)
     }
 
-    func hasController(for profileID: ProfileID) -> Bool {
-        controllerProfileIDs.values.contains(profileID)
+    func hasSession(for profileID: ProfileID) -> Bool {
+        sessionProfileIDs.values.contains(profileID)
     }
 
-    func controllerWindowIDs(for profileID: ProfileID) -> Set<UUID> {
+    func sessionWindowIDs(for profileID: ProfileID) -> Set<UUID> {
         Set(
-            controllerProfileIDs.compactMap { windowID, candidateProfileID in
+            sessionProfileIDs.compactMap { windowID, candidateProfileID in
                 candidateProfileID == profileID ? windowID : nil
             })
     }
@@ -146,7 +148,7 @@ final class ProfileWindowRegistry {
 
 struct RemovedProfileWindow {
     let registration: RegisteredWindow?
-    let controller: DenController?
+    let session: ProfileWindowSession?
     let profileID: ProfileID?
 }
 

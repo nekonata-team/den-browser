@@ -20,89 +20,91 @@ final class BoardRuntimeReceiver {
     {
         .init(
             onOpenBoard: { [connection] url in
-                _ = connection.controller?.createBoard(
+                _ = connection.boardOpening?.createBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
                     recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
             },
             onOpenBoardInBackground: { [connection] url in
-                _ = connection.controller?.createBoard(
+                _ = connection.boardOpening?.createBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
                     focus: false,
                     recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
             },
-            onKeepInDrawer: { [connection] url in connection.controller?.keepInDrawer(url, opensDrawer: false) },
+            onKeepInDrawer: { [connection] url in connection.drawer?.keepInDrawer(url, opensDrawer: false) },
             onEditCurrentSheet: { [connection] in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.onWindowEffect?(.presentEditBoardLink)
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.onWindowEffect?(.presentEditBoardLink)
             },
             onOpenCurrentSheetInNewBoard: { [connection] url in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.onWindowEffect?(.presentOpenBoard(initialURL: url, afterBoardID: nil))
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.onWindowEffect?(.presentOpenBoard(initialURL: url, afterBoardID: nil))
             },
             onPasteURLInNewBoard: { [connection] url in
-                _ = connection.controller?.createBoard(
+                _ = connection.boardOpening?.createBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
                     recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
             },
             onCopyURLSucceeded: { [connection] in
-                connection.controller?.reportFeedback("Copied Current Sheet URL.", severity: .success)
+                connection.feedback?.publish("Copied Current Sheet URL.", severity: .success)
             },
             onCopyURLFailed: { [connection] in
-                connection.controller?.reportFeedback("Could not copy Current Sheet URL.", severity: .error)
+                connection.feedback?.publish("Could not copy Current Sheet URL.", severity: .error)
             },
             onCopyMarkdownLinkSucceeded: { [connection] in
-                connection.controller?.reportFeedback("Copied Current Sheet Markdown link.", severity: .success)
+                connection.feedback?.publish("Copied Current Sheet Markdown link.", severity: .success)
             },
             onCopyMarkdownLinkFailed: { [connection] in
-                connection.controller?.reportFeedback("Could not copy Current Sheet Markdown link.", severity: .error)
+                connection.feedback?.publish("Could not copy Current Sheet Markdown link.", severity: .error)
             },
             onCopyBoardID: { [connection] in
-                connection.controller?.copyBoardID(board.id)
+                connection.boardNavigation?.copyBoardID(board.id)
             },
             onPasteURLFailed: { [connection] in
-                connection.controller?.reportFeedback("Clipboard does not contain a supported URL.", severity: .warning)
+                connection.feedback?.publish("Clipboard does not contain a supported URL.", severity: .warning)
             },
             onOpenBoardPanel: { [connection] in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
             },
             onShowOverview: { [connection] in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.onWindowEffect?(
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.onWindowEffect?(
                     .presentOverview(
                         deskID: connection.presentedDeskID(),
                         boardID: connection.focusedBoardID()))
             },
             onShowEssentials: { [connection] in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.onWindowEffect?(.presentEssentialsPrefix)
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.onWindowEffect?(.presentEssentialsPrefix)
             },
-            onRemoveBoard: { [connection] in connection.controller?.removeBoard(board.id) },
-            onRemoveBoardAndFocusNext: { [connection] in connection.controller?.removeBoard(board.id, focusNext: true)
+            onRemoveBoard: { [connection] in connection.boardRemoval?.removeBoard(board.id) },
+            onRemoveBoardAndFocusNext: { [connection] in connection.boardRemoval?.removeBoard(board.id, focusNext: true)
             },
-            onRestoreBoard: { [connection] in connection.controller?.restoreRecentlyRemovedBoard() },
-            onFocusFirstBoard: { [connection] in connection.controller?.focusFirstBoardInDesk(containing: board.id) },
-            onFocusLastBoard: { [connection] in connection.controller?.focusLastBoardInDesk(containing: board.id) },
+            onRestoreBoard: { [connection] in connection.boardRemoval?.restoreRecentlyRemovedBoard() },
+            onFocusFirstBoard: { [connection] in connection.boardNavigation?.focusFirstBoardInDesk(containing: board.id)
+            },
+            onFocusLastBoard: { [connection] in connection.boardNavigation?.focusLastBoardInDesk(containing: board.id)
+            },
             onFocusPreviousBoard: { [connection] in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.focusPreviousBoard()
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.boardNavigation?.focusPreviousBoard()
             },
             onFocusNextBoard: { [connection] in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.focusNextBoard()
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.boardNavigation?.focusNextBoard()
             },
-            onGoToFirstSheet: { [connection] in connection.controller?.goToFirstSheetInBoard(board.id) },
-            onGoToLatestSheet: { [connection] in connection.controller?.goToLatestSheetInBoard(board.id) },
+            onGoToFirstSheet: { [connection] in connection.boardOpening?.goToFirstSheetInBoard(board.id) },
+            onGoToLatestSheet: { [connection] in connection.boardOpening?.goToLatestSheetInBoard(board.id) },
             isSupportedSheetURL: WebURLPolicy.isSupported,
             onNavigateCurrentSheet: { [connection] url in
-                connection.controller?.focusBoard(board.id)
-                connection.controller?.navigateFocusedBoard(urlString: url.absoluteString)
+                connection.boardNavigation?.focusBoard(board.id)
+                connection.boardOpening?.navigateFocusedBoard(urlString: url.absoluteString)
             })
     }
 
@@ -115,48 +117,48 @@ final class BoardRuntimeReceiver {
                 }
             },
             onFullscreenChange: { [connection] id, fullscreen in
-                connection.controller?.updateFullscreenStatus(boardID: id, isFullscreen: fullscreen)
+                connection.boardNavigation?.updateFullscreenStatus(boardID: id, isFullscreen: fullscreen)
             },
             onCreatePopupBoard: { [connection] webView, url, flags in
-                connection.controller?.createPopupBoard(
+                connection.boardOpening?.createPopupBoard(
                     webView, requestedURL: url, fromBoardID: board.id, modifierFlags: flags) ?? false
             },
             onClosePopupBoard: { [weak self, connection] in self?.removeBoard(connection: connection) },
-            onLinkActivated: { [connection] in connection.controller?.prepareBoardLinkFocus(board.id) },
+            onLinkActivated: { [connection] in connection.boardNavigation?.prepareBoardLinkFocus(board.id) },
             downloadActivityOwnerID: ObjectIdentifier(connection),
-            onDownloadActivity: { [connection] in connection.controller?.handleDownloadActivity($0) },
+            onDownloadActivity: { [connection] in connection.onDownloadActivity?($0) },
             onDownloadFinished: { [connection] in
-                connection.controller?.reportFeedback("Downloaded \($0).", severity: .success)
+                connection.feedback?.publish("Downloaded \($0).", severity: .success)
             },
             onDownloadFailed: { [connection] in
-                connection.controller?.reportFeedback("Download failed: \($0)", severity: .error)
+                connection.feedback?.publish("Download failed: \($0)", severity: .error)
             },
             isFocused: { [connection] in connection.focusedBoardID() == board.id },
-            restoreFocusedFirstResponder: { [connection] in connection.controller?.restoreFocusedFirstResponder() })
+            restoreFocusedFirstResponder: { [connection] in connection.runtimes?.restoreFocusedFirstResponder() })
     }
 
     func terminalEvents(for board: BoardState, connection: RuntimeWindowConnection) -> TerminalRuntime.Events {
         .init(
             onClose: { [weak self, connection] in self?.removeBoard(connection: connection) },
-            onFocus: { [connection] in connection.controller?.onWindowEffect?(.runtimeFocusedBoard(board.id)) },
+            onFocus: { [connection] in connection.onWindowEffect?(.runtimeFocusedBoard(board.id)) },
             onWorkingDirectoryChange: { [weak self] in
                 self?.storage?.boardUpdates.updateTerminal(board.id, workingDirectory: $0)
             },
             onTitleChange: { [weak self] in self?.storage?.boardUpdates.updateTerminal(board.id, title: $0) },
-            onOpenURL: { [connection] in connection.controller?.handleTerminalURL($0, boardID: board.id) },
+            onOpenURL: { [connection] in connection.boardOpening?.handleTerminalURL($0, boardID: board.id) },
             onNotification: { [weak self, connection] title, body in
                 guard
                     let notification = self?.storage?.notificationOperations.record(
                         title: title, body: body, boardID: board.id)
                 else { return }
-                connection.controller?.onWindowEffect?(.notificationAdded(notification.id))
-                connection.controller?.reportFeedback(title: title, body: body, target: .notification(notification.id))
+                connection.onWindowEffect?(.notificationAdded(notification.id))
+                connection.feedback?.publish(title: title, body: body, target: .notification(notification.id))
             })
     }
 
     private func removeBoard(connection: RuntimeWindowConnection) {
-        if let controller = connection.controller {
-            controller.removeBoard(boardID)
+        if let removal = connection.boardRemoval {
+            removal.removeBoard(boardID)
             return
         }
         guard let storage, let desk = storage.state.desks.first(where: { $0.boards.contains { $0.id == boardID } })
@@ -171,8 +173,8 @@ final class BoardRuntimeReceiver {
                 storage.facingCache.invalidate(for: board.id)
                 storage.boardRuntimes.dispose(board.id)
             }
-            for window in storage.drawerPresentations.allObjects {
-                window.navigation.invalidateBoards(removedIDs)
+            for window in storage.windowConnections.allObjects {
+                window.invalidateBoards?(removedIDs)
                 for id in removedIDs {
                     window.onWindowEffect?(.boardRemoved(id))
                 }
