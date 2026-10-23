@@ -624,8 +624,13 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         let sheetURL = webView.url
         let script =
             """
-            document.querySelector('link[rel~="icon"][href]')?.href
-                ?? new URL('/favicon.ico', document.baseURI).href
+            (() => {
+                const icon = document.querySelector('link[rel~="icon"][href]')?.href;
+                if (icon) return icon;
+                return location.protocol === 'http:' || location.protocol === 'https:'
+                    ? new URL('/favicon.ico', location.href).href
+                    : null;
+            })()
             """
 
         webView.evaluateJavaScript(script) { [weak self] result, _ in
@@ -697,12 +702,15 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         let pictureInPictureScript = Self.pictureInPictureJavaScript(mode: mode)
         guard !pictureInPictureScript.isEmpty else { return }
 
-        webView.evaluateJavaScript(pictureInPictureScript) { result, error in
+        webView.callAsyncJavaScript(
+            "return \(pictureInPictureScript)", arguments: [:], in: nil, in: .page
+        ) { result in
             #if DEBUG
-                if let error {
+                switch result {
+                case .failure(let error):
                     print("[DenBrowser] PiP \(mode) script error: \(error.localizedDescription)")
-                } else if let result {
-                    print("[DenBrowser] PiP \(mode) script success: \(result)")
+                case .success(let value):
+                    print("[DenBrowser] PiP \(mode) script success: \(value)")
                 }
             #endif
         }
