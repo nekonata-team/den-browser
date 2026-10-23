@@ -18,6 +18,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     let downloadHandler: DownloadHandler
 
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
+    private var authenticationPrompts: [HTTPBasicAuthenticationPrompt] = []
     var auxiliaryWindowFactory: (NSRect) -> NSWindow = { contentRect in
         NSWindow(
             contentRect: contentRect,
@@ -92,6 +93,9 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     }
 
     func dispose() {
+        let prompts = authenticationPrompts
+        authenticationPrompts.removeAll()
+        for prompt in prompts { prompt.finish(nil) }
         downloadHandler.dispose()
         for window in Array(auxiliaryWindows.values) {
             window.delegate = nil
@@ -134,11 +138,49 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {}
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {}
-    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {}
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        cancelAuthentication(for: webView)
+    }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {}
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
     }
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {}
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        cancelAuthentication(for: webView)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping @MainActor @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+
+        requestHTTPBasicCredential(for: challenge, in: webView) { credential in
+            completionHandler(credential == nil ? .cancelAuthenticationChallenge : .useCredential, credential)
+        }
+    }
+
+    func requestHTTPBasicCredential(
+        for challenge: URLAuthenticationChallenge, in webView: WKWebView,
+        completion: @escaping @MainActor (URLCredential?) -> Void
+    ) {
+        let id = UUID()
+        let prompt = HTTPBasicAuthenticationPrompt(id: id, challenge: challenge, webView: webView) {
+            [weak self] credential in
+            self?.authenticationPrompts.removeAll { $0.id == id }
+            completion(credential)
+            DispatchQueue.main.async { [weak self] in self?.authenticationPrompts.first?.present() }
+        }
+        authenticationPrompts.append(prompt)
+        authenticationPrompts.first?.present()
+    }
+
+    private func cancelAuthentication(for webView: WKWebView) {
+        for prompt in authenticationPrompts.filter({ $0.webView === webView }) { prompt.finish(nil) }
+    }
 
     func webView(
         _ webView: WKWebView,
@@ -336,6 +378,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     }
 
     func webViewDidClose(_ webView: WKWebView) {
+        cancelAuthentication(for: webView)
         if let window = auxiliaryWindows.removeValue(forKey: ObjectIdentifier(webView)) {
             window.delegate = nil
             window.close()
@@ -348,6 +391,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
 
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
+        for prompt in authenticationPrompts.filter({ $0.webView?.window === window }) { prompt.finish(nil) }
         auxiliaryWindows = auxiliaryWindows.filter { $0.value !== window }
     }
 }

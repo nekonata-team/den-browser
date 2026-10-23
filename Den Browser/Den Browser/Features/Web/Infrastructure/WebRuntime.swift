@@ -574,6 +574,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        super.webViewWebContentProcessDidTerminate(webView)
         if webView === self.webView { navigationHTTPStatusCode = nil }
         didTerminateContentProcess = true
     }
@@ -582,6 +583,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
+        super.webView(webView, didStartProvisionalNavigation: navigation)
         faviconURL = nil
         if webView === self.webView { navigationHTTPStatusCode = nil }
         if webView === self.webView, isInspectionActive { inspectionPageGeneration &+= 1 }
