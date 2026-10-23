@@ -2,12 +2,6 @@ import DenDomain
 import Foundation
 import WebKit
 
-enum DownloadActivityEvent: Equatable {
-    case started(DownloadActivity)
-    case progressed(id: UUID, fractionCompleted: Double?)
-    case ended(id: UUID)
-}
-
 @MainActor
 final class DownloadHandler: NSObject, WKDownloadDelegate {
     private weak var webView: WKWebView?

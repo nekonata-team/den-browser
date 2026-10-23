@@ -13,9 +13,9 @@ extension DenController {
             case .removed(let source, let result):
                 let removedIDs = Set(result.removedBoards.map(\.id))
                 if source.anchorBoardID.map(removedIDs.contains) == true
-                    || anchorJumpOriginBoardIDByDesk[source.id].map(removedIDs.contains) == true
+                    || navigation.anchorJumpOriginBoardIDByDesk[source.id].map(removedIDs.contains) == true
                 {
-                    anchorJumpOriginBoardIDByDesk.removeValue(forKey: source.id)
+                    navigation.anchorJumpOriginBoardIDByDesk.removeValue(forKey: source.id)
                 }
                 for board in result.removedBoards {
                     if board.isInspection, let target = board.sideBoardTargetBoardID {

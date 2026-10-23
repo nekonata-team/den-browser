@@ -2089,11 +2089,11 @@ struct DenControllerBoardTests {
             #expect(controller.focusedDesk?.anchorBoardID == firstBoard.id)
             controller.focusBoard(secondBoard.id)
             controller.jumpToAnchorBoard()
-            #expect(controller.anchorJumpOriginBoardIDByDesk[source.id] == secondBoard.id)
+            #expect(controller.navigation.anchorJumpOriginBoardIDByDesk[source.id] == secondBoard.id)
 
             controller.removeBoard(firstBoard.id)
             #expect(controller.focusedDesk?.anchorBoardID == nil)
-            #expect(controller.anchorJumpOriginBoardIDByDesk[source.id] == nil)
+            #expect(controller.navigation.anchorJumpOriginBoardIDByDesk[source.id] == nil)
         }
     }
 

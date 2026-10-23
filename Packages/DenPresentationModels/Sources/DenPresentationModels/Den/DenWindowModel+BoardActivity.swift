@@ -18,7 +18,7 @@ public extension DenWindowModel {
     }
 
     func enterBoardFromActivity(_ boardID: BoardID) {
-        guard inputs.board(boardID) != nil else { return }
+        guard navigation.board(for: boardID) != nil else { return }
         setTemporaryContext(nil)
         boardActions.focusBoard(boardID, true)
     }

@@ -4,11 +4,15 @@ import Foundation
 @MainActor
 final class RuntimeWindowConnection {
     weak var controller: DenController?
+    var presentedDeskID: () -> DeskID? = { nil }
+    var focusedBoardID: () -> BoardID? = { nil }
+
+    var onDisconnect: () -> Void = {}
 
     func disconnect() {
-        if let controller {
-            for activity in controller.activeDownloads { controller.handleDownloadActivity(.ended(id: activity.id)) }
-        }
+        onDisconnect()
+        presentedDeskID = { nil }
+        focusedBoardID = { nil }
         controller = nil
     }
 }

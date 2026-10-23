@@ -17,7 +17,7 @@ struct BoardStrip: View {
             model: BoardStripModel(
                 state: controller.storage.data, movement: controller.storage.boardMovement,
                 sizing: controller.storage.boardSizing, deskUpdates: controller.storage.deskUpdates,
-                presentedDeskID: { controller.presentedDeskID },
+                presentedDeskID: { [navigation = controller.navigation] in navigation.presentedDeskID },
                 prepareDrag: { controller.onWindowEffect?(.clearMaximizedBoard) },
                 focus: { controller.focusBoard($0, exitsDenMode: true) },
                 remove: { controller.removeBoard($0) },

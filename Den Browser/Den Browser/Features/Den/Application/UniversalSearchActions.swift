@@ -5,48 +5,6 @@ import Foundation
 
 @MainActor
 enum UniversalSearchActions {
-    static func items(controller: DenController, profiles: [ProfileState], profileName: String) -> [UniversalSearchItem]
-    {
-        var items: [UniversalSearchItem] = []
-        for desk in controller.state.desks {
-            for board in desk.boards {
-                items.append(
-                    UniversalSearchItem(
-                        target: .board(board.id), title: board.displayName,
-                        detail: "Switch to Board · \(profileName) / \(desk.label)",
-                        keywords: [
-                            board.currentSheetURL?.absoluteString, board.terminalWorkingDirectory,
-                            board.zellijSessionName, board.zmxSessionName,
-                        ].compactMap { $0 }.joined(separator: " ")))
-            }
-        }
-        items += controller.essentials.map {
-            UniversalSearchItem(
-                target: .essential($0.id), title: $0.name,
-                detail: "Create Board from Essential · \($0.displayKey)", keywords: $0.input)
-        }
-        items += controller.state.desks.map {
-            UniversalSearchItem(target: .desk($0.id), title: $0.label, detail: "Switch to Desk · \(profileName)")
-        }
-        items += profiles.map {
-            UniversalSearchItem(target: .profile($0.id), title: $0.name, detail: "Switch to Profile")
-        }
-        for command in UniversalSearchCommand.allCases {
-            if command == .restoreBoard, controller.recentlyRemovedBoards.isEmpty { continue }
-            let title: String
-            switch command {
-            case .newDesk: title = "New Desk…"
-            case .openProfile: title = "Open Profile…"
-            case .openSettings: title = "Open Settings"
-            case .toggleZenView: title = "Toggle Zen View"
-            case .toggleFocusMode: title = "Toggle Focus Mode"
-            case .restoreBoard: title = "Restore Recently Removed Board"
-            }
-            items.append(UniversalSearchItem(target: .command(command), title: title, detail: "Command"))
-        }
-        return items
-    }
-
     static func perform(
         _ target: UniversalSearchItem.Target,
         controller: DenController,
@@ -63,13 +21,17 @@ enum UniversalSearchActions {
         }
         switch target {
         case .board(let id):
-            guard controller.state.desks.contains(where: { $0.boards.contains(where: { $0.id == id }) }) else {
+            guard
+                controller.storage.data.snapshot.den.desks.contains(where: {
+                    $0.boards.contains(where: { $0.id == id })
+                })
+            else {
                 return "This Board is no longer available."
             }
             windowModel.hideUniversalSearch()
             controller.focusBoard(id, exitsDenMode: true)
         case .desk(let id):
-            guard controller.state.desks.contains(where: { $0.id == id }) else {
+            guard controller.storage.data.snapshot.den.desks.contains(where: { $0.id == id }) else {
                 return "This Desk is no longer available."
             }
             windowModel.hideUniversalSearch()
@@ -80,12 +42,12 @@ enum UniversalSearchActions {
             }
             windowModel.hideUniversalSearch()
         case .essential(let id):
-            guard let essential = controller.essentials.first(where: { $0.id == id }) else {
+            guard let essential = controller.preferences.essentials.first(where: { $0.id == id }) else {
                 return "This Essential is no longer available."
             }
             return open(essential.input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
         case .recent(let item):
-            guard controller.recentItems.contains(item) else {
+            guard controller.storage.data.snapshot.recentItems.contains(item) else {
                 return "This Recent Item is no longer available."
             }
             return open(item.displayText, controller: controller, windowModel: windowModel, inDrawer: inDrawer)

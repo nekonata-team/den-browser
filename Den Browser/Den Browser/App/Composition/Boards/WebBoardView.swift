@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -56,7 +57,7 @@ struct WebBoardView: View {
                 return window.makeFirstResponder(runtime.webView)
             },
             onBeforeHide: {
-                guard controller.canCaptureFacing else { return }
+                guard controller.storage.data.snapshot.activeDrag == nil else { return }
                 guard controller.webRuntimes[board.id] === runtime else { return }
                 await controller.facingCapture.captureWeb(
                     boardID: board.id, webView: runtime.webView)

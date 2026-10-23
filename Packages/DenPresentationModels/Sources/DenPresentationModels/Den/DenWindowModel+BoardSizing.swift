@@ -4,17 +4,17 @@ import Foundation
 
 public extension DenWindowModel {
     var defaultBoardWidth: Double {
-        inputs.focusedBoard()?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
+        navigation.focusedBoard?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
     }
 
     func adjustFocusedBoardWidth(by delta: Double) {
-        guard let boardID = inputs.focusedBoard()?.id else { return }
+        guard let boardID = navigation.focusedBoard?.id else { return }
         maximizedBoardID = nil
         boardSizing.adjustBoard(boardID, by: delta)
     }
 
     func adjustFocusedDeskBoardWidths(by delta: Double) {
-        guard let deskID = inputs.focusedDesk()?.id else { return }
+        guard let deskID = navigation.focusedDesk?.id else { return }
         maximizedBoardID = nil
         boardSizing.adjustDesk(deskID, by: delta)
     }
@@ -32,11 +32,11 @@ public extension DenWindowModel {
     }
 
     func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        inputs.focusedDesk()?.boards.isEmpty == false && boardWidth(toFit: count) != nil
+        navigation.focusedDesk?.boards.isEmpty == false && boardWidth(toFit: count) != nil
     }
 
     func showBoardWidthPanel() {
-        guard inputs.focusedDesk()?.boards.isEmpty == false else { return }
+        guard navigation.focusedDesk?.boards.isEmpty == false else { return }
         boardWidthPanelMessage = nil
         setTemporaryContext(.boardWidth)
     }
@@ -47,7 +47,7 @@ public extension DenWindowModel {
 
     @discardableResult
     func resizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        guard let deskID = inputs.focusedDesk()?.id, let width = boardWidth(toFit: count) else {
+        guard let deskID = navigation.focusedDesk?.id, let width = boardWidth(toFit: count) else {
             boardWidthPanelMessage = "\(count) Boards cannot fit at this window width"
             return false
         }

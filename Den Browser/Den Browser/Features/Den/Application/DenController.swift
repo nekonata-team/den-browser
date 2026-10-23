@@ -7,14 +7,6 @@ import Foundation
 import Observation
 import WebKit
 
-struct BoardIndices {
-    let desk: DeskIndex
-    let board: BoardIndex
-
-    var deskOffset: Int { desk.rawValue }
-    var boardOffset: Int { board.rawValue }
-}
-
 @MainActor
 @Observable
 final class DenController {
@@ -31,7 +23,8 @@ final class DenController {
         storage.notificationOperations.unreadCount()
     }
     var essentials: [Essential] { preferences.essentials }
-    private(set) var presentedDeskID: DeskID
+    let navigation: WindowNavigationModel
+    var presentedDeskID: DeskID { navigation.presentedDeskID }
     let feedback = FeedbackModel()
     var latestFeedback: DenFeedback? { feedback.latest }
     var activeDrag: ActiveDrag? { storage.activeDrag }
@@ -48,7 +41,8 @@ final class DenController {
     var canCaptureFacing: Bool {
         activeDrag == nil
     }
-    private(set) var activeDownloads: [DownloadActivity] = []
+    let downloads = DownloadActivityModel()
+    var activeDownloads: [DownloadActivity] { downloads.activities }
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let essentialEditing: EssentialEditing
@@ -118,8 +112,6 @@ final class DenController {
     func startScreenshotOperation(_ operation: @escaping @MainActor () async -> Void) {
         windowResources.startScreenshotOperation(operation)
     }
-    @ObservationIgnored var previousFocusedDeskID: DeskID?
-    @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [DeskID: BoardID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored private let requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)?
     @ObservationIgnored let canPresentDesk: ((DeskID) -> Bool)?
@@ -141,17 +133,8 @@ final class DenController {
         }
     }
 
-    var focusedDesk: DeskState? {
-        state.desks.first { $0.id == presentedDeskID }
-    }
-
-    var focusedBoard: BoardState? {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return nil }
-        return state.desks[deskIndex.rawValue].boards[boardIndex.rawValue]
-    }
+    var focusedDesk: DeskState? { navigation.focusedDesk }
+    var focusedBoard: BoardState? { navigation.focusedBoard }
 
     func updateWebExtensionHost(
         _ host: WebExtensionHost?,
@@ -209,7 +192,7 @@ final class DenController {
             onDeskPresetsSave: onDeskPresetsSave,
             onRecentItemsSave: onRecentItemsSave)
         self.storage = storage
-        presentedDeskID = normalizedState.focusedDeskID
+        navigation = WindowNavigationModel(state: storage.data, presentedDeskID: normalizedState.focusedDeskID)
         self.websiteDataStore = websiteDataStore
         self.profileID = profileID
         self.ipcSocketPath = ipcSocketPath
@@ -227,6 +210,12 @@ final class DenController {
         onWillResetDen = nil
         storage.drawerPresentations.add(self)
         runtimeConnection.controller = self
+        runtimeConnection.presentedDeskID = { [weak self] in self?.navigation.presentedDeskID }
+        runtimeConnection.focusedBoardID = { [weak self] in self?.navigation.focusedDesk?.focusedBoardID }
+        runtimeConnection.onDisconnect = { [weak downloads] in
+            guard let downloads else { return }
+            for activity in downloads.activities { downloads.receive(.ended(id: activity.id)) }
+        }
         inputSourceTracker.isEnabled = { [weak self] in
             self?.preferences.rememberBoardInputMethod ?? false
         }
@@ -253,10 +242,12 @@ final class DenController {
         ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         self.storage = storage
-        self.presentedDeskID =
-            presentedDeskID
-            .flatMap { requested in storage.state.desks.contains { $0.id == requested } ? requested : nil }
-            ?? storage.state.focusedDeskID
+        navigation = WindowNavigationModel(
+            state: storage.data,
+            presentedDeskID:
+                presentedDeskID
+                .flatMap { requested in storage.state.desks.contains { $0.id == requested } ? requested : nil }
+                ?? storage.state.focusedDeskID)
         self.websiteDataStore = websiteDataStore
         self.profileID = profileID
         self.ipcSocketPath = ipcSocketPath
@@ -274,44 +265,19 @@ final class DenController {
         self.onWillResetDen = onWillResetDen
         storage.drawerPresentations.add(self)
         runtimeConnection.controller = self
+        runtimeConnection.presentedDeskID = { [weak self] in self?.navigation.presentedDeskID }
+        runtimeConnection.focusedBoardID = { [weak self] in self?.navigation.focusedDesk?.focusedBoardID }
+        runtimeConnection.onDisconnect = { [weak downloads] in
+            guard let downloads else { return }
+            for activity in downloads.activities { downloads.receive(.ended(id: activity.id)) }
+        }
         inputSourceTracker.isEnabled = { [weak self] in
             self?.preferences.rememberBoardInputMethod ?? false
         }
     }
 
     static func normalizedPersistedState(_ state: DenState) -> DenState {
-        if state.desks.isEmpty {
-            return .sample
-        }
-        var copy = state
-        if !copy.desks.contains(where: { $0.id == copy.focusedDeskID }),
-            let firstDeskID = copy.desks.first?.id
-        {
-            copy.focusedDeskID = firstDeskID
-        }
-        for deskIndex in copy.desks.indices {
-            let boardCount = copy.desks[deskIndex].boards.count
-            copy.desks[deskIndex].boards.removeAll(where: \.isTutorial)
-            if copy.desks[deskIndex].boards.count != boardCount {
-                copy.desks[deskIndex].scrollOffsetX = nil
-            }
-            for boardIndex in copy.desks[deskIndex].boards.indices {
-                copy.desks[deskIndex].boards[boardIndex].currentSheetURL =
-                    copy.desks[deskIndex].boards[boardIndex].currentSheetURL.map(WebURLPolicy.canonicalSheetURL)
-                copy.desks[deskIndex].boards[boardIndex].firstSheetURL =
-                    copy.desks[deskIndex].boards[boardIndex].firstSheetURL.map(WebURLPolicy.canonicalSheetURL)
-            }
-            let boards = copy.desks[deskIndex].boards
-            if !boards.contains(where: { $0.id == copy.desks[deskIndex].focusedBoardID }) {
-                copy.desks[deskIndex].focusedBoardID = boards.first?.id
-            }
-            if let anchorBoardID = copy.desks[deskIndex].anchorBoardID,
-                !boards.contains(where: { $0.id == anchorBoardID })
-            {
-                copy.desks[deskIndex].anchorBoardID = nil
-            }
-        }
-        return copy
+        DenStateNormalization.normalize(state)
     }
 
     func resetDen() {
@@ -326,13 +292,12 @@ final class DenController {
             case .cancelDrag(.desk):
                 onWindowEffect?(.cancelDeskDrag)
             case .stateReplaced(let deskID):
-                presentedDeskID = deskID
+                navigation.replacePresentedDesk(deskID)
                 preferences.setBoardRailPresented(false)
             case .clearInputRequests:
                 onWindowEffect?(.clearBoardInputRequests)
             case .clearWindowReferences:
-                previousFocusedDeskID = nil
-                anchorJumpOriginBoardIDByDesk.removeAll()
+                navigation.clearHistory()
             case .finished:
                 onWindowEffect?(.resetPresentation)
                 reportFeedback("Reset Den completed.", severity: .success)
@@ -362,19 +327,7 @@ final class DenController {
     }
 
     func handleDownloadActivity(_ event: DownloadActivityEvent) {
-        switch event {
-        case .started(let activity):
-            if let index = activeDownloads.firstIndex(where: { $0.id == activity.id }) {
-                activeDownloads[index] = activity
-            } else {
-                activeDownloads.append(activity)
-            }
-        case .progressed(let id, let fractionCompleted):
-            guard let index = activeDownloads.firstIndex(where: { $0.id == id }) else { return }
-            activeDownloads[index].fractionCompleted = fractionCompleted
-        case .ended(let id):
-            activeDownloads.removeAll { $0.id == id }
-        }
+        downloads.receive(event)
     }
 
     func reportFeedback(
@@ -421,19 +374,11 @@ final class DenController {
     }
 
     func boardIndices(for boardID: BoardID) -> BoardIndices? {
-        for deskIndex in state.desks.indices {
-            if let boardIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == boardID }) {
-                return BoardIndices(
-                    desk: DeskIndex(rawValue: deskIndex),
-                    board: BoardIndex(rawValue: boardIndex))
-            }
-        }
-        return nil
+        state.boardIndices(for: boardID)
     }
 
     func board(for boardID: BoardID) -> BoardState? {
-        guard let indices = boardIndices(for: boardID) else { return nil }
-        return state.desks[indices.deskOffset].boards[indices.boardOffset]
+        state.board(for: boardID)
     }
 
     @discardableResult
@@ -444,8 +389,7 @@ final class DenController {
         if autoPIP {
             enterPictureInPictureForDeskSwitch()
         }
-        previousFocusedDeskID = presentedDeskID
-        presentedDeskID = deskID
+        navigation.present(deskID)
         storage.deskUpdates.recordPresentedDesk(deskID)
         onWindowEffect?(.clearBoardInputRequests)
         if let boardID = focusedDesk?.focusedBoardID {
@@ -471,9 +415,9 @@ final class DenController {
     }
 
     func returnToPreviousDesk() {
-        guard let previousFocusedDeskID else { return }
+        guard let previousFocusedDeskID = navigation.previousFocusedDeskID else { return }
         guard setFocusedDesk(previousFocusedDeskID) else {
-            self.previousFocusedDeskID = nil
+            self.navigation.previousFocusedDeskID = nil
             return
         }
         onWindowEffect?(.exitDenMode)
@@ -523,8 +467,7 @@ final class DenController {
 
     func invalidateReferences(toRemovedBoardIDs removedBoardIDs: Set<BoardID>) {
         for presentation in storage.drawerPresentations.allObjects {
-            presentation.anchorJumpOriginBoardIDByDesk = presentation.anchorJumpOriginBoardIDByDesk
-                .filter { !removedBoardIDs.contains($0.value) }
+            presentation.navigation.invalidateBoards(removedBoardIDs)
             for boardID in removedBoardIDs {
                 presentation.onWindowEffect?(.boardRemoved(boardID))
             }
@@ -536,10 +479,7 @@ final class DenController {
 
     func invalidateReferences(toRemovedDeskID removedDeskID: DeskID) {
         for presentation in storage.drawerPresentations.allObjects {
-            if presentation.previousFocusedDeskID == removedDeskID {
-                presentation.previousFocusedDeskID = nil
-            }
-            presentation.anchorJumpOriginBoardIDByDesk.removeValue(forKey: removedDeskID)
+            presentation.navigation.invalidateDesk(removedDeskID)
             presentation.onWindowEffect?(.deskRemoved(removedDeskID))
         }
         if case .desk(let deskID) = activeDrag, deskID == removedDeskID {

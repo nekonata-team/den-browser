@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -28,7 +29,7 @@ struct DenView<Header: View>: View {
             profileName: profileName, profileColor: profileColor, isPrivateDen: isPrivateDen,
             shouldShowHeader: shouldShowHeader, motionPreference: preferences.motionPreference,
             drawerStyle: preferences.drawerStyle, sheetScale: preferences.sheetScale,
-            activities: controller.activeDownloads,
+            activities: windowModel.downloads.activities,
             onScaleChange: { controller.applySheetScale($0) },
             onMotionChange: { controller.sheetNavigation.setReduceMotion($0) },
             onOpenTutorial: { controller.openTutorialBoard(preferredWidth: $0) },
@@ -131,7 +132,8 @@ private struct DenActivePanelOverlay: View {
                 .zIndex(DenOverlayLayer.activePanel)
 
             activePanel(
-                newBoardWidth: DenLayout.newBoardWidth(in: size, focusedBoardWidth: controller.focusedBoard?.width),
+                newBoardWidth: DenLayout.newBoardWidth(
+                    in: size, focusedBoardWidth: controller.navigation.focusedBoard?.width),
                 boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
             )
             .zIndex(DenOverlayLayer.activePanel)
@@ -145,9 +147,12 @@ private struct DenActivePanelOverlay: View {
             panelOverlay(
                 UniversalSearchPanel(
                     profileColor: profileColor,
-                    sourceItems: UniversalSearchActions.items(
-                        controller: controller, profiles: profileManager.profiles, profileName: profileName ?? ""),
-                    recentItems: controller.recentItems, boards: controller.state.desks.flatMap(\.boards),
+                    sourceItems: UniversalSearchModel.sourceItems(
+                        state: controller.storage.data.snapshot.den, essentials: preferences.essentials,
+                        hasRemovedBoards: !controller.storage.data.snapshot.recentlyRemovedBoards.isEmpty,
+                        profiles: profileManager.profiles, profileName: profileName ?? ""),
+                    recentItems: controller.storage.data.snapshot.recentItems,
+                    boards: controller.storage.data.snapshot.den.desks.flatMap(\.boards),
                     perform: { target, inDrawer in
                         UniversalSearchActions.perform(
                             target, controller: controller, windowModel: windowModel, inDrawer: inDrawer,
@@ -159,7 +164,7 @@ private struct DenActivePanelOverlay: View {
             panelOverlay(
                 EssentialsPrefixPanel(
                     profileColor: profileColor,
-                    essentials: controller.essentials,
+                    essentials: controller.preferences.essentials,
                     selectedEssentialID: windowModel.selectedEssentialID,
                     onSelect: { windowModel.selectEssential($0) },
                     onOpenInDrawer: { windowModel.launchEssential(id: $0, inDrawer: true) }
@@ -180,7 +185,7 @@ private struct DenActivePanelOverlay: View {
                 DeskPresetManagementPanel(
                     isStandalone: true,
                     profileColor: profileColor,
-                    presets: controller.deskPresets,
+                    presets: controller.storage.data.snapshot.deskPresets,
                     boardHeight: boardHeight,
                     renamePreset: windowModel.deskPresetActions.rename,
                     requestDeletion: windowModel.deskPresetActions.requestDeletion
@@ -193,8 +198,8 @@ private struct DenActivePanelOverlay: View {
         case .saveDeskPreset:
             panelOverlay(
                 SaveDeskPresetPanel(
-                    initialLabel: controller.focusedDesk?.label ?? "",
-                    previewBoards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []),
+                    initialLabel: controller.navigation.focusedDesk?.label ?? "",
+                    previewBoards: DeskPresetBoard.capture(from: controller.navigation.focusedDesk?.boards ?? []),
                     boardHeight: boardHeight,
                     savePreset: windowModel.deskPresetActions.save,
                     onClose: { windowModel.hideSaveDeskPresetPanel() }

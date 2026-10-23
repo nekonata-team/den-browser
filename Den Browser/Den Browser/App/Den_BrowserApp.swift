@@ -257,17 +257,17 @@ private struct DenCommands: Commands {
                     .keyboardShortcut("t", modifiers: [.command])
                     .disabled(controller == nil)
                 Button("Inspect Current Sheet") {
-                    guard let board = controller?.focusedBoard, board.isWeb else { return }
+                    guard let board = windowModel?.focusedBoard, board.isWeb else { return }
                     controller?.createInspectionBoard(targetBoardID: board.id)
                 }
                 .keyboardShortcut("i", modifiers: [.command, .option])
-                .disabled(controller?.focusedBoard?.isWeb != true)
+                .disabled(windowModel?.focusedBoard?.isWeb != true)
                 Button("Create Terminal Side Board") { perform(.board(.createTerminalSideBoard)) }
                     .keyboardShortcut("d", modifiers: [.command])
-                    .disabled(controller?.focusedBoard?.isTerminal != true)
+                    .disabled(windowModel?.focusedBoard?.isTerminal != true)
                 Menu("Sheet Size") {
                     Button(
-                        controller?.focusedBoard?.isTerminal == true
+                        windowModel?.focusedBoard?.isTerminal == true
                             ? "Increase Font Size" : "Increase Sheet Scale"
                     ) {
                         perform(.board(.increaseSheetSize))
@@ -275,7 +275,7 @@ private struct DenCommands: Commands {
                     .keyboardShortcut("=", modifiers: [.command, .shift])
 
                     Button(
-                        controller?.focusedBoard?.isTerminal == true
+                        windowModel?.focusedBoard?.isTerminal == true
                             ? "Decrease Font Size" : "Decrease Sheet Scale"
                     ) {
                         perform(.board(.decreaseSheetSize))
@@ -283,44 +283,44 @@ private struct DenCommands: Commands {
                     .keyboardShortcut("-", modifiers: [.command])
 
                     Button(
-                        controller?.focusedBoard?.isTerminal == true
+                        windowModel?.focusedBoard?.isTerminal == true
                             ? "Reset Font Size" : "Reset Sheet Scale"
                     ) {
                         perform(.board(.resetSheetSize))
                     }
                     .keyboardShortcut("0", modifiers: [.command])
                 }
-                .disabled(!(controller?.focusedBoard?.isWeb == true || controller?.focusedBoard?.isTerminal == true))
+                .disabled(!(windowModel?.focusedBoard?.isWeb == true || windowModel?.focusedBoard?.isTerminal == true))
                 Button("Edit Focused Board Link") {
                     perform(.board(.showEditLinkPanel))
                 }
                 .keyboardShortcut("l", modifiers: [.command])
-                .disabled(controller?.focusedBoard?.isWeb != true)
+                .disabled(windowModel?.focusedBoard?.isWeb != true)
 
                 Divider()
 
                 Button("Reload Current Sheet") { perform(.board(.reload)) }
                     .keyboardShortcut("r", modifiers: [.command])
-                    .disabled(controller?.focusedBoard?.isWeb != true)
+                    .disabled(windowModel?.focusedBoard?.isWeb != true)
                 Button("Hard Reload Current Sheet") {
                     perform(.board(.reloadFromOrigin))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
-                .disabled(controller?.focusedBoard?.isWeb != true)
+                .disabled(windowModel?.focusedBoard?.isWeb != true)
                 Button("Capture Current Sheet Screenshot…") {
                     perform(.board(.captureSheet))
                 }
-                .disabled(controller?.focusedBoard?.isWeb != true && controller?.focusedBoard?.isTerminal != true)
+                .disabled(windowModel?.focusedBoard?.isWeb != true && windowModel?.focusedBoard?.isTerminal != true)
 
                 Divider()
 
                 Button("Remove Board") { perform(.board(.remove)) }
                     .keyboardShortcut("w", modifiers: [.command])
                     .disabled(
-                        controller?.focusedDesk?.focusedBoardID == nil
+                        windowModel?.focusedDesk?.focusedBoardID == nil
                             || windowModel?.pendingConfirmation != nil)
                 Button("Restore Removed Board") { perform(.board(.restore)) }
-                    .disabled(controller?.recentlyRemovedBoards.isEmpty ?? true)
+                    .disabled(controller?.storage.data.snapshot.recentlyRemovedBoards.isEmpty ?? true)
             }
 
             Button("zmx Sessions…") { windowModel?.showZmxSessions() }
@@ -330,14 +330,14 @@ private struct DenCommands: Commands {
                 Button("Restore Discarded Drawer Item") {
                     perform(.drawer(.restoreDiscardedItem))
                 }
-                .disabled(controller?.recentlyDiscardedDrawerItems.isEmpty ?? true)
+                .disabled(controller?.storage.data.snapshot.recentlyDiscardedDrawerItems.isEmpty ?? true)
             }
 
             Menu("Desk") {
                 Button("New Desk") { perform(.desk(.showNewPanel)) }
-                    .disabled(controller?.canCreateDesk != true)
+                    .disabled(windowModel?.desks.canCreateDesk != true)
                 Button("Save Desk as Preset…") { perform(.desk(.showSavePresetPanel)) }
-                    .disabled(controller?.focusedDesk?.boards.isEmpty != false)
+                    .disabled(windowModel?.focusedDesk?.boards.isEmpty != false)
 
                 Menu("Export") {
                     Button("Save Desk Links as Markdown…") {
@@ -366,12 +366,12 @@ private struct DenCommands: Commands {
                     perform(.desk(.reloadSheets))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .option, .shift])
-                .disabled(controller?.focusedDesk?.boards.contains(where: \.isWeb) != true)
+                .disabled(windowModel?.focusedDesk?.boards.contains(where: \.isWeb) != true)
 
                 Divider()
 
                 Button("Delete Desk") { perform(.desk(.delete)) }
-                    .disabled(controller?.canDeleteFocusedDesk != true)
+                    .disabled(windowModel?.desks.canDeleteFocusedDesk != true)
             }
 
             Menu("Presentation") {

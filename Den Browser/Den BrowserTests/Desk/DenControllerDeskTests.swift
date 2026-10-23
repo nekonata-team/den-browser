@@ -282,7 +282,7 @@ struct DenControllerDeskTests {
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        controller.anchorJumpOriginBoardIDByDesk[replacing.id] = oldBoards[1].id
+        controller.navigation.anchorJumpOriginBoardIDByDesk[replacing.id] = oldBoards[1].id
         _ = controller.prepareBoardLinkFocus(oldBoards[1].id)
         windowModel.overview.selectBoard(oldBoards[1].id)
         windowModel.showReplaceDeskPanel()
@@ -294,7 +294,7 @@ struct DenControllerDeskTests {
 
         // Assert
         #expect(controller.focusedDesk?.anchorBoardID == nil)
-        #expect(controller.anchorJumpOriginBoardIDByDesk[replacing.id] == nil)
+        #expect(controller.navigation.anchorJumpOriginBoardIDByDesk[replacing.id] == nil)
         #expect(windowModel.openBoard.afterBoardID == nil)
         #expect(windowModel.pendingBoardLinkFocus == nil)
         #expect(windowModel.overview.selectionDeskID == nil)
@@ -376,12 +376,12 @@ struct DenControllerDeskTests {
 
             // Switch to third desk, then confirm deletion of second desk
             controller.focusDesk(third.id)
-            #expect(controller.previousFocusedDeskID == second.id)
+            #expect(controller.navigation.previousFocusedDeskID == second.id)
 
             let initialSuppression = windowModel.boardMutationAnimationSuppressionRequest
             windowModel.confirmDeskDeletion()
             #expect(controller.state.desks.map(\.id) == [first.id, third.id])
-            #expect(controller.previousFocusedDeskID == nil)
+            #expect(controller.navigation.previousFocusedDeskID == nil)
             #expect(windowModel.boardMutationAnimationSuppressionRequest == initialSuppression + 1)
         }
     }

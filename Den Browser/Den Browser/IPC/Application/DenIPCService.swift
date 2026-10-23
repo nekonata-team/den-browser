@@ -2,7 +2,6 @@ import Darwin
 import DenApplication
 import DenDomain
 import DenIPCProtocol
-import DenPresentationModels
 import Foundation
 import WebKit
 
@@ -12,7 +11,7 @@ final class DenIPCService {
 
     private struct WebBoardInteractionTarget {
         let profileID: ProfileID
-        let controller: DenController
+        let window: IPCWindowBindings
         let board: BoardState
         let runtime: WebRuntime
     }
@@ -189,9 +188,9 @@ final class DenIPCService {
         case .success(let resolved):
             let webBoardTarget = WebBoardInteractionTarget(
                 profileID: resolved.profileID,
-                controller: resolved.controller,
+                window: resolved.window,
                 board: resolved.board,
-                runtime: resolved.controller.webRuntime(for: resolved.board)
+                runtime: resolved.window.board.webRuntime(resolved.board)
             )
             let result = await perform(webBoardTarget)
             return DenIPCResponse(
@@ -210,14 +209,14 @@ final class DenIPCService {
     }
 
     private func handleInspectionRead(target: ResolvedBoardTarget) async -> DenIPCOperationResult {
-        let controller = target.controller
+        let window = target.window
         let inspection = target.board
         guard let targetBoardID = inspection.sideBoardTargetBoardID,
-            let targetBoard = controller.board(for: targetBoardID), targetBoard.isWeb
+            let targetBoard = window.resources.data.snapshot.den.board(for: targetBoardID), targetBoard.isWeb
         else {
             return .failure("Inspection Board target Web Board is unavailable")
         }
-        guard let runtime = controller.webRuntimes[targetBoard.id] else {
+        guard let runtime = window.resources.webRuntimes[targetBoard.id] else {
             return .failure("Inspection collection is unavailable for the target Web Board")
         }
         let generation = runtime.inspectionPageGeneration
@@ -280,7 +279,7 @@ final class DenIPCService {
         guard let profileManager else {
             return .failure("Profile manager unavailable")
         }
-        let controller = resolved.controller
+        let window = resolved.window
         let desk = resolved.desk
         guard let profile = profileManager.profile(id: resolved.profileID)
         else {
@@ -295,7 +294,7 @@ final class DenIPCService {
                 hasWindow: profileManager.hasWindow(for: $0.id)
             )
         }
-        let desks = controller.state.desks.map {
+        let desks = window.resources.data.snapshot.den.desks.map {
             DenDeskInfo(
                 id: $0.id.rawValue.uuidString,
                 label: $0.label,
@@ -327,7 +326,7 @@ final class DenIPCService {
                     activeDesk: activeDesk,
                     boards: boards,
                     focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
-                    drawerItemCount: controller.state.drawerItems.count
+                    drawerItemCount: window.resources.data.snapshot.den.drawerItems.count
                 )))
     }
 
@@ -408,7 +407,7 @@ final class DenIPCService {
         _ command: DenIPCCommand.Sheet,
         target: WebBoardInteractionTarget
     ) async -> DenIPCOperationResult {
-        let controller = target.controller
+        let window = target.window
         let board = target.board
         let runtime = target.runtime
 
@@ -421,7 +420,7 @@ final class DenIPCService {
                 guard
                     let resolved = BoardInputResolver.resolveOpenBoardInput(
                         payload.url,
-                        searchEngine: controller.preferences.searchEngine),
+                        searchEngine: window.searchEngine()),
                     WebURLPolicy.isSupported(resolved.url)
                 else {
                     return .failure("Invalid or unsupported URL: \(payload.url)")
@@ -662,16 +661,18 @@ final class DenIPCService {
                         return .failure("Element is not a link with an href: \(description)")
                     }
                     guard
-                        let newBoardID = controller.createBoard(
-                            urlString: href,
-                            afterBoardID: board.id,
-                            focus: shouldFocus,
-                            origin: .cli
-                        ), let newBoard = controller.board(for: newBoardID)
+                        let newBoardID = window.resources.boardCreation.createWeb(
+                            urlString: href, width: window.inheritedBoardWidth(),
+                            searchEngine: window.searchEngine(),
+                            target: BoardCreation.Target(
+                                presentedDeskID: window.presentedDeskID(), afterBoardID: board.id,
+                                focus: shouldFocus, origin: .cli),
+                            notify: window.board.creationNotice
+                        ), let newBoard = window.resources.data.snapshot.den.board(for: newBoardID)
                     else {
                         return .failure("Failed to create new Web Board for \(href)")
                     }
-                    _ = controller.webRuntime(for: newBoard)
+                    _ = window.board.webRuntime(newBoard)
                     return .success(
                         .createdBoard(
                             id: newBoardID.rawValue.uuidString,
@@ -920,7 +921,7 @@ final class DenIPCService {
         else {
             return false
         }
-        return target.controller.board(for: target.board.id) != nil
+        return target.window.resources.data.snapshot.den.board(for: target.board.id) != nil
     }
 
     // MARK: - Board Commands
@@ -939,9 +940,7 @@ final class DenIPCService {
     }
 
     private func handleBoardFocus(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
-        resolved.controller.onWindowEffect?(.dismissTemporaryPresentation)
-        resolved.controller.focusBoard(resolved.board.id, exitsDenMode: true)
-        resolved.controller.centerFocusedBoard()
+        resolved.window.board.focus(resolved.board.id)
         return .success(.board(boardInfo(resolved.board, focusedBoardID: resolved.board.id)))
     }
 
@@ -965,20 +964,21 @@ final class DenIPCService {
         context: DenIPCCallerContext
     ) -> DenIPCOperationResult {
         guard
-            let boardID = resolved.controller.storage.boardCreation.createWeb(
+            let boardID = resolved.window.resources.boardCreation.createWeb(
                 urlString: payload.url,
-                width: payload.width ?? resolved.controller.inheritedBoardWidth,
-                searchEngine: resolved.controller.preferences.searchEngine,
-                target: resolved.controller.boardCreationTarget(
+                width: payload.width ?? resolved.window.inheritedBoardWidth(),
+                searchEngine: resolved.window.searchEngine(),
+                target: BoardCreation.Target(
+                    presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
                     afterBoardID: newBoardInsertionAnchor(
-                        context: context, in: resolved.controller, deskID: resolved.desk.id),
-                    focus: payload.focus, origin: .cli, deskID: resolved.desk.id),
-                notify: resolved.controller.boardCreationNotifications()
-            ), let board = resolved.controller.board(for: boardID)
+                        context: context, in: resolved.window.resources.data.snapshot.den, deskID: resolved.desk.id),
+                    focus: payload.focus, origin: .cli),
+                notify: resolved.window.board.creationNotice
+            ), let board = resolved.window.resources.data.snapshot.den.board(for: boardID)
         else {
             return .failure("Failed to open board with \(payload.url)")
         }
-        _ = resolved.controller.webRuntime(for: board)
+        _ = resolved.window.board.webRuntime(board)
         return .success(.createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil))
     }
 
@@ -987,8 +987,7 @@ final class DenIPCService {
         target resolved: ResolvedBoardTarget
     ) -> DenIPCOperationResult {
         guard
-            let inspectionID = resolved.controller.createInspectionBoard(
-                targetBoardID: resolved.board.id, focus: payload.focus)
+            let inspectionID = resolved.window.board.createInspection(resolved.board.id, payload.focus)
         else {
             return .failure("Could not create an Inspection Board for \(resolved.board.id.rawValue.uuidString)")
         }
@@ -998,22 +997,23 @@ final class DenIPCService {
     private func handleBoardMove(
         destination: DenBoardMoveDestination, target resolved: ResolvedBoardTarget
     ) -> DenIPCOperationResult {
-        let controller = resolved.controller
+        let window = resolved.window
         let desk: DeskState
         let anchorID: BoardID?
         switch destination {
         case .desk(let id):
-            guard let target = controller.state.desks.first(where: { $0.id == DeskID(id) }) else {
+            guard let target = window.resources.data.snapshot.den.desks.first(where: { $0.id == DeskID(id) }) else {
                 return .failure("Desk not found: \(id)")
             }
             desk = target
             anchorID = nil
         case .leftOf(let id), .rightOf(let id):
             let boardID = BoardID(id)
-            guard let indices = controller.boardIndices(for: boardID),
-                let group = BoardGroup.containing(boardID, in: controller.state.desks[indices.deskOffset].boards)
+            guard let indices = window.resources.data.snapshot.den.boardIndices(for: boardID),
+                let group = BoardGroup.containing(
+                    boardID, in: window.resources.data.snapshot.den.desks[indices.deskOffset].boards)
             else { return .failure("Board not found: \(id)") }
-            desk = controller.state.desks[indices.deskOffset]
+            desk = window.resources.data.snapshot.den.desks[indices.deskOffset]
             if group.boards.contains(where: { $0.id == resolved.board.id }) {
                 return .success(.board(boardInfo(resolved.board, focusedBoardID: desk.focusedBoardID)))
             }
@@ -1026,17 +1026,17 @@ final class DenIPCService {
                 anchorID = desk.boards.dropFirst(lastIndex + 1).first?.id
             }
         }
-        guard controller.storage.boardMovement.place(resolved.board.id, in: desk.id, before: anchorID) else {
+        guard window.resources.boardMovement.place(resolved.board.id, in: desk.id, before: anchorID) else {
             return .failure("Could not move Board while a drag is active or the destination is unavailable")
         }
-        let focusedID = controller.state.desks.first(where: { $0.id == desk.id })?.focusedBoardID
+        let focusedID = window.resources.data.snapshot.den.desks.first(where: { $0.id == desk.id })?.focusedBoardID
         return .success(.board(boardInfo(resolved.board, focusedBoardID: focusedID)))
     }
 
     private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
-        resolved.controller.storage.boardRemoval.remove(
-            resolved.board.id, presentedDeskID: resolved.controller.presentedDeskID, origin: .cli,
-            notify: resolved.controller.boardRemovalNotifications())
+        resolved.window.resources.boardRemoval.remove(
+            resolved.board.id, presentedDeskID: resolved.window.presentedDeskID(), origin: .cli,
+            notify: resolved.window.board.removalNotice)
         return .success(
             .closedBoard(
                 id: resolved.board.id.rawValue.uuidString,
@@ -1050,7 +1050,14 @@ final class DenIPCService {
     ) -> DenIPCOperationResult {
         let resolvedDir: String
         if let dir = payload.path {
-            switch DenController.validateTerminalWorkingDirectory(dir) {
+            switch BoardInputResolver.validateTerminalWorkingDirectory(
+                dir,
+                directoryExists: { path in
+                    var isDirectory: ObjCBool = false
+                    return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
+                        && isDirectory.boolValue
+                })
+            {
             case .success(let path):
                 resolvedDir = path
             case .failure(let error):
@@ -1061,21 +1068,24 @@ final class DenIPCService {
         }
 
         guard
-            let boardID = resolved.controller.storage.boardCreation.createTerminal(
+            let boardID = resolved.window.resources.boardCreation.createTerminal(
                 workingDirectory: resolvedDir,
-                width: payload.width ?? resolved.controller.inheritedBoardWidth,
-                target: resolved.controller.boardCreationTarget(
+                width: payload.width ?? resolved.window.inheritedBoardWidth(),
+                target: BoardCreation.Target(
+                    presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
                     afterBoardID: newBoardInsertionAnchor(
-                        context: context, in: resolved.controller, deskID: resolved.desk.id),
-                    focus: payload.focus, origin: .cli, deskID: resolved.desk.id),
-                notify: resolved.controller.boardCreationNotifications()
+                        context: context, in: resolved.window.resources.data.snapshot.den, deskID: resolved.desk.id),
+                    focus: payload.focus, origin: .cli),
+                notify: resolved.window.board.creationNotice
             )
         else {
             return .failure("Failed to create terminal board")
         }
 
-        if let runCommand = payload.runCommand, let board = resolved.controller.board(for: boardID) {
-            let runtime = resolved.controller.terminalRuntime(for: board)
+        if let runCommand = payload.runCommand,
+            let board = resolved.window.resources.data.snapshot.den.board(for: boardID)
+        {
+            let runtime = resolved.window.board.terminalRuntime(board)
             runtime.runCommand(runCommand)
         }
 
@@ -1084,15 +1094,15 @@ final class DenIPCService {
 
     private func newBoardInsertionAnchor(
         context: DenIPCCallerContext,
-        in controller: DenController,
+        in state: DenState,
         deskID: DeskID
     ) -> BoardID? {
-        guard let deskIndex = controller.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
+        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
         let callerAnchor = context.callerBoardID.map(BoardID.init).flatMap { boardID -> BoardID? in
-            guard controller.boardIndices(for: boardID)?.deskOffset == deskIndex else { return nil }
+            guard state.boardIndices(for: boardID)?.deskOffset == deskIndex else { return nil }
             return boardID
         }
-        return callerAnchor ?? controller.state.desks[deskIndex].focusedBoardID
+        return callerAnchor ?? state.desks[deskIndex].focusedBoardID
     }
 
     // MARK: - Desk Commands
@@ -1102,41 +1112,43 @@ final class DenIPCService {
         guard !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failure("Desk label must not be empty")
         }
-        guard resolved.controller.state.desks.count < DeskCreation.maximumDeskCount else {
+        guard resolved.window.resources.data.snapshot.den.desks.count < DeskCreation.maximumDeskCount else {
             return .failure("Cannot create more than \(DeskCreation.maximumDeskCount) Desks")
         }
         guard
-            let desk = resolved.controller.storage.deskLifecycle.create(
+            let desk = resolved.window.resources.deskLifecycle.create(
                 label: label, boards: BuiltInDeskPreset.empty.boards,
                 focusedBoardIndex: BuiltInDeskPreset.empty.focusedBoardIndex,
-                presentedDeskID: resolved.controller.presentedDeskID, after: resolved.desk.id, focus: focus,
-                notify: resolved.controller.deskLifecycleNotifications())
+                presentedDeskID: resolved.window.presentedDeskID(), after: resolved.desk.id, focus: focus,
+                notify: resolved.window.desk.lifecycleNotice)
         else { return .failure("Could not create Desk") }
         return .success(.createdDesk(id: desk.id.rawValue.uuidString))
     }
 
     private func handleDeskRemove(force: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
-        let controller = resolved.controller
+        let window = resolved.window
         let desk = resolved.desk
-        guard controller.state.desks.count > 1 else { return .failure("The last Desk cannot be removed") }
+        guard window.resources.data.snapshot.den.desks.count > 1 else {
+            return .failure("The last Desk cannot be removed")
+        }
         guard force || desk.boards.isEmpty else {
             return .failure("Desk is not empty (Boards: \(desk.boards.count)); use --force to remove it and its Boards")
         }
-        controller.storage.deskLifecycle.delete(
-            desk.id, presentedDeskID: controller.presentedDeskID,
-            isAvailable: { controller.canPresentDesk?($0) ?? true }, notify: controller.deskLifecycleNotifications())
-        guard !controller.state.desks.contains(where: { $0.id == desk.id }) else {
+        window.resources.deskLifecycle.delete(
+            desk.id, presentedDeskID: window.presentedDeskID(),
+            isAvailable: window.desk.isAvailable, notify: window.desk.lifecycleNotice)
+        guard !window.resources.data.snapshot.den.desks.contains(where: { $0.id == desk.id }) else {
             return .failure("Could not remove Desk: no available replacement Desk")
         }
         return .success(.removedDesk(id: desk.id.rawValue.uuidString))
     }
 
     private func handleDeskList(target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
-        let desks = resolved.controller.state.desks.map { desk in
+        let desks = resolved.window.resources.data.snapshot.den.desks.map { desk in
             DenDeskInfo(
                 id: desk.id.rawValue.uuidString,
                 label: desk.label,
-                isActive: desk.id == resolved.controller.presentedDeskID,
+                isActive: desk.id == resolved.window.presentedDeskID(),
                 boardCount: desk.boards.count
             )
         }
@@ -1149,12 +1161,12 @@ final class DenIPCService {
         _ command: DenIPCCommand.Drawer,
         target resolved: ResolvedDeskTarget
     ) -> DenIPCOperationResult {
-        let controller = resolved.controller
+        let window = resolved.window
         let desk = resolved.desk
 
         switch command {
         case .list:
-            let items = controller.state.drawerItems.map { item in
+            let items = window.resources.data.snapshot.den.drawerItems.map { item in
                 DenDrawerItemInfo(
                     id: item.id.uuidString,
                     url: item.url.absoluteString,
@@ -1170,18 +1182,18 @@ final class DenIPCService {
             guard
                 let openInput = BoardInputResolver.resolveOpenBoardInput(
                     payload.url,
-                    searchEngine: controller.preferences.searchEngine),
+                    searchEngine: window.searchEngine()),
                 case let .url(url, _) = openInput.item,
                 WebURLPolicy.isSupported(url)
             else {
                 return .failure("Invalid or unsupported URL: \(payload.url)")
             }
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
-            if let itemID = controller.storage.drawerItems.keep(
+            if let itemID = window.resources.drawerItems.keep(
                 canonicalURL, title: payload.title,
-                notify: controller.drawerItemNotifications(opensDrawer: false, selectsItem: false))
+                notify: window.drawer.keepNotice)
             {
-                controller.reportFeedback("Kept in Drawer.", severity: .success)
+                window.drawer.didKeep()
                 return .success(
                     .drawerItem(
                         id: itemID.uuidString,
@@ -1193,20 +1205,21 @@ final class DenIPCService {
             guard !idString.isEmpty else {
                 return .failure("Usage: den drawer place <id>")
             }
-            guard let item = findDrawerItem(in: controller, matching: idString) else {
+            guard let item = findDrawerItem(in: window.resources.data.snapshot.den.drawerItems, matching: idString)
+            else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if let boardID = controller.storage.drawerPlacement.place(
+            if let boardID = window.resources.drawerPlacement.place(
                 .init(
-                    itemID: item.id, width: controller.inheritedBoardWidth,
-                    searchEngine: controller.preferences.searchEngine,
-                    target: controller.boardCreationTarget(deskID: desk.id)),
-                notifyBoard: controller.drawerBoardCreationNotifications(item.id),
-                notifyDrawer: controller.drawerItemNotifications()),
-                let board = controller.board(for: boardID)
+                    itemID: item.id, width: window.inheritedBoardWidth(),
+                    searchEngine: window.searchEngine(),
+                    target: BoardCreation.Target(presentedDeskID: window.presentedDeskID(), deskID: desk.id)),
+                notifyBoard: window.drawer.placementNotice(item.id),
+                notifyDrawer: window.drawer.itemNotice),
+                let board = window.resources.data.snapshot.den.board(for: boardID)
             {
-                controller.onWindowEffect?(.dismissTemporaryPresentation)
-                _ = controller.webRuntime(for: board)
+                window.drawer.didPlace()
+                _ = window.board.webRuntime(board)
                 return .success(
                     .createdBoard(
                         id: boardID.rawValue.uuidString,
@@ -1219,22 +1232,23 @@ final class DenIPCService {
             guard !idString.isEmpty else {
                 return .failure("Usage: den drawer discard <id>")
             }
-            guard let item = findDrawerItem(in: controller, matching: idString) else {
+            guard let item = findDrawerItem(in: window.resources.data.snapshot.den.drawerItems, matching: idString)
+            else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if controller.storage.drawerItems.discard(item.id, notify: controller.drawerItemNotifications()) {
+            if window.resources.drawerItems.discard(item.id, notify: window.drawer.itemNotice) {
                 return .success(.message("Discarded Drawer Item: \(item.displayName)"))
             }
             return .failure("Failed to discard Drawer Item: \(idString)")
         }
     }
 
-    private func findDrawerItem(in controller: DenController, matching idString: String) -> DrawerItem? {
+    private func findDrawerItem(in items: [DrawerItem], matching idString: String) -> DrawerItem? {
         if let exactID = UUID(uuidString: idString) {
-            return controller.state.drawerItems.first { $0.id == exactID }
+            return items.first { $0.id == exactID }
         }
         let lower = idString.lowercased()
-        let matches = controller.state.drawerItems.filter { $0.id.uuidString.lowercased().hasPrefix(lower) }
+        let matches = items.filter { $0.id.uuidString.lowercased().hasPrefix(lower) }
         return matches.count == 1 ? matches.first : nil
     }
 
@@ -1244,12 +1258,12 @@ final class DenIPCService {
         _ command: DenIPCCommand.Terminal,
         target resolved: ResolvedBoardTarget
     ) async -> DenIPCOperationResult {
-        let controller = resolved.controller
+        let window = resolved.window
         let board = resolved.board
 
         switch command {
         case .text:
-            let runtime = controller.terminalRuntime(for: board)
+            let runtime = window.board.terminalRuntime(board)
             guard let text = runtime.readViewportText() else {
                 return .failure("Failed to read terminal screen")
             }
@@ -1264,7 +1278,7 @@ final class DenIPCService {
                 .replacingOccurrences(of: "\\n", with: "\n")
                 .replacingOccurrences(of: "\\r", with: "\r")
                 .replacingOccurrences(of: "\\t", with: "\t")
-            let runtime = controller.terminalRuntime(for: board)
+            let runtime = window.board.terminalRuntime(board)
             runtime.sendText(text)
             return .success(.message("Sent text to Terminal Board \(board.id.rawValue.uuidString)"))
 
@@ -1272,7 +1286,7 @@ final class DenIPCService {
             guard !command.isEmpty else {
                 return .failure("Usage: den board terminal run <command> [--board <id>]")
             }
-            let runtime = controller.terminalRuntime(for: board)
+            let runtime = window.board.terminalRuntime(board)
             runtime.runCommand(command)
             return .success(.message("Ran command in Terminal Board \(board.id.rawValue.uuidString)"))
 
@@ -1286,7 +1300,7 @@ final class DenIPCService {
                 return .failure("Unknown signal: \(signalName)")
             }
             do {
-                let pid = try await controller.sendSignal(parsed.number, to: board)
+                let pid = try await window.board.sendSignal(parsed.number, board)
                 return .success(
                     .message("Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))"))
             } catch {

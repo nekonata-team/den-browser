@@ -167,6 +167,10 @@ window destinations. DeskFilterModelTests exercises filtering and selection with
 DeskFilterKeyboardTests retains routing, IME, and window-lifecycle integration. BoardEditingModelTests
 checks current targets and native notification order. PreferencesPresentationTests checks live settings
 Observation, and WindowFeatureModelsTests checks Commands and feature Models against one window target.
+WindowNavigationModelTests checks live shared reads and window-local selection/history; DownloadActivityModelTests
+checks concurrent download presentation without App construction. DenStateNormalizationTests checks restore/save
+normalization independently. IPC target tests assert the selected window identity, shared Profile resources,
+and native notification destination without constructing screen Models.
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn

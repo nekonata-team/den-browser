@@ -17,9 +17,13 @@ struct WindowFeatureModelsTests {
         composition.connect()
         defer { composition.disconnect() }
 
+        #expect(model.navigation === controller.navigation)
+        #expect(model.desks.navigation === model.navigation)
         model.desks.focusDesk(secondDesk.id)
         model.boardEditing.renameFocusedBoard(to: "Renamed")
         #expect(model.focusedDesk?.id == secondDesk.id)
+        #expect(model.navigation.presentedDeskID == secondDesk.id)
+        #expect(model.navigation.previousFocusedDeskID == firstDesk.id)
         #expect(model.boardEditing.focusedBoard?.customLabel == "Renamed")
         #expect(controller.state.desks[0].boards[0].customLabel == nil)
 

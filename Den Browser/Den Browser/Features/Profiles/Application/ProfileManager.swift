@@ -360,7 +360,7 @@ final class ProfileManager {
         guard canPresent(deskID, profileID: profileID, excludingWindowID: sourceWindowID),
             let source = windowRegistry.controller(for: sourceWindowID)
         else { return false }
-        return source.presentedDeskID != deskID
+        return source.navigation.presentedDeskID != deskID
             || availableReplacementDeskID(
                 for: deskID,
                 profileID: profileID,
@@ -384,7 +384,7 @@ final class ProfileManager {
         guard canOpenDeskInNewWindow(deskID, profileID: profileID, sourceWindowID: sourceWindowID),
             let source = windowRegistry.controller(for: sourceWindowID)
         else { return nil }
-        if source.presentedDeskID == deskID {
+        if source.navigation.presentedDeskID == deskID {
             guard
                 let replacementDeskID = availableReplacementDeskID(
                     for: deskID,
@@ -394,14 +394,14 @@ final class ProfileManager {
             source.focusDesk(replacementDeskID)
         }
         let route = ProfileWindowRoute(profileID: profileID, deskID: deskID)
-        guard controller(for: route)?.presentedDeskID == deskID else { return nil }
+        guard controller(for: route)?.navigation.presentedDeskID == deskID else { return nil }
         return route
     }
 
     private func storage(for profileID: ProfileID) -> DenProfileResources? {
         if let storage = storages[profileID] { return storage }
         guard let persisted = persistedProfiles[profileID] else { return nil }
-        let normalizedState = DenController.normalizedPersistedState(persisted.den)
+        let normalizedState = DenStateNormalization.normalize(persisted.den)
         let disk = facingDisk(for: profileID)
         if let disk {
             let boardIDs = Set(normalizedState.desks.flatMap { $0.boards.map(\.id) })
@@ -454,6 +454,27 @@ final class ProfileManager {
         windowRegistry.presentationTarget()
     }
 
+    var ipcWindows: [IPCWindowBindings] {
+        windowRegistry.controllerEntries().compactMap { entry in
+            guard let profileID = entry.profileID else { return nil }
+            return IPCWindowBindings(id: entry.windowID, profileID: profileID, controller: entry.controller)
+        }
+    }
+
+    func activeIPCWindow(profileID: ProfileID? = nil) -> IPCWindowBindings? {
+        let controller: DenController?
+        if let profileID {
+            controller = self.controller(forProfileID: profileID)
+        } else {
+            controller = activeController()
+        }
+        guard let controller,
+            let entry = windowRegistry.controllerEntries().first(where: { $0.controller === controller }),
+            let profileID = entry.profileID
+        else { return nil }
+        return IPCWindowBindings(id: entry.windowID, profileID: profileID, controller: controller)
+    }
+
     func activeController() -> DenController? {
         windowRegistry.activeController(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
@@ -484,7 +505,9 @@ final class ProfileManager {
     func controller(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenController? {
         let profileControllers = controllers(for: profileID)
         if let presentingDeskID,
-            let presentingController = profileControllers.first(where: { $0.presentedDeskID == presentingDeskID })
+            let presentingController = profileControllers.first(where: {
+                $0.navigation.presentedDeskID == presentingDeskID
+            })
         {
             return presentingController
         }
@@ -503,7 +526,7 @@ final class ProfileManager {
         !windowRegistry.controllerEntries().contains { entry in
             entry.windowID != excludingWindowID
                 && entry.profileID == profileID
-                && entry.controller.presentedDeskID == deskID
+                && entry.controller.navigation.presentedDeskID == deskID
         }
     }
 
@@ -512,7 +535,7 @@ final class ProfileManager {
             let ownerWindowID = windowRegistry.controllerEntries().first(where: { entry in
                 entry.windowID != windowID
                     && entry.profileID == profileID
-                    && entry.controller.presentedDeskID == deskID
+                    && entry.controller.navigation.presentedDeskID == deskID
             })?.windowID
         else { return true }
         windowRegistry.registeredWindow(for: ownerWindowID)?.makeKeyAndOrderFront(nil)
@@ -679,7 +702,7 @@ final class ProfileManager {
     @discardableResult
     private func saveDen(_ den: DenState, for profileID: ProfileID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
-        persisted.den = DenController.normalizedPersistedState(den)
+        persisted.den = DenStateNormalization.normalize(den)
         if let storage = storages[profileID] {
             persisted.deskPresets = storage.deskPresets
             persisted.recentItems = storage.recentItems
@@ -757,10 +780,10 @@ final class ProfileManager {
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: ProfileID) {
-        persisted.den = DenController.normalizedPersistedState(persisted.den)
+        persisted.den = DenStateNormalization.normalize(persisted.den)
         guard let storage = storages[profileID] else { return }
         if storage.activeDrag == nil {
-            persisted.den = DenController.normalizedPersistedState(storage.state)
+            persisted.den = DenStateNormalization.normalize(storage.state)
         }
         persisted.deskPresets = storage.deskPresets
         persisted.recentItems = storage.recentItems

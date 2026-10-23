@@ -10,7 +10,7 @@ public final class DeskListModel {
     @ObservationIgnored private let lifecycle: DeskLifecycle
     @ObservationIgnored private let movement: DeskMovement
     @ObservationIgnored private let updates: DeskUpdates
-    @ObservationIgnored private let presented: () -> DeskID
+    public let navigation: WindowNavigationModel
     @ObservationIgnored private let available: (DeskID) -> Bool
     @ObservationIgnored private let select: (DeskID) -> Void
     @ObservationIgnored private let notify: (DeskLifecycle.Notice) -> Void
@@ -27,7 +27,7 @@ public final class DeskListModel {
 
     public init(
         state: DenStateStore, lifecycle: DeskLifecycle, movement: DeskMovement, updates: DeskUpdates,
-        presentedDeskID: @escaping () -> DeskID, isAvailable: @escaping (DeskID) -> Bool,
+        navigation: WindowNavigationModel, isAvailable: @escaping (DeskID) -> Bool,
         select: @escaping (DeskID) -> Void, notify: @escaping (DeskLifecycle.Notice) -> Void,
         didDuplicate: @escaping (DeskState, DeskState) -> Void,
         requestDeletion: @escaping (DeskState) -> Void, warn: @escaping (String) -> Void,
@@ -42,7 +42,7 @@ public final class DeskListModel {
         self.lifecycle = lifecycle
         self.movement = movement
         self.updates = updates
-        self.presented = presentedDeskID
+        self.navigation = navigation
         self.available = isAvailable
         self.select = select
         self.notify = notify
@@ -62,7 +62,7 @@ public final class DeskListModel {
     }
 
     public var desks: [DeskState] { state.snapshot.den.desks }
-    public var presentedDeskID: DeskID { presented() }
+    public var presentedDeskID: DeskID { navigation.presentedDeskID }
     public var focusedDesk: DeskState? { desks.first { $0.id == presentedDeskID } }
     public var canCreateDesk: Bool { lifecycle.canCreate }
     public var canDeleteFocusedDesk: Bool { lifecycle.canDelete(presentedDeskID, isAvailable: available) }

@@ -204,7 +204,7 @@ public extension DenWindowModel {
     }
 
     func showEditBoardLinkPanel() {
-        guard inputs.focusedBoard()?.isWeb == true else {
+        guard navigation.focusedBoard?.isWeb == true else {
             windowActions.reportWarning("No focused Web Board.")
             return
         }
@@ -216,7 +216,7 @@ public extension DenWindowModel {
     }
 
     func showNewDeskPanel() {
-        guard inputs.canCreateDesk() else {
+        guard desks.canCreateDesk else {
             windowActions.reportWarning("Desks are limited to 10.")
             return
         }
@@ -224,7 +224,7 @@ public extension DenWindowModel {
     }
 
     func showReplaceDeskPanel() {
-        guard inputs.focusedDesk() != nil else { return }
+        guard navigation.focusedDesk != nil else { return }
         setTemporaryContext(.replaceDesk)
     }
 
@@ -240,7 +240,7 @@ public extension DenWindowModel {
     }
 
     func showSaveDeskPresetPanel() {
-        guard inputs.focusedDesk()?.boards.isEmpty == false else {
+        guard navigation.focusedDesk?.boards.isEmpty == false else {
             windowActions.reportWarning("Desk has no boards to save as a preset.")
             return
         }
@@ -252,7 +252,7 @@ public extension DenWindowModel {
     }
 
     func showRenameBoardPanel() {
-        guard inputs.focusedDesk()?.focusedBoardID != nil else { return }
+        guard navigation.focusedDesk?.focusedBoardID != nil else { return }
         setTemporaryContext(.renameBoard)
     }
 
@@ -261,7 +261,7 @@ public extension DenWindowModel {
     }
 
     func showRenameDeskPanel() {
-        guard inputs.focusedDesk() != nil else { return }
+        guard navigation.focusedDesk != nil else { return }
         setTemporaryContext(.renameDesk)
     }
 
@@ -313,7 +313,7 @@ public extension DenWindowModel {
     }
 
     func saveFocusedBoardAsEssential() {
-        guard let board = inputs.focusedBoard() else {
+        guard let board = navigation.focusedBoard else {
             windowActions.reportWarning("No focused board.")
             return
         }

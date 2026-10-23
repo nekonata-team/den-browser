@@ -3,12 +3,12 @@ import Foundation
 
 @MainActor
 public extension DenWindowModel {
-    var focusedDesk: DeskState? { inputs.focusedDesk() }
-    var focusedBoard: BoardState? { inputs.focusedBoard() }
+    var focusedDesk: DeskState? { navigation.focusedDesk }
+    var focusedBoard: BoardState? { navigation.focusedBoard }
     func focusBoard(_ id: BoardID, exitsDenMode: Bool = false) { boardActions.focusBoard(id, exitsDenMode) }
 
     func toggleFocusedBoardMaximized() {
-        guard let focusedBoardID = inputs.focusedDesk()?.focusedBoardID else { return }
+        guard let focusedBoardID = navigation.focusedDesk?.focusedBoardID else { return }
         maximizedBoardID = maximizedBoardID == focusedBoardID ? nil : focusedBoardID
         centerFocusedBoard()
     }
@@ -18,12 +18,12 @@ public extension DenWindowModel {
     }
 
     func revealPreviousBoard() {
-        guard inputs.focusedDesk()?.focusedBoardID != nil else { return }
+        guard navigation.focusedDesk?.focusedBoardID != nil else { return }
         revealPreviousBoardRequest &+= 1
     }
 
     func revealNextBoard() {
-        guard inputs.focusedDesk()?.focusedBoardID != nil else { return }
+        guard navigation.focusedDesk?.focusedBoardID != nil else { return }
         revealNextBoardRequest &+= 1
     }
 

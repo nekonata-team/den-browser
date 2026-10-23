@@ -11,3 +11,9 @@ public struct DownloadActivity: Equatable, Identifiable {
         self.fractionCompleted = fractionCompleted
     }
 }
+
+public enum DownloadActivityEvent: Equatable {
+    case started(DownloadActivity)
+    case progressed(id: UUID, fractionCompleted: Double?)
+    case ended(id: UUID)
+}

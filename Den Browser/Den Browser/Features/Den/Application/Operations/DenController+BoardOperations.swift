@@ -353,14 +353,14 @@ extension DenController {
 
         let currentBoardID = desk.focusedBoardID
         if currentBoardID != anchorBoardID {
-            anchorJumpOriginBoardIDByDesk[desk.id] = currentBoardID
+            navigation.anchorJumpOriginBoardIDByDesk[desk.id] = currentBoardID
             focusBoard(anchorBoardID)
             centerFocusedBoard()
-        } else if let originID = anchorJumpOriginBoardIDByDesk[desk.id],
+        } else if let originID = navigation.anchorJumpOriginBoardIDByDesk[desk.id],
             originID != anchorBoardID,
             desk.boards.contains(where: { $0.id == originID })
         {
-            anchorJumpOriginBoardIDByDesk[desk.id] = anchorBoardID
+            navigation.anchorJumpOriginBoardIDByDesk[desk.id] = anchorBoardID
             focusBoard(originID)
             centerFocusedBoard()
         }

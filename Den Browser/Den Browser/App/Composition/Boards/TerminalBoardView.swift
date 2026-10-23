@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import DenViews
@@ -48,7 +49,9 @@ struct TerminalBoardView: View {
                 return window.makeFirstResponder(runtime.terminalView)
             },
             onBeforeHide: {
-                guard controller.canCaptureFacing, controller.terminalRuntimes[board.id] === runtime else { return }
+                guard controller.storage.data.snapshot.activeDrag == nil,
+                    controller.terminalRuntimes[board.id] === runtime
+                else { return }
                 controller.facingCapture.captureTerminal(boardID: board.id, terminalView: runtime.terminalView)
             },
             onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },

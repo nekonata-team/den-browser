@@ -17,7 +17,7 @@ NSEvent
        -> forward(InputDestination)
 ```
 
-`KeyboardController` normalizes AppKit events, snapshots input context, calls `KeyboardRouter`, and applies its decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` receives application state from `DenController` and presentation state from `DenWindowModel` as separate inputs. The Model owns neither the Controller nor shared Store; see [the ownership boundary](./architecture.md#shared-state-and-presentation-package-boundaries).
+`KeyboardController` normalizes AppKit events, snapshots input context, calls `KeyboardRouter`, and applies its decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` reads shared drag state from the Profile Store and current Desk/Board and presentation state from the window's `DenWindowModel`. The Model owns neither the Controller nor shared Store; see [the ownership boundary](./architecture.md#shared-state-and-presentation-package-boundaries).
 
 `KeyboardRouter` determines Profile-window key precedence from input values, returning exactly one `InputDecision` without side effects. It must not reference UI objects, call `DenController`, or open windows. Den Mode's `g` or Vim-style Sheet Navigation's `o` enters the temporary Essentials Prefix context. Up and Down move the focused Essential, Return launches it, Option-Return opens its URL or search in Drawer, and a configured key (with Shift for uppercase) launches its matching Essential directly. Escape exits the prefix.
 

@@ -76,8 +76,8 @@ final class BoardRuntimeReceiver {
                 connection.controller?.focusBoard(board.id)
                 connection.controller?.onWindowEffect?(
                     .presentOverview(
-                        deskID: connection.controller?.presentedDeskID,
-                        boardID: connection.controller?.focusedDesk?.focusedBoardID))
+                        deskID: connection.presentedDeskID(),
+                        boardID: connection.focusedBoardID()))
             },
             onShowEssentials: { [connection] in
                 connection.controller?.focusBoard(board.id)
@@ -131,7 +131,7 @@ final class BoardRuntimeReceiver {
             onDownloadFailed: { [connection] in
                 connection.controller?.reportFeedback("Download failed: \($0)", severity: .error)
             },
-            isFocused: { [connection] in connection.controller?.focusedDesk?.focusedBoardID == board.id },
+            isFocused: { [connection] in connection.focusedBoardID() == board.id },
             restoreFocusedFirstResponder: { [connection] in connection.controller?.restoreFocusedFirstResponder() })
     }
 
@@ -172,9 +172,7 @@ final class BoardRuntimeReceiver {
                 storage.boardRuntimes.dispose(board.id)
             }
             for window in storage.drawerPresentations.allObjects {
-                window.anchorJumpOriginBoardIDByDesk = window.anchorJumpOriginBoardIDByDesk.filter {
-                    !removedIDs.contains($0.value)
-                }
+                window.navigation.invalidateBoards(removedIDs)
                 for id in removedIDs {
                     window.onWindowEffect?(.boardRemoved(id))
                 }

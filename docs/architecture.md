@@ -227,7 +227,9 @@ State ownership:
 | Profile metadata and app preferences | Existing `ProfileManager` and `AppPreferences` owners | Profile/preferences storage |
 
 `DenState.focusedDeskID` retains the shared restore selection; each window's `presentedDeskID`
-remains separate. Desk-level Board focus is shared, while filter and Overview selections are local.
+remains separate. `WindowNavigationModel` owns this selection and the window's previous Desk and
+Anchor return references. Window and Desk Models use the same navigation instance from composition. It projects the shared Store's current Desk and Board values without retaining snapshots.
+Desk-level Board focus is shared, while filter and Overview selections are local.
 For an active Web runtime, its Sheet Stack is authoritative and saved Board URL/title fields are
 updated projections; those saved fields supply initial state when restoring a runtime.
 
@@ -296,7 +298,7 @@ The [state ownership table](#shared-state-and-presentation-package-boundaries) d
 - `DenController` uses shared weak references in `DenProfileResources` to route Board and Desk removal invalidations to every window, so local selections and insertion anchors cannot retain removed IDs. Each Profile window has a `DenController` for its presented Desk and application resources.
 - `ProfileManager` retains the event-owner `DenController` for each active Board runtime. Runtime disposal or final Profile-window teardown releases these owners. Closing one window preserves detached runtime event delivery while other Profile windows remain.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
-- Drawer Peek runtime and download operations remain in `DenController`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
+- Drawer Peek runtime and native download operations remain App-owned; window download presentation belongs to `DownloadActivityModel`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
 - zmx session discovery is window-local. Each `DenWindowModel` owns one `ZmxSessionsModel` from `DenPresentationModels`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. App composition injects listing and termination operations backed by the current zmx client; each operation batch captures its dependencies through completion. The Model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `DenController` finds existing zmx Boards, updates root metadata, and opens or focuses Boards; the Window Model coordinates the panel transition.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback; [persistence.md](./persistence.md) defines the saved data and recovery contract.
 
@@ -328,6 +330,13 @@ The callback is connected only for the mounted window lifetime, not during const
 disconnecting cancels presentation work. The App-target Controller emits Presentation-owned values
 without referencing the Model; the Application core remains independent of Presentation.
 CLI and IPC use shared Application operations and App native adapters without going through a screen Model.
+IPC target resolution selects a Profile and window ID, then reads the Profile Store and a live
+presented-Desk input. `IPCWindowBindings` supplies Board, Desk, and Drawer native callbacks and
+synchronous operation notifications; it contains no command implementation or screen Model.
+The same Profile operations execute mutations for IPC and UI. App composition supplies the Native
+functions, so IPC receives no Controller-typed operation entry point. These callbacks retain their native dependencies for the request lifetime.
+`DenStateNormalization` in Application prepares restored and persisted values; it does not
+mutate live state or change the persistence schema.
 
 Animation requests precede the Board mutations they affect; Views apply SwiftUI transactions.
 Presentation Models and Application do not construct them. Tutorial progress and step ordering belong to Application and Domain.

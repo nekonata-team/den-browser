@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenViews
 import SwiftUI
@@ -12,7 +13,10 @@ struct BoardRail: View {
             focusBoard: { controller.focusBoard($0) },
             reorderBoard: { boardID, index, deskID, overview in
                 if overview {
-                    guard let deskIndex = controller.state.desks.firstIndex(where: { $0.id == deskID }) else { return }
+                    guard
+                        let deskIndex = controller.storage.data.snapshot.den.desks.firstIndex(where: { $0.id == deskID }
+                        )
+                    else { return }
                     controller.reorderBoardGroup(containing: boardID, to: index, in: DeskIndex(rawValue: deskIndex))
                 } else {
                     controller.focusBoard(boardID)

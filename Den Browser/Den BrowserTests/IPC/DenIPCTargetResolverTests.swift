@@ -1,6 +1,8 @@
+import DenApplication
 import DenDomain
 import DenIPCProtocol
 import DenInfrastructure
+import DenPresentationModels
 import Foundation
 import Testing
 
@@ -244,7 +246,7 @@ struct DenIPCTargetResolverTests {
         // Assert
         let resolved = try result.get()
         #expect(resolved.board.id == board2ID)
-        #expect(resolved.controller === controller2)
+        #expect(resolved.window.resources === controller2.storage)
     }
 
     @Test func resolveTargetWebBoardFailsOnUnknownProfileUUID() throws {
@@ -348,7 +350,7 @@ struct DenIPCTargetResolverTests {
         // Assert
         let resolved = try result.get()
         #expect(resolved.board.id == webBoardID)
-        #expect(resolved.controller === controller2)
+        #expect(resolved.window.resources === controller2.storage)
     }
 
     @Test(arguments: ["source", "desk", "left", "right"])
@@ -534,21 +536,21 @@ struct DenIPCTargetResolverTests {
         let result1 = DenIPCTargetResolver.resolveBoard(
             target: .explicit(board1ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
 
-        // Assert: Resolved controller must be controller1 (which owns board1), NEVER controller2
+        // Assert: Resolved resources must belong to Profile 1, which owns Board 1
         let resolved1 = try #require(try? result1.get())
         #expect(resolved1.board.id == board1ID)
-        #expect(resolved1.controller === controller1)
-        #expect(resolved1.controller.board(for: board1ID) != nil)
+        #expect(resolved1.window.resources === controller1.storage)
+        #expect(resolved1.window.resources.data.snapshot.den.board(for: board1ID) != nil)
 
         // Act: Target board2 without explicit profileID
         let result2 = DenIPCTargetResolver.resolveBoard(
             target: .explicit(board2ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
 
-        // Assert: Resolved controller must be controller2 (which owns board2), NEVER controller1
+        // Assert: Resolved resources must belong to Profile 2, which owns Board 2
         let resolved2 = try #require(try? result2.get())
         #expect(resolved2.board.id == board2ID)
-        #expect(resolved2.controller === controller2)
-        #expect(resolved2.controller.board(for: board2ID) != nil)
+        #expect(resolved2.window.resources === controller2.storage)
+        #expect(resolved2.window.resources.data.snapshot.den.board(for: board2ID) != nil)
     }
 
     @Test func resolveTargetBoardReturnsSameStoreRegardlessOfProfileScoping() throws {
@@ -586,15 +588,15 @@ struct DenIPCTargetResolverTests {
         let unscopedResult = DenIPCTargetResolver.resolveBoard(
             target: .explicit(board2ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
 
-        // Assert: Both must return the exact same controller (controllerWindow2 presenting desk2)
+        // Assert: Both must return the same window identity and its current presented Desk
         let scoped = try #require(try? scopedResult.get())
         let unscoped = try #require(try? unscopedResult.get())
 
         #expect(scoped.board.id == board2ID)
         #expect(unscoped.board.id == board2ID)
-        #expect(scoped.controller === unscoped.controller)
-        #expect(scoped.controller === controllerWindow2)
-        #expect(scoped.controller.presentedDeskID == desk2ID)
+        #expect(scoped.window.id == unscoped.window.id)
+        #expect(scoped.window.id == window2ID)
+        #expect(scoped.window.presentedDeskID() == desk2ID)
     }
 
     @Test func resolveStoreAndDeskWithExplicitNonExistentDeskIDDoesNotFallback() throws {
@@ -633,6 +635,37 @@ struct DenIPCTargetResolverTests {
         case .success:
             Issue.record("Expected failure on non-existent desk ID")
         }
+    }
+
+    @Test func explicitBoardFocusNotifiesOnlyItsPresentingWindowWithoutScreenModels() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let first = try #require(manager.controller(for: profileID))
+        let firstDeskID = first.presentedDeskID
+        first.createDesk(label: "Other", preset: .empty)
+        let otherDeskID = first.presentedDeskID
+        #expect(first.setFocusedDesk(firstDeskID))
+        let second = try #require(
+            manager.controller(for: ProfileWindowRoute(windowID: UUID(), profileID: profileID, deskID: otherDeskID)))
+        let boardID = try #require(second.createBoard(urlString: "https://example.com/"))
+        var firstWindowEffectCount = 0
+        var centeredSecondWindow = false
+        first.onWindowEffect = { _ in firstWindowEffectCount += 1 }
+        second.onWindowEffect = { if case .centerFocusedBoard = $0 { centeredSecondWindow = true } }
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(DenIPCRequest(operation: .focusBoard(boardID: boardID.rawValue)))
+
+        // Assert
+        #expect(response.result.isOk)
+        #expect(firstWindowEffectCount == 0)
+        #expect(centeredSecondWindow)
+        #expect(first.navigation.presentedDeskID == firstDeskID)
+        #expect(second.navigation.presentedDeskID == otherDeskID)
     }
 
     private func temporaryProfileDirectory() -> URL {

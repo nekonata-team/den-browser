@@ -86,8 +86,8 @@ struct DenWindowModelPresentationTests {
         windowModel.setTemporaryContext(.zmxSessions)
         windowModel.openBoard.input = "unfinished search"
         windowModel.openBoard.afterBoardID = board.id
-        controller.previousFocusedDeskID = empty.id
-        controller.anchorJumpOriginBoardIDByDesk[populated.id] = board.id
+        controller.navigation.previousFocusedDeskID = empty.id
+        controller.navigation.anchorJumpOriginBoardIDByDesk[populated.id] = board.id
 
         // Act
         controller.resetDen()
@@ -109,8 +109,8 @@ struct DenWindowModelPresentationTests {
         #expect(controller.notifications.isEmpty)
         #expect(windowModel.openBoard.input.isEmpty)
         #expect(windowModel.openBoard.afterBoardID == nil)
-        #expect(controller.previousFocusedDeskID == nil)
-        #expect(controller.anchorJumpOriginBoardIDByDesk.isEmpty)
+        #expect(controller.navigation.previousFocusedDeskID == nil)
+        #expect(controller.navigation.anchorJumpOriginBoardIDByDesk.isEmpty)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
     }

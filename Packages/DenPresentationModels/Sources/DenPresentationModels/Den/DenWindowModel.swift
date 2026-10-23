@@ -7,33 +7,21 @@ import Observation
 @Observable
 public final class DenWindowModel {
     public struct Inputs {
-        public let focusedDesk: () -> DeskState?
-        public let focusedBoard: () -> BoardState?
-        public let board: (BoardID) -> BoardState?
         public let essentials: () -> [Essential]
         public let isBoardRailPresented: () -> Bool
         public let isBoardDragging: () -> Bool
         public let isDeskDragging: () -> Bool
-        public let canCreateDesk: () -> Bool
 
         public init(
-            focusedDesk: @escaping () -> DeskState?,
-            focusedBoard: @escaping () -> BoardState?,
-            board: @escaping (BoardID) -> BoardState?,
             essentials: @escaping () -> [Essential],
             isBoardRailPresented: @escaping () -> Bool,
             isBoardDragging: @escaping () -> Bool,
-            isDeskDragging: @escaping () -> Bool,
-            canCreateDesk: @escaping () -> Bool
+            isDeskDragging: @escaping () -> Bool
         ) {
-            self.focusedDesk = focusedDesk
-            self.focusedBoard = focusedBoard
-            self.board = board
             self.essentials = essentials
             self.isBoardRailPresented = isBoardRailPresented
             self.isBoardDragging = isBoardDragging
             self.isDeskDragging = isDeskDragging
-            self.canCreateDesk = canCreateDesk
         }
     }
 
@@ -101,7 +89,9 @@ public final class DenWindowModel {
     }
 
     public let boardEditing: BoardEditingModel
+    public let downloads: DownloadActivityModel
     public let desks: DeskListModel
+    public var navigation: WindowNavigationModel { desks.navigation }
     public let overview: OverviewModel
     public let drawer: DrawerModel
     public let openBoard: OpenBoardModel
@@ -149,6 +139,7 @@ public final class DenWindowModel {
     public init(
         boardEditing: BoardEditingModel,
         desks: DeskListModel,
+        downloads: DownloadActivityModel,
         overview: OverviewModel,
         drawer: DrawerModel,
         openBoard: OpenBoardModel,
@@ -168,6 +159,7 @@ public final class DenWindowModel {
     ) {
         self.boardEditing = boardEditing
         self.desks = desks
+        self.downloads = downloads
         self.overview = overview
         self.drawer = drawer
         self.openBoard = openBoard
@@ -245,7 +237,7 @@ public final class DenWindowModel {
             maximizedBoardID = nil
         case .runtimeFocusedBoard(let boardID):
             guard !isDenMode, temporaryContext == nil else { return }
-            if inputs.board(boardID)?.isTerminal == true, inputs.focusedBoard()?.id != boardID { return }
+            if navigation.board(for: boardID)?.isTerminal == true, navigation.focusedBoard?.id != boardID { return }
             boardActions.focusBoard(boardID, true)
         case .drawerItemRemoved(let itemID, let previousItems, let advancesPeek, let focusNext):
             drawer.itemWasRemoved(

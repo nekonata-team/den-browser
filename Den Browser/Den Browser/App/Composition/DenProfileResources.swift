@@ -96,7 +96,7 @@ final class DenProfileResources {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: state, deskPresets: deskPresets, recentItems: recentItems))
         let persistState: ((DenState) -> Bool)? = onSave.map { persist in
-            { persist(DenController.normalizedPersistedState($0)) }
+            { persist(DenStateNormalization.normalize($0)) }
         }
         boardRuntimes = DenBoardRuntimes()
         data = shared.store

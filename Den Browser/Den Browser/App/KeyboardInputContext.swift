@@ -81,7 +81,7 @@ struct InputContext {
     init(controller: DenController, windowModel: DenWindowModel, event: NSEvent? = nil) {
         isFullscreenActive = windowModel.isFullscreenActive
         hasPendingConfirmation = windowModel.hasPendingConfirmation
-        activeDrag = controller.activeDrag
+        activeDrag = controller.storage.data.snapshot.activeDrag
         mode = windowModel.isDenMode ? .den : .sheet
         if windowModel.isNotificationListPresented {
             surface = .notifications
@@ -114,8 +114,8 @@ struct InputContext {
                 case nil: nil
                 }
         }
-        hasFocusedBoard = controller.focusedBoard != nil
-        focusedBoardIsTerminal = controller.focusedBoard?.isTerminal == true
+        hasFocusedBoard = windowModel.focusedBoard != nil
+        focusedBoardIsTerminal = windowModel.focusedBoard?.isTerminal == true
     }
 
     private static func isDrawerPeekFirstResponder(_ event: NSEvent?, controller: DenController) -> Bool {

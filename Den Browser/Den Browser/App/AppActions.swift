@@ -238,11 +238,11 @@ enum AppActionHandler {
             case .focusPrevious: controller.focusPreviousDesk()
             case .focusNext: controller.focusNextDesk()
             case .movePrevious:
-                if let deskID = controller.focusedDesk?.id {
+                if let deskID = windowModel.focusedDesk?.id {
                     windowModel.desks.moveDesk(deskID, by: -1)
                 }
             case .moveNext:
-                if let deskID = controller.focusedDesk?.id {
+                if let deskID = windowModel.focusedDesk?.id {
                     windowModel.desks.moveDesk(deskID, by: 1)
                 }
             case .returnToPrevious: controller.returnToPreviousDesk()
@@ -296,7 +296,7 @@ enum AppActionHandler {
             case .copySheetScreenshot: controller.copyFocusedSheetScreenshot()
             case .copyLocation: controller.copyBoardLocation()
             case .copyID:
-                if let boardID = controller.focusedBoard?.id {
+                if let boardID = windowModel.focusedBoard?.id {
                     controller.copyBoardID(boardID)
                 }
             case .keepSheetInDrawer: controller.keepFocusedSheetInDrawer()
@@ -309,7 +309,7 @@ enum AppActionHandler {
             case .duplicate: controller.duplicateFocusedBoard()
             case .duplicateFirstSheet: controller.duplicateFocusedBoardFromFirstSheet()
             case .createTerminalSideBoard:
-                if let boardID = controller.focusedBoard?.id {
+                if let boardID = windowModel.focusedBoard?.id {
                     controller.createTerminalSideBoard(targetBoardID: boardID)
                 }
             case .requestDragCancellation: windowModel.requestBoardDragCancellation()

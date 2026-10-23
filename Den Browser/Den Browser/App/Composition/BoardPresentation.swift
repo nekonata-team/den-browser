@@ -1,13 +1,16 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 
 extension DenController {
     func boardSurfaceModel(for board: BoardState) -> BoardSurfaceModel {
         BoardSurfaceModel(
-            desks: { [weak self] in self?.state.desks ?? [] },
-            boardDeskID: { [weak self] in self?.state.desks.first { $0.boards.contains { $0.id == board.id } }?.id },
-            canMoveLeft: { [weak self] in self?.canMoveBoard(board.id, by: -1) ?? false },
-            canMoveRight: { [weak self] in self?.canMoveBoard(board.id, by: 1) ?? false },
+            desks: { [state = storage.data] in state.snapshot.den.desks },
+            boardDeskID: { [state = storage.data] in
+                state.snapshot.den.desks.first { $0.boards.contains { $0.id == board.id } }?.id
+            },
+            canMoveLeft: { [movement = storage.boardMovement] in movement.canMove(board.id, by: -1) },
+            canMoveRight: { [movement = storage.boardMovement] in movement.canMove(board.id, by: 1) },
             inputSourceLabel: { [weak self] in
                 guard let self, self.preferences.rememberBoardInputMethod else { return nil }
                 return self.inputSourceTracker.shortLabel(for: board.id)

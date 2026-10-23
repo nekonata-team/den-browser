@@ -26,7 +26,9 @@ struct SaveDeskPresetPanel: View {
         DenViews.SaveDeskPresetPanel(
             initialLabel: initialLabel, previewBoards: previewBoards, boardHeight: boardHeight, savePreset: savePreset,
             facing: { index in
-                guard let boards = controller.focusedDesk?.boards, boards.indices.contains(index) else { return nil }
+                guard let boards = controller.navigation.focusedDesk?.boards, boards.indices.contains(index) else {
+                    return nil
+                }
                 return controller.facingCache.image(for: boards[index].id)
             }, captureFacings: { await controller.captureFocusedDeskFacings() }, onClose: onClose)
     }
