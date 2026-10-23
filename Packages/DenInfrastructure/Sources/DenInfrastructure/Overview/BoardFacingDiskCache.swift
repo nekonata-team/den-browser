@@ -1,19 +1,20 @@
+import CoreGraphics
 import DenDomain
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-actor BoardFacingDiskCache {
+public actor BoardFacingDiskCache {
     private let directoryURL: URL
     private let maxCost: Int
     private var minimumCaptureDate = Date.distantPast
 
-    init(directoryURL: URL, maxCost: Int = 128 * 1024 * 1024) {
+    public init(directoryURL: URL, maxCost: Int = 128 * 1024 * 1024) {
         self.directoryURL = directoryURL
         self.maxCost = maxCost
     }
 
-    func image(for boardID: BoardID) -> CGImage? {
+    public func image(for boardID: BoardID) -> CGImage? {
         guard let source = CGImageSourceCreateWithURL(fileURL(for: boardID) as CFURL, nil),
             let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
             let width = properties[kCGImagePropertyPixelWidth] as? Int,
@@ -23,7 +24,7 @@ actor BoardFacingDiskCache {
         return CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
     }
 
-    func save(_ image: CGImage, for boardID: BoardID, capturedAt: Date) {
+    public func save(_ image: CGImage, for boardID: BoardID, capturedAt: Date) {
         guard capturedAt >= minimumCaptureDate else { return }
         let url = fileURL(for: boardID)
         if let date = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
@@ -47,7 +48,7 @@ actor BoardFacingDiskCache {
         }
     }
 
-    func prune(keeping boardIDs: Set<BoardID>) {
+    public func prune(keeping boardIDs: Set<BoardID>) {
         let filenames = Set(boardIDs.map { fileURL(for: $0).lastPathComponent })
         for url in files() where !filenames.contains(url.lastPathComponent) {
             try? FileManager.default.removeItem(at: url)
@@ -55,7 +56,7 @@ actor BoardFacingDiskCache {
         trimToCost()
     }
 
-    func removeAll() {
+    public func removeAll() {
         minimumCaptureDate = .now
         try? FileManager.default.removeItem(at: directoryURL)
     }

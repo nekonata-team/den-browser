@@ -159,8 +159,8 @@ These are hosted integration tests; the independent Model test executable does n
 The existing `ProfileManagerTests` protect event delivery after the owner's window closes and
 Runtime disposal after the final window closes. `BoardRuntimeReceiverTests` checks receiver release with an externally retained Runtime and background exit after window disconnection. Inspection Model tests reject child-load results after cancellation or page navigation.
 
-`just test packages` runs the complete Application and presentation Model test suites as independent
-SwiftPM suites, without App, WebKit, or Ghostty. The default unit recipe includes these suites.
+`just test packages` runs Application, Model and Infrastructure test suites independently
+with SwiftPM, without App, WebKit or Ghostty. The default unit recipe includes these suites.
 `NotificationListModelTests` protects shared Observation and per-window dispatch; the app's
 `NotificationWindowTests` protects clear confirmation, source focus, feedback/effect order, and
 window destinations. DeskFilterModelTests exercises filtering and selection without App construction;
@@ -175,3 +175,7 @@ and native notification destination without constructing screen Models.
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn
 reproducible findings into automated unit or UI tests rather than manual checklists.
+
+Infrastructure tests cover extension-data deletion, process sampling and Facing disk-cache pruning,
+clearing, capacity and corrupt files directly. BoardFacingCachePersistenceTests remains hosted to check
+the disk cache’s connection to the app’s NSImage memory cache.

@@ -16,4 +16,10 @@ Native Runtime/DOM/Terminal implementations remain App-owned and do not depend o
 
 This updates the Model dependency restriction in [ADR 0062](0062-profile-state-source-and-presentation-models.md); it does not move native execution into a screen Model or change persisted state.
 
-Drawer and temporary-panel overlays also live in DenViews. App supplies their concrete content and native callbacks. Board Activity process sampling stays in its app-target Infrastructure and follows the mounted panel’s cancellation lifetime; rendering receives sampled values and observed native status. Native mounting tests use the production View adapter directly.
+Drawer and temporary-panel overlays also live in DenViews. App supplies their concrete content and native callbacks. Board Activity’s app-target sampling adapter selects live Runtime process IDs and follows the mounted panel’s cancellation lifetime; DenInfrastructure supplies the OS sampler. Rendering receives sampled values and observed native status. Native mounting tests use the production View adapter directly.
+
+Independent filesystem, bitmap-cache and process adapters belong to DenInfrastructure:
+ProfileExtensionDataStore, BoardFacingDiskCache and ProcessResourceSampler. App retains their existing
+owners and lifetimes, the NSImage memory cache, and Runtime capture. Darwin and bitmap-codec SDKs are
+allowed at this boundary; App, Models, Views and native UI/runtime SDK dependencies remain excluded.
+Storage paths, cache format and budgets, and persisted Profile data do not change.

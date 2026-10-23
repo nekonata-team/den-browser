@@ -3,7 +3,14 @@ valid:
   - import Foundation
   - import DenDomain
   - import os
+  - import Darwin
+  - import CoreGraphics
+  - import ImageIO
+  - import UniformTypeIdentifiers
 invalid:
   - import Den_Browser
   - import DenModels
   - import SwiftUI
+  - import WebKit
+  - import AppKit
+  - import GhosttyTerminal

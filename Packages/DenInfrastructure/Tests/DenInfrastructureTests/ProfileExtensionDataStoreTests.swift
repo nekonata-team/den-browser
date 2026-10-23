@@ -2,7 +2,7 @@ import DenDomain
 import Foundation
 import Testing
 
-@testable import Den_Browser
+@testable import DenInfrastructure
 
 @MainActor
 struct ProfileExtensionDataStoreTests {

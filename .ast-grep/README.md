@@ -49,4 +49,6 @@ remaining in the app target are still protected only by layer checks, not a sepa
 `DenModels` rejects AppKit and native SDK imports. Native display adapters belong
 to `DenViews`; composition supplies their existing AppKit views without exposing Runtime types.
 
-`DenInfrastructure` currently allows DenDomain, Foundation, and OS diagnostics only. Persistence and diagnostics cannot import app or Presentation code.
+`DenInfrastructure` allows DenDomain, Foundation, Darwin, CoreGraphics, ImageIO,
+UniformTypeIdentifiers, and OS diagnostics. Filesystem and image-cache I/O and process sampling
+remain independent of App, Models and Views; AppKit, WebKit and Ghostty imports are rejected.

@@ -9,5 +9,5 @@ rule:
   has:
     kind: identifier
     not:
-      regex: '^(Foundation|DenDomain|os)(\.|$)'
+      regex: '^(Foundation|DenDomain|os|Darwin|CoreGraphics|ImageIO|UniformTypeIdentifiers)(\.|$)'
     stopBy: end

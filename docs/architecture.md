@@ -33,7 +33,7 @@ flowchart TD
 | `DenApplication` | Shared state source, operation decisions, and state transformations |
 | `DenModels` | Observable presentation Models and window-local state/effects |
 | `DenViews` | Feature Views, native display adapters, and shared visual tokens and controls |
-| `DenInfrastructure` | Profile persistence and performance diagnostics |
+| `DenInfrastructure` | Profile persistence, filesystem and image-cache I/O, process sampling, and diagnostics |
 | `DenIPCProtocol` | CLI/app request and response types |
 
 App-target folders:
@@ -191,9 +191,11 @@ Preference value types follow their meaning: `SearchEngine` and `ExternalLinkDes
 to Domain, while `DrawerStyle` belongs to DenModels. `AppPreferences` owns their
 persisted selections.
 
-`DenInfrastructure` contains `ProfilePersistence`, its schema DTOs and migration decoder,
-and `PerformanceTrace`. It depends only on DenDomain, Foundation, and OS diagnostics.
-App adapters retain Profile lifecycle and native resources.
+`DenInfrastructure` contains Profile persistence and decoding, extension-data deletion,
+Facing disk caching, process-resource sampling, and performance diagnostics. It depends on
+DenDomain and the Foundation, Darwin, CoreGraphics, ImageIO, UniformTypeIdentifiers, and OS diagnostics
+SDKs; it does not depend on App, Models, Views, WebKit, or Ghostty.
+App adapters retain Profile lifecycle, native resources, memory caches, and window-local sampling tasks.
 
 `DenModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
 It contains Models and state/effect values, with no Views or shared visual components.
@@ -363,14 +365,14 @@ Den also owns preferences for shared presentation behavior. `IPC/Application` co
 Overview owns its View and observable Model. Its app-target Infrastructure owns
 `BoardFacingCapture` for native snapshots and `BoardFacingCache` for
 transient images, memory budgeting, and capture invalidation.
-`BoardFacingDiskCache` serializes image encoding, decoding, and filesystem
+DenInfrastructure’s `BoardFacingDiskCache` serializes image encoding, decoding, and filesystem
 operations on an actor outside the main actor, retaining disposable snapshots for
 ordinary Profiles. Private Den supplies no disk cache. Profile resources
-retain these native adapters; they are not part of persisted Den state. Den coordinates its window transitions and the application operations that focus or rearrange Desks and Boards.
+retain the capture, memory-cache and disk-cache instances; these snapshots are not part of persisted Den state. Den coordinates its window transitions and the application operations that focus or rearrange Desks and Boards.
 
 ### BoardActivity
 
-BoardActivity owns its resource-usage screen in DenViews and process sampling in app Infrastructure. BoardActivitySampling holds the mounted panel’s samples and runs until its View task is cancelled. App composition supplies shared Board state, live Native status and sampled values; Den coordinates opening, closing, and entering a Board from the screen.
+BoardActivity owns its resource-usage screen in DenViews. DenInfrastructure’s ProcessResourceSampler reads OS process data; the app’s BoardActivitySampling selects live Runtime process IDs, holds the mounted panel’s samples and runs until its View task is cancelled. App composition supplies shared Board state, live Native status and sampled values; Den coordinates opening, closing, and entering a Board from the screen.
 
 ### Essentials and Notifications
 

@@ -8,7 +8,7 @@ struct ProcessResourceSample: Equatable, Sendable {
     let processCount: Int
 }
 
-struct ProcessResourceSampler {
+public struct ProcessResourceSampler {
     private struct PreviousSample {
         let time: ContinuousClock.Instant
         let pids: Set<pid_t>
@@ -18,13 +18,15 @@ struct ProcessResourceSampler {
     private let sampleProvider: @MainActor ([pid_t]) -> ProcessResourceSample?
     private var previous: [String: PreviousSample] = [:]
 
-    init(
-        sampleProvider: @escaping @MainActor ([pid_t]) -> ProcessResourceSample? = ProcessResourceSampler.sample
-    ) {
+    public init() {
+        self.init(sampleProvider: Self.sample)
+    }
+
+    init(sampleProvider: @escaping @MainActor ([pid_t]) -> ProcessResourceSample?) {
         self.sampleProvider = sampleProvider
     }
 
-    mutating func usage(
+    public mutating func usage(
         key: String,
         pids: [pid_t],
         now: ContinuousClock.Instant = .now
@@ -57,11 +59,11 @@ struct ProcessResourceSampler {
             processCount: sample.processCount)
     }
 
-    mutating func removeSamples(keeping keys: Set<String>) {
+    public mutating func removeSamples(keeping keys: Set<String>) {
         previous = previous.filter { keys.contains($0.key) }
     }
 
-    static func processGroupPIDs(_ processGroupID: pid_t) -> [pid_t] {
+    public static func processGroupPIDs(_ processGroupID: pid_t) -> [pid_t] {
         guard processGroupID > 0 else { return [] }
         let capacity = max(proc_listpgrppids(processGroupID, nil, 0), 0)
         guard capacity > 0 else { return [] }

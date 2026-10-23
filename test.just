@@ -34,8 +34,9 @@ results result_path=unit_test_result:
 architecture:
     @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
 
-# Run the independent Application and presentation Model package tests.
+# Run the independent Application, Model, and Infrastructure package tests.
 packages:
     @rtk test "swift test --package-path Packages/DenApplication"
     @rtk test "swift test --package-path Packages/DenModels"
+    @rtk test "swift test --package-path Packages/DenInfrastructure"
     @echo "✓ Independent package tests passed"

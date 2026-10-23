@@ -1,8 +1,12 @@
 import DenDomain
 import Foundation
 
-enum ProfileExtensionDataStore {
-    static func remove(_ profileID: ProfileID, directoryURL: URL = defaultDirectoryURL()) throws {
+public enum ProfileExtensionDataStore {
+    public static func remove(_ profileID: ProfileID) throws {
+        try remove(profileID, directoryURL: defaultDirectoryURL())
+    }
+
+    public static func remove(_ profileID: ProfileID, directoryURL: URL) throws {
         let profileDirectory = directoryURL.appending(path: profileID.rawValue.uuidString, directoryHint: .isDirectory)
         do {
             try FileManager.default.removeItem(at: profileDirectory)

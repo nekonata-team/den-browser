@@ -1,6 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
+import DenInfrastructure
 import Foundation
 import Observation
 
