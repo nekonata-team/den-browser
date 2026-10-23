@@ -47,6 +47,22 @@ Routing must preserve this order:
 
 Den Mode actions must never be implemented by forwarding an event and relying on a SwiftUI menu item to catch it. In particular, unmodified comma performs `openSettings` and is consumed before Sheet Input can receive it.
 
+## Mode transitions
+
+[ADR 0026](./adr/0026-return-to-sheet-input-after-completing-den-mode-actions.md) records the intent behind these rules.
+
+- Relative Board, Desk, and Sheet Stack navigation; Board movement, removal, and restoration; layout adjustment; and Zen View keep Den Mode active.
+- Direct Desk or Board selection, entering the Overview Selection, and moving a Board to a numbered Desk return to Sheet Input. Selecting an already focused target still succeeds; moving a Board to its current Desk does not.
+- Successful Board or Desk creation, Desk deletion, Board duplication, URL or label confirmation, and Desk Preset saving or replacement return to Sheet Input. Finishing Preset management with Done does too; deleting individual Presets keeps management open.
+- Confirming a Drawer Peek enters Sheet Input. Drawer filtering and selection keep the current context; restoration invoked in Den Mode preserves it.
+- Canceling a temporary context restores its originating input context. Invalid, unavailable, or failed operations preserve the current context. A valid confirmation succeeds even when its value is unchanged; validation failure leaves the panel open.
+- Clicking a Board header or Current Sheet returns to Sheet Input, and a Sheet click also reaches its content. Pointer-based organization and adjustment keep Den Mode active; successful Desk deletion returns to Sheet Input.
+- Web fullscreen clears Den Mode.
+
+Temporary contexts suspend operations on the Den behind them and block pointer interaction with it.
+They accept only their own operations, cancellation, and application- or window-level commands.
+Repeatable workflows do not imply held-key repeat: Board removal and restoration ignore key repeat.
+
 ## Enforced rules
 
 - `KeyboardController` owns the only runtime `keyDown` local monitor for Profile windows.

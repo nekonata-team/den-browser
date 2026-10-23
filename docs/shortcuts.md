@@ -170,6 +170,21 @@ Open with `Tab` in Den Mode.
 | `Shift` + `D` | Discard all Drawer items (with confirmation) |
 | `Escape` | Clear filter or exit Drawer |
 
+External links enter the receiving Profile's Drawer by default; the External Links setting can instead create a Board beside the Focused Board.
+Keeping a Current Sheet copies its URL and label with a new identity, leaving the source Board and Drawer visibility unchanged.
+Option-clicking a supported HTTP, HTTPS, or local file link captures it without changing the Current Sheet or Desk layout.
+New Drawer Items appear first, and duplicate URLs remain separate.
+
+One Item at a time expands into a live Peek in each Profile window.
+Closing the Drawer retains that window's expanded Peek for reopening; collapsing the Peek releases its runtime but keeps the Item.
+Opening a Drawer with an expanded Peek enters Sheet Input; without one it keeps Den Mode.
+Toggling Den Mode while the Drawer is open moves keyboard focus between its Items and the expanded Peek without collapsing it.
+Links opening a new browsing context in a Peek become Drawer Items; Command-click or middle-click keeps the current Peek, while adding Shift opens the new Item.
+Discarding an expanded Item opens the next visible Item's Peek, or the previous one when it was last; discarding a collapsed Item leaves the current Peek unchanged.
+Restoration selects and expands the Item, preserving Den Mode when invoked there; its ten-Item history lasts only for the current app run.
+Placement focuses the new Board, removes the Item, and closes the Drawer; it transfers an existing Peek from the invoking window without reloading and releases other windows' Peeks for that Item.
+URLs and titles persist; expanded Peek identity and live web state do not.
+
 ### Overview Controls
 
 Open with `o` in Den Mode.

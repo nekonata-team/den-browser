@@ -101,12 +101,3 @@ Renaming trims the label and rejects empty, duplicate, or Built-in labels withou
 Deleting always asks for confirmation and notes that existing Desks are unaffected.
 Deleting the selected Preset resets selection to Empty during creation, or to the first available non-empty Preset during replacement.
 Personal Desk Presets have no artificial count limit and are deleted alongside their owning Profile.
-
-## Deferred
-
-- Editing individual Board details inside a Desk Preset
-- Import and export
-- Sharing between Profiles
-- Cloud sync
-- Folders, tags, and favorites
-- Site-specific built-in width tuning
