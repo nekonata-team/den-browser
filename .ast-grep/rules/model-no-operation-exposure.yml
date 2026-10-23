@@ -3,7 +3,7 @@ language: Swift
 severity: error
 message: Models accept Application operations through construction initializers and retain them privately.
 files:
-  - "Packages/DenPresentationModels/Sources/**/*.swift"
+  - "Packages/DenModels/Sources/**/*.swift"
 rule:
   all:
     - any:

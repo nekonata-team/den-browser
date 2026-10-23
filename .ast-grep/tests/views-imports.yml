@@ -3,8 +3,8 @@ valid:
   - import SwiftUI
   - import AppKit
   - import CoreGraphics
-  - public import DenPresentationModels
-  - import DenPresentationModels
+  - public import DenModels
+  - import DenModels
   - import DenDomain
 invalid:
   - import DenApplication

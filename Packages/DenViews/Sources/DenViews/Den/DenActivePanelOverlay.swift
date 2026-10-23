@@ -1,5 +1,5 @@
 import DenDomain
-import DenPresentationModels
+import DenModels
 import SwiftUI
 
 public struct DenActivePanelOverlay<Content: View>: View {

@@ -14,15 +14,15 @@ Arrows point from the importing module to its dependency. Only local packages ar
 ```mermaid
 flowchart TD
     App[App target] --> DenApplication
-    App --> DenPresentationModels
+    App --> DenModels
     App --> DenViews
     App --> DenInfrastructure
     App --> DenDomain
     App --> DenIPCProtocol
     DenApplication --> DenDomain
-    DenPresentationModels --> DenDomain
-    DenPresentationModels --> DenApplication
-    DenViews --> DenPresentationModels
+    DenModels --> DenDomain
+    DenModels --> DenApplication
+    DenViews --> DenModels
     DenViews --> DenDomain
     DenInfrastructure --> DenDomain
 ```
@@ -31,7 +31,7 @@ flowchart TD
 | --- | --- |
 | `DenDomain` | Domain values and product rules |
 | `DenApplication` | Shared state source, operation decisions, and state transformations |
-| `DenPresentationModels` | Observable presentation Models and window-local state/effects |
+| `DenModels` | Observable presentation Models and window-local state/effects |
 | `DenViews` | Feature Views, native display adapters, and shared visual tokens and controls |
 | `DenInfrastructure` | Profile persistence and performance diagnostics |
 | `DenIPCProtocol` | CLI/app request and response types |
@@ -48,7 +48,7 @@ App-target folders:
 | `Resources` | Bundled assets |
 
 Within app Features, Application coordinates native operations and Infrastructure integrates
-native SDKs. DenViews owns rendering, and DenPresentationModels owns observable screen state. Folders describe ownership; package dependencies
+native SDKs. DenViews owns rendering, and DenModels owns observable screen state. Folders describe ownership; package dependencies
 enforce shared layer boundaries. Den coordinates operations spanning
 Desks, Boards, and Drawer. Board kind-specific code belongs to Board; shared Web integration
 belongs to Web.
@@ -62,7 +62,7 @@ The Store is `@Observable` and exposes a read-only snapshot. Views observe the a
 value through live getters. Its separate `DenStateWriter` is created together with the Store and retained privately by the app's
 `DenProfileResources` adapter. Readers cannot obtain a writer for an existing Store.
 
-`DenPresentationModels` owns display values for pending confirmations, including
+`DenModels` owns display values for pending confirmations, including
 `DenConfirmationRequest` and `PendingDeskReplacement`.
 App composition routes confirmed operations to their shared operations and focused native adapters. The Application core has no
 Presentation dependency. Board operation origin and zmx operation outcomes are Domain values.
@@ -188,14 +188,14 @@ The App adapter inserts ordinary copies through BoardCreation. zmx queries, canc
 execution retain their existing App lifetime and use the same creation operation after preparation.
 
 Preference value types follow their meaning: `SearchEngine` and `ExternalLinkDestination` belong
-to Domain, while `DrawerStyle` belongs to DenPresentationModels. `AppPreferences` owns their
+to Domain, while `DrawerStyle` belongs to DenModels. `AppPreferences` owns their
 persisted selections.
 
 `DenInfrastructure` contains `ProfilePersistence`, its schema DTOs and migration decoder,
 and `PerformanceTrace`. It depends only on DenDomain, Foundation, and OS diagnostics.
 App adapters retain Profile lifecycle and native resources.
 
-`DenPresentationModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
+`DenModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
 It contains Models and state/effect values, with no Views or shared visual components.
 DenViews contains shared components, feature panels, Tutorial, Drawer lists, headers, and settings contents.
 App observes native Runtime/Facing state and assembles their existing NSViews, values and callbacks; rendering belongs to DenViews.
@@ -253,7 +253,7 @@ Web Boards and Drawer Peek allow HTTP content, including LAN and Tailscale IP ad
 The app's Info.plist sets `NSAllowsArbitraryLoadsInWebContent` to exempt `WKWebView`
 loads from ATS restrictions while retaining default ATS protections for `URLSession`.
 
-`DenViews` directly depends on `DenPresentationModels` and Domain. There is one Model / VM target,
+`DenViews` directly depends on `DenModels` and Domain. There is one Model / VM target,
 which remains independent of display SDKs. App composition passes an existing `NSView` directly
 to the View adapter; attaching, displaying, and detaching native views belongs to the View boundary.
 The Profile registry retains Runtime creation and disposal. WebKit private declarations, Ghostty
@@ -272,7 +272,7 @@ This boundary follows
 ## Dependency direction
 
 - `App` assembles scenes, windows, commands, and dependencies. It does not acquire feature behavior merely because multiple Features use it.
-- `DenViews/Shared` provides shared visual presentation. Motion preference storage remains in AppPreferences; its choice value belongs to DenPresentationModels so Models never depend on Views. The consolidation follows [ADR 0067](./adr/0067-consolidate-shared-ui-and-notifications-in-views.md).
+- `DenViews/Shared` provides shared visual presentation. Motion preference storage remains in AppPreferences; its choice value belongs to DenModels so Models never depend on Views. The consolidation follows [ADR 0067](./adr/0067-consolidate-shared-ui-and-notifications-in-views.md).
 - `Domain` contains state and product rules. It does not depend on App adapters, Application-owned operation events, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
 - `DenDomain` is the compiler-enforced module for the moved shared Domain values. It depends only on Foundation and keeps the app's Swift 6 MainActor isolation policy.
 - `Application` owns operation sequencing, application state, and runtime lifecycle coordination. App native adapters connect the corresponding operations to native resources.
@@ -299,7 +299,7 @@ The [state ownership table](#shared-state-and-presentation-package-boundaries) d
 - The Profile runtime registry retains one `BoardRuntimeReceiver` per live Board. Runtime disposal or final Profile-window teardown releases these receivers. Closing one window preserves detached runtime event delivery while other Profile windows remain.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
 - Drawer Peek runtime and native download operations remain App-owned; window download presentation belongs to `DownloadActivityModel`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
-- zmx session discovery is window-local. Each `DenWindowModel` owns one `ZmxSessionsModel` from `DenPresentationModels`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. App composition injects listing and termination operations backed by the current zmx client; each operation batch captures its dependencies through completion. The Model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `ZmxBoardActions` finds existing zmx Boards, updates root metadata, and opens or focuses Boards; the Window Model coordinates the panel transition.
+- zmx session discovery is window-local. Each `DenWindowModel` owns one `ZmxSessionsModel` from `DenModels`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. App composition injects listing and termination operations backed by the current zmx client; each operation batch captures its dependencies through completion. The Model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `ZmxBoardActions` finds existing zmx Boards, updates root metadata, and opens or focuses Boards; the Window Model coordinates the panel transition.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback; [persistence.md](./persistence.md) defines the saved data and recovery contract.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).

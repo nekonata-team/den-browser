@@ -1,6 +1,6 @@
 import DenApplication
 import DenDomain
-import DenPresentationModels
+import DenModels
 import DenViews
 import Foundation
 

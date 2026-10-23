@@ -1,7 +1,7 @@
 # Swift source checks
 
 Run `just architecture-check` to scan the application and all
-package source roots: `DenDomain`, `DenIPCProtocol`, `DenApplication`, `DenPresentationModels`, `DenViews`, and `DenInfrastructure`.
+package source roots: `DenDomain`, `DenIPCProtocol`, `DenApplication`, `DenModels`, `DenViews`, and `DenInfrastructure`.
 Run `just test architecture` to test the rule definitions against their fixtures.
 `just lint` and `just check` also run `architecture-check`. The ast-grep version is pinned in
 `mise.toml` so parser changes are reviewed together with the rule fixtures.
@@ -36,7 +36,7 @@ attributed imports, and comments/strings. Snapshot output is not part of
 the contract, so the recipe uses `ast-grep test --skip-snapshot-tests`.
 
 `DenApplication` allows Foundation, Observation, and DenDomain only; native/UI frameworks
-and Presentation dependencies are excluded. Pure `DenPresentationModels` allows Foundation, Observation,
+and Presentation dependencies are excluded. Pure `DenModels` allows Foundation, Observation,
 DenApplication, and DenDomain. `DenViews` allows Domain and the single Model module,
 and drawing SDKs/libraries enumerated in `views-imports.yml`; it rejects Application and the app. Package
 manifests enforce the same dependency direction. `model-no-operation-exposure` rejects public exposure of Application operation types and the write
@@ -46,7 +46,7 @@ Its explicit capability names complement import guards and package visibility; i
 App composition supplies live read inputs and focused native callbacks. Native implementations
 remaining in the app target are still protected only by layer checks, not a separate module.
 
-`DenPresentationModels` rejects AppKit and native SDK imports. Native display adapters belong
+`DenModels` rejects AppKit and native SDK imports. Native display adapters belong
 to `DenViews`; composition supplies their existing AppKit views without exposing Runtime types.
 
 `DenInfrastructure` currently allows DenDomain, Foundation, and OS diagnostics only. Persistence and diagnostics cannot import app or Presentation code.

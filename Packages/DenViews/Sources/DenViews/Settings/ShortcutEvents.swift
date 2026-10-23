@@ -1,5 +1,5 @@
 import AppKit
-import DenPresentationModels
+import DenModels
 import Foundation
 
 public extension ShortcutModifiers {

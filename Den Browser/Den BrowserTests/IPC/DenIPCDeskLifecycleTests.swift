@@ -1,7 +1,7 @@
 import DenApplication
 import DenDomain
 import DenIPCProtocol
-import DenPresentationModels
+import DenModels
 import Foundation
 import Testing
 

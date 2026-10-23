@@ -1,6 +1,6 @@
 import AppKit
 import DenApplication
-import DenPresentationModels
+import DenModels
 import Foundation
 import SwiftUI
 

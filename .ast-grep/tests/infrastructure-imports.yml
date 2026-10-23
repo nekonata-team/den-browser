@@ -5,5 +5,5 @@ valid:
   - import os
 invalid:
   - import Den_Browser
-  - import DenPresentationModels
+  - import DenModels
   - import SwiftUI

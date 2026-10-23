@@ -1,6 +1,6 @@
 public import CoreGraphics
 public import DenDomain
-public import DenPresentationModels
+public import DenModels
 public import Foundation
 
 public struct BoardLayout {

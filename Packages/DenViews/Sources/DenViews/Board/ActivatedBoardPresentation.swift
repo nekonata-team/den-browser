@@ -1,5 +1,5 @@
 public import DenDomain
-public import DenPresentationModels
+public import DenModels
 public import SwiftUI
 
 public struct ActivatedBoardPresentation {

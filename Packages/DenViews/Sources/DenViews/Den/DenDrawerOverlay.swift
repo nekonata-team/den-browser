@@ -1,5 +1,5 @@
 import DenDomain
-import DenPresentationModels
+import DenModels
 import SwiftUI
 
 public struct DenDrawerOverlay<Peek: View>: View {

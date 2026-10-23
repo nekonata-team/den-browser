@@ -13,7 +13,7 @@ swift_sources := "Den Browser"
 domain_sources := "Packages/DenDomain/Sources"
 ipc_protocol_sources := "Packages/DenIPCProtocol/Sources"
 application_sources := "Packages/DenApplication/Sources"
-presentation_sources := "Packages/DenPresentationModels/Sources"
+models_sources := "Packages/DenModels/Sources"
 views_sources := "Packages/DenViews/Sources"
 infrastructure_sources := "Packages/DenInfrastructure/Sources"
 
@@ -33,7 +33,7 @@ format:
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{domain_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{application_sources}}"
-    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{presentation_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{models_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{views_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{infrastructure_sources}}"
 
@@ -50,7 +50,7 @@ format-check:
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{domain_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{application_sources}}"
-    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{presentation_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{models_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{views_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{infrastructure_sources}}"
 

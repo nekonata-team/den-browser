@@ -1,9 +1,9 @@
-id: presentation-model-imports
+id: model-imports
 language: Swift
 severity: error
 message: Pure presentation models may use Application and Domain, but not UI or native SDKs.
 files:
-  - "Packages/DenPresentationModels/Sources/DenPresentationModels/**/*.swift"
+  - "Packages/DenModels/Sources/DenModels/**/*.swift"
 rule:
   kind: import_declaration
   has:

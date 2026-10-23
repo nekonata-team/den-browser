@@ -1,7 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
-import DenPresentationModels
+import DenModels
 import DenViews
 import SwiftUI
 import Testing

@@ -1,6 +1,6 @@
 import CoreGraphics
 import DenDomain
-import DenPresentationModels
+import DenModels
 
 public extension DenLayout {
     static func boardWidth(

@@ -1,7 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
-import DenPresentationModels
+import DenModels
 
 @MainActor
 final class ProfileWindowRegistry {

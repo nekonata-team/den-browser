@@ -1,5 +1,5 @@
 import DenDomain
-import DenPresentationModels
+import DenModels
 import Foundation
 import SFSafeSymbols
 public import SwiftUI

@@ -1,4 +1,4 @@
-public import DenPresentationModels
+public import DenModels
 import SwiftUI
 
 public enum DenRadius {

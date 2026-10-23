@@ -1,4 +1,4 @@
-id: presentation-model-imports
+id: model-imports
 valid:
   - import Foundation
   - import Observation

@@ -1,4 +1,4 @@
-import DenPresentationModels
+import DenModels
 import Testing
 
 @testable import DenViews

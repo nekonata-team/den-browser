@@ -37,5 +37,5 @@ architecture:
 # Run the independent Application and presentation Model package tests.
 packages:
     @rtk test "swift test --package-path Packages/DenApplication"
-    @rtk test "swift test --package-path Packages/DenPresentationModels"
+    @rtk test "swift test --package-path Packages/DenModels"
     @echo "✓ Independent package tests passed"

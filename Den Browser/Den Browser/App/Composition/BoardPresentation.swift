@@ -1,6 +1,6 @@
 import DenApplication
 import DenDomain
-import DenPresentationModels
+import DenModels
 
 extension BoardSurfaceModel {
     init(board: BoardState, session: ProfileWindowSession) {

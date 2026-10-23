@@ -1,5 +1,5 @@
 public import AppKit
-public import DenPresentationModels
+public import DenModels
 public import SwiftUI
 
 public struct WebBoardSurface: NSViewRepresentable {

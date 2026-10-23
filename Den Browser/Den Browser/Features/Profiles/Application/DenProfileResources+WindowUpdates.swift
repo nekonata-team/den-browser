@@ -1,7 +1,7 @@
 import DenApplication
 import DenDomain
 import DenInfrastructure
-import DenPresentationModels
+import DenModels
 import Foundation
 
 extension DenProfileResources {
