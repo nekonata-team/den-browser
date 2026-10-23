@@ -1,5 +1,5 @@
 public import DenDomain
-public import Foundation
+import Foundation
 
 public struct DeskPresetChoice: Equatable {
     public let selection: DeskPresetSelection

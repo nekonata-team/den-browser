@@ -1,5 +1,4 @@
 public import AppKit
-public import DenModels
 public import SwiftUI
 
 public struct DrawerWebSurface: NSViewRepresentable {
