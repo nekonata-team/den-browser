@@ -35,7 +35,8 @@ Reuse successful checks when the final diff does not affect what they cover.
 - `docs/desk-presets.md`: desk preset behavior and state
 - `docs/vim.md`: Vim-style sheet navigation
 - `docs/persistence.md`: local persistence and preference schema
-- `docs/architecture.md`: current package structure, dependency direction, and ownership boundaries; read before implementation changes
+- `docs/architecture.md`: package structure, dependency direction, responsibility boundaries, and state/runtime ownership; read before implementation changes
+  Keep its text and Mermaid diagrams consistent.
 - `docs/adr/`: reasons and trade-offs behind architecture and product decisions; read relevant ADRs when changing architectural boundaries
 - `scripts/embedded-js/README.md`: TypeScript sources and generated JavaScript resource workflow
 - `docs/cli.md`: command-line interface specification and agent integration
@@ -50,12 +51,10 @@ Reuse successful checks when the final diff does not affect what they cover.
 - Use the `domain-modeling` skill when changing domain terms, their meanings, or architectural decisions in `CONTEXT.md` or ADRs.
 - Before editing ADRs, read and follow the [ADR template](./.agents/skills/domain-modeling/ADR-FORMAT.md).
 - Do not commit agent notes, work logs, or unsettled plans.
-- When package responsibilities, dependencies, or state/runtime ownership change,
-  update the affected sections and Mermaid diagrams in `docs/architecture.md`
-  in the same change.
 - Keep README focused on public product information and documentation links.
-- Put detailed behavior and implementation contracts in their owning documents;
-  update those documents and affected tests when behavior changes.
+- Keep detailed behavior and implementation contracts in their owning documents.
+- Update existing documentation when a change makes its content inaccurate.
+- Update affected tests when behavior changes.
 - Keep `README.md` and `README.ja.md` aligned in structure and product facts.
   Write natural copy in each language.
 - Before handoff, check changed documentation links and inspect the final diff
