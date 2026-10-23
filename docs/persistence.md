@@ -162,4 +162,5 @@ silently replaced. If a confirmed-invalid file cannot be quarantined, recovery d
   If disk writing fails, it reports the error and returns `false` without rolling back the cache.
   This prevents subsequent saves of other collections (such as Recent Items or Desk Presets) from overwriting disk with outdated state.
 - Irreversible operations (such as closing a live Board) retain intended state in UI and memory rather than artificially rewinding.
+- Failed Recent persistence restores the previous Recent collection; a Board created by that operation remains created.
 - UI operations report success (such as displaying a success Toast) only after disk persistence succeeds.

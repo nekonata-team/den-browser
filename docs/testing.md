@@ -1,181 +1,97 @@
 # Testing
 
-Automated tests protect stable product behavior; exploratory human validation covers areas where automation is unreliable. The validation boundary below builds on [ADR 0000](./adr/0000-poc-accepted.md).
+Unit tests protect state and operation contracts; XCUITest covers native UI boundaries that unit tests
+cannot observe ([ADR 0020](./adr/0020-test-critical-ui-workflows.md)).
+Exploratory validation covers environment-dependent or visual behavior.
 
 ## XCUITest admission rule
 
-XCUITest is an expensive exception, not the default for UI code. Adding a View, gesture, or user-visible behavior does not by itself justify a UI test.
+Add a UI test only when all three conditions hold:
 
-Add a UI test only when all of the following are true:
-
-- The behavior crosses a native UI boundary, such as SwiftUI-specific gesture identity (for example, pointer drag-and-drop), accessibility routing that is itself under test, or AppKit, WebKit, or Terminal responder boundaries. Ordinary Button clicks do not qualify.
+- The behavior crosses a native boundary: SwiftUI gesture identity, accessibility routing, or AppKit,
+  WebKit or Terminal responder handoff.
 - A unit test cannot observe the failure at that boundary.
-- The test proves one independent user-visible workflow and its final outcome.
+- It proves one independent user-visible workflow and its final outcome.
 
-Before adding one, state which boundary it protects and why a unit test cannot observe it. Do not add UI tests for unit-observable behavior, ordinary Button clicks, visual/style choices, or every input variant of the same wiring. Exhaustive shortcut mappings, state transitions, branches, and edge cases belong in focused unit tests.
+Before adding one, name the boundary and explain why unit coverage is insufficient.
+Ordinary Button clicks, styling and input permutations do not qualify.
+Shortcut mappings, state transitions and edge cases belong in focused unit tests.
 
-A concrete native boundary is Board input activation: the handoff from Board state and SwiftUI
-updates to the Board's native input surface (`WKWebView` for a Web Board or the Ghostty view
-for a Terminal Board).
+For Board activation, send input after a click, mode change, Desk switch or Overview confirmation
+and observe a target-specific result. Selected Board state, window titles and routing decisions alone
+do not prove input reached the mounted native surface.
 
-For this boundary, a UI test qualifies only when it sends input after a pointer click, Den Mode
-toggle, Desk switch, or Overview confirmation and observes a target-specific result. Board selection,
-window navigation state, window titles, and routing decisions do not by themselves justify a UI test.
-Unit tests cover the focus state machine; UI tests cover actual input delivery through the mounted
-native surface.
+## Unit test boundaries
 
-## Responsibilities
+| Target | Contract |
+| --- | --- |
+| Domain/Application | Product rules, shared state mutations, ordering and persistence outcomes |
+| Models | Live Observation, window-local state, presentation transitions and cancellation |
+| Infrastructure | Filesystem/bitmap I/O and OS process sampling |
+| App | Native SDK/resource connections, Profile/window lifecycle and UI/IPC integration |
 
-Automated unit tests own:
+Test each component through its own interface; use App integration tests for contracts involving native
+resources or their owners. Assert observable outcomes rather than Task identity.
+Keep setup dependencies visible and avoid constructing an outer application graph for a component test.
 
-- Pure domain state transitions (focus, ordering, moving, removal, restoration, and navigation).
-- State persistence, serialization, and schema migration.
-- Command parsing, process resolution, and lifecycle state machines (Terminal, CLI, IPC).
-- Profile lifecycle, workspace isolation, storage routing, and window assignment.
-- App preferences and configuration persistence.
-- Pointer-focus coordination and responder arbitration logic.
+Group tests by the responsibility they verify, with separate files for independent components.
+Board-kind tests live under `Board/Web`, `Board/Terminal` or `Board/Inspection`.
+Do not reproduce every source layer as a test folder.
+Shared helpers belong under `Support` and test resources under `Fixtures`.
 
-Unit tests must never read or write shared user defaults (`UserDefaults.standard`). Any test touching preferences or configuration must use isolated test containers or suite names.
+Use explicit `// Arrange`, `// Act` and `// Assert` sections and keep each scenario focused on one contract.
+Tests touching preferences must use isolated suites or containers, never `UserDefaults.standard`.
 
-### Unit test structure and boundary rules
+## UI test structure and isolation
 
-Test files under `Den Browser/Den BrowserTests` are grouped by the responsibility they verify,
-such as `Den`, `Desk`, `Board`, `Drawer`, `Profiles`, `Web`, `IPC`, and `CLI`. Board-kind-specific
-tests belong under `Board/Web`, `Board/Terminal`, or `Board/Inspection`. Class names do not determine
-placement: for example, `NativeBoardTests` belongs under `Board` because it protects Board operations.
-Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
-Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
+Use Given/When/Then activities through the thin `BDD.swift` helpers.
+Keep scenario names in Den's domain language and leave the causal action and final assertions visible.
+`Then` blocks contain assertions; input and other mutations belong in `When`.
+Use `assertEventually` for settling, avoid arbitrary sleeps, and paste long text rather than typing it character by character.
 
-Test Drawer Item/history mutations and concrete Board placement/save ordering in the independent
-Application package. Keep WebRuntime identity, Peek release, download/navigation callbacks,
-window presentation repair and IPC routing in the App integration suite.
+Choose the smallest deterministic fixture that covers the workflow.
+Prepare unrelated state through fixtures; perform the transition under test through the UI.
+Each run uses temporary Profile documents, an isolated defaults suite, non-persistent WebKit data and local URLs.
+Tests must not touch user Profiles, preferences, website data, window restoration or external services.
+Terminal tests use `/bin/zsh -f` and do not load the user's Ghostty configuration.
 
-Test EssentialEditing quick-save/confirmation revalidation, InputOpening routing, BoardUpdates,
-TutorialProgress and pure link formatting independently of native adapters. FeedbackModel tests protect
-window-local feedback state; App integration tests retain zmx client/window cancellation, native
-Screenshot output cancellation and the existing launch/confirmation/clipboard contracts.
+## Exploratory validation
 
-Test Recent collection recording, removal, clearing, title completion and persistence rollback
-through `Recents` in the Application package. App tests retain opening/input revalidation,
-Runtime title delivery and window integration coverage.
+Use exploratory checks where automation cannot reliably cover:
 
-Test Board opening decisions through `BoardOpening.resolve` and insertion/Recent/save ordering
-through `BoardCreation` in the Application package. Keep Native/window/persistence connections
-in app integration tests; test OpenBoardModel directly against the same concrete operation.
-Test removal/restoration, duplication, movement and sizing directly in the Application package;
-App tests retain Native cleanup, reference invalidation and window presentation coverage.
-Desk lifecycle, Desk movement, reset ordering and existing Preset calculations also run in the
-independent Application target; confirmation, Profile-window assignment and Native Facing remain
-in their existing App integration suites.
-Test migrated notification operations directly through `NotificationOperations`; test shared operations directly, and native adapters and Profile persistence at their own boundaries; test the shared-state source directly through `DenStateStore` and its write capability. Native integration tests explicitly assemble Profile resources, native configuration and the adapters under test; broad window-construction helpers do not hide these dependencies. Test window presentation
-transitions through `DenWindowModel` and context-local state through the corresponding Model,
-while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
-by its observable result rather than the Task object used to produce it. Presentation suites use Model names; moving UI state does not require routing unrelated
-Store tests through a Model.
+- Real websites, authentication, downloads, Blob responses and save panels.
+- IME/responder handoff, multiple windows/displays, Ghostty rendering and session reattachment.
+- Liquid Glass, accessibility, resource use and performance.
 
-Unit tests follow the Arrange-Act-Assert (AAA) pattern for consistency across the test suite, using explicit section comments (`// Arrange`, `// Act`, `// Assert`):
-
-- `// Arrange`: Set up the initial state, fixtures, stubs, and isolated dependencies.
-- `// Act`: Perform the single operation, transition, or method invocation under test.
-- `// Assert`: Verify expected outcomes, state changes, and invariants with `#expect` or `#require`.
-
-Boundary rules:
-- **Direct boundary verification**: Test each component directly at its public interface. Do not exercise subsystem logic through outer orchestrators (e.g. test workspace state transitions directly, not through profile coordination).
-- **One component per test suite**: Cross-cutting or independent components (such as preferences, IPC resolution, motion policies, or persistence models) belong in their own dedicated test files, not mixed into neighboring suites.
-- **Focused state transitions**: Avoid long interleaved act-assert-act chains in a single test; split distinct state transitions, error branches, and edge cases into focused, single-purpose tests.
-
-
-XCUITests own native UI integration, including:
-
-- Creating a Terminal, Zellij, or zmx Board, entering Sheet Input, and removing it when the Shell, Zellij, or zmx process exits.
-
-### UI test readability
-
-UI tests use BDD-style sections for readability:
-
-- `Given` describes the user-visible starting context.
-- `When` describes a user action or meaningful transition.
-- `Then` checks the observable result.
-
-The `given`, `when`, and `then` helpers in `BDD.swift` record these sections with XCTest's `XCTContext` activities. They are available only to UI tests through a small marker protocol and must stay thin. Do not build a general-purpose fluent DSL or hide the scenario's important assertions behind helpers.
-
-Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`, and `Drawer Peek`). Hide only mechanical details that obscure the behavior, such as repeated keyboard sequences, accessibility queries, fixture setup, or polling. The test body should still make the causal sequence and final assertions obvious.
-
-Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other state-changing operations in `When` blocks. Use `assertEventually` for UI settling and animation boundaries; do not add sleeps or arbitrary delays.
-
-Enter long text such as URLs via the `paste` helper instead of character-by-character `typeText` to minimize execution time.
-
-UI tests launch with deterministic fixture state. Each test should request the smallest fixture that covers its
-Given: one Board for single-Board workflows, two Boards when focus or ordering compares a pair, and three or more
-only when the scenario needs them. The dedicated Desk fixtures should be used when a workflow needs a particular
-Desk arrangement instead of constructing an unrelated Given through UI operations. The transition under test must
-still be performed through the UI.
-Profile documents use a fresh temporary directory, preferences use a dedicated defaults suite, and Sheets use a
-non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
-website data, window restoration, or external services. Terminal UI tests use an isolated `/bin/zsh -f` command and do not load the user's Ghostty configuration.
-
-For launch and resource measurements, see [Performance benchmarking](./benchmarking.md).
-
-Use the XCTest result bundle for per-test durations. Do not add ad hoc timers or sleeps to interaction tests.
-
-Exploratory human validation is reserved for milestone checks that depend on macOS, WebKit, remote services, or visual judgment:
-
-- Real interaction with `WKWebView`, including navigation and text entry.
-- WebKit downloads, native save-panel access, Blob responses, and authenticated responses.
-- First-responder handoff involving IME, external sites, multiple windows, or other nondeterministic surfaces.
-- External web compatibility and authentication persistence.
-- Multiple-window placement and focus behavior across physical displays.
-- Performance and resource use.
-- Ghostty rendering, IME, Shell environment, Zellij/zmx detach and reattach behavior, and process cleanup.
-- Liquid Glass, visual quality, and accessibility. On macOS, use Computer Use as an AX-based exploratory check for Den, Desk, Board, Overview, Drawer, Settings, app dialogs, and first-responder handoff. Record the accessibility boundary of external surfaces separately: WKWebView content belongs to the loaded site, and Ghostty's internal terminal content may not be exposed through the app AX tree.
-
-Human validation is exploratory, not a correctness guarantee. When it finds a reproducible regression, add an automated test where practical.
+On macOS, use Computer Use for app-owned UI and responder checks.
+Treat external accessibility surfaces separately: WKWebView content belongs to the site and
+Ghostty's terminal content may not be exposed through the app AX tree.
+Reproducible findings should gain focused automated coverage where practical.
 
 ## Automated commands
 
-Run from repository root. `just` commands use the shared `Den Browser` scheme, local macOS destination, and
-repository-local DerivedData. Builds use development signing. Unit-test commands disable code signing; macOS UI tests use normal local
-development signing and separate `.derived-data-ui` output because their runner must control the app process.
+Run from the repository root:
 
 ```sh
 just build
 just test
+just test packages
 just test ui
 just lint
 just format
 just check
-just test packages
+just test architecture
 ```
 
-`just lint` runs `just architecture-check`, Xcode-bundled `swift-format` in strict mode, and SwiftLint. `just format` applies the same formatting configuration. Builds treat compiler warnings as errors.
+The default unit recipe includes independent SwiftPM tests for Application, Models and Infrastructure,
+without App, WebKit or Ghostty. Hosted tests cover native mounting, resource lifetime and App integration.
+Unit tests disable code signing; UI tests use development signing and separate `.derived-data-ui` output.
 
-`just architecture-check` runs the import guards described in [the rule guide](../.ast-grep/README.md). Run `just test architecture` to test rule definitions against fixtures.
-Package dependencies are compiler-enforced; the scan does not prove isolation between app source groups.
-Runtime event routing and shared-state consistency require behavioral tests.
+`just lint` runs the [source guards](../.ast-grep/README.md), swift-format in strict mode and SwiftLint.
+Builds treat compiler warnings as errors. Package dependencies are compiler-enforced; import scans do not
+prove isolation between App source groups, event destinations or resource lifetimes.
 
-`NativeDisplayIntegrationTests` in the app test target mounts the existing WebKit and Ghostty views through
-the production NativeSurfaceView directly into the View module, verifies reuse after remount, and checks app-bundle JavaScript.
-These are hosted integration tests; the independent Model test executable does not link native SDKs.
-The existing `ProfileManagerTests` protect event delivery after the owner's window closes and
-Runtime disposal after the final window closes. `BoardRuntimeReceiverTests` checks receiver release with an externally retained Runtime and background exit after window disconnection. Inspection Model tests reject child-load results after cancellation or page navigation.
-
-`just test packages` runs Application, Model and Infrastructure test suites independently
-with SwiftPM, without App, WebKit or Ghostty. The default unit recipe includes these suites.
-`NotificationListModelTests` protects shared Observation and per-window dispatch; the app's
-`NotificationWindowTests` protects clear confirmation, source focus, feedback/effect order, and
-window destinations. DeskFilterModelTests exercises filtering and selection without App construction;
-DeskFilterKeyboardTests retains routing, IME, and window-lifecycle integration. BoardEditingModelTests
-checks current targets and native notification order. PreferencesPresentationTests checks live settings
-Observation, and WindowFeatureModelsTests checks Commands and feature Models against one window target.
-WindowNavigationModelTests checks live shared reads and window-local selection/history; DownloadActivityModelTests
-checks concurrent download presentation without App construction. DenStateNormalizationTests checks restore/save
-normalization independently. IPC target tests assert the selected window identity, shared Profile resources,
-and native notification destination without constructing screen Models.
-
-Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
-exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn
-reproducible findings into automated unit or UI tests rather than manual checklists.
-
-Infrastructure tests cover extension-data deletion, process sampling and Facing disk-cache pruning,
-clearing, capacity and corrupt files directly. BoardFacingCachePersistenceTests remains hosted to check
-the disk cache’s connection to the app’s NSImage memory cache.
+Before merge, run `just check` and the focused UI tests admitted above, then review the diff.
+Add exploratory validation when the affected boundary requires it.
+Use XCTest result bundles for durations; launch/resource measurement is documented in
+[benchmarking.md](./benchmarking.md).

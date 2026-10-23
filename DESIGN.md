@@ -9,6 +9,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use dark, low-contrast Den background with restrained Profile-colored ambient light.
 - Use Liquid Glass for Den controls, panels, the desk switcher, app-owned Inspection and Tutorial Boards, and unactivated Board placeholders.
   Keep Web Sheets visually independent and do not apply glass to sheet content.
+- Prefer system controls and button styles; avoid unnecessary custom glass layering.
 - Boards use rounded continuous corners. Focus uses the active Profile color.
 - Terminal Boards keep shared Board chrome and focus treatment. Ghostty owns the Terminal surface appearance, text, cursor, selection, and IME presentation.
 - Treat a Primary Board and its Side Board as one adjacent group for dragging, reordering, and centering. Keep focus and width individual to each Board.
@@ -52,7 +53,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   component-specific metrics close to their component, and introduce a private layout type only when values are
   reused or participate in a layout calculation.
 - Keep feature-specific layout algorithms with their owning component; for example, Board placement logic stays in
-  `Features/Board/Presentation/BoardLayout.swift`.
+  [BoardLayout.swift](Packages/DenViews/Sources/DenViews/Board/BoardLayout.swift).
 - Share a layout metric only when its uses have the same visual meaning and should change together. Equal numeric
   values alone are not a reason to couple unrelated spacing or dimensions. Local literals are appropriate when a
   name would not add design intent.
