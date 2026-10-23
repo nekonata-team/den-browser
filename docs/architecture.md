@@ -1,7 +1,7 @@
 # Architecture
 
 Shared responsibilities are separated into Swift packages. The app target assembles them and
-contains Views, native adapters, and operations grouped by product Feature.
+contains scene and dependency composition, with native adapters and operations grouped by product Feature.
 
 ## Platform baseline
 
@@ -41,14 +41,14 @@ App-target folders:
 | Folder | Role |
 | --- | --- |
 | `App` | App entry, settings assembly, keyboard integration, and dependency composition |
-| `Features` | Feature-owned Views, operation adapters, and native implementations |
+| `Features` | Feature-owned operation adapters and native implementations |
 | `IPC` | Socket transport and request handling |
 | `Platform` | Feature-independent OS integration |
 | `PrivateWebKit` | Private WebKit API declarations |
 | `Resources` | Bundled assets |
 
-Within Features, Application coordinates operations, Presentation renders UI, and
-Infrastructure integrates native SDKs. Folders describe ownership; package dependencies
+Within app Features, Application coordinates native operations and Infrastructure integrates
+native SDKs. DenViews owns rendering, and DenPresentationModels owns observable screen state. Folders describe ownership; package dependencies
 enforce shared layer boundaries. Den coordinates operations spanning
 Desks, Boards, and Drawer. Board kind-specific code belongs to Board; shared Web integration
 belongs to Web.
@@ -198,7 +198,7 @@ App adapters retain Profile lifecycle and native resources.
 `DenPresentationModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
 It contains Models and state/effect values, with no Views or shared visual components.
 DenViews contains shared components, feature panels, Tutorial, Drawer lists, headers, and settings contents.
-App assembles their data and native callbacks; Views that directly connect Runtime or Facing still reside in App.
+App observes native Runtime/Facing state and assembles their existing NSViews, values and callbacks; rendering belongs to DenViews.
 Existing Models receive live data getters and only the operations they use. Models may also receive concrete
 Application operations through public construction initializers, retaining the Store and operations privately.
 Such initializers use `public import DenApplication`; View-facing properties and methods expose Domain
@@ -261,12 +261,12 @@ integration, and embedded JavaScript remain in the app target. IPC calls the com
 implementations without constructing a screen Model. This boundary follows
 [ADR 0066](./adr/0066-separate-views-from-native-runtime-ownership.md).
 
-`M0BoundaryProbe` in App composition retains the native display construction probe.
-The real Notification Model/View replaced the initial Board order probes; API validation now
-checks NotificationListModel. `NativeSurfaceView` verifies the display connection.
+`NativeDisplayIntegrationTests` mounts existing WebKit and Terminal views through the production
+`NativeSurfaceView`, verifying remount identity and bundled JavaScript. There is no separate probe adapter.
 Native integration, Runtime/Facing assembly, and focused operation adapters remain in the app target.
-Their folder boundaries are not compiler-enforced. Layer import guards
-reject Presentation access to the mutable adapter. This boundary follows
+Their folder boundaries are not compiler-enforced. Import guards enforce package dependencies;
+the Model API guard rejects public operation/write-capability exposure outside construction initializers.
+This boundary follows
 [ADR 0062](./adr/0062-profile-state-source-and-presentation-models.md).
 
 ## Dependency direction
@@ -319,6 +319,8 @@ Model for every View.
 
 Window presentation owns modes, context transitions, layout, confirmations, and input requests.
 Context Models own local queries, selections, drafts, and cancellable work; they do not reference one another or copy domain state.
+DenViews owns Drawer and temporary-panel overlay layout, transitions and dismissal controls.
+App supplies their concrete panel content and native input-restoration callback.
 Panels own their `FocusState` and local drafts. Drafts that survive panel replacement belong to a Model;
 for example, Open Board retains its draft when returning from Zmx Sessions.
 Composition supplies Models and narrow operations; Models pass explicit values or identifiers to those operations.
@@ -368,7 +370,7 @@ retain these native adapters; they are not part of persisted Den state. Den coor
 
 ### BoardActivity
 
-BoardActivity owns the resource-usage screen in Presentation and process sampling in Infrastructure. App composition supplies the screen with shared Board state and native runtime sampling; Den coordinates opening, closing, and entering a Board from the screen.
+BoardActivity owns its resource-usage screen in DenViews and process sampling in app Infrastructure. BoardActivitySampling holds the mounted panel’s samples and runs until its View task is cancelled. App composition supplies shared Board state, live Native status and sampled values; Den coordinates opening, closing, and entering a Board from the screen.
 
 ### Essentials and Notifications
 
@@ -413,7 +415,7 @@ Settings is not a Feature. `App/Settings` owns the Settings scene and its naviga
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Peek; its API uses only AppKit views and generic request values. `WebRuntime` belongs to `Web` because Web Boards and Drawer Peek share its live execution; `WebBoardSurface` remains in `Board/Web` because it owns Board presentation. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Peek; its API uses only AppKit views and generic request values. `WebRuntime` belongs to `Web` because Web Boards and Drawer Peek share its live execution; `WebBoardSurface` belongs to DenViews because it owns native display attachment for Board presentation. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 

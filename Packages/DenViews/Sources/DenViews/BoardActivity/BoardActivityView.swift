@@ -393,3 +393,10 @@ public struct TerminalActivityStatus: View {
         return "Finished · \(duration)s"
     }
 }
+
+public struct InactiveActivityStateIcon: View {
+    public init() {}
+    public var body: some View {
+        Image(systemSymbol: .circle).foregroundStyle(.secondary).accessibilityLabel("Not active")
+    }
+}

@@ -20,7 +20,7 @@ The minimum supported platform is macOS 26.0 for the app and its tests.
 
 1. Read `CONTEXT.md` for product behavior or user-visible wording. For architecture changes, read `docs/architecture.md` and relevant ADRs. Read affected code and tests. Before test changes, read `docs/testing.md` and follow its XCUITest admission rule. Before keyboard routing, Commands, shortcut recording, or local key handling changes, read `docs/keyboard-input.md`.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
-3. Add or update focused unit tests for changed stable `DenController` behavior when existing tests do not already protect it.
+3. Add or update focused unit tests for changed stable Application, Model, or native-adapter behavior when existing tests do not already protect it.
 4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior. Reuse successful checks when the final diff does not affect what they cover.
 
 ## Commands

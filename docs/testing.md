@@ -153,8 +153,8 @@ just test packages
 Package dependencies are compiler-enforced; the scan does not prove isolation between app source groups.
 Runtime event routing and shared-state consistency require behavioral tests.
 
-`M0BoundaryProbeTests` in the app test target mounts the existing WebKit and Ghostty views through
-App composition directly into the View module, verifies reuse after remount, and checks app-bundle JavaScript.
+`NativeDisplayIntegrationTests` in the app test target mounts the existing WebKit and Ghostty views through
+the production NativeSurfaceView directly into the View module, verifies reuse after remount, and checks app-bundle JavaScript.
 These are hosted integration tests; the independent Model test executable does not link native SDKs.
 The existing `ProfileManagerTests` protect event delivery after the owner's window closes and
 Runtime disposal after the final window closes. `BoardRuntimeReceiverTests` checks receiver release with an externally retained Runtime and background exit after window disconnection. Inspection Model tests reject child-load results after cancellation or page navigation.

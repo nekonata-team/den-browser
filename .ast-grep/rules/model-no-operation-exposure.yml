@@ -1,0 +1,53 @@
+id: model-no-operation-exposure
+language: Swift
+severity: error
+message: Models accept Application operations through construction initializers and retain them privately.
+files:
+  - "Packages/DenPresentationModels/Sources/**/*.swift"
+rule:
+  all:
+    - any:
+        - kind: type_identifier
+        - kind: simple_identifier
+    - regex: '^(DenApplication|DenStateWriter|BoardCreation|BoardRemoval|BoardSizing|BoardMovement|BoardUpdates|InputOpening|DrawerItems|DrawerPlacement|DeskLifecycle|DeskUpdates|DeskMovement|DeskPresetOperations|NotificationOperations|Recents|DenReset|EssentialEditing|TutorialProgress)$'
+    - not:
+        inside:
+          any:
+            - kind: init_declaration
+            - kind: function_body
+            - kind: computed_property
+          stopBy: end
+    - not:
+        inside:
+          all:
+            - has:
+                kind: modifiers
+                regex: '\b(private|fileprivate|internal)\b'
+                stopBy: end
+            - not:
+                has:
+                  kind: modifiers
+                  regex: '\b(public|open)\b'
+                  stopBy: end
+          any:
+            - kind: property_declaration
+            - kind: function_declaration
+            - kind: typealias_declaration
+            - kind: subscript_declaration
+          stopBy: end
+    - inside:
+        any:
+          - all:
+              - any:
+                  - kind: property_declaration
+                  - kind: function_declaration
+                  - kind: typealias_declaration
+                  - kind: subscript_declaration
+              - has:
+                  kind: modifiers
+                  regex: '\b(public|open)\b'
+                  stopBy: end
+          - all:
+              - kind: class_declaration
+              - pattern: public extension $TYPE { $$$BODY }
+        stopBy: end

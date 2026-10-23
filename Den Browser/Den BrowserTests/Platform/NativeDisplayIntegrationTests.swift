@@ -11,7 +11,7 @@ import WebKit
 
 @MainActor
 @Suite(.serialized)
-struct M0BoundaryProbeTests {
+struct NativeDisplayIntegrationTests {
     @Test func appConstructsNotificationViewWithTheWindowModel() {
         // Arrange
         let session = ProfileWindowSession(
@@ -40,7 +40,7 @@ struct M0BoundaryProbeTests {
         defer { window.contentView = nil }
 
         // Act
-        window.contentView = NSHostingView(rootView: M0BoundaryProbe.nativeSurface(runtime.webView))
+        window.contentView = NSHostingView(rootView: NativeSurfaceView(surface: runtime.webView))
         window.contentView?.layoutSubtreeIfNeeded()
         runtime.webView.loadHTMLString("<title>Boundary</title><p>Native Web surface</p>", baseURL: nil)
         let deadline = ContinuousClock.now + .seconds(10)
@@ -48,7 +48,7 @@ struct M0BoundaryProbeTests {
             try await Task.sleep(for: .milliseconds(20))
         }
         window.contentView = nil
-        window.contentView = NSHostingView(rootView: M0BoundaryProbe.nativeSurface(runtime.webView))
+        window.contentView = NSHostingView(rootView: NativeSurfaceView(surface: runtime.webView))
         window.contentView?.layoutSubtreeIfNeeded()
 
         // Assert
@@ -60,7 +60,6 @@ struct M0BoundaryProbeTests {
         for resource in ["SheetDOM", "SheetNavigation", "PictureInPicture", "InspectionAgent"] {
             let url = try #require(Bundle.main.url(forResource: resource, withExtension: "js"))
             #expect(!(try String(contentsOf: url, encoding: .utf8)).isEmpty)
-            print("M0 resource: \(url.path)")
         }
         let dom =
             try await runtime.webView.callAsyncJavaScript(
@@ -85,14 +84,14 @@ struct M0BoundaryProbeTests {
         runtime.runCommand("printf 'native_boundary_%s\\n' '\(suffix)'")
 
         // Act
-        window.contentView = NSHostingView(rootView: M0BoundaryProbe.nativeSurface(runtime.terminalView))
+        window.contentView = NSHostingView(rootView: NativeSurfaceView(surface: runtime.terminalView))
         window.contentView?.layoutSubtreeIfNeeded()
         let deadline = ContinuousClock.now + .seconds(10)
         while runtime.readViewportText()?.contains(marker) != true, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
         window.contentView = nil
-        window.contentView = NSHostingView(rootView: M0BoundaryProbe.nativeSurface(runtime.terminalView))
+        window.contentView = NSHostingView(rootView: NativeSurfaceView(surface: runtime.terminalView))
         window.contentView?.layoutSubtreeIfNeeded()
 
         // Assert

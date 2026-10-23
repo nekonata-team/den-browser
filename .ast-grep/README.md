@@ -8,7 +8,7 @@ Run `just test architecture` to test the rule definitions against their fixtures
 
 - Domain excludes SwiftUI, AppKit, WebKit, and GhosttyTerminal imports. This rule
   scans every source under `Packages/DenDomain/Sources`.
-- `DenViews` owns shared presentation components and migrated Feature Views; SwiftUI is
+- `DenViews` owns shared presentation components and Feature Views; SwiftUI is
   expected there. Pure Models cannot import Views or drawing SDKs.
 - `DenIPCProtocol` may import Foundation only. Its wire DTOs do not depend on app,
   Domain, or UI modules.
@@ -39,8 +39,11 @@ the contract, so the recipe uses `ast-grep test --skip-snapshot-tests`.
 and Presentation dependencies are excluded. Pure `DenPresentationModels` allows Foundation, Observation,
 DenApplication, and DenDomain. `DenViews` allows Domain and the single Model module,
 and drawing SDKs/libraries enumerated in `views-imports.yml`; it rejects Application and the app. Package
-manifests enforce the same dependency direction. App Presentation cannot access the mutable
-`storage` adapter; the DenController shared-data facade is read-only at compile time. Native operations
+manifests enforce the same dependency direction. `model-no-operation-exposure` rejects public exposure of Application operation types and the write
+capability from Model properties, functions, subscripts, and type aliases, including public extensions.
+Construction initializers may receive them; private storage and method-body use remain allowed.
+Its explicit capability names complement import guards and package visibility; it is not type resolution.
+App composition supplies live read inputs and focused native callbacks. Native implementations
 remaining in the app target are still protected only by layer checks, not a separate module.
 
 `DenPresentationModels` rejects AppKit and native SDK imports. Native display adapters belong
