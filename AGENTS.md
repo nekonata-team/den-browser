@@ -2,7 +2,7 @@
 
 ## Project
 
-Den Browser is a macOS-first companion browser for long-running web work. It is a SwiftUI app with AppKit bridges and `WKWebView`.
+Den Browser is a macOS-first companion browser for long-running web and terminal work. It is a SwiftUI app with AppKit bridges and `WKWebView`.
 
 Read [CONTEXT.md](./CONTEXT.md) when changing product behavior or user-visible wording. It defines project terms such as Den, Desk, Board, and Sheet; do not replace them with browser-tab language.
 
@@ -10,27 +10,19 @@ Read [CONTEXT.md](./CONTEXT.md) when changing product behavior or user-visible w
 
 The minimum supported platform is macOS 26.0 for the app and its tests.
 
-- Do not add `#available` or `@available` branches for macOS versions below 26.0.
-- Do not add availability checks whose condition is guaranteed by the 26.0 deployment target, such as `if #available(macOS 26.0, *)`.
-- Do not keep fallback code for paths that cannot be reached on the supported platform.
+- Do not add availability annotations, checks, or fallback paths made unnecessary by the macOS 26.0 deployment target.
 - Runtime capability checks for private or optional APIs, such as `responds(to:)`, are separate and require a concrete reason.
 - If the minimum macOS version changes, update this rule and the related architecture decision before adding compatibility paths.
 
-## Implementation flow
-
-1. Read `CONTEXT.md` for product behavior or user-visible wording. For architecture changes, read `docs/architecture.md` and relevant ADRs. Read affected code and tests. Before test changes, read `docs/testing.md` and follow its XCUITest admission rule. Before keyboard routing, Commands, shortcut recording, or local key handling changes, read `docs/keyboard-input.md`.
-2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
-3. Add or update focused unit tests for changed stable Application, Model, or native-adapter behavior when existing tests do not already protect it.
-4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior. Reuse successful checks when the final diff does not affect what they cover.
-
 ## Commands
 
-Run `just --list` when choosing a project task; reuse the result while the justfile is unchanged. These commands are preferred for use in this project.
+Run `just --list` when choosing a project task; reuse the result while the justfile is unchanged.
 
-## Release
+## Validation
 
-Read `docs/releasing.md`, then use `just release prepare X.Y.Z` and, after
-manual candidate verification, `just release publish X.Y.Z`.
+Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes.
+Otherwise, run focused validation that exercises the changed behavior.
+Reuse successful checks when the final diff does not affect what they cover.
 
 ## Docs
 
@@ -39,15 +31,16 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `CONTEXT.md`: required domain language
 - `DESIGN.md`: UI design rules
 - `docs/shortcuts.md`: complete keyboard and pointer controls
-- `docs/keyboard-input.md`: keyboard implementation contract and diagnostic path
+- `docs/keyboard-input.md`: keyboard implementation contract and diagnostic path; read before changing keyboard routing, Commands, shortcut recording, or local key handling
 - `docs/desk-presets.md`: desk preset behavior and state
 - `docs/vim.md`: Vim-style sheet navigation
 - `docs/persistence.md`: local persistence and preference schema
-- `docs/architecture.md` and `docs/adr/`: architecture and product decisions
+- `docs/architecture.md`: current package structure, dependency direction, and ownership boundaries; read before implementation changes
+- `docs/adr/`: reasons and trade-offs behind architecture and product decisions; read relevant ADRs when changing architectural boundaries
 - `scripts/embedded-js/README.md`: TypeScript sources and generated JavaScript resource workflow
 - `docs/cli.md`: command-line interface specification and agent integration
 - `docs/mcp.md`: MCP server interface and tool reference
-- `docs/testing.md`: automated and exploratory validation
+- `docs/testing.md`: automated and exploratory validation; read before test changes and follow its XCUITest admission rule
 - `docs/releasing.md`: signed release and publishing workflow
 - `web/README.md`: public website and deployment
 - `.agents/skills/den`: AI agent skill for end-users. Do not include the project path.
@@ -55,16 +48,16 @@ manual candidate verification, `just release publish X.Y.Z`.
 ## Documentation operation
 
 - Use the `domain-modeling` skill when changing domain terms, their meanings, or architectural decisions in `CONTEXT.md` or ADRs.
-- Keep README focused on product positioning, target work, status, requirements,
-  installation, core concepts, a short feature summary, and entry-point links.
-- Do not add exhaustive feature lists, shortcut maps, or implementation details
-  to README. Put them in their owning document above.
-- When behavior changes, update the owning source-of-truth document and affected
-  tests. Update README only when public positioning, status, requirements,
-  installation, core concepts, or documentation entry points change.
+- Before editing ADRs, read and follow the [ADR template](./.agents/skills/domain-modeling/ADR-FORMAT.md).
+- Do not commit agent notes, work logs, or unsettled plans.
+- When package responsibilities, dependencies, or state/runtime ownership change,
+  update the affected sections and Mermaid diagrams in `docs/architecture.md`
+  in the same change.
+- Keep README focused on public product information and documentation links.
+- Put detailed behavior and implementation contracts in their owning documents;
+  update those documents and affected tests when behavior changes.
 - Keep `README.md` and `README.ja.md` aligned in structure and product facts.
-  Write natural copy in each language; do not translate feature inventories
-  mechanically.
+  Write natural copy in each language.
 - Before handoff, check changed documentation links and inspect the final diff
   for duplicated or stale product claims.
 
