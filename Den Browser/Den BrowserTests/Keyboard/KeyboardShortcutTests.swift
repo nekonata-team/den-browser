@@ -2291,26 +2291,23 @@ struct KeyboardShortcutTests {
         #expect(windowModel.isDenMode)
     }
 
-    @Test func denModePOpensDeskPresetPanelOnlyForDeskWithBoards() throws {
+    @Test(arguments: [false, true])
+    func denModePOpensDeskPresetPanelWithOrWithoutBoards(_ isEmpty: Bool) throws {
+        // Arrange
         let save = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
-        let session = try makeSession(boards: [board("First")])
+        let session = try makeSession(boards: isEmpty ? [] : [board("First")])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
-        #expect(KeyboardController.handle(save, session: session, windowModel: windowModel))
-        #expect(windowModel.isSaveDeskPresetPanelPresented)
+        // Act
+        let handled = KeyboardController.handle(save, session: session, windowModel: windowModel)
 
-        let empty = try makeSession(boards: [])
-        let emptyComposition = DenWindowComposition(session: empty)
-        let emptyWindowModel = emptyComposition.model
-        emptyComposition.connect()
-        defer { emptyComposition.disconnect() }
-        emptyWindowModel.isDenMode = true
-        #expect(KeyboardController.handle(save, session: empty, windowModel: emptyWindowModel))
-        #expect(!emptyWindowModel.isSaveDeskPresetPanelPresented)
+        // Assert
+        #expect(handled)
+        #expect(windowModel.isSaveDeskPresetPanelPresented)
     }
 
     @Test func denModeShiftPOpensDeskReplacement() throws {

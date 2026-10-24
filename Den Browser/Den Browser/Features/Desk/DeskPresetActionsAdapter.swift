@@ -20,7 +20,7 @@ final class DeskPresetActionsAdapter {
     func saveFocusedDeskAsPreset(label: String) -> DeskPresetSaveResult {
         switch storage.deskPresetOperations.save(label: label, desk: focusedDesk) {
         case .invalidLabel: return .invalidLabel
-        case .emptyDesk: return .emptyDesk
+        case .unavailable: return .unavailable
         case .reservedLabel: return .reservedLabel
         case .replacementRequired(let replacement):
             onWindowEffect?(.requestConfirmation(.replaceDeskPreset(replacement)))

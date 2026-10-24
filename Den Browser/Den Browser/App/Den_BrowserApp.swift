@@ -337,7 +337,7 @@ private struct DenCommands: Commands {
                 Button("New Desk") { perform(.desk(.showNewPanel)) }
                     .disabled(windowModel?.desks.canCreateDesk != true)
                 Button("Save Desk as Preset…") { perform(.desk(.showSavePresetPanel)) }
-                    .disabled(windowModel?.focusedDesk?.boards.isEmpty != false)
+                    .disabled(windowModel?.focusedDesk == nil)
 
                 Menu("Export") {
                     Button("Save Desk Links as Markdown…") {

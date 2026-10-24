@@ -179,7 +179,7 @@ public struct DeskSwitcher: View {
             } label: {
                 Label("Save Desk as Preset...", systemSymbol: .squareAndArrowDown)
             }
-            .disabled(!desks.canSelectDesk(desk.id) || desk.boards.isEmpty)
+            .disabled(!desks.canSelectDesk(desk.id))
 
             Menu("Export") {
                 Button {

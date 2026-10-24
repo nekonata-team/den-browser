@@ -365,8 +365,8 @@ public struct SaveDeskPresetPanel: View {
             message = nil
         case .invalidLabel:
             message = "Enter a Preset label"
-        case .emptyDesk:
-            message = "A Personal Desk Preset needs at least one Board"
+        case .unavailable:
+            message = "The Desk is no longer available"
         case .reservedLabel:
             message = "Built-in Desk Preset labels are reserved"
         }

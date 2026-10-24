@@ -400,7 +400,7 @@ struct NativeDeskPresetTests {
         #expect(!windowModel.isDenMode)
     }
 
-    @Test func emptyDeskCannotBecomePersonalPreset() {
+    @Test func emptyDeskCanBecomePersonalPreset() {
         // Arrange
         let empty = desk("Empty")
 
@@ -418,12 +418,15 @@ struct NativeDeskPresetTests {
             let result = session.presets.saveFocusedDeskAsPreset(label: "Saved")
 
             // Assert
-            #expect(result == .emptyDesk)
-            #expect(session.resources.deskPresets.isEmpty)
+            #expect(result == .created)
+            #expect(session.resources.deskPresets.count == 1)
+            #expect(session.resources.deskPresets.first?.label == "Saved")
+            #expect(session.resources.deskPresets.first?.boards.isEmpty == true)
+            #expect(session.resources.deskPresets.first?.focusedBoardIndex == nil)
         }
     }
 
-    @Test func saveDeskPresetPanelDoesNotOpenForEmptyDesk() {
+    @Test func saveDeskPresetPanelOpensForEmptyDesk() {
         // Arrange
         let empty = desk("Empty")
 
@@ -444,7 +447,7 @@ struct NativeDeskPresetTests {
             windowModel.showSaveDeskPresetPanel()
 
             // Assert
-            #expect(!windowModel.isSaveDeskPresetPanelPresented)
+            #expect(windowModel.isSaveDeskPresetPanelPresented)
         }
     }
 

@@ -240,10 +240,7 @@ public extension DenWindowModel {
     }
 
     func showSaveDeskPresetPanel() {
-        guard navigation.focusedDesk?.boards.isEmpty == false else {
-            windowActions.reportWarning("Desk has no boards to save as a preset.")
-            return
-        }
+        guard navigation.focusedDesk != nil else { return }
         setTemporaryContext(.saveDeskPreset)
     }
 

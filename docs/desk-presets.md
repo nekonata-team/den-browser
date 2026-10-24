@@ -17,7 +17,7 @@ An Inspection Board's Target Board is stored by its position in the Preset.
 Applying the Preset creates new Board IDs and reconnects the Inspection Board to the new Target Board ID.
 Focus retains its relative position, even when the Focused Board is an Inspection Board.
 
-At least one Board is required.
+A Desk with no Boards can be saved to reuse its work-context label before adding Boards.
 A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content still carries meaning.
 Inspection runtime data (such as DOM selections, highlights, and Console events) and live WebKit state (Sheet Stacks, scroll positions, input, and cookies) are not captured.
 
@@ -36,7 +36,7 @@ If the session must be recreated, the Board uses this name to restore the `den.r
 An outline bookmark button appears left of the Profile control to save the Focused Desk as a Preset.
 The same action triggers via `Save Desk as Preset…` in the Den menu or `p` in Den Mode.
 Zen View hides the button.
-A Desk with no Boards cannot be saved: the button and the menu item are disabled, and `p` is a no-op.
+These actions are also available when the Focused Desk has no Boards.
 
 All three actions open a top-center Liquid Glass panel to edit the Desk Preset Label, initialized from the Desk Label.
 Saving a new label inserts the preset at the top of My Presets.
@@ -77,7 +77,7 @@ The source Desk and its live Sheets remain unchanged.
 ## Replacing a Desk
 
 `Replace Desk…` is available from each Desk button's context menu, or Shift + `p` for the Focused Desk in Den Mode.
-Empty is not offered because replacement requires installing at least one Board.
+Empty and Personal Desk Presets with no Boards are not offered because replacement requires installing at least one Board.
 Confirming a Preset initializes an editable Desk Label from its Preset Label.
 
 Replacement preserves Desk identity and position in the Den.

@@ -73,7 +73,7 @@ private struct DenHeaderControls<ProfileMenu: View>: ToolbarContent {
                     windowModel.showSaveDeskPresetPanel()
                 }
                 .disabled(
-                    windowModel.focusedDesk?.boards.isEmpty != false
+                    windowModel.focusedDesk == nil
                         || windowModel.temporaryContext != nil)
 
                 profileMenu

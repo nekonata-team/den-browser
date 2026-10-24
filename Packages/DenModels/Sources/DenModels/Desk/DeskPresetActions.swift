@@ -4,7 +4,7 @@ public enum DeskPresetSaveResult: Equatable {
     case created
     case replacementPending
     case invalidLabel
-    case emptyDesk
+    case unavailable
     case reservedLabel
 }
 

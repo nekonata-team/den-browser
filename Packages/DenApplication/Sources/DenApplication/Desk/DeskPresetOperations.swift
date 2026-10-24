@@ -6,7 +6,7 @@ public struct DeskPresetOperations {
         case created(persisted: Bool)
         case replacementRequired(PersonalDeskPreset)
         case invalidLabel
-        case emptyDesk
+        case unavailable
         case reservedLabel
     }
 
@@ -37,7 +37,7 @@ public struct DeskPresetOperations {
     public func save(label: String, desk: DeskState?) -> SaveResult {
         let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !label.isEmpty else { return .invalidLabel }
-        guard let desk, desk.boards.contains(where: { !$0.isTutorial }) else { return .emptyDesk }
+        guard let desk else { return .unavailable }
         guard !isReserved(label) else { return .reservedLabel }
         if let existing = state.snapshot.deskPresets.first(where: { sameLabel($0.label, label) }) {
             return .replacementRequired(PersonalDeskPreset(id: existing.id, label: existing.label, desk: desk))
