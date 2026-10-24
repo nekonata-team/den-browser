@@ -11,6 +11,77 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct DenIPCServiceTests {
+    @Test(arguments: [("web", false), ("web", true), ("terminal", false), ("terminal", true)], ["left", "right"])
+    func boardCreationPlacesBesideGroupOnAnotherDesk(creation: (String, Bool), position: String) async throws {
+        // Arrange
+        let (kind, focus) = creation
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let sourceDeskID = session.navigation.presentedDeskID
+        let caller = try #require(session.boardOpening.createBoard(urlString: "https://example.com/caller"))
+        session.desks.createDesk(label: "Target", preset: .empty)
+        let targetDeskID = session.navigation.presentedDeskID
+        let anchor = try #require(session.boardOpening.createBoard(urlString: "https://example.com/anchor"))
+        let side = try #require(session.sideBoards.createInspectionBoard(targetBoardID: anchor, focus: false))
+        let tail = try #require(session.boardOpening.createBoard(urlString: "https://example.com/tail", focus: false))
+        session.boardNavigation.focusDesk(sourceDeskID)
+        let destination: DenBoardCreationDestination =
+            position == "left" ? .leftOf(side.rawValue) : .rightOf(side.rawValue)
+        let operation: DenIPCOperation =
+            kind == "web"
+            ? .createWebBoard(payload: .init(url: "https://example.com/new", focus: focus), destination: destination)
+            : .createTerminalBoard(payload: .init(path: nil, runCommand: nil, focus: focus), destination: destination)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(ipcRequest(operation, callerBoardID: caller.rawValue))
+
+        // Assert
+        let created = try responseBoardID(response)
+        let target = try #require(session.resources.state.desks.first(where: { $0.id == targetDeskID }))
+        #expect(
+            target.boards.map(\.id)
+                == (position == "left" ? [created, anchor, side, tail] : [anchor, side, created, tail]))
+        #expect(target.focusedBoardID == (focus ? created : anchor))
+        #expect(session.navigation.presentedDeskID == (focus ? targetDeskID : sourceDeskID))
+        #expect(session.resources.state.board(for: created)?.isWeb == (kind == "web"))
+    }
+
+    @Test(arguments: ["web", "terminal"], [false, true])
+    func boardCreationRejectsMissingRelativeAnchor(kind: String, left: Bool) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let before = session.resources.state
+        let destination: DenBoardCreationDestination = left ? .leftOf(UUID()) : .rightOf(UUID())
+        let operation: DenIPCOperation =
+            kind == "web"
+            ? .createWebBoard(payload: .init(url: "https://example.com/", focus: false), destination: destination)
+            : .createTerminalBoard(payload: .init(path: nil, runCommand: nil, focus: false), destination: destination)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(ipcRequest(operation))
+
+        // Assert
+        #expect(!response.isOk)
+        #expect(session.resources.state == before)
+    }
+
     @Test(arguments: ["left", "right", "desk"], [false, true])
     func boardMovePlacesWholeGroupAtExplicitDestination(position: String, sameDesk: Bool) async throws {
         // Arrange

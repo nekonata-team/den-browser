@@ -5,6 +5,26 @@ import Testing
 @MainActor
 struct BoardInsertionTests {
     @Test(arguments: [false, true])
+    func insertsBeforeWholeGroupWhenAnchoredToEitherMember(_ anchorsToSide: Bool) throws {
+        // Arrange
+        let primary = BoardState(label: "Primary", width: 520, currentSheetURL: nil)
+        let side = BoardState(width: 390, targetBoardID: primary.id)
+        let desk = DeskState(label: "Desk", boards: [primary, side], focusedBoardID: primary.id)
+        let inserted = BoardState(label: "Inserted", width: 520, currentSheetURL: nil)
+
+        // Act
+        let result = try #require(
+            BoardInsertion.insert(
+                inserted, in: [desk], presentedDeskID: desk.id,
+                beforeBoardID: anchorsToSide ? side.id : primary.id, focus: false))
+
+        // Assert
+        #expect(result.desk.boards.map(\.id) == [inserted.id, primary.id, side.id])
+        #expect(result.desk.focusedBoardID == primary.id)
+        #expect(result.anchorBoardID == (anchorsToSide ? side.id : primary.id))
+    }
+
+    @Test(arguments: [false, true])
     func insertsAfterWholeGroupWhenAnchoredToEitherMember(_ anchorsToSide: Bool) throws {
         // Arrange
         let primary = BoardState(label: "Primary", width: 520, currentSheetURL: nil)
@@ -22,7 +42,7 @@ struct BoardInsertionTests {
         // Assert
         #expect(destination.deskIndex.rawValue == 0)
         #expect(destination.desk.boards.map(\.id) == [primary.id, side.id, inserted.id, tail.id])
-        #expect(destination.afterBoardID == anchorID)
+        #expect(destination.anchorBoardID == anchorID)
     }
 
     @Test func defaultsToPresentedDeskFocusWithoutCreatingExplicitAnchor() throws {
@@ -41,7 +61,7 @@ struct BoardInsertionTests {
         // Assert
         #expect(destination.deskIndex.rawValue == 1)
         #expect(destination.desk.boards.map(\.id) == [focused.id, inserted.id, tail.id])
-        #expect(destination.afterBoardID == nil)
+        #expect(destination.anchorBoardID == nil)
     }
 
     @Test func explicitAnchorSelectsItsOwningDesk() throws {
@@ -60,7 +80,7 @@ struct BoardInsertionTests {
         // Assert
         #expect(destination.deskIndex.rawValue == 1)
         #expect(destination.desk.boards.map(\.id) == [anchor.id, inserted.id])
-        #expect(destination.afterBoardID == anchor.id)
+        #expect(destination.anchorBoardID == anchor.id)
     }
 
     @Test(arguments: [false, true])
@@ -83,7 +103,7 @@ struct BoardInsertionTests {
         // Assert
         #expect(destination.deskIndex.rawValue == 1)
         #expect(destination.desk.boards.map(\.id) == [focused.id, inserted.id, tail.id])
-        #expect(destination.afterBoardID == nil)
+        #expect(destination.anchorBoardID == nil)
     }
 
     nonisolated enum MissingTarget: CaseIterable, Sendable {

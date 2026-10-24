@@ -9,6 +9,22 @@ private func validateBoardWidth(_ width: Double?) throws {
     }
 }
 
+struct BoardCreationOptions: ParsableArguments {
+    @Option(name: .customLong("desk"), help: "Destination Desk UUID (defaults to the ambient Desk)") var deskID: String?
+    @Option(name: .customLong("left-of"), help: "Create left of this Board Group") var leftOf: String?
+    @Option(name: .customLong("right-of"), help: "Create right of this Board Group") var rightOf: String?
+
+    func destination() throws -> DenBoardCreationDestination {
+        guard [deskID, leftOf, rightOf].compactMap({ $0 }).count <= 1 else {
+            throw ValidationError("Specify at most one of --left-of, --right-of, or --desk")
+        }
+        if let leftOf { return .leftOf(try DenIPCClient.requiredBoardID(leftOf)) }
+        if let rightOf { return .rightOf(try DenIPCClient.requiredBoardID(rightOf)) }
+        if let deskID { return .explicit(try DenIPCClient.requiredDeskID(deskID)) }
+        return .automatic
+    }
+}
+
 struct BoardCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "board",
@@ -169,7 +185,7 @@ struct BoardWebNewCommand: ParsableCommand {
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "URL or search query for the new board") var url: String
-    @Option(name: .customLong("desk"), help: "Destination Desk UUID (defaults to the ambient Desk)") var deskID: String?
+    @OptionGroup var placement: BoardCreationOptions
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the newly created Board")
     var focus: Bool = false
@@ -182,7 +198,7 @@ struct BoardWebNewCommand: ParsableCommand {
         try DenIPCClient.execute(
             operation: .createWebBoard(
                 payload: DenBoardWebNewPayload(url: url, focus: focus, width: width),
-                destination: try DenIPCClient.deskTarget(deskID)
+                destination: try placement.destination()
             ),
             options: options
         )
@@ -210,7 +226,7 @@ struct BoardTerminalNewCommand: ParsableCommand {
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "Working directory for the terminal board") var path: String?
-    @Option(name: .customLong("desk"), help: "Destination Desk UUID (defaults to the ambient Desk)") var deskID: String?
+    @OptionGroup var placement: BoardCreationOptions
     @Option(name: .customLong("run"), help: "Initial command to run in the terminal") var runCommand: String?
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the new terminal board") var focus = false
@@ -229,7 +245,7 @@ struct BoardTerminalNewCommand: ParsableCommand {
                     focus: focus,
                     width: width
                 ),
-                destination: try DenIPCClient.deskTarget(deskID)
+                destination: try placement.destination()
             ),
             options: options
         )

@@ -36,6 +36,13 @@ public nonisolated enum DenBoardMoveDestination: Codable, Equatable, Sendable {
     case desk(UUID)
 }
 
+public nonisolated enum DenBoardCreationDestination: Codable, Equatable, Sendable {
+    case automatic
+    case explicit(UUID)
+    case leftOf(UUID)
+    case rightOf(UUID)
+}
+
 /// The operation sent over the private, same-version app/CLI IPC connection.
 public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case sheet(command: DenIPCCommand.Sheet, target: BoardTarget)
@@ -45,8 +52,8 @@ public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case focusBoard(boardID: UUID)
     case moveBoard(boardID: UUID, destination: DenBoardMoveDestination)
     case boardClose(target: BoardTarget)
-    case createWebBoard(payload: DenBoardWebNewPayload, destination: DeskTarget)
-    case createTerminalBoard(payload: DenBoardTerminalNewPayload, destination: DeskTarget)
+    case createWebBoard(payload: DenBoardWebNewPayload, destination: DenBoardCreationDestination)
+    case createTerminalBoard(payload: DenBoardTerminalNewPayload, destination: DenBoardCreationDestination)
     case createInspectionBoard(targetBoardID: UUID, payload: DenBoardInspectionNewPayload)
     case deskList(target: DeskTarget)
     case createDesk(label: String, focus: Bool)

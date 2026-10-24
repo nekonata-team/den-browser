@@ -58,6 +58,15 @@ Board creation commands fall back to the active Desk when the ambient Board ID n
 
 `den board web new` and `den board terminal new` accept `--desk <uuid>` to override the ambient Desk within the resolved Profile. Use `den desk list --json` to discover Desk IDs. Invalid or missing Desks fail without falling back.
 
+Both creation commands also accept `--left-of <board-id>` or `--right-of <board-id>`.
+At most one of `--desk`, `--left-of`, or `--right-of` may be specified.
+Relative placement creates directly on the reference Board's Desk, before or after its entire Board Group;
+referencing a Side Board gives the same placement as its Primary Board. Invalid or missing reference Boards fail before creation.
+Without a relative placement option, creation remains after the caller's Board Group when it belongs to the destination Desk,
+otherwise after that Desk's Focused Board Group, or in the empty Desk.
+Placement preserves the displayed Desk and Board focus unless `--focus` is supplied.
+
+
 For `den board web` operations on an existing Board, target Board resolution follows this priority:
 1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
 2. **Adjacent Web Board**: Resolved relative to `callerBoardID` on its current Desk.
@@ -147,7 +156,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--desk <uuid>] [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --desk <uuid> --width 800` |
+| `den board web new` | `<url> [--desk <uuid> \| --left-of <board-id> \| --right-of <board-id>] [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --desk <uuid> --width 800` |
 | `den board web navigate` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den board web navigate https://example.com` |
 | `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
 | `den board web status` | None | Print the main page's final HTTP status code, or `null` when unavailable. | `den board web status` |
@@ -195,7 +204,7 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board terminal new` | `[<path>] [--desk <uuid>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --desk <uuid> --run "npm test" --width 800 --focus` |
+| `den board terminal new` | `[<path>] [--desk <uuid> \| --left-of <board-id> \| --right-of <board-id>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --desk <uuid> --run "npm test" --width 800 --focus` |
 | `den board terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den board terminal text` |
 | `den board terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den board terminal send "git status"` |
 | `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |

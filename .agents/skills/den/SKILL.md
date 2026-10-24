@@ -37,6 +37,8 @@ When you need to discover Boards on the ambient Desk, use `den board list --json
 
 To create a Web or Terminal Board on another Desk, discover its UUID with `den desk list --json` and pass `--desk <uuid>` to `den board web new` or `den board terminal new`. The Desk must exist in the resolved Profile.
 
+Web and Terminal `new` support relative placement with `--left-of <board-id>` or `--right-of <board-id>`; see each command’s `--help` for details.
+
 Board and Desk `new` commands preserve focus by default. Add `--focus` to focus the created target (or reused Inspection Board), switching Desks when needed.
 
 Move an existing Board Group with `den board move --board <id>` and exactly one of

@@ -94,12 +94,12 @@ final class DenIPCService {
             guard !payload.url.isEmpty else {
                 return DenIPCResponse(result: .failure("Usage: den board web new <url> [--focus]"), target: .none)
             }
-            return withDeskTarget(destination, context: request.context) {
-                self.handleWebBoardNew(payload: payload, target: $0, context: request.context)
+            return withBoardCreationTarget(destination, context: request.context, focus: payload.focus) {
+                self.handleWebBoardNew(payload: payload, target: $0, creationTarget: $1)
             }
         case .createTerminalBoard(let payload, let destination):
-            return withDeskTarget(destination, context: request.context) {
-                self.handleTerminalBoardNew(payload: payload, target: $0, context: request.context)
+            return withBoardCreationTarget(destination, context: request.context, focus: payload.focus) {
+                self.handleTerminalBoardNew(payload: payload, target: $0, creationTarget: $1)
             }
         case .createInspectionBoard(let targetBoardID, let payload):
             return await withBoardTarget(
@@ -156,6 +156,53 @@ final class DenIPCService {
         case .failure(let error):
             return DenIPCResponse(result: .failure(error.localizedDescription), target: .none)
         }
+    }
+
+    private func withBoardCreationTarget(
+        _ destination: DenBoardCreationDestination,
+        context: DenIPCCallerContext,
+        focus: Bool,
+        perform: (ResolvedDeskTarget, BoardCreation.Target) -> DenIPCOperationResult
+    ) -> DenIPCResponse {
+        let resolved: ResolvedDeskTarget
+        var beforeBoardID: BoardID?
+        var afterBoardID: BoardID?
+        switch destination {
+        case .automatic, .explicit:
+            let deskTarget: DeskTarget
+            if case .explicit(let id) = destination { deskTarget = .explicit(id) } else { deskTarget = .automatic }
+            switch DenIPCTargetResolver.resolveDesk(target: deskTarget, context: context, in: profileManager) {
+            case .success(let target): resolved = target
+            case .failure(let error):
+                return DenIPCResponse(result: .failure(error.localizedDescription), target: .none)
+            }
+            afterBoardID = newBoardInsertionAnchor(
+                context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id)
+        case .leftOf(let id), .rightOf(let id):
+            switch DenIPCTargetResolver.resolveBoard(
+                target: .explicit(id), context: context, kind: .any, in: profileManager)
+            {
+            case .success(let target):
+                let state = target.window.resources.snapshot.den
+                guard let indices = state.boardIndices(for: target.board.id) else {
+                    return DenIPCResponse(result: .failure("Board not found: \(id)"), target: .none)
+                }
+                resolved = ResolvedDeskTarget(
+                    window: target.window, desk: state.desks[indices.deskOffset], profileID: target.profileID)
+                if case .leftOf = destination {
+                    beforeBoardID = target.board.id
+                } else {
+                    afterBoardID = target.board.id
+                }
+            case .failure(let error):
+                return DenIPCResponse(result: .failure(error.localizedDescription), target: .none)
+            }
+        }
+        let target = BoardCreation.Target(
+            presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
+            afterBoardID: afterBoardID, beforeBoardID: beforeBoardID, focus: focus, origin: .cli)
+        return DenIPCResponse(
+            result: perform(resolved, target), target: .profile(profileID: resolved.profileID.rawValue))
     }
 
     private func withBoardTarget(
@@ -961,18 +1008,14 @@ final class DenIPCService {
     private func handleWebBoardNew(
         payload: DenBoardWebNewPayload,
         target resolved: ResolvedDeskTarget,
-        context: DenIPCCallerContext
+        creationTarget: BoardCreation.Target
     ) -> DenIPCOperationResult {
         guard
             let boardID = resolved.window.resources.boardCreation.createWeb(
                 urlString: payload.url,
                 width: payload.width ?? resolved.window.inheritedBoardWidth(),
                 searchEngine: resolved.window.searchEngine(),
-                target: BoardCreation.Target(
-                    presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
-                    afterBoardID: newBoardInsertionAnchor(
-                        context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id),
-                    focus: payload.focus, origin: .cli),
+                target: creationTarget,
                 notify: resolved.window.board.creationNotice
             ), let board = resolved.window.resources.snapshot.den.board(for: boardID)
         else {
@@ -1046,7 +1089,7 @@ final class DenIPCService {
     private func handleTerminalBoardNew(
         payload: DenBoardTerminalNewPayload,
         target resolved: ResolvedDeskTarget,
-        context: DenIPCCallerContext
+        creationTarget: BoardCreation.Target
     ) -> DenIPCOperationResult {
         let resolvedDir: String
         if let dir = payload.path {
@@ -1067,11 +1110,7 @@ final class DenIPCService {
             let boardID = resolved.window.resources.boardCreation.createTerminal(
                 workingDirectory: resolvedDir,
                 width: payload.width ?? resolved.window.inheritedBoardWidth(),
-                target: BoardCreation.Target(
-                    presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
-                    afterBoardID: newBoardInsertionAnchor(
-                        context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id),
-                    focus: payload.focus, origin: .cli),
+                target: creationTarget,
                 notify: resolved.window.board.creationNotice
             )
         else {

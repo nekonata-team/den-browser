@@ -6,16 +6,18 @@ public final class BoardCreation {
         public let presentedDeskID: DeskID
         public let deskID: DeskID?
         public let afterBoardID: BoardID?
+        public let beforeBoardID: BoardID?
         public let focus: Bool
         public let origin: BoardOperationOrigin
 
         public init(
-            presentedDeskID: DeskID, deskID: DeskID? = nil, afterBoardID: BoardID? = nil,
+            presentedDeskID: DeskID, deskID: DeskID? = nil, afterBoardID: BoardID? = nil, beforeBoardID: BoardID? = nil,
             focus: Bool = true, origin: BoardOperationOrigin = .interactive
         ) {
             self.presentedDeskID = presentedDeskID
             self.deskID = deskID
             self.afterBoardID = afterBoardID
+            self.beforeBoardID = beforeBoardID
             self.focus = focus
             self.origin = origin
         }
@@ -140,16 +142,17 @@ public final class BoardCreation {
         guard
             let insertion = BoardInsertion.insert(
                 board, in: store.snapshot.den.desks, presentedDeskID: target.presentedDeskID,
-                deskID: target.deskID, afterBoardID: target.afterBoardID, focus: target.focus)
+                deskID: target.deskID, afterBoardID: target.afterBoardID, beforeBoardID: target.beforeBoardID,
+                focus: target.focus)
         else { return nil }
 
         notify(.willInsert(board))
-        if !target.focus, let anchor = insertion.afterBoardID {
+        if !target.focus, let anchor = insertion.anchorBoardID {
             notify(.prepareLinkFocus(anchor, target.origin))
         }
         let deskIndex = insertion.deskIndex.rawValue
         if store.snapshot.den.desks[deskIndex].boards.isEmpty
-            || (target.origin == .cli && !target.focus && insertion.afterBoardID != nil)
+            || (target.origin == .cli && !target.focus && insertion.anchorBoardID != nil)
         {
             notify(.suppressMutationAnimation)
         }

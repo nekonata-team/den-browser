@@ -5,6 +5,56 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: ["web", "terminal"], ["--left-of", "--right-of"])
+    func boardCreationForwardsRelativeDestination(kind: String, option: String) async throws {
+        // Arrange
+        let id = UUID()
+        let destination: DenBoardCreationDestination = option == "--left-of" ? .leftOf(id) : .rightOf(id)
+        let expected: DenIPCOperation =
+            kind == "web"
+            ? .createWebBoard(payload: .init(url: "https://example.com/", focus: false), destination: destination)
+            : .createTerminalBoard(payload: .init(path: nil, runCommand: nil, focus: false), destination: destination)
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(request?.operation == expected ? .success() : .failure("Unexpected destination"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["board", kind, "new"] + (kind == "web" ? ["https://example.com/"] : []) + [option, id.uuidString],
+            socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 0)
+    }
+
+    @Test(
+        arguments: ["web", "terminal"],
+        [
+            ["--left-of", "invalid"], ["--right-of", "invalid"],
+            ["--left-of", UUID().uuidString, "--right-of", UUID().uuidString],
+            ["--desk", UUID().uuidString, "--left-of", UUID().uuidString],
+            ["--desk", UUID().uuidString, "--right-of", UUID().uuidString],
+        ])
+    func boardCreationRejectsConflictingOrInvalidPlacement(kind: String, arguments: [String]) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { _ in encodedResponse(.success()) }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["board", kind, "new"] + (kind == "web" ? ["https://example.com/"] : []) + arguments,
+            socketPath: socketPath)
+
+        // Assert
+        #expect(result.status != 0)
+    }
+
     @Test(arguments: ["--left-of", "--right-of", "--desk"])
     func boardMoveForwardsExplicitDestination(option: String) async throws {
         // Arrange
@@ -107,7 +157,7 @@ struct DenIPCClientValidationTests {
     func boardCommandsForwardDeskTarget(command: String, explicitDesk: Bool) async throws {
         // Arrange
         let deskID = UUID()
-        let destination: DeskTarget = explicitDesk ? .explicit(deskID) : .automatic
+        let destination: DenBoardCreationDestination = explicitDesk ? .explicit(deskID) : .automatic
         let expected: DenIPCOperation
         let arguments: [String]
         switch command {
@@ -122,7 +172,7 @@ struct DenIPCClientValidationTests {
                 destination: destination)
             arguments = ["board", "terminal", "new", "--focus"]
         default:
-            expected = .boardList(target: destination)
+            expected = .boardList(target: explicitDesk ? .explicit(deskID) : .automatic)
             arguments = ["board", "list", "-l"]
         }
         let socketPath = temporarySocketPath()
