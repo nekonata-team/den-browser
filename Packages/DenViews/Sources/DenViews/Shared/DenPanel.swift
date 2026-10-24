@@ -28,6 +28,7 @@ public struct DenPanelHeader<Content: View>: View {
 extension View {
     public func denPanel(width: CGFloat = DenPanelLayout.standardWidth) -> some View {
         padding(DenPanelLayout.padding)
+            .focusEffectDisabled()
             .frame(width: width)
             .glassEffect(
                 .regular,

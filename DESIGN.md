@@ -10,6 +10,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use Liquid Glass for Den controls, panels, the desk switcher, app-owned Inspection and Tutorial Boards, and unactivated Board placeholders.
   Keep Web Sheets visually independent and do not apply glass to sheet content.
 - Prefer system controls and button styles; avoid unnecessary custom glass layering.
+- Panels retain system control styling and keyboard focus behavior, with automatic focus rings hidden through `denPanel`.
 - Boards use rounded continuous corners. Focus uses the active Profile color.
 - Terminal Boards keep shared Board chrome and focus treatment. Ghostty owns the Terminal surface appearance, text, cursor, selection, and IME presentation.
 - Treat a Primary Board and its Side Board as one adjacent group for dragging, reordering, and centering. Keep focus and width individual to each Board.
