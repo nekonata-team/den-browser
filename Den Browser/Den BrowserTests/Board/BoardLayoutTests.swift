@@ -136,6 +136,77 @@ struct BoardLayoutTests {
         )
     }
 
+    @Test func removalCentersTheRemainingFocusedBoardWithoutMeasuredContentWidth() {
+        // Arrange
+        let params = parameters(centering: .always, boardCount: 2)
+
+        // Act
+        let target = BoardLayout.scrollTargetAfterRemoval(
+            for: params.boards[1].id, in: params, currentScrollX: 1_500)
+
+        // Assert
+        #expect(target == 488)
+    }
+
+    @Test func removalReturnsToRestingPositionWhenBoardsNoLongerOverflow() {
+        // Arrange
+        let params = parameters(centering: .onOverflow, boardCount: 3)
+
+        // Act
+        let target = BoardLayout.scrollTargetAfterRemoval(
+            for: params.boards[1].id, in: params, currentScrollX: 1_000)
+
+        // Assert
+        #expect(target == 488)
+    }
+
+    @Test func removalClampsScrollToTheRemainingContentWhenCenteringIsDisabled() {
+        // Arrange
+        let params = parameters(centering: .never, boardCount: 3)
+
+        // Act
+        let target = BoardLayout.scrollTargetAfterRemoval(
+            for: params.boards[2].id, in: params, currentScrollX: 800)
+        let fittingParams = parameters(centering: .never, boardCount: 1)
+        let fittingTarget = BoardLayout.scrollTargetAfterRemoval(
+            for: fittingParams.boards[0].id, in: fittingParams, currentScrollX: 800)
+
+        // Assert
+        #expect(target == 52)
+        #expect(fittingTarget == 0)
+    }
+
+    @Test func removalRevealsTheFocusedBoardWhenCenteringIsDisabled() {
+        // Arrange
+        let params = parameters(centering: .never, boardCount: 4)
+
+        // Act
+        let target = BoardLayout.scrollTargetAfterRemoval(
+            for: params.boards[3].id, in: params, currentScrollX: 0)
+
+        // Assert
+        #expect(target == 324)
+    }
+
+    @Test func removalCentersTheRemainingPrimaryAndSideBoardTogether() {
+        // Arrange
+        let primary = BoardState(label: "Primary", width: 500, currentSheetURL: nil)
+        let side = BoardState(label: "Inspection Board", width: 360, targetBoardID: primary.id)
+        let params = BoardLayout.Parameters(
+            centering: .always, boards: [primary, side], maximizedBoardID: nil,
+            windowWidth: 1_000, horizontalPadding: 10, spacing: 8)
+
+        // Act
+        let primaryTarget = BoardLayout.scrollTargetAfterRemoval(
+            for: primary.id, in: params, currentScrollX: 1_000)
+        let sideTarget = BoardLayout.scrollTargetAfterRemoval(
+            for: side.id, in: params, currentScrollX: 1_000)
+
+        // Assert
+        #expect(primaryTarget == 432)
+        #expect(sideTarget == primaryTarget)
+    }
+
     @Test func calculatesContentWidthForEachMode() {
         let alwaysParams = parameters(centering: .always, boardCount: 3)
         #expect(BoardLayout.contentWidth(for: alwaysParams) == 1_976)

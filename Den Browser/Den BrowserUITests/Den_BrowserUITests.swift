@@ -655,6 +655,35 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects scrolling against shrinking native content during removal; unit tests only calculate the destination.
+    @MainActor
+    func testRapidBoardRemovalAlignsTheRemainingBoard() throws {
+        let app = launchApp(fixture: .rapidBoardFocus, standardMotion: true)
+        let charlie = board(.charlie, in: app)
+        let bravo = board(.bravo, in: app)
+        let alpha = board(.alpha, in: app)
+        let alphaSurface = boardSurface(.alpha, in: app)
+        let strip = app.descendants(matching: .any).matching(identifier: "board-strip").firstMatch
+
+        given("Charlie is centered on an overflowing Desk with animations enabled") {
+            XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
+            XCTAssertEqual(boardSurface(.charlie, in: app).frame.midX, strip.frame.midX, accuracy: 3)
+        }
+
+        when("removing Charlie and Bravo in succession") {
+            app.typeKey("w", modifierFlags: [.command])
+            app.typeKey("w", modifierFlags: [.command])
+        }
+
+        then("Alpha is the only remaining Board and is centered") {
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            assertEventually("The remaining Alpha Board should be centered") {
+                !bravo.exists && !charlie.exists
+                    && abs(alphaSurface.frame.midX - strip.frame.midX) <= 3
+            }
+        }
+    }
+
     // Protects SwiftUI ScrollView visibility callback ordering; a unit test cannot observe this native boundary.
     @MainActor
     func testOffscreenTerminalWaitsForInitialAlignmentAndDeskReturn() throws {

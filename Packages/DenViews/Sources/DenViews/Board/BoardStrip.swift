@@ -532,6 +532,26 @@ public struct BoardStrip<Activated: View>: View {
                 }
             }
 
+            if !deskChanged, !isResizing,
+                !windowModel.isBoardDragging,
+                current.layoutKey.ids.count < previous.layoutKey.ids.count,
+                Set(current.layoutKey.ids).isSubset(of: Set(previous.layoutKey.ids)),
+                scrollGeometry.containerWidth > 0,
+                abs(scrollGeometry.containerWidth - size.width) <= 1,
+                let deskID = current.deskID,
+                let boardID = current.boardID,
+                let targetOffsetX = BoardLayout.scrollTargetAfterRemoval(
+                    for: boardID, in: boardLayoutParameters(for: alignmentBoards),
+                    currentScrollX: scrollPosition.x ?? scrollGeometry.offsetX,
+                    contentInsetsWidth: scrollGeometry.leadingContentInset + scrollGeometry.trailingContentInset)
+            {
+                // Use the destination layout now, so scrolling starts with the Board layout animation.
+                cancelPendingBoardAlignment()
+                model.saveDeskScrollOffset(nil, for: deskID)
+                performBoardVisibility(targetOffsetX, animated: animated)
+                return
+            }
+
             let isInitialAlignment = previous.boardID == nil && current.boardID != nil
             if deskChanged || layoutChanged || isInitialAlignment {
                 if current.centering == .never {
