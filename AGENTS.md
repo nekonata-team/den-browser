@@ -44,7 +44,7 @@ Reuse successful checks when the final diff does not affect what they cover.
 - `docs/testing.md`: automated and exploratory validation; read before test changes and follow its XCUITest admission rule
 - `docs/releasing.md`: signed release and publishing workflow
 - `web/README.md`: public website and deployment
-- `.agents/skills/den`: AI agent skill for end-users. Do not include the project path.
+- `.agents/skills/den`: limit this end-user agent skill to capability discovery and pointers to command `--help` or reference material. Do not include the project path.
 
 ## Documentation operation
 
