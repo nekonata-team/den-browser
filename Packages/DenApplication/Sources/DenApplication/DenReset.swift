@@ -1,6 +1,5 @@
-import DenDomain
+public import DenDomain
 
-@MainActor
 public struct DenReset {
     public enum Notice {
         case prepare
@@ -11,11 +10,11 @@ public struct DenReset {
         case finished
     }
 
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateStore, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
         self.store = store
         self.writer = writer
         self.persist = persist

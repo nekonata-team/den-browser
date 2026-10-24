@@ -3,8 +3,7 @@ import DenDomain
 import Foundation
 import Testing
 
-@MainActor
-struct BoardOpeningTests {
+nonisolated struct BoardOpeningTests {
     @Test func webDecisionCarriesCanonicalURLWidthAndRecent() throws {
         // Arrange
         let input = "https://example.com/docs#section"

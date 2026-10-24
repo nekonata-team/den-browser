@@ -9,13 +9,18 @@ rule:
     - any:
         - kind: type_identifier
         - kind: simple_identifier
-    - regex: '^(DenApplication|DenStateWriter|BoardCreation|BoardRemoval|BoardSizing|BoardMovement|BoardUpdates|InputOpening|DrawerItems|DrawerPlacement|DeskLifecycle|DeskUpdates|DeskMovement|DeskPresetOperations|NotificationOperations|Recents|DenReset|EssentialEditing|TutorialProgress)$'
+    - regex: '^(DenApplication|DenStateReader|DenStateWriter|BoardCreation|BoardRemoval|BoardSizing|BoardMovement|BoardUpdates|InputOpening|DrawerItems|DrawerPlacement|DeskLifecycle|DeskUpdates|DeskMovement|DeskPresetOperations|NotificationOperations|Recents|DenReset|EssentialEditing|TutorialProgress)$'
     - not:
         inside:
           any:
             - kind: init_declaration
             - kind: function_body
             - kind: computed_property
+          stopBy: end
+    - not:
+        inside:
+          kind: function_declaration
+          regex: '^public static func make\(initialState: DenSharedState\)'
           stopBy: end
     - not:
         inside:

@@ -1,7 +1,6 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
-@MainActor
 public struct DrawerPlacement {
     public struct Request {
         public let itemID: UUID
@@ -17,11 +16,11 @@ public struct DrawerPlacement {
         }
     }
 
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let creation: BoardCreation
     private let items: DrawerItems
 
-    public init(store: DenStateStore, creation: BoardCreation, items: DrawerItems) {
+    public init(store: DenStateReader, creation: BoardCreation, items: DrawerItems) {
         self.store = store
         self.creation = creation
         self.items = items

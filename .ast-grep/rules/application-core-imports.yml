@@ -1,7 +1,7 @@
 id: application-core-imports
 language: Swift
 severity: error
-message: Application core depends only on Foundation, Observation, and DenDomain.
+message: Application core depends only on Foundation and DenDomain.
 files:
   - "Packages/DenApplication/Sources/DenApplication/**/*.swift"
 rule:
@@ -9,5 +9,5 @@ rule:
   has:
     kind: identifier
     not:
-      regex: '^(Foundation|Observation|DenDomain)(\.|$)'
+      regex: '^(Foundation|DenDomain)(\.|$)'
     stopBy: end

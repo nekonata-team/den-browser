@@ -1,7 +1,6 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
-@MainActor
 public struct EssentialEditing {
     public enum Result {
         case invalid

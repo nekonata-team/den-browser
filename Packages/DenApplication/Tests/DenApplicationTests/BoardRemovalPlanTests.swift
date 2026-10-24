@@ -2,8 +2,7 @@ import DenApplication
 import DenDomain
 import Testing
 
-@MainActor
-struct BoardRemovalPlanTests {
+nonisolated struct BoardRemovalPlanTests {
     @Test(arguments: [false, true])
     func removingPrimaryIncludesSideWhileRemovingSideKeepsPrimary(_ removesSide: Bool) throws {
         // Arrange
@@ -17,7 +16,7 @@ struct BoardRemovalPlanTests {
         let selected = removesSide ? side : primary
 
         // Act
-        let removal = try #require(BoardRemoval.planRemoval(selected.id, from: desk))
+        let removal = try #require(BoardRemovalPlan.make(selected.id, from: desk))
 
         // Assert
         #expect(
@@ -41,7 +40,7 @@ struct BoardRemovalPlanTests {
         let desk = DeskState(label: "Desk", boards: [before, selected, after], focusedBoardID: selected.id)
 
         // Act
-        let removal = try #require(BoardRemoval.planRemoval(selected.id, from: desk, focusNext: focusNext))
+        let removal = try #require(BoardRemovalPlan.make(selected.id, from: desk, focusNext: focusNext))
 
         // Assert
         #expect(removal.desk.focusedBoardID == (focusNext ? after.id : before.id))
@@ -56,7 +55,7 @@ struct BoardRemovalPlanTests {
             scrollOffsetX: 180, anchorBoardID: focused.id)
 
         // Act
-        let removal = try #require(BoardRemoval.planRemoval(removed.id, from: desk))
+        let removal = try #require(BoardRemovalPlan.make(removed.id, from: desk))
 
         // Assert
         #expect(removal.desk.focusedBoardID == focused.id)
@@ -70,7 +69,7 @@ struct BoardRemovalPlanTests {
         let desk = DeskState(label: "Desk", boards: [removed], scrollOffsetX: 180)
 
         // Act
-        let removal = try #require(BoardRemoval.planRemoval(removed.id, from: desk))
+        let removal = try #require(BoardRemovalPlan.make(removed.id, from: desk))
 
         // Assert
         #expect(removal.desk.boards.isEmpty)
@@ -80,6 +79,6 @@ struct BoardRemovalPlanTests {
 
     @Test func missingBoardProducesNoRemoval() {
         let desk = DeskState(label: "Desk", boards: [])
-        #expect(BoardRemoval.planRemoval(BoardID(), from: desk) == nil)
+        #expect(BoardRemovalPlan.make(BoardID(), from: desk) == nil)
     }
 }

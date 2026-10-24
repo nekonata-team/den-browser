@@ -1,7 +1,6 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
-@MainActor
 public struct InputOpening {
     public struct Context {
         public let width: Double

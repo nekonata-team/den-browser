@@ -39,7 +39,7 @@ struct NotificationListModelTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
-        let operations = NotificationOperations(store: shared.store, writer: shared.writer)
+        let operations = NotificationOperations(store: shared.reader, writer: shared.writer)
         let notification = try #require(operations.record(title: "Build", body: "Finished", boardID: board.id))
         let models = (0..<2).map { _ in
             NotificationListModel(
@@ -92,7 +92,7 @@ struct NotificationListModelTests {
         let desk = DeskState(label: "Desk", boards: sourceExists ? [board] : [], focusedBoardID: nil)
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
-        let operations = NotificationOperations(store: shared.store, writer: shared.writer)
+        let operations = NotificationOperations(store: shared.reader, writer: shared.writer)
         let notification = try #require(operations.record(title: "Build", body: "Finished", boardID: board.id))
         let first = NotificationWindowStub()
         let second = NotificationWindowStub()
@@ -115,7 +115,7 @@ struct NotificationListModelTests {
     func clearRequestsConfirmationOnlyWhenThereAreMessages(hasMessages: Bool) {
         // Arrange
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
-        let operations = NotificationOperations(store: shared.store, writer: shared.writer)
+        let operations = NotificationOperations(store: shared.reader, writer: shared.writer)
         if hasMessages { operations.record(title: "Build", body: "", boardID: BoardID()) }
         let window = NotificationWindowStub()
         let model = NotificationListModel(
@@ -133,7 +133,7 @@ struct NotificationListModelTests {
     @Test func selectionFollowsHistoryAndOpensTheSelectedMessage() throws {
         // Arrange
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
-        let operations = NotificationOperations(store: shared.store, writer: shared.writer)
+        let operations = NotificationOperations(store: shared.reader, writer: shared.writer)
         let first = try #require(operations.record(title: "First", body: "", boardID: BoardID()))
         operations.record(title: "Second", body: "", boardID: BoardID())
         let window = NotificationWindowStub()

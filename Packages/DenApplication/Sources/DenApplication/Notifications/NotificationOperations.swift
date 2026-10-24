@@ -1,14 +1,13 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
 /// Profile-shared notification operations; no window state or presentation callbacks.
-@MainActor
 public final class NotificationOperations {
     public static let maximumNotificationCount = 200
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
 
-    public init(store: DenStateStore, writer: DenStateWriter) {
+    public init(store: DenStateReader, writer: DenStateWriter) {
         self.store = store
         self.writer = writer
     }

@@ -2,8 +2,7 @@ import DenApplication
 import DenDomain
 import Testing
 
-@MainActor
-struct DeskPresetOperationsTests {
+nonisolated struct DeskPresetOperationsTests {
     @Test(arguments: [-1, 0, 1])
     func creationInsertsAfterPresentedDeskAndRestoresPresetFocus(_ focusIndex: Int) throws {
         // Arrange

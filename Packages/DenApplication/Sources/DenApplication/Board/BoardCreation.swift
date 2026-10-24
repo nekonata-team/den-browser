@@ -1,7 +1,6 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
-@MainActor
 public final class BoardCreation {
     public struct Target {
         public let presentedDeskID: DeskID
@@ -53,14 +52,14 @@ public final class BoardCreation {
         case selectZmxSession
     }
 
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
     private let recents: Recents
     private let directoryExists: (String) -> Bool
 
     public init(
-        store: DenStateStore, writer: DenStateWriter, recents: Recents,
+        store: DenStateReader, writer: DenStateWriter, recents: Recents,
         persist: ((DenState) -> Bool)? = nil,
         directoryExists: @escaping (String) -> Bool
     ) {

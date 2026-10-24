@@ -2,6 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenInfrastructure
+import DenModels
 import Foundation
 import Observation
 
@@ -9,6 +10,7 @@ import Observation
 @Observable
 final class DenProfileResources {
     let data: DenStateStore
+    @ObservationIgnored private let reader: DenStateReader
     @ObservationIgnored private let writer: DenStateWriter
     @ObservationIgnored let notificationOperations: NotificationOperations
     @ObservationIgnored let boardUpdates: BoardUpdates
@@ -28,8 +30,10 @@ final class DenProfileResources {
     @ObservationIgnored let boardMovement: BoardMovement
 
     var deskPresetOperations: DeskPresetOperations {
-        DeskPresetOperations(state: data, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
+        DeskPresetOperations(state: reader, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
     }
+
+    var snapshot: DenSharedState { data.snapshot }
 
     var state: DenState {
         get { data.snapshot.den }
@@ -101,32 +105,33 @@ final class DenProfileResources {
         }
         boardRuntimes = DenBoardRuntimes()
         data = shared.store
+        reader = shared.reader
         writer = shared.writer
-        notificationOperations = NotificationOperations(store: shared.store, writer: shared.writer)
-        deskLifecycle = DeskLifecycle(store: shared.store, writer: shared.writer, persist: persistState)
-        deskUpdates = DeskUpdates(store: shared.store, writer: shared.writer, persist: persistState)
-        deskMovement = DeskMovement(store: shared.store, writer: shared.writer, persist: persistState)
-        denReset = DenReset(store: shared.store, writer: shared.writer, persist: persistState)
+        notificationOperations = NotificationOperations(store: shared.reader, writer: shared.writer)
+        deskLifecycle = DeskLifecycle(store: shared.reader, writer: shared.writer, persist: persistState)
+        deskUpdates = DeskUpdates(store: shared.reader, writer: shared.writer, persist: persistState)
+        deskMovement = DeskMovement(store: shared.reader, writer: shared.writer, persist: persistState)
+        denReset = DenReset(store: shared.reader, writer: shared.writer, persist: persistState)
         boardMovement = BoardMovement(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: persistState)
         boardSizing = BoardSizing(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: persistState, deferredSave: onDeferredSave)
         boardRemoval = BoardRemoval(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: persistState)
-        boardUpdates = BoardUpdates(store: shared.store, writer: shared.writer, persist: persistState)
+        boardUpdates = BoardUpdates(store: shared.reader, writer: shared.writer, persist: persistState)
         recents = Recents(
-            store: shared.store, writer: shared.writer, persist: persistState, persistRecent: onRecentItemsSave)
+            store: shared.reader, writer: shared.writer, persist: persistState, persistRecent: onRecentItemsSave)
         boardCreation = BoardCreation(
-            store: shared.store, writer: shared.writer, recents: recents,
+            store: shared.reader, writer: shared.writer, recents: recents,
             persist: persistState,
             directoryExists: TerminalWorkingDirectory.exists)
-        drawerItems = DrawerItems(store: shared.store, writer: shared.writer, persist: persistState)
-        drawerPlacement = DrawerPlacement(store: shared.store, creation: boardCreation, items: drawerItems)
+        drawerItems = DrawerItems(store: shared.reader, writer: shared.writer, persist: persistState)
+        drawerPlacement = DrawerPlacement(store: shared.reader, creation: boardCreation, items: drawerItems)
         inputOpening = InputOpening(creation: boardCreation, drawer: drawerItems)
-        tutorialProgress = TutorialProgress(store: shared.store, writer: shared.writer)
+        tutorialProgress = TutorialProgress(store: shared.reader, writer: shared.writer)
         self.onSave = onSave
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave

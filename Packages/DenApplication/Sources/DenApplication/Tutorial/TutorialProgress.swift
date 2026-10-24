@@ -1,11 +1,10 @@
-import DenDomain
+public import DenDomain
 
-@MainActor
 public struct TutorialProgress {
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
 
-    public init(store: DenStateStore, writer: DenStateWriter) {
+    public init(store: DenStateReader, writer: DenStateWriter) {
         self.store = store
         self.writer = writer
     }

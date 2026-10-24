@@ -1,7 +1,6 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
-@MainActor
 public struct DeskPresetOperations {
     public enum SaveResult {
         case created(persisted: Bool)
@@ -25,11 +24,11 @@ public struct DeskPresetOperations {
         case unavailable
     }
 
-    private let state: DenStateStore
+    private let state: DenStateReader
     private let writer: DenStateWriter
     private let persist: ([PersonalDeskPreset]) -> Bool
 
-    public init(state: DenStateStore, writer: DenStateWriter, persist: @escaping ([PersonalDeskPreset]) -> Bool) {
+    public init(state: DenStateReader, writer: DenStateWriter, persist: @escaping ([PersonalDeskPreset]) -> Bool) {
         self.state = state
         self.writer = writer
         self.persist = persist

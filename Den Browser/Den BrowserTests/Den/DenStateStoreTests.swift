@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Observation
 import Synchronization

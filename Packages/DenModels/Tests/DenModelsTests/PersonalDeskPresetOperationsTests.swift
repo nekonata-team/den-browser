@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Testing
 
 @MainActor
@@ -13,7 +14,7 @@ struct PersonalDeskPresetOperationsTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var saves = 0
         let operations = DeskPresetOperations(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { presets in
                 #expect(shared.store.snapshot.deskPresets == presets)
                 #expect(presets.first?.label == "Routine")
@@ -45,7 +46,7 @@ struct PersonalDeskPresetOperationsTests {
         desk.boards[0].width = 900
         var saves = 0
         let operations = DeskPresetOperations(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true
@@ -77,7 +78,7 @@ struct PersonalDeskPresetOperationsTests {
                 den: DenState(desks: [desk], focusedDeskID: desk.id), deskPresets: [routine, other]))
         var saves = 0
         let operations = DeskPresetOperations(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true

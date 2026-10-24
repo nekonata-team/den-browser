@@ -1,0 +1,9 @@
+id: ipc-no-screen-models
+valid:
+  - import DenApplication
+  - import DenDomain
+  - import DenIPCProtocol
+invalid:
+  - import DenModels
+  - public import DenViews
+  - import struct DenModels.DenWindowModel

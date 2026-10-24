@@ -1,14 +1,13 @@
-import DenDomain
+public import DenDomain
 
-@MainActor
 public struct BoardSizing {
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
     private let deferredSave: (() -> Void)?
 
     public init(
-        store: DenStateStore, writer: DenStateWriter,
+        store: DenStateReader, writer: DenStateWriter,
         persist: ((DenState) -> Bool)? = nil, deferredSave: (() -> Void)? = nil
     ) {
         self.store = store

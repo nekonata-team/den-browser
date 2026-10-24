@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -15,14 +16,14 @@ struct DrawerPlacementTests {
             Issue.record("Failed placement must not save")
             return true
         }
-        let items = DrawerItems(store: shared.store, writer: shared.writer, persist: persist)
+        let items = DrawerItems(store: shared.reader, writer: shared.writer, persist: persist)
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
-        let placement = DrawerPlacement(store: shared.store, creation: creation, items: items)
+        let placement = DrawerPlacement(store: shared.reader, creation: creation, items: items)
 
         let result = placement.place(
             .init(
@@ -55,14 +56,14 @@ struct DrawerPlacementTests {
             events.append(state.drawerItems.contains(item) ? "saveWithItem" : "saveWithoutItem")
             return saveSucceeds
         }
-        let items = DrawerItems(store: shared.store, writer: shared.writer, persist: persist)
+        let items = DrawerItems(store: shared.reader, writer: shared.writer, persist: persist)
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
-        let placement = DrawerPlacement(store: shared.store, creation: creation, items: items)
+        let placement = DrawerPlacement(store: shared.reader, creation: creation, items: items)
 
         let result = try #require(
             placement.place(

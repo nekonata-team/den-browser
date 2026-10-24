@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -13,7 +14,7 @@ struct BoardUpdatesTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var events: [String] = []
         let updates = BoardUpdates(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return false
@@ -37,12 +38,12 @@ struct BoardUpdatesTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var events: [String] = []
         let updates = BoardUpdates(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return true
             })
-        let recents = Recents(store: shared.store, writer: shared.writer)
+        let recents = Recents(store: shared.reader, writer: shared.writer)
 
         // Act
         updates.updateWeb(board.id, url: URL(string: "https://example.com/next")!, title: "Next", recents: recents) {
@@ -64,7 +65,7 @@ struct BoardUpdatesTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var saves = 0
         let updates = BoardUpdates(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true

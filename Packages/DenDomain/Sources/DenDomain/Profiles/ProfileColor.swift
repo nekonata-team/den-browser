@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ProfileColor: Codable, Equatable, Hashable, Identifiable {
+public enum ProfileColor: Codable, Equatable, Hashable, Identifiable, Sendable {
     case blue, purple, pink, green, yellow, gray
     case custom(ProfileRGB)
 

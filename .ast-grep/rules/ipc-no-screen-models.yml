@@ -1,0 +1,12 @@
+id: ipc-no-screen-models
+language: Swift
+severity: error
+message: IPC uses Application operations, never screen Models or Views.
+files:
+  - "Den Browser/Den Browser/IPC/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    regex: '^(DenModels|DenViews)(\.|$)'
+    stopBy: end

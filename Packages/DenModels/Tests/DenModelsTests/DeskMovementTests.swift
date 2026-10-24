@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Testing
 
 @MainActor
@@ -13,7 +14,7 @@ struct DeskMovementTests {
         initial.activeDrag = .desk(first.id)
         let shared = DenStateStore.make(initialState: initial)
         let movement = DeskMovement(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Preview/restore must not save")
                 return true
@@ -37,7 +38,7 @@ struct DeskMovementTests {
         let shared = DenStateStore.make(initialState: initial)
         var saves = 0
         let movement = DeskMovement(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 #expect(shared.store.snapshot.activeDrag == nil)
                 saves += 1
@@ -62,7 +63,7 @@ struct DeskMovementTests {
         let shared = DenStateStore.make(initialState: initial)
         var saves = 0
         let movement = DeskMovement(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true

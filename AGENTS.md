@@ -50,6 +50,10 @@ Reuse successful checks when the final diff does not affect what they cover.
 
 - Use the `domain-modeling` skill when changing domain terms, their meanings, or architectural decisions in `CONTEXT.md` or ADRs.
 - Before editing ADRs, read and follow the [ADR template](./.agents/skills/domain-modeling/ADR-FORMAT.md).
+- Keep `docs/architecture.md` limited to current architectural contracts. Put decision rationale in ADRs;
+  omit refactor history, change justification, and source-level wiring explanations.
+- Before adding architecture prose, check the existing graph, responsibility table, and owning section.
+  Update the existing statement in place; omit prose that only repeats those representations or the code.
 - Do not commit agent notes, work logs, or unsettled plans.
 - Keep README focused on public product information and documentation links.
 - Keep detailed behavior and implementation contracts in their owning documents.

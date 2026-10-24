@@ -35,7 +35,7 @@ struct WindowNavigationModelTests {
             initialState: DenSharedState(den: DenState(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id)))
         let first = WindowNavigationModel(state: shared.store, presentedDeskID: firstDesk.id)
         let other = WindowNavigationModel(state: shared.store, presentedDeskID: secondDesk.id)
-        let updates = BoardUpdates(store: shared.store, writer: shared.writer)
+        let updates = BoardUpdates(store: shared.reader, writer: shared.writer)
 
         // Act
         updates.rename(secondBoard.id, to: "Renamed", beforeSave: {})

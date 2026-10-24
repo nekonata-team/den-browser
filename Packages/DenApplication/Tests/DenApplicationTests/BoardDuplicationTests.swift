@@ -3,8 +3,7 @@ import DenDomain
 import Foundation
 import Testing
 
-@MainActor
-struct BoardDuplicationTests {
+nonisolated struct BoardDuplicationTests {
     @Test(arguments: [false, true])
     func webCopyPreservesMetadataAndSelectsRequestedSheet(fromFirstSheet: Bool) throws {
         // Arrange

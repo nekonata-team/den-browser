@@ -3,8 +3,7 @@ import DenDomain
 import Foundation
 import Testing
 
-@MainActor
-struct DenStateNormalizationTests {
+nonisolated struct DenStateNormalizationTests {
     @Test func emptyStateRestoresAnInitialDesk() {
         // Arrange
         let state = DenState(desks: [], focusedDeskID: DeskID())

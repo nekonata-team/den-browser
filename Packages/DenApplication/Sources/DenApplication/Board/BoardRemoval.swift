@@ -1,59 +1,12 @@
-import DenDomain
+public import DenDomain
 
-@MainActor
 public final class BoardRemoval {
     public static let maximumHistoryCount = 10
-
-    public struct RemovalPlan {
-        public let desk: DeskState
-        public let removedBoards: [BoardState]
-        public let historyEntry: RecentlyRemovedBoard
-    }
-
-    public static func planRemoval(
-        _ boardID: BoardID,
-        from source: DeskState,
-        focusNext: Bool = false
-    ) -> RemovalPlan? {
-        guard let boardOffset = source.boards.firstIndex(where: { $0.id == boardID }) else { return nil }
-        let board = source.boards[boardOffset]
-        let removedBoards =
-            board.isSideBoard
-            ? [board]
-            : (BoardGroup.containing(board.id, in: source.boards)?.boards ?? [board])
-        var desk = source
-        for member in removedBoards.reversed() {
-            guard let boardOffset = desk.boards.firstIndex(where: { $0.id == member.id }) else { continue }
-            desk.boards.remove(at: boardOffset)
-            if desk.anchorBoardID == member.id {
-                desk.anchorBoardID = nil
-            }
-            if desk.boards.isEmpty {
-                desk.scrollOffsetX = nil
-            }
-            guard desk.focusedBoardID == member.id else { continue }
-            if focusNext && boardOffset < desk.boards.count {
-                desk.focusedBoardID = desk.boards[boardOffset].id
-            } else if boardOffset > 0 {
-                desk.focusedBoardID = desk.boards[boardOffset - 1].id
-            } else {
-                desk.focusedBoardID = desk.boards.first?.id
-            }
-        }
-        return RemovalPlan(
-            desk: desk,
-            removedBoards: removedBoards,
-            historyEntry: RecentlyRemovedBoard(
-                board: board,
-                sideBoard: removedBoards.first(where: { $0.id != board.id }),
-                sourceDeskID: source.id,
-                sourceBoardIndex: BoardIndex(rawValue: boardOffset)))
-    }
 
     public enum Notice {
         case suppressMutationAnimation
         case prepareRemoval(BoardOperationOrigin)
-        case removed(source: DeskState, plan: RemovalPlan)
+        case removed(source: DeskState, plan: BoardRemovalPlan)
         case restored(board: BoardState, deskID: DeskID, present: Bool)
     }
 
@@ -64,11 +17,11 @@ public final class BoardRemoval {
         case emptyHistory
     }
 
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateStore, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
         self.store = store
         self.writer = writer
         self.persist = persist
@@ -87,7 +40,7 @@ public final class BoardRemoval {
             notify(.suppressMutationAnimation)
             notify(.prepareRemoval(origin))
         }
-        guard let removal = Self.planRemoval(boardID, from: source, focusNext: focusNext) else { return false }
+        guard let removal = BoardRemovalPlan.make(boardID, from: source, focusNext: focusNext) else { return false }
         writer.update {
             $0.den.desks[deskIndex] = removal.desk
             $0.recentlyRemovedBoards.insert(removal.historyEntry, at: 0)

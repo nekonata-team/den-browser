@@ -99,7 +99,7 @@ enum DenIPCTargetResolver {
         case .explicit(let deskID):
             let deskID = DeskID(deskID)
             for window in scope.windows {
-                guard let desk = window.resources.data.snapshot.den.desks.first(where: { $0.id == deskID }) else {
+                guard let desk = window.resources.snapshot.den.desks.first(where: { $0.id == deskID }) else {
                     continue
                 }
                 return resolvedDesk(window: window, desk: desk, in: profileManager)
@@ -109,17 +109,17 @@ enum DenIPCTargetResolver {
         case .automatic:
             if let callerBoardID = context.callerBoardID.map(BoardID.init) {
                 for window in scope.windows {
-                    guard let indices = window.resources.data.snapshot.den.boardIndices(for: callerBoardID) else {
+                    guard let indices = window.resources.snapshot.den.boardIndices(for: callerBoardID) else {
                         continue
                     }
-                    let desk = window.resources.data.snapshot.den.desks[indices.deskOffset]
+                    let desk = window.resources.snapshot.den.desks[indices.deskOffset]
                     return resolvedDesk(window: window, desk: desk, in: profileManager)
                 }
             }
 
             guard let window = profileManager.activeIPCWindow(profileID: scope.profileID),
-                let desk = window.resources.data.snapshot.den.desks.first(where: { $0.id == window.presentedDeskID() })
-                    ?? window.resources.data.snapshot.den.desks.first
+                let desk = window.resources.snapshot.den.desks.first(where: { $0.id == window.presentedDeskID() })
+                    ?? window.resources.snapshot.den.desks.first
             else {
                 return .failure(.noActiveDesk)
             }
@@ -144,8 +144,8 @@ enum DenIPCTargetResolver {
         case .explicit(let boardID):
             let boardID = BoardID(boardID)
             for window in scope.windows {
-                guard let indices = window.resources.data.snapshot.den.boardIndices(for: boardID) else { continue }
-                let desk = window.resources.data.snapshot.den.desks[indices.deskOffset]
+                guard let indices = window.resources.snapshot.den.boardIndices(for: boardID) else { continue }
+                let desk = window.resources.snapshot.den.desks[indices.deskOffset]
                 let board = desk.boards[indices.boardOffset]
                 guard kind.matchesExplicit(board) else {
                     return .failure(.boardNotMatchingKind(boardID.rawValue.uuidString, kind.label))
@@ -158,14 +158,14 @@ enum DenIPCTargetResolver {
             if let callerBoardID = context.callerBoardID.map(BoardID.init) {
                 guard
                     let owningWindow = scope.windows.first(where: {
-                        $0.resources.data.snapshot.den.boardIndices(for: callerBoardID) != nil
+                        $0.resources.snapshot.den.boardIndices(for: callerBoardID) != nil
                     }
                     ),
-                    let indices = owningWindow.resources.data.snapshot.den.boardIndices(for: callerBoardID)
+                    let indices = owningWindow.resources.snapshot.den.boardIndices(for: callerBoardID)
                 else {
                     return .failure(.noTargetBoard(kind.label))
                 }
-                let desk = owningWindow.resources.data.snapshot.den.desks[indices.deskOffset]
+                let desk = owningWindow.resources.snapshot.den.desks[indices.deskOffset]
                 let callerBoard = desk.boards[indices.boardOffset]
                 let target: BoardState?
                 if kind.matches(callerBoard) {
@@ -180,8 +180,8 @@ enum DenIPCTargetResolver {
             }
 
             guard let window = profileManager.activeIPCWindow(profileID: scope.profileID),
-                let desk = window.resources.data.snapshot.den.desks.first(where: { $0.id == window.presentedDeskID() })
-                    ?? window.resources.data.snapshot.den.desks.first
+                let desk = window.resources.snapshot.den.desks.first(where: { $0.id == window.presentedDeskID() })
+                    ?? window.resources.snapshot.den.desks.first
             else {
                 return .failure(.noTargetBoard(kind.label))
             }

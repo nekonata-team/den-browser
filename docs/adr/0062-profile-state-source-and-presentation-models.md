@@ -2,8 +2,8 @@
 status: accepted
 ---
 
-# Separate the Profile state source from observable presentation Models
+# Keep one Model module and actor-independent Application operations
 
-`DenApplication` owns one observable Profile source with read-only snapshots and a separate write capability, while `DenModels` owns window presentation and privately retains concrete operations supplied by composition.
-This avoids per-Feature copies of authoritative state and lets Models run without UI/native SDKs; Swift Observation is accepted in Application to avoid a custom notification bridge.
-App supplies native and persistence bindings, and UI and IPC share Application operations without making screen Models the IPC entry point.
+`DenModels` owns the observable Profile state source and window/Feature Models in one target, while `DenApplication` owns shared operation workflows without MainActor or Observation dependencies.
+App composition supplies synchronous read/write capabilities and persistence bindings; this keeps UI and IPC on the same Application operations without making Models the IPC entry point or copying authoritative state.
+The capabilities are non-Sendable and preserve the owner's isolation and synchronous notification/commit/save order; this separation does not imply background execution or pure functions without side effects.

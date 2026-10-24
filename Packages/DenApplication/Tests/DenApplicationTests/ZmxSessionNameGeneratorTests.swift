@@ -1,7 +1,7 @@
 import DenApplication
 import Testing
 
-struct ZmxSessionNameGeneratorTests {
+nonisolated struct ZmxSessionNameGeneratorTests {
     @Test func zmxSessionNameGeneratorUsesRootAndSkipsCollisions() {
         let occupied: Set<String> = ["den", "den-vi", "den-vi-2", "den-2"]
 

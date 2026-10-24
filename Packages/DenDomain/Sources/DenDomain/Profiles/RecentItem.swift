@@ -1,6 +1,6 @@
 import Foundation
 
-public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
+public enum RecentItem: Sendable, Codable, Equatable, Hashable, Identifiable {
     case url(URL, title: String? = nil)
     case search(String)
     case terminal(workingDirectory: String)

@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 
 /// Async zmx inspection and shared Board operations; task ownership stays with the invoking window.

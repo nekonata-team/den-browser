@@ -1,0 +1,10 @@
+id: core-no-main-actor
+language: Swift
+severity: error
+message: Domain and Application are actor-independent; keep MainActor isolation in Models or App.
+files:
+  - "Packages/DenApplication/Sources/**/*.swift"
+  - "Packages/DenDomain/Sources/**/*.swift"
+rule:
+  kind: attribute
+  regex: '^@(?:Swift\.)?MainActor\b'

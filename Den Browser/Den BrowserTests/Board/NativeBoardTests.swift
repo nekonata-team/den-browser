@@ -865,7 +865,7 @@ struct NativeBoardTests {
         #expect(session.resources.state.desks[0].boards.map(\.id) == [target.id, side.id, insertedID, following.id])
     }
 
-    @Test(arguments: await [BoardState.minimumWidth, BuiltInDeskPreset.boardWidth, BoardState.maximumWidth])
+    @Test(arguments: [BoardState.minimumWidth, BuiltInDeskPreset.boardWidth, BoardState.maximumWidth])
     func inspectionBoardStartsAtCompactWidthRegardlessOfTargetWidth(targetWidth: Double) throws {
         // Arrange
         let target = BoardState(

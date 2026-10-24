@@ -2,9 +2,9 @@ id: application-core-imports
 valid:
   - import Foundation
   - import DenDomain
-  - import Observation
   - "// import SwiftUI\nlet text = \"import Observation\""
 invalid:
+  - import Observation
   - import SwiftUI
   - import AppKit
   - import WebKit

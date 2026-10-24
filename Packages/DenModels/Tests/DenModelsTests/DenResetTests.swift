@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -25,7 +26,7 @@ struct DenResetTests {
         var events: [String] = []
         var saved: DenState?
         let reset = DenReset(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(shared.store.snapshot.notifications.isEmpty)
                 #expect(shared.store.snapshot.activeDrag == nil)

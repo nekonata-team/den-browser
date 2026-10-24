@@ -212,7 +212,7 @@ final class DenIPCService {
         let window = target.window
         let inspection = target.board
         guard let targetBoardID = inspection.sideBoardTargetBoardID,
-            let targetBoard = window.resources.data.snapshot.den.board(for: targetBoardID), targetBoard.isWeb
+            let targetBoard = window.resources.snapshot.den.board(for: targetBoardID), targetBoard.isWeb
         else {
             return .failure("Inspection Board target Web Board is unavailable")
         }
@@ -294,7 +294,7 @@ final class DenIPCService {
                 hasWindow: profileManager.hasWindow(for: $0.id)
             )
         }
-        let desks = window.resources.data.snapshot.den.desks.map {
+        let desks = window.resources.snapshot.den.desks.map {
             DenDeskInfo(
                 id: $0.id.rawValue.uuidString,
                 label: $0.label,
@@ -326,7 +326,7 @@ final class DenIPCService {
                     activeDesk: activeDesk,
                     boards: boards,
                     focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
-                    drawerItemCount: window.resources.data.snapshot.den.drawerItems.count
+                    drawerItemCount: window.resources.snapshot.den.drawerItems.count
                 )))
     }
 
@@ -668,7 +668,7 @@ final class DenIPCService {
                                 presentedDeskID: window.presentedDeskID(), afterBoardID: board.id,
                                 focus: shouldFocus, origin: .cli),
                             notify: window.board.creationNotice
-                        ), let newBoard = window.resources.data.snapshot.den.board(for: newBoardID)
+                        ), let newBoard = window.resources.snapshot.den.board(for: newBoardID)
                     else {
                         return .failure("Failed to create new Web Board for \(href)")
                     }
@@ -921,7 +921,7 @@ final class DenIPCService {
         else {
             return false
         }
-        return target.window.resources.data.snapshot.den.board(for: target.board.id) != nil
+        return target.window.resources.snapshot.den.board(for: target.board.id) != nil
     }
 
     // MARK: - Board Commands
@@ -971,10 +971,10 @@ final class DenIPCService {
                 target: BoardCreation.Target(
                     presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
                     afterBoardID: newBoardInsertionAnchor(
-                        context: context, in: resolved.window.resources.data.snapshot.den, deskID: resolved.desk.id),
+                        context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id),
                     focus: payload.focus, origin: .cli),
                 notify: resolved.window.board.creationNotice
-            ), let board = resolved.window.resources.data.snapshot.den.board(for: boardID)
+            ), let board = resolved.window.resources.snapshot.den.board(for: boardID)
         else {
             return .failure("Failed to open board with \(payload.url)")
         }
@@ -1002,18 +1002,18 @@ final class DenIPCService {
         let anchorID: BoardID?
         switch destination {
         case .desk(let id):
-            guard let target = window.resources.data.snapshot.den.desks.first(where: { $0.id == DeskID(id) }) else {
+            guard let target = window.resources.snapshot.den.desks.first(where: { $0.id == DeskID(id) }) else {
                 return .failure("Desk not found: \(id)")
             }
             desk = target
             anchorID = nil
         case .leftOf(let id), .rightOf(let id):
             let boardID = BoardID(id)
-            guard let indices = window.resources.data.snapshot.den.boardIndices(for: boardID),
+            guard let indices = window.resources.snapshot.den.boardIndices(for: boardID),
                 let group = BoardGroup.containing(
-                    boardID, in: window.resources.data.snapshot.den.desks[indices.deskOffset].boards)
+                    boardID, in: window.resources.snapshot.den.desks[indices.deskOffset].boards)
             else { return .failure("Board not found: \(id)") }
-            desk = window.resources.data.snapshot.den.desks[indices.deskOffset]
+            desk = window.resources.snapshot.den.desks[indices.deskOffset]
             if group.boards.contains(where: { $0.id == resolved.board.id }) {
                 return .success(.board(boardInfo(resolved.board, focusedBoardID: desk.focusedBoardID)))
             }
@@ -1029,7 +1029,7 @@ final class DenIPCService {
         guard window.resources.boardMovement.place(resolved.board.id, in: desk.id, before: anchorID) else {
             return .failure("Could not move Board while a drag is active or the destination is unavailable")
         }
-        let focusedID = window.resources.data.snapshot.den.desks.first(where: { $0.id == desk.id })?.focusedBoardID
+        let focusedID = window.resources.snapshot.den.desks.first(where: { $0.id == desk.id })?.focusedBoardID
         return .success(.board(boardInfo(resolved.board, focusedBoardID: focusedID)))
     }
 
@@ -1070,7 +1070,7 @@ final class DenIPCService {
                 target: BoardCreation.Target(
                     presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
                     afterBoardID: newBoardInsertionAnchor(
-                        context: context, in: resolved.window.resources.data.snapshot.den, deskID: resolved.desk.id),
+                        context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id),
                     focus: payload.focus, origin: .cli),
                 notify: resolved.window.board.creationNotice
             )
@@ -1079,7 +1079,7 @@ final class DenIPCService {
         }
 
         if let runCommand = payload.runCommand,
-            let board = resolved.window.resources.data.snapshot.den.board(for: boardID)
+            let board = resolved.window.resources.snapshot.den.board(for: boardID)
         {
             let runtime = resolved.window.board.terminalRuntime(board)
             runtime.runCommand(runCommand)
@@ -1108,7 +1108,7 @@ final class DenIPCService {
         guard !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failure("Desk label must not be empty")
         }
-        guard resolved.window.resources.data.snapshot.den.desks.count < DeskCreation.maximumDeskCount else {
+        guard resolved.window.resources.snapshot.den.desks.count < DeskCreation.maximumDeskCount else {
             return .failure("Cannot create more than \(DeskCreation.maximumDeskCount) Desks")
         }
         guard
@@ -1124,7 +1124,7 @@ final class DenIPCService {
     private func handleDeskRemove(force: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
         let window = resolved.window
         let desk = resolved.desk
-        guard window.resources.data.snapshot.den.desks.count > 1 else {
+        guard window.resources.snapshot.den.desks.count > 1 else {
             return .failure("The last Desk cannot be removed")
         }
         guard force || desk.boards.isEmpty else {
@@ -1133,14 +1133,14 @@ final class DenIPCService {
         window.resources.deskLifecycle.delete(
             desk.id, presentedDeskID: window.presentedDeskID(),
             isAvailable: window.desk.isAvailable, notify: window.desk.lifecycleNotice)
-        guard !window.resources.data.snapshot.den.desks.contains(where: { $0.id == desk.id }) else {
+        guard !window.resources.snapshot.den.desks.contains(where: { $0.id == desk.id }) else {
             return .failure("Could not remove Desk: no available replacement Desk")
         }
         return .success(.removedDesk(id: desk.id.rawValue.uuidString))
     }
 
     private func handleDeskList(target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
-        let desks = resolved.window.resources.data.snapshot.den.desks.map { desk in
+        let desks = resolved.window.resources.snapshot.den.desks.map { desk in
             DenDeskInfo(
                 id: desk.id.rawValue.uuidString,
                 label: desk.label,
@@ -1162,7 +1162,7 @@ final class DenIPCService {
 
         switch command {
         case .list:
-            let items = window.resources.data.snapshot.den.drawerItems.map { item in
+            let items = window.resources.snapshot.den.drawerItems.map { item in
                 DenDrawerItemInfo(
                     id: item.id.uuidString,
                     url: item.url.absoluteString,
@@ -1201,7 +1201,7 @@ final class DenIPCService {
             guard !idString.isEmpty else {
                 return .failure("Usage: den drawer place <id>")
             }
-            guard let item = findDrawerItem(in: window.resources.data.snapshot.den.drawerItems, matching: idString)
+            guard let item = findDrawerItem(in: window.resources.snapshot.den.drawerItems, matching: idString)
             else {
                 return .failure("Drawer Item not found: \(idString)")
             }
@@ -1212,7 +1212,7 @@ final class DenIPCService {
                     target: BoardCreation.Target(presentedDeskID: window.presentedDeskID(), deskID: desk.id)),
                 notifyBoard: window.drawer.placementNotice(item.id),
                 notifyDrawer: window.drawer.itemNotice),
-                let board = window.resources.data.snapshot.den.board(for: boardID)
+                let board = window.resources.snapshot.den.board(for: boardID)
             {
                 window.drawer.didPlace()
                 _ = window.board.webRuntime(board)
@@ -1228,7 +1228,7 @@ final class DenIPCService {
             guard !idString.isEmpty else {
                 return .failure("Usage: den drawer discard <id>")
             }
-            guard let item = findDrawerItem(in: window.resources.data.snapshot.den.drawerItems, matching: idString)
+            guard let item = findDrawerItem(in: window.resources.snapshot.den.drawerItems, matching: idString)
             else {
                 return .failure("Drawer Item not found: \(idString)")
             }

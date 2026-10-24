@@ -1,7 +1,7 @@
 # Swift source checks
 
 Run `just architecture-check` to scan the application and all
-package source roots: `DenDomain`, `DenIPCProtocol`, `DenApplication`, `DenModels`, `DenViews`, and `DenInfrastructure`.
+package source modules: `DenDomain`, `DenIPCProtocol`, `DenApplication`, `DenModels`, `DenViews`, and `DenInfrastructure`.
 Run `just test architecture` to test the rule definitions against their fixtures.
 `just lint` and `just check` also run `architecture-check`. The ast-grep version is pinned in
 `mise.toml` so parser changes are reviewed together with the rule fixtures.
@@ -12,7 +12,8 @@ Run `just test architecture` to test the rule definitions against their fixtures
   expected there. Pure Models cannot import Views or drawing SDKs.
 - `DenIPCProtocol` may import Foundation only. Its wire DTOs do not depend on app,
   Domain, or UI modules.
-- Application excludes SwiftUI imports. Native AppKit integration remains allowed.
+- App-target Application folders exclude SwiftUI imports. Native AppKit integration remains allowed
+  there; the DenApplication package is restricted to Foundation and Domain.
 
 Application rules apply by source layer, including nested Board features. The checks
 do not enumerate project types or prohibit all references between app Features.
@@ -35,13 +36,13 @@ Rule fixtures include permitted imports, forbidden imports, qualified and
 attributed imports, and comments/strings. Snapshot output is not part of
 the contract, so the recipe uses `ast-grep test --skip-snapshot-tests`.
 
-`DenApplication` allows Foundation, Observation, and DenDomain only; native/UI frameworks
+`DenApplication` allows Foundation and DenDomain only; native/UI frameworks
 and Presentation dependencies are excluded. Pure `DenModels` allows Foundation, Observation,
-DenApplication, and DenDomain. `DenViews` allows Domain and the single Model module,
+DenApplication and DenDomain. `DenViews` allows Domain and the screen Model module,
 and drawing SDKs/libraries enumerated in `views-imports.yml`; it rejects Application and the app. Package
 manifests enforce the same dependency direction. `model-no-operation-exposure` rejects public exposure of Application operation types and the write
 capability from Model properties, functions, subscripts, and type aliases, including public extensions.
-Construction initializers may receive them; private storage and method-body use remain allowed.
+Construction initializers and the shared source factory may supply read/write capabilities; private storage and method-body use remain allowed.
 Its explicit capability names complement import guards and package visibility; it is not type resolution.
 App composition supplies live read inputs and focused native callbacks. Native implementations
 remaining in the app target are still protected only by layer checks, not a separate module.
@@ -52,3 +53,7 @@ to `DenViews`; composition supplies their existing AppKit views without exposing
 `DenInfrastructure` allows DenDomain, Foundation, Darwin, CoreGraphics, ImageIO,
 UniformTypeIdentifiers, and OS diagnostics. Filesystem and image-cache I/O and process sampling
 remain independent of App, Models and Views; AppKit, WebKit and Ghostty imports are rejected.
+
+Domain and Application reject MainActor attributes. Their manifests also omit default MainActor isolation;
+nonisolated Application test suites protect synchronous use outside the UI actor.
+IPC sources reject screen Model and View imports, while accepting Application operations and value snapshots.

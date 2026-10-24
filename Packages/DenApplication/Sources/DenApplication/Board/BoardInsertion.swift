@@ -1,7 +1,7 @@
 import DenDomain
 
 public enum BoardInsertion {
-    static func groupBoundaryOffset(_ offset: Int, in boards: [BoardState]) -> Int {
+    public static func groupBoundaryOffset(_ offset: Int, in boards: [BoardState]) -> Int {
         let offset = min(max(offset, 0), boards.count)
         guard offset > 0, offset < boards.count,
             let group = BoardGroup.containing(boards[offset - 1].id, in: boards),

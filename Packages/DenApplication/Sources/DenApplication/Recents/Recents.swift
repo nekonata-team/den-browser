@@ -1,17 +1,16 @@
-import DenDomain
+public import DenDomain
 import Foundation
 
-@MainActor
 public struct Recents {
     public static let maximumItemCount = 500
 
-    private let store: DenStateStore
+    private let store: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
     private let persistRecent: (([RecentItem]) -> Bool)?
 
     public init(
-        store: DenStateStore, writer: DenStateWriter,
+        store: DenStateReader, writer: DenStateWriter,
         persist: ((DenState) -> Bool)? = nil, persistRecent: (([RecentItem]) -> Bool)? = nil
     ) {
         self.store = store

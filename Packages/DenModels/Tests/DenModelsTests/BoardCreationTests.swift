@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -22,9 +23,9 @@ struct BoardCreationTests {
             return true
         }
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
 
@@ -76,9 +77,9 @@ struct BoardCreationTests {
             return true
         }
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
 
@@ -110,9 +111,9 @@ struct BoardCreationTests {
             return false
         }
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
 
@@ -142,9 +143,9 @@ struct BoardCreationTests {
             return false
         }
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer, persistRecent: persistRecent),
+            recents: Recents(store: shared.reader, writer: shared.writer, persistRecent: persistRecent),
             directoryExists: { _ in true })
 
         // Act
@@ -167,9 +168,9 @@ struct BoardCreationTests {
                 den: DenState(
                     desks: [first, second], focusedDeskID: first.id)))
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer),
+            recents: Recents(store: shared.reader, writer: shared.writer),
             directoryExists: { _ in true })
         var firstFocus: [DeskID] = []
         var secondFocus: [DeskID] = []
@@ -199,9 +200,9 @@ struct BoardCreationTests {
                 den: DenState(
                     desks: [visible, hidden], focusedDeskID: visible.id)))
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer),
+            recents: Recents(store: shared.reader, writer: shared.writer),
             directoryExists: { _ in true })
 
         // Act
@@ -225,9 +226,9 @@ struct BoardCreationTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let original = shared.store.snapshot
         let creation = BoardCreation(
-            store: shared.store,
+            store: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer),
+            recents: Recents(store: shared.reader, writer: shared.writer),
             directoryExists: { _ in true })
         var focused: [BoardID] = []
 

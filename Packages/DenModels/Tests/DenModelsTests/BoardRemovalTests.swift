@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Testing
 
 @MainActor
@@ -15,7 +16,7 @@ struct BoardRemovalTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let operations = BoardRemoval(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].boards == [focused])
                 #expect(shared.store.snapshot.activeDrag == nil)
@@ -59,7 +60,7 @@ struct BoardRemovalTests {
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let initial = shared.store.snapshot
         let operations = BoardRemoval(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Missing Board must not save")
                 return true
@@ -86,7 +87,7 @@ struct BoardRemovalTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let operations = BoardRemoval(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].boards == [board])
                 #expect(shared.store.snapshot.recentlyRemovedBoards.isEmpty)
@@ -131,7 +132,7 @@ struct BoardRemovalTests {
         ]
         let shared = DenStateStore.make(initialState: initial)
         let operations = BoardRemoval(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Rejected restoration must not save")
                 return true
@@ -160,7 +161,7 @@ struct BoardRemovalTests {
         ]
         let shared = DenStateStore.make(initialState: initial)
         let operations = BoardRemoval(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Existing Tutorial must not save")
                 return true

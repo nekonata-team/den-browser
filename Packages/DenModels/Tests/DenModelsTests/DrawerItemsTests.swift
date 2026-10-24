@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -10,7 +11,7 @@ struct DrawerItemsTests {
         let original = shared.store.snapshot
         var events: [String] = []
         let items = DrawerItems(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return false
@@ -44,7 +45,7 @@ struct DrawerItemsTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let items = DrawerItems(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return false
@@ -81,7 +82,7 @@ struct DrawerItemsTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let items = DrawerItems(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return true
@@ -125,7 +126,7 @@ struct DrawerItemsTests {
         let shared = DenStateStore.make(initialState: initial)
         var saves = 0
         let items = DrawerItems(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true

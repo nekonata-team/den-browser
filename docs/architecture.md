@@ -30,8 +30,8 @@ flowchart TD
 | Package | Role |
 | --- | --- |
 | `DenDomain` | Domain values and product rules |
-| `DenApplication` | Shared state source, operation decisions, and state transformations |
-| `DenModels` | Observable presentation Models and window-local state/effects |
+| `DenApplication` | Operation decisions, state transformations, and shared synchronous workflows |
+| `DenModels` | Observable Profile state source and window/Feature Models |
 | `DenViews` | Feature Views, native display adapters, and shared visual tokens and controls |
 | `DenInfrastructure` | Profile persistence, filesystem and image-cache I/O, process sampling, and diagnostics |
 | `DenIPCProtocol` | CLI/app request and response types |
@@ -49,11 +49,10 @@ App-target folders:
 
 ## Shared state and presentation package boundaries
 
-Each Profile has one observable `DenStateStore` in DenApplication. Its read-only snapshot contains
-shared Den data and transient operation state; a separately held `DenStateWriter` controls mutation.
-`DenProfileResources` assembles that source, concrete operations, persistence callbacks and native resources.
+Each Profile has one observable `DenStateStore` in DenModels, with separate read/write capabilities.
+`DenProfileResources` assembles the source, Application operations, persistence bindings and native resources.
 
-Models receive only the live inputs and operations they use. Concrete Application operations may enter
+Screen Models receive only the live inputs and operations they use. Concrete Application operations may enter
 through construction initializers and are retained privately; View-facing APIs expose Domain or presentation
 values. Shared data is read from the source rather than copied into per-Feature stores.
 
@@ -69,7 +68,7 @@ The shared `DenState.focusedDeskID` supplies the restore selection. Each window'
 owns its distinct `presentedDeskID`, return history and Anchor return references; Desk-level Board focus remains shared.
 An active Web runtime owns its Sheet Stack, while saved Board URL/title fields are projections used to restore it.
 
-UI and IPC use the same Profile operations. Each call supplies its resolved target and synchronous notices;
+UI and IPC use the same Application operations. Each call supplies its resolved target and synchronous notices;
 shared operations retain no window, Runtime, screen Model or notification destination. Native adapters perform
 resource preparation before the mutation that requires it and invalidate removed references before persistence.
 For Board creation, attachment and animation preparation precede insertion; native metadata and Tutorial events
@@ -81,6 +80,9 @@ The package graph above is compiler-enforced. Source groups inside the app descr
 and do not create additional module boundaries.
 
 Domain, Application and Models do not import UI or Runtime SDKs.
+Domain and Application are independent of MainActor and Observation.
+Callers must keep synchronous state access within the owner's isolation (MainActor in the app).
+IPC imports Application and receives state values rather than Model objects.
 Views may use drawing SDKs; Infrastructure may use independent OS/bitmap I/O SDKs.
 Common native workflows consume explicit values and window bindings rather than screen Model types.
 IPC transport and wire DTOs do not own Board or Profile policy.

@@ -2,8 +2,7 @@ import DenApplication
 import DenDomain
 import Testing
 
-@MainActor
-struct BoardRestorationTests {
+nonisolated struct BoardRestorationTests {
     @Test
     func restorationInsertsAfterExistingGroup() {
         // Arrange

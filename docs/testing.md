@@ -25,8 +25,8 @@ do not prove input reached the mounted native surface.
 
 | Target | Contract |
 | --- | --- |
-| Domain/Application | Product rules, shared state mutations, ordering and persistence outcomes |
-| Models | Live Observation, window-local state, presentation transitions and cancellation |
+| Domain/Application | Actor-independent rules, decisions, state transformations and shared workflows |
+| Models | Live Observation, shared state access, window-local state, transitions and cancellation |
 | Infrastructure | Filesystem/bitmap I/O and OS process sampling |
 | App | Native SDK/resource connections, Profile/window lifecycle and UI/IPC integration |
 
@@ -84,7 +84,9 @@ just test architecture
 ```
 
 The default unit recipe includes independent SwiftPM tests for Application, Models and Infrastructure,
-without App, WebKit or Ghostty. Hosted tests cover native mounting, resource lifetime and App integration.
+without App, WebKit or Ghostty. Application test suites are explicitly nonisolated, so
+requiring MainActor for a rule breaks compilation before execution. Shared operation tests also run
+against a plain state owner without Models; Model integration tests protect the Observation bridge. Hosted tests cover native mounting, resource lifetime and App integration.
 Unit tests disable code signing; UI tests use development signing and separate `.derived-data-ui` output.
 
 `just lint` runs the [source guards](../.ast-grep/README.md), swift-format in strict mode and SwiftLint.

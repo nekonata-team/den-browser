@@ -1,0 +1,9 @@
+id: core-no-main-actor
+valid:
+  - public struct Rule {}
+  - 'let message = "@MainActor"'
+  - "// @MainActor\nstruct Rule {}"
+invalid:
+  - "@MainActor public struct Rule {}"
+  - "@Swift.MainActor public func decide() {}"
+  - "public struct Rule { @MainActor public func decide() {} }"

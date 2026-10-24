@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -15,12 +16,12 @@ struct ZmxBoardsTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer,
-            recents: Recents(store: shared.store, writer: shared.writer), directoryExists: { _ in true })
+            store: shared.reader, writer: shared.writer,
+            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in true })
         let operations = ZmxBoards(
             state: shared.store, creation: creation,
-            removal: BoardRemoval(store: shared.store, writer: shared.writer),
-            updates: BoardUpdates(store: shared.store, writer: shared.writer))
+            removal: BoardRemoval(store: shared.reader, writer: shared.writer),
+            updates: BoardUpdates(store: shared.reader, writer: shared.writer))
         let runner = DuplicationRunner()
         let initial = shared.store.snapshot
         let task = Task { @MainActor in

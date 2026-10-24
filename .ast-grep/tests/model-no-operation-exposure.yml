@@ -1,11 +1,13 @@
 id: model-no-operation-exposure
 valid:
+  - "public final class DenStateStore { public static func make(initialState: DenSharedState) -> (store: DenStateStore, reader: DenStateReader, writer: DenStateWriter) { fatalError() } }"
   - "public final class Model { private let creation: BoardCreation }"
   - "public final class Model { public init(creation: BoardCreation) {} }"
   - "public func submit() { let target: BoardCreation.Target = currentTarget() }"
   - "public extension Model { private var creation: BoardCreation { storedCreation } }"
   - "public var board: BoardState { currentBoard }"
 invalid:
+  - "public struct Screen { public var reader: DenStateReader }"
   - "public let creation: BoardCreation"
   - "public var removal: BoardRemoval { storedRemoval }"
   - "public func writer() -> DenStateWriter { storedWriter }"

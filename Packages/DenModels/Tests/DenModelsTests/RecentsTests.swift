@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 
@@ -13,7 +14,7 @@ struct RecentsTests {
         var original = (0..<(Recents.maximumItemCount - 1)).map { RecentItem.search("Query \($0)") }
         original.append(.url(url, title: "Known title"))
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample, recentItems: original))
-        let recents = Recents(store: shared.store, writer: shared.writer)
+        let recents = Recents(store: shared.reader, writer: shared.writer)
 
         // Act
         recents.record(.url(url))
@@ -42,7 +43,7 @@ struct RecentsTests {
         let shared = DenStateStore.make(initialState: initial)
         var saved: [RecentItem] = []
         let recents = Recents(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persistRecent: {
                 saved = $0
                 return true
@@ -66,7 +67,7 @@ struct RecentsTests {
         var profileSaves = 0
         var recentSaves = 0
         let recents = Recents(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: savesProfile
                 ? { _ in
                     profileSaves += 1
@@ -99,7 +100,7 @@ struct RecentsTests {
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample, recentItems: original))
         var saves = 0
         let recents = Recents(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persistRecent: { _ in
                 saves += 1
                 return true
@@ -121,7 +122,7 @@ struct RecentsTests {
         // Arrange
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let recents = Recents(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persistRecent: { _ in
                 Issue.record("No-op must not save")
                 return false
@@ -144,7 +145,7 @@ struct RecentsTests {
         let shared = DenStateStore.make(initialState: initial)
         var recentSaves = 0
         let recents = Recents(
-            store: shared.store, writer: shared.writer,
+            store: shared.reader, writer: shared.writer,
             persist: savesProfile
                 ? { _ in
                     Issue.record("Drag must not save Profile")

@@ -2,8 +2,7 @@ import DenApplication
 import DenDomain
 import Testing
 
-@MainActor
-struct DeskDeletionTests {
+nonisolated struct DeskDeletionTests {
     @Test(arguments: [false, true])
     func choosesAvailableDeskOnLeftBeforeTryingRight(_ farLeftAvailable: Bool) throws {
         // Arrange

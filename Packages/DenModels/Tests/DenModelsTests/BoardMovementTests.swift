@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenModels
 import Testing
 
 @MainActor
@@ -16,7 +17,7 @@ struct BoardMovementTests {
         let shared = DenStateStore.make(initialState: initial)
         var saves = 0
         let movement = BoardMovement(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true
@@ -44,7 +45,7 @@ struct BoardMovementTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var events: [String] = []
         let movement = BoardMovement(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return true
@@ -78,7 +79,7 @@ struct BoardMovementTests {
         let shared = DenStateStore.make(initialState: initial)
         var saves = 0
         let movement = BoardMovement(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { _ in
                 #expect(shared.store.snapshot.activeDrag == nil)
                 saves += 1
@@ -105,7 +106,7 @@ struct BoardMovementTests {
         let shared = DenStateStore.make(initialState: initial)
         var prepared = false
         let movement = BoardMovement(
-            state: shared.store, writer: shared.writer,
+            state: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Active drag must not save")
                 return true
@@ -134,7 +135,7 @@ struct BoardMovementTests {
         let desk = DeskState(label: "Desk", boards: [first, firstSide, second, secondSide])
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
-        let movement = BoardMovement(state: shared.store, writer: shared.writer)
+        let movement = BoardMovement(state: shared.reader, writer: shared.writer)
         let selected = movesRight ? (selectsSide ? firstSide : first) : (selectsSide ? secondSide : second)
 
         // Act
@@ -165,7 +166,7 @@ struct BoardMovementTests {
             label: "Target", boards: [targetBoard, targetSide, tail], focusedBoardID: tail.id, scrollOffsetX: 190)
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [source, target], focusedDeskID: source.id)))
-        let movement = BoardMovement(state: shared.store, writer: shared.writer)
+        let movement = BoardMovement(state: shared.reader, writer: shared.writer)
 
         // Act
         movement.transfer(movedSide.id, from: source.id, to: target.id, at: BoardIndex(rawValue: 1))
@@ -189,7 +190,7 @@ struct BoardMovementTests {
         let desk = DeskState(label: "Desk", boards: [second, added, first])
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
-        let movement = BoardMovement(state: shared.store, writer: shared.writer)
+        let movement = BoardMovement(state: shared.reader, writer: shared.writer)
 
         // Act
         movement.restoreOrder([first.id, second.id], in: desk.id)

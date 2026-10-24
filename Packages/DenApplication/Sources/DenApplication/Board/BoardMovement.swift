@@ -1,12 +1,11 @@
-import DenDomain
+public import DenDomain
 
-@MainActor
 public struct BoardMovement {
-    private let state: DenStateStore
+    private let state: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(state: DenStateStore, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+    public init(state: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
         self.state = state
         self.writer = writer
         self.persist = persist

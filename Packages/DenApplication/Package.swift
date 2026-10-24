@@ -13,7 +13,6 @@ let package = Package(
             name: "DenApplication",
             dependencies: ["DenDomain"],
             swiftSettings: [
-                .defaultIsolation(MainActor.self),
                 .enableUpcomingFeature("MemberImportVisibility"),
                 .enableUpcomingFeature("InferIsolatedConformances"),
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),

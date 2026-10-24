@@ -11,7 +11,6 @@ let package = Package(
         .target(
             name: "DenDomain",
             swiftSettings: [
-                .defaultIsolation(MainActor.self),
                 .enableUpcomingFeature("MemberImportVisibility"),
                 .enableUpcomingFeature("InferIsolatedConformances"),
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
