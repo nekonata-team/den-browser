@@ -57,7 +57,11 @@ struct Den_BrowserApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Den Browser", id: "profile-window", for: ProfileWindowRoute.self) { $route in
+        WindowGroup(
+            "Den Browser",
+            id: profileManager.isPrivateDen ? "private-den-window" : "profile-window",
+            for: ProfileWindowRoute.self
+        ) { $route in
             ProfileWindowView(
                 route: route,
                 startUpdater: { updaterController.start() },

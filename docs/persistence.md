@@ -7,8 +7,8 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
 - Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, Drawer Items, Personal Desk Presets, and Recent.
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys. Retired keys may remain in `UserDefaults` and are ignored.
-- Profile windows use the SwiftUI scene identifier `profile-window`.
-  Private Den disables scene restoration so routes from previous sessions cannot claim its Desks.
+- Ordinary Profile windows use the SwiftUI scene identifier `profile-window`.
+  Private Den uses `private-den-window` and disables scene restoration to isolate its routes from persistent Profile windows.
   Ordinary Profile windows retain automatic scene restoration.
   At startup, legacy SwiftUI window frame and split-view keys are removed individually from defaults.
   These keys contained reflected view types and addresses that caused unbounded growth, while bulk deletion could exceed CFPreferences request limits.
