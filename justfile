@@ -16,6 +16,7 @@ application_sources := "Packages/DenApplication/Sources"
 models_sources := "Packages/DenModels/Sources"
 views_sources := "Packages/DenViews/Sources"
 infrastructure_sources := "Packages/DenInfrastructure/Sources"
+demo_sources := "Packages/DenDemo/Sources"
 
 # Web works.
 mod web
@@ -25,6 +26,9 @@ mod release
 
 # Test automation.
 mod test
+
+# Demo automation and video generation.
+mod demo
 
 # Format all Swift sources in place.
 [group("quality")]
@@ -36,6 +40,7 @@ format:
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{models_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{views_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{infrastructure_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{demo_sources}}"
 
 # Format staged Swift sources in place.
 [group("quality")]
@@ -53,6 +58,7 @@ format-check:
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{models_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{views_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{infrastructure_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{demo_sources}}"
 
 # Fail on Swift style and safety findings.
 [group("quality")]
@@ -113,15 +119,6 @@ benchmark scenario *args: build
 clean:
     rm -rf "{{derived_data}}" "{{ui_test_derived_data}}"
 
-# Run promotional demo scenario in isolated Demo Mode without recording.
-[group("development")]
-demo: build
-    swift scripts/demo.swift
-
-# Record promotional demo video using OpenScreen.
-[group("development")]
-pv output="demo.mp4": build
-    swift scripts/demo.swift --record "$1"
 
 [group("development")]
 precommit:

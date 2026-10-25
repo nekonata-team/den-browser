@@ -45,10 +45,18 @@ struct AppConfiguration {
                 let socket =
                     processInfo.environment["DEN_SOCKET"]
                     ?? DenSocketPath.temporary(prefix: "den-demo", identifier: runID)
+                let initialProfile: PersistedProfile =
+                    if let seedPath = argumentValue(after: "--initial-profile", in: processInfo.arguments),
+                        let profile = try? loadInitialProfile(at: URL(fileURLWithPath: seedPath))
+                    {
+                        profile
+                    } else {
+                        demoProfile()
+                    }
                 return AppConfiguration(
                     profileDirectoryURL: demoDirectory,
                     defaults: defaults,
-                    initialProfile: demoProfile(),
+                    initialProfile: initialProfile,
                     isEphemeral: false,
                     ipcSocketPath: socket,
                     websiteDataStore: { _ in .nonPersistent() })
