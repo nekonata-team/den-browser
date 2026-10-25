@@ -54,56 +54,13 @@ public struct OverviewView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(spacing: 12) {
-                Text("Overview")
-                    .font(.title3.bold())
-
-                HStack(spacing: 8) {
-                    Image(systemSymbol: .magnifyingglass)
-                        .foregroundStyle(overview.isFilterInputActive ? .primary : .secondary)
-                        .accessibilityHidden(true)
-
-                    TextField(
-                        text: Binding(
-                            get: { overview.query },
-                            set: { overview.setQuery($0) }
-                        ),
-                        prompt: Text("Search desks and boards")
-                    ) {
-                        Text("Search desks and boards")
-                    }
-                    .labelsHidden()
-                    .textFieldStyle(.plain)
-                    .focused($isSearchFocused)
-                    .disabled(!overview.isFilterInputActive)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .frame(width: DenOverviewLayout.searchFieldWidth)
-                .background(
-                    DenSurfaceColors.filterInputBackground(isActive: overview.isFilterInputActive),
-                    in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                        .stroke(
-                            DenSurfaceColors.filterInputBorder(
-                                isActive: overview.isFilterInputActive,
-                                profileColor: profileColor,
-                                differentiateWithoutColor: differentiateWithoutColor
-                            ),
-                            lineWidth: overview.isFilterInputActive ? 1.5 : 1
-                        )
-                }
-                .onTapGesture {
-                    if !overview.isFilterInputActive {
-                        overview.enterFilterMode()
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, DenOverviewLayout.contentPadding)
-            .padding(.top, DenOverviewLayout.contentPadding)
+            OverviewHeader(
+                query: Binding(get: { overview.query }, set: { overview.setQuery($0) }),
+                isSearchFocused: $isSearchFocused,
+                isFilterInputActive: overview.isFilterInputActive,
+                profileColor: profileColor,
+                onEnterFilterMode: { overview.enterFilterMode() }
+            )
 
             ScrollView([.horizontal, .vertical]) {
                 ZStack {
@@ -233,35 +190,12 @@ public struct OverviewView: View {
                 if !isActive { cancelOverviewBoardDrag() }
             }
             .overlay(alignment: .bottomTrailing) {
-                HStack(spacing: 8) {
-                    Button {
-                        overview.adjustCanvasZoom(by: -1)
-                    } label: {
-                        Image(systemSymbol: .minus)
-                    }
-                    .help("Zoom out (-)")
-                    .accessibilityLabel("Zoom out")
-                    Text(canvasScale, format: .percent.precision(.fractionLength(0)))
-                        .monospacedDigit()
-                    Button {
-                        overview.adjustCanvasZoom(by: 1)
-                    } label: {
-                        Image(systemSymbol: .plus)
-                    }
-                    .help("Zoom in (=)")
-                    .accessibilityLabel("Zoom in")
-                    Divider().frame(height: 14)
-                    Button {
-                        overview.returnToCurrentDesk()
-                    } label: {
-                        Image(systemSymbol: .arrowCounterclockwise)
-                    }
-                    .help("Return to current Desk")
-                    .accessibilityLabel("Return to current Desk")
-                }
-                .buttonStyle(.borderless)
-                .padding(10)
-                .glassEffect(.regular, in: Capsule())
+                OverviewZoomControls(
+                    scale: canvasScale,
+                    onZoomOut: { overview.adjustCanvasZoom(by: -1) },
+                    onZoomIn: { overview.adjustCanvasZoom(by: 1) },
+                    onReset: { overview.returnToCurrentDesk() }
+                )
                 .disabled(overviewDrag != nil)
                 .padding(12)
             }
@@ -770,6 +704,105 @@ public struct OverviewView: View {
         max(
             CGFloat(BoardState.minimumWidth),
             scrollSize.width - DenOverviewLayout.contentPadding * 2)
+    }
+}
+
+private struct OverviewHeader: View {
+    @Binding var query: String
+    @FocusState.Binding var isSearchFocused: Bool
+    let isFilterInputActive: Bool
+    let profileColor: Color
+    let onEnterFilterMode: () -> Void
+
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Overview")
+                .font(.title3.bold())
+
+            HStack(spacing: 8) {
+                Image(systemSymbol: .magnifyingglass)
+                    .foregroundStyle(isFilterInputActive ? .primary : .secondary)
+                    .accessibilityHidden(true)
+
+                TextField(
+                    text: $query,
+                    prompt: Text("Search desks and boards")
+                ) {
+                    Text("Search desks and boards")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .focused($isSearchFocused)
+                .disabled(!isFilterInputActive)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(width: DenOverviewLayout.searchFieldWidth)
+            .background(
+                DenSurfaceColors.filterInputBackground(isActive: isFilterInputActive),
+                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                    .stroke(
+                        DenSurfaceColors.filterInputBorder(
+                            isActive: isFilterInputActive,
+                            profileColor: profileColor,
+                            differentiateWithoutColor: differentiateWithoutColor
+                        ),
+                        lineWidth: isFilterInputActive ? 1.5 : 1
+                    )
+            }
+            .onTapGesture {
+                if !isFilterInputActive {
+                    onEnterFilterMode()
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, DenOverviewLayout.contentPadding)
+        .padding(.top, DenOverviewLayout.contentPadding)
+    }
+}
+
+private struct OverviewZoomControls: View {
+    let scale: CGFloat
+    let onZoomOut: () -> Void
+    let onZoomIn: () -> Void
+    let onReset: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                onZoomOut()
+            } label: {
+                Image(systemSymbol: .minus)
+            }
+            .help("Zoom out (-)")
+            .accessibilityLabel("Zoom out")
+            Text(scale, format: .percent.precision(.fractionLength(0)))
+                .monospacedDigit()
+            Button {
+                onZoomIn()
+            } label: {
+                Image(systemSymbol: .plus)
+            }
+            .help("Zoom in (=)")
+            .accessibilityLabel("Zoom in")
+            Divider().frame(height: 14)
+            Button {
+                onReset()
+            } label: {
+                Image(systemSymbol: .arrowCounterclockwise)
+            }
+            .help("Return to current Desk")
+            .accessibilityLabel("Return to current Desk")
+        }
+        .buttonStyle(.borderless)
+        .padding(10)
+        .glassEffect(.regular, in: Capsule())
     }
 }
 
