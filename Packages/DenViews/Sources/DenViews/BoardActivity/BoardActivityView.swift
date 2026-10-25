@@ -142,34 +142,13 @@ public struct BoardActivityRow<StateIcon: View, Status: View>: View {
         HStack(spacing: 0) {
             Button(action: onOpen) {
                 HStack(spacing: 12) {
-                    boardStateIcon
-                        .frame(width: 14)
-                    Image(systemSymbol: boardSymbol(for: board.kind))
-                        .foregroundStyle(
-                            board.isInspection || board.isTutorial
-                                ? .purple
-                                : (board.isTerminal ? .orange : .blue)
-                        )
-                        .frame(width: 20)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(board.displayName)
-                            .font(.body.weight(.medium))
-                            .lineLimit(1)
-                        Text(detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        status.font(.caption.monospacedDigit())
-                    }
+                    BoardActivityIdentity(board: board, stateIcon: stateIcon, status: status)
                     Spacer(minLength: 8)
-                    Text(cpuLabel)
-                        .frame(width: BoardActivityColumns.cpu, alignment: .trailing)
-                    Text(memoryLabel)
-                        .frame(width: BoardActivityColumns.memory, alignment: .trailing)
-                    Text(processDescription)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .frame(width: BoardActivityColumns.processText, alignment: .trailing)
+                    BoardActivityResourceMetrics(
+                        usage: usage,
+                        processLabel: processLabel,
+                        sharedWebBoardCount: sharedWebBoardCount
+                    )
                 }
                 .font(.caption.monospacedDigit())
                 .padding(.leading, 12)
@@ -231,6 +210,36 @@ public struct BoardActivityRow<StateIcon: View, Status: View>: View {
                     : "The Board will move to Recently Removed Boards.")
         }
     }
+}
+
+private struct BoardActivityIdentity<StateIcon: View, Status: View>: View {
+    let board: BoardState
+    let stateIcon: StateIcon
+    let status: Status
+
+    var body: some View {
+        Group {
+            stateIcon
+                .frame(width: 14)
+            Image(systemSymbol: boardSymbol(for: board.kind))
+                .foregroundStyle(
+                    board.isInspection || board.isTutorial
+                        ? .purple
+                        : (board.isTerminal ? .orange : .blue)
+                )
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(board.displayName)
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                status.font(.caption.monospacedDigit())
+            }
+        }
+    }
 
     private var detail: String {
         if board.isInspection {
@@ -248,6 +257,25 @@ public struct BoardActivityRow<StateIcon: View, Status: View>: View {
         return board.currentSheetURL?.host(percentEncoded: false)
             ?? board.currentSheetURL?.absoluteString
             ?? "Empty Web Board"
+    }
+}
+
+private struct BoardActivityResourceMetrics: View {
+    let usage: ProcessResourceUsage?
+    let processLabel: String?
+    let sharedWebBoardCount: Int
+
+    var body: some View {
+        Group {
+            Text(cpuLabel)
+                .frame(width: BoardActivityColumns.cpu, alignment: .trailing)
+            Text(memoryLabel)
+                .frame(width: BoardActivityColumns.memory, alignment: .trailing)
+            Text(processDescription)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .frame(width: BoardActivityColumns.processText, alignment: .trailing)
+        }
     }
 
     private var cpuLabel: String {
@@ -270,8 +298,6 @@ public struct BoardActivityRow<StateIcon: View, Status: View>: View {
         }
         return processLabel
     }
-
-    private var boardStateIcon: some View { stateIcon }
 }
 
 private enum BoardActivityColumns {
