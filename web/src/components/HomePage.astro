@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { home } from '../i18n/ui';
 import InstallBox from './InstallBox.astro';
+import AgentBento from './AgentBento.astro';
 
 type Language = keyof typeof home;
 
@@ -50,7 +51,7 @@ const inlineCodeClass = 'bg-white/5 px-1 rounded border border-white/10 text-zin
 					<video
 						id="demo-video"
 						class="w-full h-full object-cover pt-9"
-						poster="/videos/poster.png"
+						poster="/videos/poster.webp"
 						preload="none"
 						playsinline
 						data-src="/videos/preview.mp4"
@@ -96,6 +97,9 @@ const inlineCodeClass = 'bg-white/5 px-1 rounded border border-white/10 text-zin
 				</div>
 			</div>
 		</section>
+
+		<!-- AI Agent Bento Grid Section -->
+		<AgentBento copy={copy.agentUseCases} />
 
 		<!-- Features Grid Section -->
 		<section id="features" class="py-20 bg-black/20 px-6">

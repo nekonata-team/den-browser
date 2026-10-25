@@ -1,0 +1,98 @@
+{
+  "editor" : {
+    "annotationRegions" : [
+      {
+        "content" : "Den Mode · → → ←",
+        "endMs" : 47276,
+        "id" : "6058367D-6559-434E-8E5A-3B6459CD916C",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 44543,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Den Mode · → → ←",
+        "type" : "text",
+        "zIndex" : 1
+      },
+      {
+        "content" : "Den Mode · w → 3",
+        "endMs" : 49438,
+        "id" : "085F8F3F-34BC-486F-B52F-0A711C5A76B9",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 47276,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Den Mode · w → 3",
+        "type" : "text",
+        "zIndex" : 1
+      }
+    ],
+    "aspectRatio" : "16:9",
+    "autoFocusAll" : false,
+    "autoZoomEnabled" : true,
+    "backgroundBlur" : 0,
+    "borderRadius" : 40,
+    "cameraFullscreenRegions" : [
+
+    ],
+    "cropRegion" : {
+      "height" : 1,
+      "width" : 1,
+      "x" : 0,
+      "y" : 0
+    },
+    "cursorClickBounce" : 1.1499999999999999,
+    "cursorMotionBlur" : 0.40000000000000002,
+    "cursorSize" : 2.2000000000000002,
+    "cursorSmoothing" : 0.84999999999999998,
+    "cursorTheme" : "default",
+    "depthOfField" : true,
+    "exportFormat" : "mp4",
+    "exportQuality" : "good",
+    "gifFrameRate" : 15,
+    "gifLoop" : true,
+    "gifSizePreset" : "medium",
+    "motionBlurAmount" : 0.25,
+    "padding" : 35,
+    "shadowIntensity" : 0.59999999999999998,
+    "speedRegions" : [
+
+    ],
+    "trimRegions" : [
+
+    ],
+    "wallpaper" : "\/wallpapers\/wallpaper11.jpg",
+    "wallpaperMotion" : "none",
+    "webcamLayoutPreset" : "picture-in-picture",
+    "webcamMaskShape" : "square",
+    "webcamMirrored" : false,
+    "webcamPosition" : null,
+    "webcamReactiveZoom" : true,
+    "webcamSizePreset" : 40,
+    "zoomRegions" : [
+
+    ]
+  },
+  "media" : {
+    "cursorCaptureMode" : "editable-overlay",
+    "screenVideoPath" : "\/Users\/hiroaki\/Library\/Application Support\/openscreen\/recordings\/recording-1792925167477.mp4"
+  },
+  "version" : 2
+}

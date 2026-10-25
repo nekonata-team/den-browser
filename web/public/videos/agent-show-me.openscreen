@@ -1,0 +1,77 @@
+{
+  "editor" : {
+    "annotationRegions" : [
+      {
+        "content" : "Visual Explanations · Instant diagram boards via CLI",
+        "endMs" : 3200,
+        "id" : "6844B4D0-4839-40BC-9A65-3D7593DC1A8A",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 0,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Visual Explanations · Instant diagram boards via CLI",
+        "type" : "text",
+        "zIndex" : 1
+      }
+    ],
+    "aspectRatio" : "16:9",
+    "autoFocusAll" : false,
+    "autoZoomEnabled" : true,
+    "backgroundBlur" : 0,
+    "borderRadius" : 40,
+    "cameraFullscreenRegions" : [
+
+    ],
+    "cropRegion" : {
+      "height" : 1,
+      "width" : 1,
+      "x" : 0,
+      "y" : 0
+    },
+    "cursorClickBounce" : 1.1499999999999999,
+    "cursorMotionBlur" : 0.40000000000000002,
+    "cursorSize" : 2.2000000000000002,
+    "cursorSmoothing" : 0.84999999999999998,
+    "cursorTheme" : "default",
+    "depthOfField" : true,
+    "exportFormat" : "mp4",
+    "exportQuality" : "good",
+    "gifFrameRate" : 15,
+    "gifLoop" : true,
+    "gifSizePreset" : "medium",
+    "motionBlurAmount" : 0.25,
+    "padding" : 35,
+    "shadowIntensity" : 0.59999999999999998,
+    "speedRegions" : [
+
+    ],
+    "trimRegions" : [
+
+    ],
+    "wallpaper" : "\/wallpapers\/wallpaper11.jpg",
+    "wallpaperMotion" : "none",
+    "webcamLayoutPreset" : "picture-in-picture",
+    "webcamMaskShape" : "square",
+    "webcamMirrored" : false,
+    "webcamPosition" : null,
+    "webcamReactiveZoom" : true,
+    "webcamSizePreset" : 40,
+    "zoomRegions" : [
+
+    ]
+  },
+  "media" : {
+    "cursorCaptureMode" : "editable-overlay",
+    "screenVideoPath" : "\/Users\/hiroaki\/Library\/Application Support\/openscreen\/recordings\/recording-1792925385167.mp4"
+  },
+  "version" : 2
+}

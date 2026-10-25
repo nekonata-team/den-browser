@@ -1,0 +1,140 @@
+{
+  "editor" : {
+    "annotationRegions" : [
+      {
+        "content" : "Discover workspace Desks via CLI",
+        "endMs" : 2200,
+        "id" : "DAC889C1-5E1B-47D5-8288-7E39BB1E714A",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 0,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Discover workspace Desks via CLI",
+        "type" : "text",
+        "zIndex" : 1
+      },
+      {
+        "content" : "Deploy to background Desk · Human context stays clean",
+        "endMs" : 7113,
+        "id" : "C4E32414-25EA-4ED3-98D9-F0FAED5CB487",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 3113,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Deploy to background Desk · Human context stays clean",
+        "type" : "text",
+        "zIndex" : 1
+      },
+      {
+        "content" : "Click Desk tab to inspect agent's work",
+        "endMs" : 15791,
+        "id" : "641D5901-09AB-4098-AC34-DA1EC53A0BDC",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 13591,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Click Desk tab to inspect agent's work",
+        "type" : "text",
+        "zIndex" : 1
+      },
+      {
+        "content" : "Glide across parallel research boards",
+        "endMs" : 19703,
+        "id" : "2BB842B3-3A5E-4BE1-A4FA-26EA7D399BBB",
+        "position" : {
+          "x" : 32,
+          "y" : 86
+        },
+        "size" : {
+          "height" : 8,
+          "width" : 36
+        },
+        "startMs" : 17203,
+        "style" : {
+          "color" : "#ffffff",
+          "fontSize" : 28
+        },
+        "textContent" : "Glide across parallel research boards",
+        "type" : "text",
+        "zIndex" : 1
+      }
+    ],
+    "aspectRatio" : "16:9",
+    "autoFocusAll" : false,
+    "autoZoomEnabled" : true,
+    "backgroundBlur" : 0,
+    "borderRadius" : 40,
+    "cameraFullscreenRegions" : [
+
+    ],
+    "cropRegion" : {
+      "height" : 1,
+      "width" : 1,
+      "x" : 0,
+      "y" : 0
+    },
+    "cursorClickBounce" : 1.1499999999999999,
+    "cursorMotionBlur" : 0.40000000000000002,
+    "cursorSize" : 2.2000000000000002,
+    "cursorSmoothing" : 0.84999999999999998,
+    "cursorTheme" : "default",
+    "depthOfField" : true,
+    "exportFormat" : "mp4",
+    "exportQuality" : "good",
+    "gifFrameRate" : 15,
+    "gifLoop" : true,
+    "gifSizePreset" : "medium",
+    "motionBlurAmount" : 0.25,
+    "padding" : 35,
+    "shadowIntensity" : 0.59999999999999998,
+    "speedRegions" : [
+
+    ],
+    "trimRegions" : [
+
+    ],
+    "wallpaper" : "\/wallpapers\/wallpaper11.jpg",
+    "wallpaperMotion" : "none",
+    "webcamLayoutPreset" : "picture-in-picture",
+    "webcamMaskShape" : "square",
+    "webcamMirrored" : false,
+    "webcamPosition" : null,
+    "webcamReactiveZoom" : true,
+    "webcamSizePreset" : 40,
+    "zoomRegions" : [
+
+    ]
+  },
+  "media" : {
+    "cursorCaptureMode" : "editable-overlay",
+    "screenVideoPath" : "\/Users\/hiroaki\/Library\/Application Support\/openscreen\/recordings\/recording-1792925330111.mp4"
+  },
+  "version" : 2
+}

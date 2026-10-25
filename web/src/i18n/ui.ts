@@ -124,6 +124,47 @@ export const home = {
         },
       ],
     },
+    agentUseCases: {
+      eyebrow: 'AI Coding Agent Ready',
+      title: 'Built for Humans & AI Agents Side-by-Side',
+      description: 'Run coding agents (Claude Code, Codex, etc.) in native Terminal Boards. The bundled den CLI lets agents inspect, test, and research without hijacking your flow.',
+      cases: [
+        {
+          badge: 'Autonomous Verification',
+          title: 'Side-by-side UI Self-Verification',
+          description: [
+            'Agents capture token-efficient DOM snapshots (',
+            { code: 'den board web snapshot' },
+            ') and interact with elements (',
+            { code: '@e1' },
+            ', ',
+            { code: '@e2' },
+            ') directly in the adjacent Web Board to verify features in real-time.',
+          ] satisfies InlinePart[],
+          video: '/videos/agent-verify.mp4',
+        },
+        {
+          badge: 'Visual Explanation',
+          title: 'Instant Visual & Architecture Boards',
+          description: [
+            'Agents generate rich diagrams or design HTML and launch them with (',
+            { code: 'den board web new file://... --focus' },
+            '), presenting instant visual explanations side-by-side.',
+          ] satisfies InlinePart[],
+          video: '/videos/agent-show-me.mp4',
+        },
+        {
+          badge: 'Spatial Isolation',
+          title: 'Background Desk Research',
+          description: [
+            'Deploy documentation and research materials to background Desks (',
+            { code: 'den board web new <url> --desk <id>' },
+            '). Humans stay focused in their primary Desk and review findings with a single click.',
+          ] satisfies InlinePart[],
+          video: '/videos/agent-desk.mp4',
+        },
+      ],
+    },
     features: {
       title: 'Orchestrate your web workflow',
       subtitle: 'No more tab list clutter. Den Browser maps spatial window management directly to Desks, Boards, and Drawers.',
@@ -245,6 +286,47 @@ export const home = {
           title: 'Sheet & Terminal',
           label: '',
           description: 'Board内に保持される履歴スタック付きのWeb画面、または対話的なTerminal、Zellij、AIコーディングエージェントのセッション。',
+        },
+      ],
+    },
+    agentUseCases: {
+      eyebrow: 'AI Coding Agent 協調',
+      title: '人間とAIエージェントが隣り合って働く空間',
+      description: 'Terminal Board で動く AI コーディングエージェント（Claude Code、Codex 等）が、同梱の den CLI を通じてWeb画面を直接テスト・調査。人間の集中を邪魔せずに並走します。',
+      cases: [
+        {
+          badge: '自律UI検証',
+          title: 'サイドバイサイドでの自律検証ループ',
+          description: [
+            '隣接する Web Board からトークン消費の極めて少ないスナップショット（',
+            { code: 'den board web snapshot' },
+            '）を取得し、要素（',
+            { code: '@e1' },
+            ', ',
+            { code: '@e2' },
+            '）をクリック・操作してUI挙動を自己完結でテストします。',
+          ] satisfies InlinePart[],
+          video: '/videos/agent-verify.mp4',
+        },
+        {
+          badge: 'ビジュアル解説',
+          title: '設計図・図解ボードの即時展開',
+          description: [
+            'エージェントが生成したアーキテクチャ図や説明用HTMLを（',
+            { code: 'den board web new file://... --focus' },
+            '）で開き、隣接ボードで即座にビジュアル解説を共有します。',
+          ] satisfies InlinePart[],
+          video: '/videos/agent-show-me.mp4',
+        },
+        {
+          badge: '空間アイソレーション',
+          title: '裏のDeskへの自律リサーチ展開',
+          description: [
+            'メインの作業Deskを散らかさず、バックグラウンドDesk（',
+            { code: 'den board web new <url> --desk <id>' },
+            '）に複数の資料をまとめて自律展開。人間はタブクリック1つで結果を確認・巡回できます。',
+          ] satisfies InlinePart[],
+          video: '/videos/agent-desk.mp4',
         },
       ],
     },
