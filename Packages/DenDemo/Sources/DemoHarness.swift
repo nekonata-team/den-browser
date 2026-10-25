@@ -72,6 +72,10 @@ struct DemoContext {
     func tree() throws -> String {
         try DenDemo.tree(peekaboo: peekaboo, pid: pid, environment: environment)
     }
+
+    func centerCursor() throws {
+        try DenDemo.centerCursor(peekaboo: peekaboo, pid: pid, target: target, environment: environment)
+    }
 }
 
 @MainActor
@@ -196,6 +200,7 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
         sceneStarted: Date()
     )
     try scenario.prepare(context: &context)
+    try? context.centerCursor()
 
     // MARK: - Recording
 

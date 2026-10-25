@@ -5,21 +5,29 @@ set positional-arguments := true
 [default]
 run scenario="promotional":
     just build
-    swift run --package-path Packages/DenDemo den-demo --scenario "{{scenario}}"
+    just demo _run "{{scenario}}"
 
 # Record demo video using OpenScreen, then compress for web delivery.
 pv scenario="promotional" output="demo.mp4":
     just build
-    swift run --package-path Packages/DenDemo den-demo --scenario "{{scenario}}" --record "{{output}}" --overwrite
-    just demo compress "{{output}}"
+    just demo _record "{{scenario}}" "{{output}}"
 
 # Record all demo videos for the web showcase.
 pv-all:
     just build
-    just demo pv promotional web/public/videos/preview.mp4
-    just demo pv agent-verify web/public/videos/agent-verify.mp4
-    just demo pv agent-desk web/public/videos/agent-desk.mp4
-    just demo pv agent-show-me web/public/videos/agent-show-me.mp4
+    just demo _record promotional web/public/videos/preview.mp4
+    just demo _record agent-verify web/public/videos/agent-verify.mp4
+    just demo _record agent-desk web/public/videos/agent-desk.mp4
+    just demo _record agent-show-me web/public/videos/agent-show-me.mp4
+
+[private]
+_run scenario:
+    swift run --package-path Packages/DenDemo den-demo --scenario "{{scenario}}"
+
+[private]
+_record scenario output:
+    swift run --package-path Packages/DenDemo den-demo --scenario "{{scenario}}" --record "{{output}}" --overwrite
+    just demo compress "{{output}}"
 
 # Generate a WebP poster frame from a video for web delivery.
 poster video="web/public/videos/preview.mp4" output="web/public/videos/poster.webp":

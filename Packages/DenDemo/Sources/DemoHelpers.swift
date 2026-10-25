@@ -50,6 +50,42 @@ func bounds(_ element: [String: Any]) throws -> CGRect {
     return CGRect(x: originX, y: originY, width: width, height: height)
 }
 
+func windowBounds(for pid: pid_t) -> CGRect? {
+    let windowList =
+        CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+        as? [[String: Any]] ?? []
+    for window in windowList {
+        guard let ownerPID = window[kCGWindowOwnerPID as String] as? pid_t, ownerPID == pid,
+            let layer = window[kCGWindowLayer as String] as? Int, layer == 0,
+            let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
+            let rect = CGRect(dictionaryRepresentation: boundsDict as CFDictionary),
+            rect.width > 200, rect.height > 200
+        else { continue }
+        return rect
+    }
+    return nil
+}
+
+func centerCursor(
+    peekaboo: String,
+    pid: pid_t,
+    target: [String],
+    environment: [String: String]
+) throws {
+    guard let frame = windowBounds(for: pid) else {
+        print("Note: Could not resolve window bounds for PID \(pid)")
+        return
+    }
+    let position = "\(Int(frame.midX)),\(Int(frame.midY))"
+    print("Centering cursor at window center (\(position))…")
+    try peek(
+        ["move", "--at=\(position)", "--global"],
+        peekaboo: peekaboo,
+        target: target,
+        environment: environment
+    )
+}
+
 func click(
     _ key: String,
     peekaboo: String,
@@ -75,10 +111,12 @@ func click(
     let frame = try bounds(candidates[0])
     let position = "\(Int(frame.midX)),\(Int(frame.midY))"
     try peek(
-        ["move", "--at", position, "--global", "--smooth", "--duration", "550ms"], peekaboo: peekaboo, target: target,
+        ["move", "--at=\(position)", "--global", "--smooth", "--duration", "550ms"], peekaboo: peekaboo,
+        target: target,
         environment: environment)
     try peek(
-        ["click", "--at", position, "--global"] + (twice ? ["--double"] : right ? ["--right"] : []), peekaboo: peekaboo,
+        ["click", "--at=\(position)", "--global"] + (twice ? ["--double"] : right ? ["--right"] : []),
+        peekaboo: peekaboo,
         target: target, environment: environment)
 }
 

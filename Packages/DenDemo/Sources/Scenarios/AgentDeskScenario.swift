@@ -102,13 +102,13 @@ struct AgentDeskScenario: DemoScenario {
         if sorted.count >= 2 {
             let nextBoard = sorted[1]
             let position = "\(Int(nextBoard.midX)),\(Int(nextBoard.midY))"
-            try context.peek(["move", "--at", position, "--global", "--smooth", "--duration", "600ms"])
-            try context.peek(["click", "--at", position, "--global"])
+            try context.peek(["move", "--at=\(position)", "--global", "--smooth", "--duration", "600ms"])
+            try context.peek(["click", "--at=\(position)", "--global"])
             Thread.sleep(forTimeInterval: 2.5)
         } else if let only = sorted.first {
             let position = "\(Int(only.midX)),\(Int(only.midY))"
-            try context.peek(["move", "--at", position, "--global", "--smooth", "--duration", "600ms"])
-            try context.peek(["click", "--at", position, "--global"])
+            try context.peek(["move", "--at=\(position)", "--global", "--smooth", "--duration", "600ms"])
+            try context.peek(["click", "--at=\(position)", "--global"])
             Thread.sleep(forTimeInterval: 2.5)
         }
     }
