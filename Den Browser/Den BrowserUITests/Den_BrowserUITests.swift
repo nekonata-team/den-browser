@@ -688,10 +688,11 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     @MainActor
     func testOffscreenTerminalWaitsForInitialAlignmentAndDeskReturn() throws {
         let app = launchApp(fixture: .focusedTerminalBeforeAlignment, terminalBoard: true)
+        let window = app.children(matching: .window).firstMatch
         let charlie = board(.charlie, in: app)
         let mainDesk = desk(.main, in: app)
         let secondDesk = desk(.second, in: app)
-        let alphaActivityRow = app.buttons[
+        let alphaActivityRow = window.buttons[
             "board-activity-board.\(FixtureBoard.alpha.rawValue.lowercased())"
         ]
 
@@ -700,8 +701,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         when("opening Board Activity after the initial alignment") {
-            app.typeKey(.escape, modifierFlags: [.shift])
-            XCTAssertTrue(app.staticTexts["Board Activity"].waitForExistence(timeout: 5))
+            window.typeKey(.escape, modifierFlags: [.shift])
+            XCTAssertTrue(window.staticTexts["Board Activity"].waitForExistence(timeout: 5))
         }
 
         then("the offscreen Terminal Board remains inactive") {
@@ -710,19 +711,19 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         when("switching to Main and returning to Second") {
-            app.typeKey(.escape, modifierFlags: [])
+            window.typeKey(.escape, modifierFlags: [])
             enterDenMode(in: app)
-            app.typeKey("1", modifierFlags: [])
+            window.typeKey("1", modifierFlags: [])
             XCTAssertTrue(mainDesk.wait(for: \.isSelected, toEqual: true, timeout: 5))
             enterDenMode(in: app)
-            app.typeKey("2", modifierFlags: [])
+            window.typeKey("2", modifierFlags: [])
             XCTAssertTrue(secondDesk.wait(for: \.isSelected, toEqual: true, timeout: 5))
             XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
         }
 
         when("checking Board Activity again") {
-            app.typeKey(.escape, modifierFlags: [.shift])
-            XCTAssertTrue(app.staticTexts["Board Activity"].waitForExistence(timeout: 5))
+            window.typeKey(.escape, modifierFlags: [.shift])
+            XCTAssertTrue(window.staticTexts["Board Activity"].waitForExistence(timeout: 5))
         }
 
         then("alignment on the returned Desk still has not activated Alpha") {
@@ -777,17 +778,26 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
         app.launch()
 
-        if !app.windows.firstMatch.waitForExistence(timeout: 2) {
-            let profileMenu = app.menuBars.menuBarItems["Profile"]
+        // An absent startup window is expected; avoid waitForExistence's app-wide timeout diagnostics.
+        let initialWindow = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in app.children(matching: .window).firstMatch.exists },
+            object: nil)
+        if XCTWaiter.wait(for: [initialWindow], timeout: 2) != .completed {
+            let profileMenu = app.children(matching: .menuBar)
+                .children(matching: .menuBarItem).matching(identifier: "Profile").firstMatch
             XCTAssertTrue(profileMenu.waitForExistence(timeout: 10), "Profile menu bar item should exist")
             profileMenu.click()
 
-            let uiTestingMenuItem = app.menuItems["UI Testing"]
+            let uiTestingMenuItem = profileMenu.menus.menuItems["UI Testing"]
             XCTAssertTrue(uiTestingMenuItem.waitForExistence(timeout: 10), "UI Testing menu item should exist")
-            uiTestingMenuItem.click()
+            // The fixture has one Profile, "UI Testing"; menu type selection avoids MenuItem.click's app-wide lookup.
+            profileMenu.typeKey("u", modifierFlags: [])
+            profileMenu.typeKey(.return, modifierFlags: [])
         }
 
-        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
+        XCTAssertTrue(
+            app.children(matching: .window).firstMatch.waitForExistence(timeout: 10), "Application window should appear"
+        )
         XCTAssertTrue(board(fixture.initialBoard, in: app).waitForExistence(timeout: 20))
         if fixture == .interactionBasics {
             if boardCount != .one {
@@ -802,14 +812,15 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     private func enterDenMode(in app: XCUIApplication) {
-        app.typeKey(",", modifierFlags: .control)
+        app.children(matching: .window).firstMatch.typeKey(",", modifierFlags: .control)
         assertDenMode(in: app)
     }
 
     @MainActor
     private func assertDenMode(in app: XCUIApplication) {
         XCTAssertTrue(
-            app.windows["UI Testing · DEN MODE"].waitForExistence(timeout: 5),
+            app.children(matching: .window).matching(identifier: "UI Testing · DEN MODE").firstMatch.waitForExistence(
+                timeout: 5),
             "Den should enter Den Mode")
     }
 
@@ -827,7 +838,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     private func boardHeader(_ board: FixtureBoard, in app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any).matching(identifier: "board-header.\(board.rawValue)").firstMatch
+        app.children(matching: .window).descendants(matching: .any).matching(
+            identifier: "board-header.\(board.rawValue)"
+        ).firstMatch
     }
 
     @MainActor
@@ -839,7 +852,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     private func desk(_ desk: FixtureDesk, in app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any).matching(identifier: "desk-switcher.\(desk.rawValue)").firstMatch
+        app.children(matching: .window).descendants(matching: .any).matching(
+            identifier: "desk-switcher.\(desk.rawValue)"
+        ).firstMatch
     }
 
     @MainActor
