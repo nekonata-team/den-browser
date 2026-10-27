@@ -7,6 +7,44 @@ import Testing
 
 @MainActor
 struct BoardAlignmentTests {
+    @Test func resizePreviewKeepsTheFocusedBoardCenteredAcrossRepeatedWidthChanges() {
+        // Arrange
+        let boards = (0..<4).map { BoardState(label: "Board \($0)", width: 520, currentSheetURL: nil) }
+        func parameters(width: Double) -> BoardLayout.Parameters {
+            var resized = boards
+            for index in resized.indices { resized[index].width = width }
+            return BoardLayout.Parameters(
+                centering: .always, boards: resized, maximizedBoardID: nil,
+                windowWidth: 1_000, horizontalPadding: 10, spacing: 8)
+        }
+        let original = parameters(width: 520)
+        let focusedIndex = 2
+        let origin = BoardLayout.scrollTargetAfterLayoutChange(
+            for: boards[focusedIndex].id, in: original, currentScrollX: 0)!
+        let preview = BoardWidthPreview(
+            deskID: DeskID(), scrollOffsetX: origin,
+            contentWidth: BoardLayout.contentWidth(for: original), centeringRequest: 0)
+
+        for width in [600.0, 680, 600, 360] {
+            // Act
+            let resized = parameters(width: width)
+            let target = BoardLayout.scrollTargetAfterLayoutChange(
+                for: boards[focusedIndex].id, in: resized, currentScrollX: origin)!
+            let range = BoardLayout.boardContentRange(for: focusedIndex, in: resized)!
+            let displayedCenter = (range.minX + range.maxX) / 2 + preview.translation(to: target) - origin
+
+            // Assert
+            #expect(abs(displayedCenter - original.windowWidth / 2) < 0.001)
+            let nativeContentWidth = max(
+                preview.minimumContentWidth(containerWidth: original.windowWidth),
+                BoardLayout.contentWidth(for: resized))
+            #expect(nativeContentWidth - original.windowWidth >= origin)
+        }
+        for containerWidth in [500.0, 1_000, 3_000] {
+            #expect(preview.minimumContentWidth(containerWidth: containerWidth) - containerWidth >= origin)
+        }
+    }
+
     @Test func newerAlignmentRequestInvalidatesOlderCompletion() {
         let deskID = DeskID()
         let boardID = BoardID()

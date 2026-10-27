@@ -100,11 +100,12 @@ public struct BoardLayout {
             contentWidth: contentWidth)
     }
 
-    public static func scrollTargetAfterRemoval(
+    public static func scrollTargetAfterLayoutChange(
         for boardID: BoardID,
         in params: Parameters,
         currentScrollX: CGFloat,
-        contentInsetsWidth: CGFloat = 0
+        contentInsetsWidth: CGFloat = 0,
+        forceCenter: Bool = false
     ) -> CGFloat? {
         guard params.windowWidth > 0,
             let boardIndex = params.boards.firstIndex(where: { $0.id == boardID })
@@ -112,12 +113,12 @@ public struct BoardLayout {
 
         let contentWidth = contentWidth(for: params) + contentInsetsWidth
         let clampedScrollX = min(max(0, currentScrollX), max(0, contentWidth - params.windowWidth))
-        if params.centering == .never {
+        if params.centering == .never, !forceCenter {
             return scrollTargetToRevealBoard(
                 for: boardIndex, in: params, currentScrollX: clampedScrollX,
                 contentWidth: contentWidth, containerWidth: params.windowWidth) ?? clampedScrollX
         }
-        guard shouldCenterFocusedBoard(for: params) else { return restingScrollX(for: params) }
+        guard forceCenter || shouldCenterFocusedBoard(for: params) else { return restingScrollX(for: params) }
 
         let group = BoardGroup.containing(boardID, in: params.boards)
         let firstID = group?.boards.first?.id ?? boardID

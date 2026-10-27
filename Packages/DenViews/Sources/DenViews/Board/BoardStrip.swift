@@ -82,6 +82,7 @@ public struct BoardStrip<Activated: View>: View {
 
     @State private var boardDrag: BoardDragState?
     @State private var resizingBoardID: BoardID?
+    @State private var boardWidthPreview: BoardWidthPreview?
     @State private var scrollPosition = ScrollPosition(idType: BoardID.self)
     @State private var scrollGeometry = BoardStripScrollGeometry.zero
     @State private var alignedBoardDeskID: DeskID?
@@ -98,6 +99,19 @@ public struct BoardStrip<Activated: View>: View {
             preference: model.motionPreference,
             systemReduceMotion: systemReduceMotion
         )
+    }
+
+    private var boardWidthPreviewTargetX: CGFloat? {
+        guard let preview = boardWidthPreview, preview.deskID == model.presentedDeskID,
+            let boardID = model.focusedDesk?.focusedBoardID
+        else { return nil }
+        let params = boardLayoutParameters(for: alignmentBoards)
+        let forceCenter = preview.centeringRequest != windowModel.centerFocusedBoardRequest
+        if !forceCenter, let savedOffset = model.deskScrollOffset(for: preview.deskID) {
+            return min(max(0, savedOffset), max(0, BoardLayout.contentWidth(for: params) - size.width))
+        }
+        return BoardLayout.scrollTargetAfterLayoutChange(
+            for: boardID, in: params, currentScrollX: preview.scrollOffsetX, forceCenter: forceCenter)
     }
 
     private var layoutKey: BoardStripLayoutKey {
@@ -175,6 +189,10 @@ public struct BoardStrip<Activated: View>: View {
         let paddings = BoardLayout.calculatePaddings(for: layoutParams)
         let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
         let restingScrollX = BoardLayout.restingScrollX(for: layoutParams)
+        let previewVisibleBoardIDs =
+            boardWidthPreviewTargetX.map {
+                BoardLayout.visibleBoardIDs(in: layoutParams, offsetX: $0, containerWidth: size.width)
+            } ?? []
         let alignmentTarget = BoardStripAlignmentTarget(
             deskID: model.presentedDeskID,
             boardID: deskFilter.isPresented
@@ -208,7 +226,8 @@ public struct BoardStrip<Activated: View>: View {
                     let trailingGap =
                         boardIndex.map { layoutParams.spacingAfterBoard(at: $0) } ?? boardSpacing
                     let isFocused = model.focusedDesk?.focusedBoardID == board.id
-                    let isVisible = visibleBoardIDs.contains(board.id) || isFocused
+                    let isVisible =
+                        visibleBoardIDs.contains(board.id) || previewVisibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
                     let needsRuntime = isActivated && board.isWeb && !model.hasWebRuntime(board.id)
                     let isDragging = draggedBoardIDs.contains(board.id)
@@ -304,7 +323,14 @@ public struct BoardStrip<Activated: View>: View {
             .padding(.trailing, paddings.trailing)
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
+            // Keep native scrolling still; width and its compensation share one animation.
+            .offset(x: boardWidthPreview.map { $0.translation(to: boardWidthPreviewTargetX ?? $0.scrollOffsetX) } ?? 0)
+            .frame(minWidth: boardWidthPreview?.minimumContentWidth(containerWidth: size.width), alignment: .leading)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: layoutKey)
+            .transaction(value: boardWidthPreview != nil) { transaction in
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
             // Keep suppression next to the layout animation. Applying it only on DenView allowed
             // CLI background insertion/removal to animate while compensating the scroll position.
             .transaction(value: windowModel.boardMutationAnimationSuppressionRequest) { transaction in
@@ -334,6 +360,7 @@ public struct BoardStrip<Activated: View>: View {
         }
         .scrollClipDisabled(boardDrag != nil)
         .scrollPosition($scrollPosition)
+        .scrollDisabled(boardWidthPreview != nil)
         .onScrollGeometryChange(for: BoardStripScrollGeometry.self) { geometry in
             BoardStripScrollGeometry(
                 offsetX: geometry.contentOffset.x + geometry.contentInsets.leading,
@@ -367,6 +394,7 @@ public struct BoardStrip<Activated: View>: View {
         .accessibilityIdentifier("board-strip")
         .environment(\.boardHeaderDoubleClickHandler, handleHeaderDoubleClick)
         .onChange(of: model.presentedDeskID) { _, deskID in
+            boardWidthPreview = nil
             alignedBoardDeskID = nil
             pendingBoardActivationAlignment = nil
             activatedBoardIDs.removeAll()
@@ -489,10 +517,13 @@ public struct BoardStrip<Activated: View>: View {
             }
 
             let isBoardResizing = resizingBoardID != nil
+            let isBoardWidthChange =
+                previous.layoutKey.windowWidth == current.layoutKey.windowWidth
+                && previous.layoutKey.ids == current.layoutKey.ids
+                && previous.layoutKey.widths != current.layoutKey.widths
             let isResizing =
                 previous.layoutKey.windowWidth != current.layoutKey.windowWidth
-                || (previous.layoutKey.ids == current.layoutKey.ids
-                    && previous.layoutKey.widths != current.layoutKey.widths)
+                || isBoardWidthChange
                 || isBoardResizing
             let animated =
                 previous.deskID == current.deskID
@@ -501,6 +532,11 @@ public struct BoardStrip<Activated: View>: View {
             let centeringChanged = previous.centering != current.centering
 
             if isBoardResizing {
+                cancelPendingBoardAlignment()
+                return
+            }
+
+            if boardWidthPreview != nil, !deskChanged {
                 cancelPendingBoardAlignment()
                 return
             }
@@ -532,20 +568,21 @@ public struct BoardStrip<Activated: View>: View {
                 }
             }
 
-            if !deskChanged, !isResizing,
+            let boardsRemoved =
+                current.layoutKey.ids.count < previous.layoutKey.ids.count
+                && Set(current.layoutKey.ids).isSubset(of: Set(previous.layoutKey.ids))
+            if !deskChanged, isBoardWidthChange || (!isResizing && boardsRemoved),
                 !windowModel.isBoardDragging,
-                current.layoutKey.ids.count < previous.layoutKey.ids.count,
-                Set(current.layoutKey.ids).isSubset(of: Set(previous.layoutKey.ids)),
                 scrollGeometry.containerWidth > 0,
                 abs(scrollGeometry.containerWidth - size.width) <= 1,
                 let deskID = current.deskID,
                 let boardID = current.boardID,
-                let targetOffsetX = BoardLayout.scrollTargetAfterRemoval(
+                let targetOffsetX = BoardLayout.scrollTargetAfterLayoutChange(
                     for: boardID, in: boardLayoutParameters(for: alignmentBoards),
                     currentScrollX: scrollPosition.x ?? scrollGeometry.offsetX,
                     contentInsetsWidth: scrollGeometry.leadingContentInset + scrollGeometry.trailingContentInset)
             {
-                // Use the destination layout now, so scrolling starts with the Board layout animation.
+                // Apply the destination offset with the layout change, before measuring the new content.
                 cancelPendingBoardAlignment()
                 model.saveDeskScrollOffset(nil, for: deskID)
                 performBoardVisibility(targetOffsetX, animated: animated)
@@ -620,6 +657,26 @@ public struct BoardStrip<Activated: View>: View {
         }
         .onChange(of: windowModel.temporaryContext) { _, context in
             if context != nil { cancelBoardDrag() }
+            if context == .boardWidth {
+                cancelPendingBoardAlignment()
+                boardWidthPreview = BoardWidthPreview(
+                    deskID: model.presentedDeskID,
+                    scrollOffsetX: scrollGeometry.offsetX,
+                    contentWidth: scrollGeometry.contentWidth,
+                    centeringRequest: windowModel.centerFocusedBoardRequest)
+                scrollPosition.scrollTo(x: scrollGeometry.offsetX)
+            } else if boardWidthPreview != nil {
+                let targetOffsetX = boardWidthPreviewTargetX
+                boardWidthPreview = nil
+                if let targetOffsetX {
+                    let visibleIDs = BoardLayout.visibleBoardIDs(
+                        in: boardLayoutParameters(for: alignmentBoards),
+                        offsetX: targetOffsetX, containerWidth: size.width)
+                    visibleBoardIDs = visibleIDs
+                    activatedBoardIDs.formUnion(visibleIDs)
+                    resetBoardStripPosition(to: targetOffsetX, animated: false)
+                }
+            }
         }
         .onChange(of: appearsActive) { _, isActive in
             if !isActive { cancelBoardDrag() }
@@ -898,6 +955,7 @@ public struct BoardStrip<Activated: View>: View {
     }
 
     private func centerBoard(_ boardID: BoardID?, animated: Bool = true) {
+        guard boardWidthPreview == nil else { return }
         guard resizingBoardID == nil, !windowModel.isBoardDragging, let boardID else { return }
         let boardIDs = Set(alignmentBoards.map(\.id))
         guard
@@ -922,6 +980,7 @@ public struct BoardStrip<Activated: View>: View {
     }
 
     private func revealBoard(_ boardID: BoardID?, animated: Bool = true) {
+        guard boardWidthPreview == nil else { return }
         guard resizingBoardID == nil, !windowModel.isBoardDragging, let boardID else { return }
         let boardIDs = Set(alignmentBoards.map(\.id))
         guard
@@ -1028,6 +1087,7 @@ public struct BoardStrip<Activated: View>: View {
 
     private func settlePendingBoardAlignment() {
         guard
+            boardWidthPreview == nil,
             let pending = pendingBoardAlignment,
             canApplyPendingBoardAlignment(pending)
         else { return }
@@ -1234,6 +1294,22 @@ public struct BoardStrip<Activated: View>: View {
             max(0, offset),
             max(0, scrollGeometry.scrollableContentWidth - scrollGeometry.containerWidth)
         )
+    }
+}
+
+struct BoardWidthPreview {
+    let deskID: DeskID
+    let scrollOffsetX: CGFloat
+    let contentWidth: CGFloat
+    let centeringRequest: Int
+
+    func minimumContentWidth(containerWidth: CGFloat) -> CGFloat {
+        // Shrinking content must not clamp the native scroll position during the preview.
+        max(contentWidth, scrollOffsetX + containerWidth)
+    }
+
+    func translation(to targetScrollX: CGFloat) -> CGFloat {
+        scrollOffsetX - targetScrollX
     }
 }
 

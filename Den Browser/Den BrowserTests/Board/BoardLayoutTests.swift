@@ -141,7 +141,7 @@ struct BoardLayoutTests {
         let params = parameters(centering: .always, boardCount: 2)
 
         // Act
-        let target = BoardLayout.scrollTargetAfterRemoval(
+        let target = BoardLayout.scrollTargetAfterLayoutChange(
             for: params.boards[1].id, in: params, currentScrollX: 1_500)
 
         // Assert
@@ -153,7 +153,7 @@ struct BoardLayoutTests {
         let params = parameters(centering: .onOverflow, boardCount: 3)
 
         // Act
-        let target = BoardLayout.scrollTargetAfterRemoval(
+        let target = BoardLayout.scrollTargetAfterLayoutChange(
             for: params.boards[1].id, in: params, currentScrollX: 1_000)
 
         // Assert
@@ -165,10 +165,10 @@ struct BoardLayoutTests {
         let params = parameters(centering: .never, boardCount: 3)
 
         // Act
-        let target = BoardLayout.scrollTargetAfterRemoval(
+        let target = BoardLayout.scrollTargetAfterLayoutChange(
             for: params.boards[2].id, in: params, currentScrollX: 800)
         let fittingParams = parameters(centering: .never, boardCount: 1)
-        let fittingTarget = BoardLayout.scrollTargetAfterRemoval(
+        let fittingTarget = BoardLayout.scrollTargetAfterLayoutChange(
             for: fittingParams.boards[0].id, in: fittingParams, currentScrollX: 800)
 
         // Assert
@@ -181,7 +181,7 @@ struct BoardLayoutTests {
         let params = parameters(centering: .never, boardCount: 4)
 
         // Act
-        let target = BoardLayout.scrollTargetAfterRemoval(
+        let target = BoardLayout.scrollTargetAfterLayoutChange(
             for: params.boards[3].id, in: params, currentScrollX: 0)
 
         // Assert
@@ -197,14 +197,57 @@ struct BoardLayoutTests {
             windowWidth: 1_000, horizontalPadding: 10, spacing: 8)
 
         // Act
-        let primaryTarget = BoardLayout.scrollTargetAfterRemoval(
+        let primaryTarget = BoardLayout.scrollTargetAfterLayoutChange(
             for: primary.id, in: params, currentScrollX: 1_000)
-        let sideTarget = BoardLayout.scrollTargetAfterRemoval(
+        let sideTarget = BoardLayout.scrollTargetAfterLayoutChange(
             for: side.id, in: params, currentScrollX: 1_000)
 
         // Assert
         #expect(primaryTarget == 432)
         #expect(sideTarget == primaryTarget)
+    }
+
+    @Test(arguments: [-80.0, 80.0])
+    func resizingMovesScrollWithTheFocusedBoardCenter(delta: Double) {
+        // Arrange
+        let original = parameters(centering: .always, boardCount: 4)
+        var boards = original.boards
+        for index in boards.indices { boards[index].width = BoardState.constrainedWidth(boards[index].width + delta) }
+        let resized = BoardLayout.Parameters(
+            centering: original.centering, boards: boards, maximizedBoardID: nil,
+            windowWidth: original.windowWidth, horizontalPadding: original.horizontalPadding,
+            spacing: original.spacing)
+        let focusedIndex = 2
+        let originalOffset = BoardLayout.scrollTargetAfterLayoutChange(
+            for: boards[focusedIndex].id, in: original, currentScrollX: 0)!
+
+        // Act
+        let resizedOffset = BoardLayout.scrollTargetAfterLayoutChange(
+            for: boards[focusedIndex].id, in: resized, currentScrollX: originalOffset)!
+
+        // Assert
+        let widthChange = boards[focusedIndex].width - original.boards[focusedIndex].width
+        #expect(abs(resizedOffset - originalOffset - widthChange * (Double(focusedIndex) + 0.5)) < 0.001)
+        let range = BoardLayout.boardContentRange(for: focusedIndex, in: resized)!
+        #expect(abs((range.minX + range.maxX) / 2 - resizedOffset - resized.windowWidth / 2) < 0.001)
+    }
+
+    @Test(arguments: [FocusedBoardCentering.never, .onOverflow])
+    func explicitCenterRequestOverridesRestingResizePosition(centering: FocusedBoardCentering) {
+        // Arrange
+        let params = parameters(centering: centering, boardCount: 3)
+        let boardIndex = 2
+
+        // Act
+        let target = BoardLayout.scrollTargetAfterLayoutChange(
+            for: params.boards[boardIndex].id, in: params, currentScrollX: 0, forceCenter: true)
+        let expected = BoardLayout.centeredScrollX(
+            for: boardIndex, in: params,
+            containerWidth: params.windowWidth, contentWidth: BoardLayout.contentWidth(for: params))
+
+        // Assert
+        #expect(target == expected)
+        #expect(target != BoardLayout.restingScrollX(for: params))
     }
 
     @Test func calculatesContentWidthForEachMode() {
