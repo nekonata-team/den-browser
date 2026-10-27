@@ -2,5 +2,22 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["npm"],
+      "matchFileNames": ["web/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "web dependencies"
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "development tools"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "groupName": null
+    }
   ]
 }
