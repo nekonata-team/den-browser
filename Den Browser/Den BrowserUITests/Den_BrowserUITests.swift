@@ -777,23 +777,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         defaultsSuiteNames.append(uiTestDefaultsSuiteName(runID: runID))
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
         app.launch()
-
-        // An absent startup window is expected; avoid waitForExistence's app-wide timeout diagnostics.
-        let initialWindow = XCTNSPredicateExpectation(
-            predicate: NSPredicate { _, _ in app.children(matching: .window).firstMatch.exists },
-            object: nil)
-        if XCTWaiter.wait(for: [initialWindow], timeout: 2) != .completed {
-            let profileMenu = app.children(matching: .menuBar)
-                .children(matching: .menuBarItem).matching(identifier: "Profile").firstMatch
-            XCTAssertTrue(profileMenu.waitForExistence(timeout: 10), "Profile menu bar item should exist")
-            profileMenu.click()
-
-            let uiTestingMenuItem = profileMenu.menus.menuItems["UI Testing"]
-            XCTAssertTrue(uiTestingMenuItem.waitForExistence(timeout: 10), "UI Testing menu item should exist")
-            // The fixture has one Profile, "UI Testing"; menu type selection avoids MenuItem.click's app-wide lookup.
-            profileMenu.typeKey("u", modifierFlags: [])
-            profileMenu.typeKey(.return, modifierFlags: [])
-        }
+        // Each fixture has one Profile; invoke its menu action without navigating the menu.
+        app.typeKey("u", modifierFlags: [.command, .option, .shift])
 
         XCTAssertTrue(
             app.children(matching: .window).firstMatch.waitForExistence(timeout: 10), "Application window should appear"

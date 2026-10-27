@@ -218,6 +218,9 @@ private struct DenCommands: Commands {
                         openWindow(value: ProfileWindowRoute(profileID: profile.id))
                     }
                 }
+                .keyboardShortcut(
+                    ProcessInfo.processInfo.arguments.contains("--ui-testing")
+                        ? KeyboardShortcut("u", modifiers: [.command, .option, .shift]) : nil)
             }
 
             Divider()
