@@ -100,6 +100,8 @@ final class BoardInputSourceTracker {
         let match = previousSource.map { $0 == id ? "same" : "different" } ?? "unknown"
         let interval = PerformanceTrace.beginInterval("BoardInputSourceTracker.selectInputSource")
         var contextMilliseconds: Double?
+        var contextLookupMilliseconds: Double?
+        var contextSelectMilliseconds: Double?
         var carbonMilliseconds: Double?
         defer {
             let milliseconds = startedAt.map { $0.duration(to: .now) / .milliseconds(1) }
@@ -107,17 +109,27 @@ final class BoardInputSourceTracker {
             if let milliseconds {
                 let context = contextMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
                 let carbon = carbonMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
+                let lookup = contextLookupMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
+                let select = contextSelectMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
                 PerformanceTrace.mark(
                     String(
-                        format: "match=%@ duration=%.3f context=%@ carbon=%@",
-                        match, milliseconds, context, carbon),
+                        format: "match=%@ duration=%.3f context=%@ carbon=%@ contextLookup=%@ contextSelect=%@",
+                        match, milliseconds, context, carbon, lookup, select),
                     category: "InputSource")
             }
         }
         guard previousSource != id else { return }
         let contextStartedAt = tracing ? ContinuousClock.now : nil
-        if let inputContext = NSTextInputContext.current {
+        let inputContext = NSTextInputContext.current
+        if let contextStartedAt {
+            contextLookupMilliseconds = contextStartedAt.duration(to: .now) / .milliseconds(1)
+        }
+        if let inputContext {
+            let selectStartedAt = tracing ? ContinuousClock.now : nil
             inputContext.selectedKeyboardInputSource = id
+            if let selectStartedAt {
+                contextSelectMilliseconds = selectStartedAt.duration(to: .now) / .milliseconds(1)
+            }
         }
         if let contextStartedAt {
             contextMilliseconds = contextStartedAt.duration(to: .now) / .milliseconds(1)

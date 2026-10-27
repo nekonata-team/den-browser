@@ -15,6 +15,8 @@ func printInputSourceSummary(from url: URL) throws {
         let total: Double
         let context: Double?
         let carbon: Double?
+        let contextLookup: Double?
+        let contextSelect: Double?
     }
     var groups: [String: [Measurement]] = [:]
     let text = try String(contentsOf: url, encoding: .utf8)
@@ -29,14 +31,21 @@ func printInputSourceSummary(from url: URL) throws {
             let rawContext = fields["context"],
             rawContext == "none" || (Double(rawContext).map { $0.isFinite && $0 >= 0 } ?? false),
             let rawCarbon = fields["carbon"],
-            rawCarbon == "none" || (Double(rawCarbon).map { $0.isFinite && $0 >= 0 } ?? false)
+            rawCarbon == "none" || (Double(rawCarbon).map { $0.isFinite && $0 >= 0 } ?? false),
+            ["contextLookup", "contextSelect"].allSatisfy({ key in
+                guard let raw = fields[key] else { return true }
+                return raw == "none" || (Double(raw).map { $0.isFinite && $0 >= 0 } ?? false)
+            })
         else {
             throw NSError(
                 domain: "DenBenchmark", code: 4,
                 userInfo: [NSLocalizedDescriptionKey: "Invalid input-source measurement: \(line)"])
         }
         groups[match, default: []].append(
-            Measurement(total: total, context: Double(rawContext), carbon: Double(rawCarbon)))
+            Measurement(
+                total: total, context: Double(rawContext), carbon: Double(rawCarbon),
+                contextLookup: fields["contextLookup"].flatMap(Double.init),
+                contextSelect: fields["contextSelect"].flatMap(Double.init)))
     }
     guard !groups.isEmpty else {
         print(
@@ -61,6 +70,8 @@ func printInputSourceSummary(from url: URL) throws {
         print("Input source: \(match)")
         printDurations("restore", measurements.map(\.total))
         printDurations("context", measurements.compactMap(\.context))
+        printDurations("contextLookup", measurements.compactMap(\.contextLookup))
+        printDurations("contextSelect", measurements.compactMap(\.contextSelect))
         printDurations("carbon", measurements.compactMap(\.carbon))
     }
 }
