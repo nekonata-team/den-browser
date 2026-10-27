@@ -38,6 +38,13 @@ are not written to the trace. Only completed calls produce a duration record;
 no measurements does not mean zero-cost restoration. Stop the traced app before
 relaunching it normally.
 
+Restoration selects the source directly through Carbon. The AppKit stage fields
+are retained as `none` so logs can be compared with the previous path using the
+same summary command. `status` records the Carbon return code (`0` is success),
+and `restored` records whether the current input source matches the requested
+source after the call. Both are `none` when no Carbon call was made. A matching
+source ID does not verify composition or delivery of the next typed character.
+
 ## Board facing capture timing
 
 Launch a development build with performance tracing enabled:

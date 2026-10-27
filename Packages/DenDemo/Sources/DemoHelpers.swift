@@ -220,9 +220,6 @@ func selectInputSource(_ source: TISInputSource) throws {
     guard let identifier = inputSourceID(source) else {
         throw DemoError(description: "Could not resolve the keyboard input source identifier")
     }
-    if let inputContext = NSTextInputContext.current {
-        inputContext.selectedKeyboardInputSource = identifier
-    }
     if currentInputSourceID() == identifier { return }
     guard TISSelectInputSource(source) == noErr else {
         throw DemoError(description: "Could not select the keyboard input source \(identifier)")

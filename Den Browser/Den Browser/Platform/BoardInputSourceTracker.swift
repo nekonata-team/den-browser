@@ -99,42 +99,25 @@ final class BoardInputSourceTracker {
         let previousSource = currentInputSourceID()
         let match = previousSource.map { $0 == id ? "same" : "different" } ?? "unknown"
         let interval = PerformanceTrace.beginInterval("BoardInputSourceTracker.selectInputSource")
-        var contextMilliseconds: Double?
-        var contextLookupMilliseconds: Double?
-        var contextSelectMilliseconds: Double?
         var carbonMilliseconds: Double?
+        var carbonStatus: OSStatus?
+        var restored: Bool?
         defer {
             let milliseconds = startedAt.map { $0.duration(to: .now) / .milliseconds(1) }
             PerformanceTrace.endInterval("BoardInputSourceTracker.selectInputSource", interval)
             if let milliseconds {
-                let context = contextMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
                 let carbon = carbonMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
-                let lookup = contextLookupMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
-                let select = contextSelectMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
+                let status = carbonStatus.map { String($0) } ?? "none"
+                let didRestore = restored.map { String($0) } ?? "none"
                 PerformanceTrace.mark(
                     String(
-                        format: "match=%@ duration=%.3f context=%@ carbon=%@ contextLookup=%@ contextSelect=%@",
-                        match, milliseconds, context, carbon, lookup, select),
+                        format:
+                            "match=%@ duration=%.3f context=none carbon=%@ contextLookup=none contextSelect=none status=%@ restored=%@",
+                        match, milliseconds, carbon, status, didRestore),
                     category: "InputSource")
             }
         }
         guard previousSource != id else { return }
-        let contextStartedAt = tracing ? ContinuousClock.now : nil
-        let inputContext = NSTextInputContext.current
-        if let contextStartedAt {
-            contextLookupMilliseconds = contextStartedAt.duration(to: .now) / .milliseconds(1)
-        }
-        if let inputContext {
-            let selectStartedAt = tracing ? ContinuousClock.now : nil
-            inputContext.selectedKeyboardInputSource = id
-            if let selectStartedAt {
-                contextSelectMilliseconds = selectStartedAt.duration(to: .now) / .milliseconds(1)
-            }
-        }
-        if let contextStartedAt {
-            contextMilliseconds = contextStartedAt.duration(to: .now) / .milliseconds(1)
-        }
-        guard let current = currentInputSourceID(), current != id else { return }
         let properties = [kTISPropertyInputSourceID: id as CFString] as CFDictionary
         guard let list = TISCreateInputSourceList(properties, false)?.takeRetainedValue() as? [TISInputSource],
             let target = list.first
@@ -142,9 +125,10 @@ final class BoardInputSourceTracker {
             return
         }
         let carbonStartedAt = tracing ? ContinuousClock.now : nil
-        TISSelectInputSource(target)
+        carbonStatus = TISSelectInputSource(target)
         if let carbonStartedAt {
             carbonMilliseconds = carbonStartedAt.duration(to: .now) / .milliseconds(1)
+            restored = currentInputSourceID() == id
         }
     }
 

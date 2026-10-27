@@ -85,9 +85,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     private func selectInputSource(_ source: TISInputSource) {
-        if let id = inputSourceID(for: source), let inputContext = NSTextInputContext.current {
-            inputContext.selectedKeyboardInputSource = id
-        }
         TISSelectInputSource(source)
     }
 
