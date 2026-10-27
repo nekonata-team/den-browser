@@ -188,6 +188,11 @@ private struct DenCommands: Commands {
 
         CommandGroup(replacing: .newItem) {}
 
+        CommandGroup(replacing: .windowSize) {
+            Button("Minimize") { NSApp.keyWindow?.performMiniaturize(nil) }
+            Button("Zoom") { NSApp.keyWindow?.performZoom(nil) }
+        }
+
         CommandGroup(replacing: .saveItem) {
             if session == nil {
                 Button("Close Window") { NSApp.keyWindow?.performClose(nil) }

@@ -14,6 +14,8 @@ Open Board and the Current Sheet URL field accept local paths starting with `/` 
 
 Available globally or while focused in a Sheet.
 
+`Command` + `M` is unassigned by the app. Minimize remains available from the Window menu.
+
 When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
 
 In Essentials, **Option + Return** or **Option-click** opens the selected Essential’s URL or search in Drawer. Board commands show a warning instead.
