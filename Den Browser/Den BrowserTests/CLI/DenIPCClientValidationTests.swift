@@ -5,6 +5,79 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: [false, true], ["invalid", UUID().uuidString])
+    func boardExistsUsesOnlyExplicitProfileScope(explicit: Bool, ambientProfile: String) async throws {
+        // Arrange
+        let boardID = UUID()
+        let profileID = UUID()
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            let expected = DenIPCRequest(
+                operation: .boardExists(boardID: boardID),
+                context: .init(profileID: explicit ? profileID : nil))
+            return encodedResponse(request == expected ? .success() : .failure("Unexpected scope"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["board", "exists", "--board", boardID.uuidString]
+                + (explicit ? ["--profile", profileID.uuidString] : []),
+            socketPath: socketPath,
+            environmentOverrides: ["DEN_PROFILE": ambientProfile, "DEN_BOARD_ID": UUID().uuidString])
+
+        // Assert
+        #expect(result.status == 0)
+    }
+
+    @Test(arguments: ["found", "missing", "error"])
+    func boardExistsReturnsStatusAndLocation(state: String) async throws {
+        // Arrange
+        let boardID = UUID().uuidString
+        let location = DenBoardLocation(deskID: UUID().uuidString, profileID: UUID().uuidString)
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { _ in
+            encodedResponse(
+                state == "error"
+                    ? .failure("Lookup failed")
+                    : .success(.boardExistence(boardID: boardID, location: state == "found" ? location : nil)))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(["board", "exists", "--board", boardID], socketPath: socketPath)
+        let object = try jsonResult(result.output)
+
+        // Assert
+        #expect(result.status == (state == "found" ? 0 : 1))
+        #expect(object["ok"] as? Bool == (state != "error"))
+        if state != "error" {
+            #expect(object["board_id"] as? String == boardID)
+            #expect(object["exists"] as? Bool == (state == "found"))
+        }
+        #expect(object["desk_id"] as? String == (state == "found" ? location.deskID : nil))
+        #expect(object["profile_id"] as? String == (state == "found" ? location.profileID : nil))
+    }
+
+    @Test(arguments: [
+        ["--board", "invalid"],
+        ["--board", UUID().uuidString, "--profile", "invalid"],
+        ["--board", UUID().uuidString],
+    ])
+    func boardExistsValidationAndConnectionFailuresUseStandardFailure(arguments: [String]) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+
+        // Act
+        let result = try await runCLI(["board", "exists"] + arguments, socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 1)
+    }
+
     @Test(arguments: ["web", "terminal"], ["--left-of", "--right-of"])
     func boardCreationForwardsRelativeDestination(kind: String, option: String) async throws {
         // Arrange

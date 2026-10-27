@@ -234,6 +234,16 @@ public nonisolated struct DenSaveDialogInfo: Codable, Sendable {
     }
 }
 
+public nonisolated struct DenBoardLocation: Codable, Sendable {
+    public var deskID: String
+    public var profileID: String
+
+    public init(deskID: String, profileID: String) {
+        self.deskID = deskID
+        self.profileID = profileID
+    }
+}
+
 public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case empty
     case message(String)
@@ -242,6 +252,7 @@ public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case closedBoard(id: String, message: String)
     case board(DenBoardInfo)
     case boards([DenBoardInfo])
+    case boardExistence(boardID: String, location: DenBoardLocation?)
     case desks([DenDeskInfo])
     case createdDesk(id: String)
     case removedDesk(id: String)
@@ -377,6 +388,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case boardId = "board_id"
         case closedBoardId = "closed_board_id"
         case board
+        case exists
         case boards
         case desks
         case deskID = "desk_id"
@@ -435,6 +447,11 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
             try container.encode(board, forKey: .board)
         case .boards(let boards):
             try container.encode(boards, forKey: .boards)
+        case .boardExistence(let boardID, let location):
+            try container.encode(boardID, forKey: .boardId)
+            try container.encode(location != nil, forKey: .exists)
+            try container.encodeIfPresent(location?.deskID, forKey: .deskID)
+            try container.encodeIfPresent(location?.profileID, forKey: .profileID)
         case .desks(let desks):
             try container.encode(desks, forKey: .desks)
         case .createdDesk(let id):

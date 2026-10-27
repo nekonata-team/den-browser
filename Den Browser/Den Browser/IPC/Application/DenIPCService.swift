@@ -77,6 +77,8 @@ final class DenIPCService {
             return withDeskTarget(target, context: request.context) { self.handleBoardList(target: $0) }
         case .boardFocused(let target):
             return withDeskTarget(target, context: request.context) { self.handleBoardFocused(target: $0) }
+        case .boardExists(let boardID):
+            return handleBoardExists(boardID: boardID, profileID: request.context.profileID)
         case .focusBoard(let boardID):
             return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
                 self.handleBoardFocus(target: $0)
@@ -143,6 +145,28 @@ final class DenIPCService {
         case .inspectDen(let target):
             return withDeskTarget(target, context: request.context) { self.handleInspectDen(target: $0) }
         }
+    }
+
+    private func handleBoardExists(boardID: UUID, profileID: UUID?) -> DenIPCResponse {
+        guard let profileManager else {
+            return DenIPCResponse(result: .failure("Profile manager unavailable"), target: .none)
+        }
+        if let profileID, profileManager.profile(id: ProfileID(profileID)) == nil {
+            return DenIPCResponse(result: .failure("Profile not found: \(profileID.uuidString)"), target: .none)
+        }
+        for window in profileManager.ipcWindows where profileID == nil || window.profileID.rawValue == profileID {
+            guard let indices = window.resources.snapshot.den.boardIndices(for: BoardID(boardID)) else { continue }
+            let desk = window.resources.snapshot.den.desks[indices.deskOffset]
+            return DenIPCResponse(
+                result: .success(
+                    .boardExistence(
+                        boardID: boardID.uuidString,
+                        location: DenBoardLocation(
+                            deskID: desk.id.rawValue.uuidString, profileID: window.profileID.rawValue.uuidString))),
+                target: .board(profileID: window.profileID.rawValue, boardID: boardID))
+        }
+        return DenIPCResponse(
+            result: .success(.boardExistence(boardID: boardID.uuidString, location: nil)), target: .none)
     }
 
     private func withDeskTarget(

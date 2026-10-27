@@ -178,11 +178,14 @@ enum DenIPCClient {
         if !result.isOk {
             throw ExitCode.failure
         }
+        if case .boardExistence(_, nil) = result.payload {
+            throw ExitCode.failure
+        }
     }
 
     private static func writeTextResult(_ payload: DenIPCResultPayload, output: CLIOutputOptions) {
         switch payload {
-        case .empty, .interaction:
+        case .empty, .interaction, .boardExistence:
             break
         case .message(let message), .closedBoard(_, let message):
             print(message)
@@ -363,18 +366,16 @@ enum DenIPCClient {
         profileID: String? = nil,
         callerBoardID: String? = ProcessInfo.processInfo.environment["DEN_BOARD_ID"]
     ) throws -> DenIPCRequest {
-        let usesProfileScope: Bool
+        let rawProfileID: String?
         switch operation {
         case .health, .profileList, .openProfile:
-            usesProfileScope = false
+            rawProfileID = nil
+        case .boardExists:
+            rawProfileID = profileID
         default:
-            usesProfileScope = true
+            rawProfileID = profileID ?? ProcessInfo.processInfo.environment["DEN_PROFILE"]
         }
 
-        let rawProfileID =
-            usesProfileScope
-            ? profileID ?? ProcessInfo.processInfo.environment["DEN_PROFILE"]
-            : nil
         let parsedProfileID: UUID?
         if let rawProfileID {
             guard let id = UUID(uuidString: rawProfileID) else {
@@ -383,6 +384,10 @@ enum DenIPCClient {
             parsedProfileID = id
         } else {
             parsedProfileID = nil
+        }
+
+        if case .boardExists = operation {
+            return DenIPCRequest(operation: operation, context: DenIPCCallerContext(profileID: parsedProfileID))
         }
 
         let callerError: String?

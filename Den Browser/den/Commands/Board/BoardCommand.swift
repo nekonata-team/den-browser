@@ -32,6 +32,7 @@ struct BoardCommand: ParsableCommand {
         subcommands: [
             BoardListCommand.self,
             BoardFocusedCommand.self,
+            BoardExistsCommand.self,
             BoardFocusCommand.self,
             BoardMoveCommand.self,
             BoardWebCommand.self,
@@ -89,6 +90,24 @@ struct BoardListCommand: ParsableCommand {
             operation: .boardList(target: try DenIPCClient.deskTarget(deskID)),
             options: options.common,
             showBoardIDs: options.showBoardIDs)
+    }
+}
+
+struct BoardExistsCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "exists",
+        abstract: "Check whether a Board exists across open Profiles, optionally limited by --profile",
+        discussion:
+            "Ignores DEN_PROFILE and DEN_BOARD_ID. Closed Profiles do not match."
+    )
+
+    @OptionGroup var common: CLIOptions
+    @Option(name: .customLong("board"), help: "Board UUID to look up") var boardID: String
+
+    func run() throws {
+        try DenIPCClient.execute(
+            operation: .boardExists(boardID: try DenIPCClient.requiredBoardID(boardID)),
+            options: common)
     }
 }
 

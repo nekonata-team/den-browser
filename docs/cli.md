@@ -44,7 +44,7 @@ When `den` is executed from a shell inside a Terminal Board, Den Browser automat
 These variables are attached when the Terminal Session is created and remain with that Session when its Board moves between Desks. A reattached zmx session keeps the shell environment from when the session was created. A Session is never given another Profile's context.
 
 #### Profile Resolution
-Target Profile resolution follows this strict priority:
+Except for `board exists`, target Profile resolution follows this strict priority:
 1. **Explicit Profile ID**: Supplied via `--profile <uuid>`. If specified, it must be a valid UUID of an existing profile with an active window; invalid UUIDs, non-existent profiles, or profiles without an active window fail immediately (`exit 1`) with an explicit error and never fall back.
 2. **Ambient Profile**: From `$DEN_PROFILE`. Follows the same strict validation as explicit profile ID.
 3. **Ambient Board**: From `$DEN_BOARD_ID`. Locates the profile store containing that Board.
@@ -123,9 +123,16 @@ Commands for listing, focusing, creating, and managing Boards. Listing and creat
 |---|---|---|---|
 | `den board list` | `[--desk <uuid>] [-l]` | List all Boards on the specified or ambient Desk with type (`web`/`inspection`/`terminal`/`tutorial`), label, and type-specific secondary information. `--desk` must identify an existing Desk in the resolved Profile; invalid or missing Desks fail without falling back. Listing does not change focus. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list --desk <uuid> -l` |
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
+| `den board exists` | `--board <uuid> [--profile <uuid>]` | Check whether a Board exists. | `den board exists --board <uuid> --json` |
 | `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
 | `den board move` | `--board <id> (--left-of <board-id> \| --right-of <board-id> \| --desk <uuid>)` | Move the entire Board Group left/right of another Board Group, including across Desks, or to the end of a Desk. Exactly one destination is required. | `den board move --board <id> --right-of <board-id>` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
+
+`board exists` searches all Desks in open Profiles, restricted only by explicit `--profile`;
+it ignores `DEN_PROFILE` and `DEN_BOARD_ID`. Closed Profiles do not match.
+JSON returns `ok`, `exists`, and `board_id`, adding `desk_id` and `profile_id` only when found.
+Exit codes: `0` found, `1` absent or lookup error; JSON distinguishes absence from errors via `ok`.
+TTY output is silent unless an error occurs.
 
 `board move` requires explicit source and destination IDs within the same resolved Profile.
 Selecting a Side Board moves its entire Board Group; a Side Board destination identifies its whole group.
