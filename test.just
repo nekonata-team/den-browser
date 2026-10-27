@@ -34,9 +34,12 @@ results result_path=unit_test_result:
 architecture:
     @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
 
-# Run the independent Application, Model, and Infrastructure package tests.
+# Test or build all local packages, treating compiler warnings as errors.
 packages:
-    @rtk test "swift test --package-path Packages/DenApplication"
-    @rtk test "swift test --package-path Packages/DenModels"
-    @rtk test "swift test --package-path Packages/DenInfrastructure"
-    @echo "✓ Independent package tests passed"
+    @rtk test "swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors"
+    @rtk test "swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors"
+    @rtk test "swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors"
+    @rtk test "swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors"
+    @rtk test "swift build --package-path Packages/DenViews -Xswiftc -warnings-as-errors"
+    @rtk test "swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors"
+    @echo "✓ Package checks passed"

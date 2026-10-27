@@ -83,8 +83,9 @@ just check
 just test architecture
 ```
 
-The default unit recipe includes independent SwiftPM tests for Application, Models and Infrastructure,
-without App, WebKit or Ghostty. Application test suites are explicitly nonisolated, so
+The default unit recipe includes independent SwiftPM tests for Application, Models, Infrastructure and
+IPCProtocol, without App, WebKit or Ghostty. It also builds Views and Demo; Domain builds as a dependency.
+All package checks treat compiler warnings as errors. Application test suites are explicitly nonisolated, so
 requiring MainActor for a rule breaks compilation before execution. Shared operation tests also run
 against a plain state owner without Models; Model integration tests protect the Observation bridge. Hosted tests cover native mounting, resource lifetime and App integration.
 Unit tests disable code signing; UI tests use development signing and separate `.derived-data-ui` output.

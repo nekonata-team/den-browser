@@ -1,4 +1,4 @@
-public import DenApplication
+import DenApplication
 import DenDomain
 import Observation
 
