@@ -50,6 +50,8 @@ public struct DenActivePanelOverlay<Content: View>: View {
         }
     }
 
+    // Anchor the panel top to the window content area so changing results cannot move its input.
+    // Overview and Board Activity use inset layouts above; Drawer is presented separately.
     private func panelOverlay<Panel: View>(_ content: Panel) -> some View {
         content
             .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))

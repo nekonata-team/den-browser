@@ -37,6 +37,7 @@ public struct DenHeader<ProfileMenu: View>: View {
         .allowsHitTesting(windowModel.temporaryContext == nil)
         .accessibilityHidden(windowModel.temporaryContext != nil)
         .frame(height: DenLayout.denHeaderHeight)
+        // Declare controls from the detail-column header so native toolbar layout follows that column.
         .toolbar {
             DenHeaderControls(
                 profileColor: profileColor, onNotificationKeyPress: onNotificationKeyPress,
@@ -64,6 +65,7 @@ private struct DenHeaderControls<ProfileMenu: View>: ToolbarContent {
             ToolbarItem(placement: .automatic) {
                 UniversalSearchButton()
             }
+            // Separate Search from the trailing group while retaining native Glass and icon sizing.
             ToolbarSpacer(.fixed)
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton(

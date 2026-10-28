@@ -26,6 +26,9 @@ public struct DenPanelHeader<Content: View>: View {
 }
 
 extension View {
+    /// Panel chrome: shared padding, width, Glass, and suppression of automatic focus rings.
+    ///
+    /// Retains system control styling and keyboard focus behavior; does not position the panel.
     public func denPanel(width: CGFloat = DenPanelLayout.standardWidth) -> some View {
         padding(DenPanelLayout.padding)
             .focusEffectDisabled()
@@ -36,13 +39,18 @@ extension View {
             )
     }
 
+    /// Header input styling.
+    ///
+    /// The caller still supplies a meaningful label and an explicit prompt.
     public func denPanelHeaderField() -> some View {
         labelsHidden()
             .textFieldStyle(.plain)
             .font(.title3.weight(.medium))
     }
 
-    /// Selection rows may show a shared subtle background when inactive.
+    /// Panel candidate-row selection, including the Differentiate Without Color treatment.
+    ///
+    /// Enable `showsInactiveBackground` when unselected rows need a subtle surface; do not add local opacity.
     public func denSelectionHighlight(
         _ isSelected: Bool,
         profileColor: Color,
@@ -82,6 +90,9 @@ private struct DenSelectionHighlight: ViewModifier {
     }
 }
 
+/// Inline validation beside the editable draft in a panel or settings section.
+///
+/// The caller owns validation; action failures without form context use action feedback instead.
 public struct DenValidationMessage: View {
     private let message: String
 
@@ -96,6 +107,7 @@ public struct DenValidationMessage: View {
     }
 }
 
+/// Keyboard navigation and action hints at the bottom of a panel; omit its opening shortcut.
 public struct DenPanelHint: View {
     private let text: String
 

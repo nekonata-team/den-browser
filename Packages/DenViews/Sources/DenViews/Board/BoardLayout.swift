@@ -100,6 +100,9 @@ public struct BoardLayout {
             contentWidth: contentWidth)
     }
 
+    /// Reveals or centers according to the configured policy; centering uses the full Board Group.
+    ///
+    /// Returns a scroll offset clamped to the content bounds, or nil for an unavailable Board or viewport.
     public static func scrollTargetAfterLayoutChange(
         for boardID: BoardID,
         in params: Parameters,
@@ -131,6 +134,7 @@ public struct BoardLayout {
             containerWidth: params.windowWidth, contentWidth: contentWidth)
     }
 
+    /// Centers the full range, including inter-Board spacing, within the scrollable content bounds.
     public static func centeredScrollX(
         for boardRange: ClosedRange<Int>,
         in params: Parameters,

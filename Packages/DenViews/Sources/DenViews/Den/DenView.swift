@@ -55,6 +55,7 @@ public struct DenView<Header: View, Rail: View, Strip: View, Panels: View, Drawe
     public var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
+                // Keep the switcher and Strip in one native detail column so opening the Rail moves them together.
                 NavigationSplitView(columnVisibility: boardRailVisibility) {
                     rail
                         .navigationSplitViewColumnWidth(min: 192, ideal: 208, max: 224)

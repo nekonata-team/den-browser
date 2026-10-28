@@ -4,24 +4,28 @@
 
 Den controls feel like a calm desk laid over live web sheets. Web content remains readable and visually independent; app chrome provides orientation, focus, and lightweight controls.
 
+Implementation contracts live beside their definitions: [layout metrics](Packages/DenViews/Sources/DenViews/Shared/LayoutMetrics.swift),
+[panel controls](Packages/DenViews/Sources/DenViews/Shared/DenPanel.swift),
+[colors](Packages/DenViews/Sources/DenViews/Shared/DenColors.swift), and
+[motion and corner radii](Packages/DenViews/Sources/DenViews/Shared/DenMotion.swift).
+Package responsibilities are defined in [Architecture](docs/architecture.md).
+
 ## Visual rules
 
 - Use dark, low-contrast Den background with restrained Profile-colored ambient light.
 - Use Liquid Glass for Den controls, panels, the desk switcher, app-owned Inspection and Tutorial Boards, and unactivated Board placeholders.
   Keep Web Sheets visually independent and do not apply glass to sheet content.
 - Prefer system controls and button styles; avoid unnecessary custom glass layering.
-- Panels retain system control styling and keyboard focus behavior, with automatic focus rings hidden through `denPanel`.
+- Panels retain system control styling and keyboard focus behavior while suppressing automatic focus rings.
 - Boards use rounded continuous corners. Focus uses the active Profile color.
 - Terminal Boards keep shared Board chrome and focus treatment. Ghostty owns the Terminal surface appearance, text, cursor, selection, and IME presentation.
 - Treat a Primary Board and its Side Board as one adjacent group for dragging, reordering, and centering. Keep focus and width individual to each Board.
   Show each Board's own border and raised shadow while dragging; scale it only when motion is enabled. Do not draw a group-wide outline.
-  Center using the group's full width, clamped to the scroll bounds.
-- Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, and Overview use 18pt.
+- Use a consistent hierarchy of continuous corners for controls, inner surfaces, and outer surfaces.
 - Keep the Desk switcher in its own row at the top of the detail column, aligned with the horizontal Board Strip.
   Align the Desk list and New Desk button together within the detail column when they fit, using the Appearance setting
   (Left by default, or Center); otherwise allow horizontal scrolling.
-  Use a native split view for the on-demand Board Rail sidebar and the horizontal Board Strip so the switcher and
-  Strip move together when the Rail opens. Keep the Rail open when focus changes, let it take width from the Strip
+  Keep the switcher and Strip aligned as the on-demand Board Rail opens. Keep the Rail open when focus changes, let it take width from the Strip
   without changing its height or surface colors, and keep the Board header above Sheet with the Sheet stack indicator
   secondary. Use the Profile color for the selected Rail row's background while the Rail does not own keyboard focus.
   While the Rail owns focus, remove that background and use native selection styling to avoid blending the two colors.
@@ -30,8 +34,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Show the current Profile name in the titlebar and a distinct background gradient for Private Den while preserving its Profile color in the Den glow and controls. Place Notifications, Save Desk as Preset when the Focused Desk has Boards, and Profile controls in the trailing window toolbar. Use native toolbar button styling, and give icons accessibility labels and help text; Profile identity must not depend on color alone.
 - Put the native Universal Search toolbar button before Notifications, Save Desk as Preset, and Profile controls.
 - Present Notifications in a native popover anchored to the toolbar bell. In Zen View, where the toolbar is hidden, retain the upper-right notification panel. Preserve keyboard selection, Escape dismissal, and return of input to the focused Board when the popover closes.
-  Declare these toolbar controls within the detail column and use a fixed toolbar spacer to separate Universal Search
-  from the other controls. Let the native toolbar provide their glass backgrounds and search icon sizing.
+  Keep Universal Search visually separate from the other controls while retaining native toolbar appearance.
   Show a secondary `⌘P` hint after its Search label.
   All entrances open the same palette; use `>` to restrict results to commands. Keep candidate actions explicit:
   switching to an existing Board and creating a Board from an Essential or Recent Item are distinct results.
@@ -49,19 +52,11 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.
 - Avoid `.system(size:)` for app-owned text. Fixed sizes remain appropriate for geometry-bound symbols and
   controls, or when a documented visual requirement cannot be expressed with a semantic text style.
-- Keep shared Den visual tokens, layout metrics, and motion drawing definitions in `Packages/DenViews/Sources/DenViews/Shared/`.
-  Keep UI-independent preference values such as `MotionPreference` in `DenModels`. Keep
-  component-specific metrics close to their component, and introduce a private layout type only when values are
-  reused or participate in a layout calculation.
-- Keep feature-specific layout algorithms with their owning component; for example, Board placement logic stays in
-  [BoardLayout.swift](Packages/DenViews/Sources/DenViews/Board/BoardLayout.swift).
-- Share a layout metric only when its uses have the same visual meaning and should change together. Equal numeric
-  values alone are not a reason to couple unrelated spacing or dimensions. Local literals are appropriate when a
-  name would not add design intent.
+- Share visual values only when they have the same design meaning and should change together.
+  Keep component-specific layout decisions with their owner.
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
-- Use `DenSurfaceColors` for shared filter-input and Board surface colors; pass interaction state instead of choosing opacity at each call site.
-- Use `denSelectionHighlight` for panel candidate rows. Choose whether inactive rows show the shared subtle background instead of specifying an opacity.
-- Use `DenSurfaceColors.selectionOpacity` for selected-item backgrounds and `emphasisOpacity` for strong focus or selection outlines. Keep shadows and ambient effects separate.
+- Keep shared input, Board, and candidate-row treatments consistent across features and interaction states.
+  Distinguish selection backgrounds and focus outlines from shadows and ambient effects.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
 - Reserve fixed colors for semantic meaning such as errors; use the active Profile color for Den atmosphere and focus, plus the dark background gradient and shadows.
 - Profile colors identify Profiles and tint the active Den context. They may be built-in presets or user-selected colors, and may appear on the Focused Board, Overview Selection, Desk switcher, and ambient background.
@@ -72,13 +67,14 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 ### Panels
 
 - Share panel width horizontally; let height follow content.
-- Center temporary panels horizontally and anchor their top edge 160pt below the top of the Den window's content area, independent of window or monitor size. Growing or shrinking panel contents must not move the input field. Overview, Board Activity, and Drawer retain their own layouts.
+- Keep temporary panel inputs at a stable position as content grows or shrinks. Placement and exceptions belong to
+  [the panel overlay](Packages/DenViews/Sources/DenViews/Den/DenActivePanelOverlay.swift).
 - Use the active Profile color for selected-item highlights.
 - A panel should not display the shortcut used to open it.
-- Use `DenPanelHint` for panel-internal keyboard navigation and action hints at the bottom of panels.
-- Candidate-list selection wraps between the first and last items in both directions. Reuse shared
-  selection-navigation logic. Keep Board and Desk movement or reordering separate with
-  action-specific boundaries.
+- Place keyboard navigation and action hints at the bottom of panels.
+- Candidate-list selection wraps in both directions; Board and Desk movement or reordering respects
+  action-specific boundaries. The reusable contract is documented in
+  [selection navigation](Packages/DenModels/Sources/DenModels/Den/SelectionNavigation.swift).
 
 - Keyboard operation leads. Pointer actions support it and must keep focused-board state consistent.
 - Use native, Board-specific context menus where a Board kind provides them. Opening a Web Board header menu focuses that Board.
@@ -91,18 +87,18 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Keep panel copy in product language from `CONTEXT.md`.
 - Use brief, bounce-free motion to preserve spatial continuity when Boards move, resize, or change focus.
 - Let repeated keyboard input retarget motion immediately instead of waiting for an animation to finish.
-- Route app-owned spatial and feedback animations through `DenMotion`. Direct pointer tracking and continuous drag auto-scroll may use interaction-specific motion.
 - Motion defaults to following the macOS Reduce Motion setting. Preferences can explicitly select Standard Motion or Reduced Motion for Den.
 - Reduced Motion removes spatial animation while preserving brief opacity feedback.
 
 ## Input and settings
 
-- Every app-owned SwiftUI `TextField` provides an explicit `prompt:`. The prompt describes an example or expected input format; the label describes the field's meaning and remains the accessibility label.
-- `TextEditor` has no `prompt:` API. Use an explicit label and short helper text that communicates the same input guidance.
+- Every app-owned text input has a meaningful accessibility label and explicit input guidance.
+  Single-line fields show an example or expected format as a prompt; multiline editors use short helper text.
 - Toggles, pickers, and sliders commit changes immediately.
 - Text settings use a draft and an explicit Save action. Return may submit the same Save action, but leaving the screen does not silently persist an unfinished draft.
-- Place explicit setting actions after their helper text and validation message in a trailing action row. Keep navigation and reset actions visually grouped without treating them as the same semantic action.
-- Use the shared settings help and validation treatments for repeated explanatory and error text; keep their content and semantics feature-owned.
+- Keep setting explanations, validation, and explicit actions in a clear reading order; distinguish save, navigation,
+  and reset actions. Presentation contracts live in
+  [the settings controls](Packages/DenViews/Sources/DenViews/Settings/SettingsForm.swift).
 - Inline Profile names commit on Return; leaving the screen does not commit an unfinished edit.
 - Shortcut recording commits a valid binding immediately and reports invalid or conflicting input inline.
 - Search and filter fields are transient and never use the persisted-settings contract.
@@ -112,20 +108,20 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 Error and feedback presentation is strictly unified into three channels:
 
 - **Action feedback (Toast)**:
-  - Use a Toast (`store.showToast`) when an app-owned operation has no otherwise visible result, or when an action, navigation, or clipboard command fails or is blocked without form context.
+  - Use a Toast when an app-owned operation has no otherwise visible result, or when an action, navigation, or clipboard command fails or is blocked without form context.
   - While a file download is active, show a persistent progress card above Toasts in the bottom-right feedback stack. Remove it when the download ends, then report completion or failure with a Toast.
   - Do not use a Toast when the result is already communicated by visible UI state, such as changed content, focus, navigation, selection, or layout.
   - Keep Toasts concise and non-blocking. Never block the user with a modal dialog for actionable or transient operations.
 - **Form and input validation (Inline)**:
-  - Use inline validation messages (`DenValidationMessage`) directly within the active panel or settings section for invalid formats, missing fields, or shortcut conflicts.
+  - Use inline validation messages directly within the active panel or settings section for invalid formats, missing fields, or shortcut conflicts.
   - Keep validation inline with the draft so the user can correct the input immediately.
 - **Blockers and destructive actions (Dialog / Alert)**:
-  - Use modal alerts and confirmation dialogs (`.alert`, `.confirmationDialog` / `DenDialogs`) exclusively for irreversible destructive operations (deleting a Desk, clearing browsing data) or system-level configuration blockers where work cannot continue without user action.
+  - Use modal alerts and confirmation dialogs exclusively for irreversible destructive operations (deleting a Desk, clearing browsing data) or system-level configuration blockers where work cannot continue without user action.
 
 ## Zen View
 
 - Zen View hides the native titlebar, Desk switcher, Notification, Desk Preset, and Profile controls together, without hiding controls inside Boards.
-- Boards expand into the released upper area, keeping an 8-point inset from the window edge.
+- Boards expand into the released upper area while preserving the shared window-edge inset.
 - Do not add alternate window dragging, traffic-light controls, or titlebar feedback in Zen View. The darker Den background and tinted Focused Board header continue to show Den Mode.
 - Do not reveal hidden controls on pointer hover. Users toggle Zen View with `z` in Den Mode or the Den menu.
 - Treat Zen View as window-local runtime presentation. A recreated Den window starts with Zen View off.

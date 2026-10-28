@@ -14,6 +14,9 @@ public struct SettingsForm<Content: View>: View {
     }
 }
 
+/// Trailing setting actions, placed after helper text and validation messages.
+///
+/// The caller owns draft/save behavior and the grouping of navigation and reset actions.
 public struct SettingsActionRow<Content: View>: View {
     private let content: () -> Content
 
@@ -29,6 +32,7 @@ public struct SettingsActionRow<Content: View>: View {
     }
 }
 
+/// Shared settings explanation styling; content and input guidance remain feature-owned.
 public struct SettingsHelpText<Content: View>: View {
     private let content: () -> Content
 

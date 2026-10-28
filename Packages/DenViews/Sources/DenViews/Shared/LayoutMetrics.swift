@@ -1,5 +1,8 @@
 import CoreGraphics
 
+/// Shared dimensions whose uses have the same visual meaning and should change together.
+///
+/// Keep feature-specific metrics with their component; equal values alone do not justify sharing.
 public enum DenLayout {
     public static let outerInset: CGFloat = 8
     public static let chromeHorizontalPadding: CGFloat = 12
@@ -25,6 +28,10 @@ public enum DenLayout {
     public static let denHeaderHeight = deskSwitcherHeight
 }
 
+/// Internal panel spacing and sizing.
+///
+/// Window placement belongs to `DenActivePanelOverlay`.
+/// Let panel height follow its content; constrain candidate lists rather than the whole panel.
 public enum DenPanelLayout {
     public static let padding: CGFloat = 16
     public static let contentSpacing: CGFloat = 12

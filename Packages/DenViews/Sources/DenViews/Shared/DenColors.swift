@@ -1,9 +1,12 @@
 import SwiftUI
 
+/// Den chrome colors, resolved in the app's dark appearance rather than a Sheet's appearance.
+///
+/// Pass interaction state to surface helpers instead of choosing opacity at each call site.
 public enum DenSurfaceColors {
-    /// Backgrounds of selected or keyboard-focused items.
+    /// Backgrounds of selected or keyboard-focused items; not shadows or ambient effects.
     public static let selectionOpacity: Double = 0.20
-    /// Strong focus and selection outlines.
+    /// Strong focus and selection outlines; not shadows or ambient effects.
     public static let emphasisOpacity: Double = 0.80
     public static let focusedBoardHeaderOpacity: Double = 0.12
 

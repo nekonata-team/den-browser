@@ -1,6 +1,9 @@
 import SFSafeSymbols
 import SwiftUI
 
+/// Dismisses app-owned UI; the caller supplies an action-specific accessibility label.
+///
+/// Collection-item deletion uses a trash action instead.
 public struct DenCloseButton: View {
     let label: String
     let action: () -> Void
