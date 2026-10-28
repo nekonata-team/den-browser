@@ -56,7 +56,9 @@ struct DenIPCBoardExistsTests {
         // Assert
         if scope == "unknown" {
             #expect(!response.result.isOk)
-            #expect(response.result.error == "Profile not found: \(try #require(profileID).uuidString)")
+            let message = try #require(response.result.error)
+            #expect(message.contains("Profile not found: \(try #require(profileID).uuidString)"))
+            #expect(message.contains("den profile list"))
             return
         }
         #expect(response.result.isOk)

@@ -50,12 +50,16 @@ private enum DenIPCClientError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .createSocket(let message): "Could not create socket: \(message)"
-        case .socketPathTooLong(let path): "Socket path too long: \(path)"
-        case .connect(let path, let message): "Could not connect to Den Browser at \(path): \(message)"
+        case .socketPathTooLong(let path): "Socket path too long: \(path). Use a shorter --socket path."
+        case .connect(let path, let message):
+            "Could not connect to Den Browser at \(path): \(message). Open Den Browser and retry. For a custom socket, check --socket and DEN_SOCKET."
         case .send(let message): "Could not send request to Den Browser: \(message)"
-        case .invalidResponse(let response): "Invalid response from Den Browser: \(response)"
-        case .invalidBoardID(let id): "Invalid board ID: \(id)"
-        case .invalidProfileID(let id): "Invalid profile ID: \(id)"
+        case .invalidResponse(let response):
+            "Invalid response from Den Browser: \(response). Use the CLI bundled with the running Den Browser app."
+        case .invalidBoardID(let id):
+            "Invalid Board ID: \(id). Expected a UUID; run 'den board list -l' to find Board IDs."
+        case .invalidProfileID(let id):
+            "Invalid Profile ID: \(id). Expected a UUID; run 'den profile list' to find Profile IDs. Check the supplied ID or DEN_PROFILE."
         case .usage(let message): message
         }
     }
@@ -126,7 +130,8 @@ enum DenIPCClient {
                 profileID: options.profileID
             )
         } catch {
-            let result = DenIPCOperationResult.failure(error.localizedDescription)
+            let message = (error as? ValidationError)?.message ?? error.localizedDescription
+            let result = DenIPCOperationResult.failure(message)
             let responseData = (try? JSONEncoder().encode(result.publicJSON)) ?? Data()
             try writeResult(result, data: responseData, output: output, isHealth: false)
             return
@@ -390,25 +395,21 @@ enum DenIPCClient {
             return DenIPCRequest(operation: operation, context: DenIPCCallerContext(profileID: parsedProfileID))
         }
 
-        let callerError: String?
+        let requiresValidCallerBoardID: Bool
         switch operation {
-        case .sheet(command: .navigate(_), target: .automatic),
-            .sheetWithSnapshot(command: .navigate(_), target: .automatic, snapshot: _):
-            callerError = "No Web Board found. Use 'den board web new <url>' to create a new board."
-        case .sheet(_, .automatic),
-            .sheetWithSnapshot(_, .automatic, _),
-            .boardClose(.automatic):
-            callerError = "No target Web Board found"
-        case .terminal(_, .automatic):
-            callerError = "No target Terminal Board found"
+        case .sheet(_, .automatic), .sheetWithSnapshot(_, .automatic, _),
+            .boardClose(.automatic), .terminal(_, .automatic):
+            requiresValidCallerBoardID = true
         default:
-            callerError = nil
+            requiresValidCallerBoardID = false
         }
         let parsedCallerBoardID: UUID?
         if let callerBoardID, let id = UUID(uuidString: callerBoardID) {
             parsedCallerBoardID = id
-        } else if callerBoardID != nil, let callerError {
-            throw DenIPCClientError.usage(callerError)
+        } else if let callerBoardID, requiresValidCallerBoardID {
+            throw DenIPCClientError.usage(
+                "Invalid DEN_BOARD_ID: \(callerBoardID). Expected a UUID; pass --board <uuid> explicitly or unset DEN_BOARD_ID."
+            )
         } else {
             parsedCallerBoardID = nil
         }
@@ -431,17 +432,19 @@ enum DenIPCClient {
 
     static func requiredDeskID(_ rawID: String) throws -> UUID {
         guard let id = UUID(uuidString: rawID) else {
-            throw DenIPCClientError.usage("Invalid desk ID: \(rawID)")
+            throw DenIPCClientError.usage(
+                "Invalid Desk ID: \(rawID). Expected a UUID; run 'den desk list' to find Desk IDs.")
         }
         return id
     }
 
     static func requiredBoardID(_ rawID: String, invalidMessage: String? = nil) throws -> UUID {
         guard let id = UUID(uuidString: rawID) else {
+            let error = DenIPCClientError.invalidBoardID(rawID)
             if let invalidMessage {
-                throw DenIPCClientError.usage(invalidMessage)
+                throw DenIPCClientError.usage("\(error.localizedDescription) \(invalidMessage)")
             }
-            throw DenIPCClientError.invalidBoardID(rawID)
+            throw error
         }
         return id
     }

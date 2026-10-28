@@ -78,6 +78,53 @@ struct DenIPCClientValidationTests {
         #expect(result.status == 1)
     }
 
+    @Test func connectionFailureExplainsSocketAndRecovery() async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+
+        // Act
+        let result = try await runCLI(["health"], socketPath: socketPath)
+        let message = try #require(String(data: result.error, encoding: .utf8))
+
+        // Assert
+        #expect(result.status == 1)
+        #expect(message.contains(socketPath))
+        #expect(message.contains("Open Den Browser and retry"))
+        #expect(message.contains("--socket and DEN_SOCKET"))
+    }
+
+    @Test(arguments: ["web", "terminal"])
+    func placementConflictExplainsArgumentsWithoutInternalError(kind: String) async throws {
+        // Arrange
+        let arguments = ["board", kind, "new"] + (kind == "web" ? ["https://example.com/"] : [])
+
+        // Act
+        let result = try await runCLI(
+            arguments + ["--left-of", UUID().uuidString, "--desk", UUID().uuidString],
+            socketPath: temporarySocketPath())
+        let object = try jsonResult(result.output)
+        let message = try #require(object["error"] as? String)
+
+        // Assert
+        #expect(result.status == 1)
+        #expect(message == "Specify at most one of --left-of, --right-of, or --desk")
+    }
+
+    @Test func interactStateErrorPreservesCauseAndLine() async throws {
+        // Arrange
+        let script = "url\nis unknown @e1"
+
+        // Act
+        let result = try await runCLI(["board", "web", "interact", script], socketPath: temporarySocketPath())
+        let message = try #require(String(data: result.error, encoding: .utf8))
+
+        // Assert
+        #expect(result.status == 64)
+        #expect(message.contains("Line 2: Unknown state: unknown. Use visible, enabled, or checked."))
+        #expect(!message.contains("ArgumentParser"))
+        #expect(!message.contains("ValidationError"))
+    }
+
     @Test(arguments: ["web", "terminal"], ["--left-of", "--right-of"])
     func boardCreationForwardsRelativeDestination(kind: String, option: String) async throws {
         // Arrange
@@ -299,47 +346,51 @@ struct DenIPCClientValidationTests {
     @Test(arguments: [
         MalformedCLIInvocation(
             arguments: ["desk", "remove", "--desk", "bad-id"],
-            expectedError: "Invalid desk ID: bad-id"
+            expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "list", "--desk", "bad-id"],
-            expectedError: "Invalid desk ID: bad-id"
+            expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "web", "new", "https://example.com/", "--desk", "bad-id"],
-            expectedError: "Invalid desk ID: bad-id"
+            expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "terminal", "new", "--desk", "bad-id"],
-            expectedError: "Invalid desk ID: bad-id"
+            expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "web", "url", "--board", "bad-id"],
-            expectedError: "Invalid board ID: bad-id"
+            expectedError: "Invalid Board ID: bad-id. Expected a UUID; run 'den board list -l' to find Board IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "terminal", "text", "--board", "bad-id"],
-            expectedError: "Invalid board ID: bad-id"
+            expectedError: "Invalid Board ID: bad-id. Expected a UUID; run 'den board list -l' to find Board IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "close", "--board", "bad-id"],
-            expectedError: "Invalid board ID: bad-id"
+            expectedError: "Invalid Board ID: bad-id. Expected a UUID; run 'den board list -l' to find Board IDs."
         ),
         MalformedCLIInvocation(
             arguments: ["board", "inspection", "read", "--board", "bad-id"],
-            expectedError: "Usage: den board inspection read --board <inspection-board-id>"
+            expectedError:
+                "Invalid Board ID: bad-id. Expected a UUID; run 'den board list -l' to find Board IDs. Usage: den board inspection read --board <inspection-board-id>"
         ),
         MalformedCLIInvocation(
             arguments: ["board", "inspection", "new", "--target", "bad-id"],
-            expectedError: "Usage: den board inspection new --target <web-board-id>"
+            expectedError:
+                "Invalid Board ID: bad-id. Expected a UUID; run 'den board list -l' to find Board IDs. Usage: den board inspection new --target <web-board-id>"
         ),
         MalformedCLIInvocation(
             arguments: ["board", "web", "url", "--profile", "bad-id"],
-            expectedError: "Invalid profile ID: bad-id"
+            expectedError:
+                "Invalid Profile ID: bad-id. Expected a UUID; run 'den profile list' to find Profile IDs. Check the supplied ID or DEN_PROFILE."
         ),
         MalformedCLIInvocation(
             arguments: ["profile", "open", "bad-id"],
-            expectedError: "Invalid profile ID: bad-id"
+            expectedError:
+                "Invalid Profile ID: bad-id. Expected a UUID; run 'den profile list' to find Profile IDs. Check the supplied ID or DEN_PROFILE."
         ),
     ])
     func malformedExplicitIDsReturnStructuredFailures(_ invocation: MalformedCLIInvocation) async throws {
@@ -429,7 +480,10 @@ struct DenIPCClientValidationTests {
 
         // Assert
         #expect(result.status != 0)
-        #expect(operationResult["error"] as? String == "No target Web Board found")
+        #expect(
+            operationResult["error"] as? String
+                == "Invalid DEN_BOARD_ID: bad-caller. Expected a UUID; pass --board <uuid> explicitly or unset DEN_BOARD_ID."
+        )
     }
 
     @Test func malformedAmbientCallerIsIgnoredForExplicitTarget() async throws {
@@ -506,6 +560,7 @@ struct MalformedCLIInvocation: Sendable {
 private struct CLIResult {
     let status: Int32
     let output: Data
+    let error: Data
 }
 
 private func jsonResult(_ data: Data) throws -> [String: Any] {
@@ -549,9 +604,9 @@ private func runCLI(
         }
     }
     let outputData = output.fileHandleForReading.readDataToEndOfFile()
-    _ = error.fileHandleForReading.readDataToEndOfFile()
+    let errorData = error.fileHandleForReading.readDataToEndOfFile()
 
-    return CLIResult(status: process.terminationStatus, output: outputData)
+    return CLIResult(status: process.terminationStatus, output: outputData, error: errorData)
 }
 
 private func temporarySocketPath() -> String {

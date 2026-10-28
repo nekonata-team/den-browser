@@ -943,8 +943,10 @@ private enum DenSheetInteractParser {
                 case "visible": return .isState(.visible(payload))
                 case "enabled": return .isState(.enabled(payload))
                 case "checked": return .isState(.checked(payload))
-                default: throw usage("Unknown state: \(arguments[0])")
+                default: throw usage("Unknown state: \(arguments[0]). Use visible, enabled, or checked.")
                 }
+            } catch let error as ValidationError {
+                throw error
             } catch {
                 throw usage(error.localizedDescription)
             }

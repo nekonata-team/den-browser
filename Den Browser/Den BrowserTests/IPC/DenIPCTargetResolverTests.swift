@@ -624,7 +624,7 @@ struct DenIPCTargetResolverTests {
         // Assert 1: Must fail, must NOT fall back to presented desk
         switch result1 {
         case .failure(let error):
-            #expect(error == .noActiveDesk)
+            #expect(error == .deskNotFound(nonExistentDeskID.uuidString))
         case .success:
             Issue.record("Expected failure on non-existent desk ID")
         }
@@ -639,7 +639,7 @@ struct DenIPCTargetResolverTests {
         // Assert 2: Must fail, must NOT fall back to presented desk
         switch result2 {
         case .failure(let error):
-            #expect(error == .noActiveDesk)
+            #expect(error == .deskNotFound(nonExistentDeskID.uuidString))
         case .success:
             Issue.record("Expected failure on non-existent desk ID")
         }
@@ -674,6 +674,34 @@ struct DenIPCTargetResolverTests {
         #expect(centeredSecondWindow)
         #expect(first.navigation.presentedDeskID == firstDeskID)
         #expect(second.navigation.presentedDeskID == otherDeskID)
+    }
+
+    @Test func targetErrorsExplainHowToRecover() {
+        // Arrange
+        let id = UUID().uuidString
+        let cases: [(DenIPCTargetResolver.TargetResolutionError, String)] = [
+            (.profileNotFound(id), "den profile list"),
+            (.profileHasNoActiveWindow(id), "den profile open \(id)"),
+            (.boardNotFound(id), "den board list -l"),
+            (.boardNotMatchingKind(id, "Web"), "Web Board UUID"),
+            (.deskNotFound(id), "den desk list"),
+            (.noTargetBoard("Web"), "den board web new <url>"),
+            (.noTargetBoard("Terminal"), "den board terminal new"),
+        ]
+
+        for (error, recovery) in cases {
+            // Act
+            let message = error.localizedDescription
+
+            // Assert
+            #expect(message.contains(recovery))
+            switch error {
+            case .profileNotFound, .profileHasNoActiveWindow, .boardNotFound, .boardNotMatchingKind, .deskNotFound:
+                #expect(message.contains(id))
+            default:
+                break
+            }
+        }
     }
 
     private func temporaryProfileDirectory() -> URL {

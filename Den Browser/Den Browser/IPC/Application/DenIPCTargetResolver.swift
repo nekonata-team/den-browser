@@ -56,24 +56,36 @@ enum DenIPCTargetResolver {
         case boardNotMatchingKind(String, String)
         case noTargetBoard(String)
         case noActiveDesk
+        case deskNotFound(String)
         case targetProfileUnavailable
 
         var errorDescription: String? {
             switch self {
             case .profileNotFound(let id):
-                "Profile not found: \(id)"
+                "Profile not found: \(id). Run 'den profile list' and retry with an existing Profile UUID."
             case .profileHasNoActiveWindow(let id):
-                "Profile '\(id)' has no active window"
+                "Profile '\(id)' has no active window. Run 'den profile open \(id)' and retry."
             case .boardNotFound(let id):
-                "Board not found: \(id)"
+                "Board not found: \(id). Run 'den board list -l' on the intended Desk and retry with an existing Board UUID."
             case .boardNotMatchingKind(let id, let kind):
-                "Board '\(id)' is not a \(kind) Board"
+                "Board '\(id)' is not a \(kind) Board. Run 'den board list -l' to find a \(kind) Board UUID and retry."
             case .noTargetBoard(let kind):
-                kind.isEmpty ? "No target Board found" : "No target \(kind) Board found"
+                switch kind {
+                case "Web":
+                    "No target Web Board found. Pass --board <uuid> or create one with 'den board web new <url>'."
+                case "Terminal":
+                    "No target Terminal Board found. Pass --board <uuid> or create one with 'den board terminal new'."
+                case "Inspection":
+                    "No target Inspection Board found. Create one with 'den board inspection new --target <web-board-id>'."
+                default:
+                    "No target Board found. Run 'den board list -l' and pass a Board UUID with --board."
+                }
             case .noActiveDesk:
-                "No active Desk found"
+                "No active Desk found. Open a Den Browser window, then run 'den desk list' to choose a Desk."
+            case .deskNotFound(let id):
+                "Desk not found: \(id). Run 'den desk list' and retry with an existing Desk UUID."
             case .targetProfileUnavailable:
-                "Target Profile no longer exists"
+                "Target Profile no longer exists. Run 'den profile list' and retry with an existing Profile UUID."
             }
         }
     }
@@ -104,7 +116,7 @@ enum DenIPCTargetResolver {
                 }
                 return resolvedDesk(window: window, desk: desk, in: profileManager)
             }
-            return .failure(.noActiveDesk)
+            return .failure(.deskNotFound(deskID.rawValue.uuidString))
 
         case .automatic:
             if let callerBoardID = context.callerBoardID.map(BoardID.init) {

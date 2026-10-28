@@ -136,7 +136,10 @@ final class DenIPCService {
                 return DenIPCResponse(result: .failure("Profile manager unavailable"), target: .none)
             }
             guard let profile = profileManager.profile(id: ProfileID(profileID)) else {
-                return DenIPCResponse(result: .failure("Profile not found: \(profileID.uuidString)"), target: .none)
+                return DenIPCResponse(
+                    result: .failure(
+                        DenIPCTargetResolver.TargetResolutionError.profileNotFound(profileID.uuidString)
+                            .localizedDescription), target: .none)
             }
             return DenIPCResponse(
                 result: handleProfileOpen(profile: profile, in: profileManager),
@@ -152,7 +155,10 @@ final class DenIPCService {
             return DenIPCResponse(result: .failure("Profile manager unavailable"), target: .none)
         }
         if let profileID, profileManager.profile(id: ProfileID(profileID)) == nil {
-            return DenIPCResponse(result: .failure("Profile not found: \(profileID.uuidString)"), target: .none)
+            return DenIPCResponse(
+                result: .failure(
+                    DenIPCTargetResolver.TargetResolutionError.profileNotFound(profileID.uuidString)
+                        .localizedDescription), target: .none)
         }
         for window in profileManager.ipcWindows where profileID == nil || window.profileID.rawValue == profileID {
             guard let indices = window.resources.snapshot.den.boardIndices(for: BoardID(boardID)) else { continue }
@@ -209,7 +215,10 @@ final class DenIPCService {
             case .success(let target):
                 let state = target.window.resources.snapshot.den
                 guard let indices = state.boardIndices(for: target.board.id) else {
-                    return DenIPCResponse(result: .failure("Board not found: \(id)"), target: .none)
+                    return DenIPCResponse(
+                        result: .failure(
+                            DenIPCTargetResolver.TargetResolutionError.boardNotFound(id.uuidString).localizedDescription
+                        ), target: .none)
                 }
                 resolved = ResolvedDeskTarget(
                     window: target.window, desk: state.desks[indices.deskOffset], profileID: target.profileID)
@@ -269,12 +278,6 @@ final class DenIPCService {
                 target: .board(profileID: resolved.profileID.rawValue, boardID: resolved.board.id.rawValue)
             )
         case .failure(let error):
-            if case .navigate = command, error == .noTargetBoard("Web") {
-                return DenIPCResponse(
-                    result: .failure("No Web Board found. Use 'den board web new <url>' to create a new board."),
-                    target: .none
-                )
-            }
             return DenIPCResponse(result: .failure(error.localizedDescription), target: .none)
         }
     }
@@ -1070,7 +1073,8 @@ final class DenIPCService {
         switch destination {
         case .desk(let id):
             guard let target = window.resources.snapshot.den.desks.first(where: { $0.id == DeskID(id) }) else {
-                return .failure("Desk not found: \(id)")
+                return .failure(
+                    DenIPCTargetResolver.TargetResolutionError.deskNotFound(id.uuidString).localizedDescription)
             }
             desk = target
             anchorID = nil
@@ -1079,7 +1083,10 @@ final class DenIPCService {
             guard let indices = window.resources.snapshot.den.boardIndices(for: boardID),
                 let group = BoardGroup.containing(
                     boardID, in: window.resources.snapshot.den.desks[indices.deskOffset].boards)
-            else { return .failure("Board not found: \(id)") }
+            else {
+                return .failure(
+                    DenIPCTargetResolver.TargetResolutionError.boardNotFound(id.uuidString).localizedDescription)
+            }
             desk = window.resources.snapshot.den.desks[indices.deskOffset]
             if group.boards.contains(where: { $0.id == resolved.board.id }) {
                 return .success(.board(boardInfo(resolved.board, focusedBoardID: desk.focusedBoardID)))

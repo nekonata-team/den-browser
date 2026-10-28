@@ -368,6 +368,11 @@ Element names use labels and visible content rather than form values, except for
 {"board_id":"8E192A0B-...","message":"Opened @e1 in new Board","ok":true,"url":"https://example.com/docs"}
 ```
 
+Common ID validation, target-resolution, and connection errors identify the failed input, target, or socket and give a recovery action.
+Use full UUIDs rather than labels: `den board list -l`, `den desk list`, and `den profile list` show available IDs.
+A Profile without an open window can be opened with `den profile open <uuid>`.
+An invalid `DEN_BOARD_ID` is reported as an environment error; pass `--board <uuid>` explicitly or unset it.
+
 **Failure (`exit 1`)**:
 ```json
 {"error":"Element not found: @e1","ok":false}
