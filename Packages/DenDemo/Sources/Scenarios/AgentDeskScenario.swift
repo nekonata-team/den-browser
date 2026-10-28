@@ -76,7 +76,7 @@ struct AgentDeskScenario: DemoScenario {
         for (index, url) in urls.enumerated() {
             try context.peek([
                 "type",
-                "den board web new \(url) --desk \(deskUUID)",
+                "den board web new \(url) --end-of \(deskUUID)",
                 "--delay", "10",
                 "--accept-dispatched",
             ])

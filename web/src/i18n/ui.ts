@@ -158,7 +158,7 @@ export const home = {
           title: 'Background Desk Research',
           description: [
             'Deploy documentation and research materials to background Desks (',
-            { code: 'den board web new <url> --desk <id>' },
+            { code: 'den board web new <url> --end-of <desk-id>' },
             '). Humans stay focused in their primary Desk and review findings with a single click.',
           ] satisfies InlinePart[],
           video: '/videos/agent-desk.mp4',
@@ -323,7 +323,7 @@ export const home = {
           title: '裏のDeskへの自律リサーチ展開',
           description: [
             'メインの作業Deskを散らかさず、バックグラウンドDesk（',
-            { code: 'den board web new <url> --desk <id>' },
+            { code: 'den board web new <url> --end-of <desk-id>' },
             '）に複数の資料をまとめて自律展開。人間はタブクリック1つで結果を確認・巡回できます。',
           ] satisfies InlinePart[],
           video: '/videos/agent-desk.mp4',

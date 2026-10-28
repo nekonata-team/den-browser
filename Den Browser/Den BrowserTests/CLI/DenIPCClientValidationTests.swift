@@ -93,6 +93,24 @@ struct DenIPCClientValidationTests {
         #expect(message.contains("--socket and DEN_SOCKET"))
     }
 
+    @Test(arguments: [["board", "web", "new"], ["board", "terminal", "new"], ["board", "move"]])
+    func placementHelpExplainsExclusiveOptions(command: [String]) async throws {
+        // Arrange
+        let arguments = command + ["--help"]
+
+        // Act
+        let result = try await runCLI(arguments, socketPath: temporarySocketPath())
+        let help = try #require(String(data: result.output, encoding: .utf8))
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(help.contains("--left-of <board-id>"))
+        #expect(help.contains("--right-of <board-id>"))
+        #expect(help.contains("--end-of <desk-id>"))
+        #expect(help.lowercased().contains("mutually exclusive"))
+        #expect(help.contains(command.last == "move" ? "exactly one" : "at most one"))
+    }
+
     @Test(arguments: ["web", "terminal"])
     func placementConflictExplainsArgumentsWithoutInternalError(kind: String) async throws {
         // Arrange
@@ -100,14 +118,14 @@ struct DenIPCClientValidationTests {
 
         // Act
         let result = try await runCLI(
-            arguments + ["--left-of", UUID().uuidString, "--desk", UUID().uuidString],
+            arguments + ["--left-of", UUID().uuidString, "--end-of", UUID().uuidString],
             socketPath: temporarySocketPath())
         let object = try jsonResult(result.output)
         let message = try #require(object["error"] as? String)
 
         // Assert
         #expect(result.status == 1)
-        #expect(message == "Specify at most one of --left-of, --right-of, or --desk")
+        #expect(message == "Specify at most one of --left-of, --right-of, or --end-of")
     }
 
     @Test func interactStateErrorPreservesCauseAndLine() async throws {
@@ -156,8 +174,8 @@ struct DenIPCClientValidationTests {
         [
             ["--left-of", "invalid"], ["--right-of", "invalid"],
             ["--left-of", UUID().uuidString, "--right-of", UUID().uuidString],
-            ["--desk", UUID().uuidString, "--left-of", UUID().uuidString],
-            ["--desk", UUID().uuidString, "--right-of", UUID().uuidString],
+            ["--end-of", UUID().uuidString, "--left-of", UUID().uuidString],
+            ["--end-of", UUID().uuidString, "--right-of", UUID().uuidString],
         ])
     func boardCreationRejectsConflictingOrInvalidPlacement(kind: String, arguments: [String]) async throws {
         // Arrange
@@ -175,7 +193,7 @@ struct DenIPCClientValidationTests {
         #expect(result.status != 0)
     }
 
-    @Test(arguments: ["--left-of", "--right-of", "--desk"])
+    @Test(arguments: ["--left-of", "--right-of", "--end-of"])
     func boardMoveForwardsExplicitDestination(option: String) async throws {
         // Arrange
         let boardID = UUID()
@@ -184,7 +202,7 @@ struct DenIPCClientValidationTests {
         switch option {
         case "--left-of": destination = .leftOf(targetID)
         case "--right-of": destination = .rightOf(targetID)
-        default: destination = .desk(targetID)
+        default: destination = .endOfDesk(targetID)
         }
         let expected = DenIPCOperation.moveBoard(boardID: boardID, destination: destination)
         let socketPath = temporarySocketPath()
@@ -204,14 +222,14 @@ struct DenIPCClientValidationTests {
     }
 
     @Test(arguments: [
-        [], ["--desk", UUID().uuidString], ["--board", UUID().uuidString],
-        ["--board", "invalid", "--desk", UUID().uuidString],
-        ["--board", UUID().uuidString, "--desk", "invalid"],
+        [], ["--end-of", UUID().uuidString], ["--board", UUID().uuidString],
+        ["--board", "invalid", "--end-of", UUID().uuidString],
+        ["--board", UUID().uuidString, "--end-of", "invalid"],
         ["--board", UUID().uuidString, "--left-of", "invalid"],
         ["--board", UUID().uuidString, "--right-of", "invalid"],
         ["--board", UUID().uuidString, "--left-of", UUID().uuidString, "--right-of", UUID().uuidString],
-        ["--board", UUID().uuidString, "--desk", UUID().uuidString, "--left-of", UUID().uuidString],
-        ["--board", UUID().uuidString, "--desk", UUID().uuidString, "--right-of", UUID().uuidString],
+        ["--board", UUID().uuidString, "--end-of", UUID().uuidString, "--left-of", UUID().uuidString],
+        ["--board", UUID().uuidString, "--end-of", UUID().uuidString, "--right-of", UUID().uuidString],
     ])
     func boardMoveRejectsMissingConflictingOrInvalidTargets(arguments: [String]) async throws {
         // Arrange
@@ -277,7 +295,7 @@ struct DenIPCClientValidationTests {
     func boardCommandsForwardDeskTarget(command: String, explicitDesk: Bool) async throws {
         // Arrange
         let deskID = UUID()
-        let destination: DenBoardCreationDestination = explicitDesk ? .explicit(deskID) : .automatic
+        let destination: DenBoardCreationDestination = explicitDesk ? .endOfDesk(deskID) : .automatic
         let expected: DenIPCOperation
         let arguments: [String]
         switch command {
@@ -307,7 +325,7 @@ struct DenIPCClientValidationTests {
 
         // Act
         let result = try await runCLI(
-            arguments + (explicitDesk ? ["--desk", deskID.uuidString] : []),
+            arguments + (explicitDesk ? [command == "list" ? "--desk" : "--end-of", deskID.uuidString] : []),
             socketPath: socketPath)
 
         // Assert
@@ -353,11 +371,11 @@ struct DenIPCClientValidationTests {
             expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(
-            arguments: ["board", "web", "new", "https://example.com/", "--desk", "bad-id"],
+            arguments: ["board", "web", "new", "https://example.com/", "--end-of", "bad-id"],
             expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(
-            arguments: ["board", "terminal", "new", "--desk", "bad-id"],
+            arguments: ["board", "terminal", "new", "--end-of", "bad-id"],
             expectedError: "Invalid Desk ID: bad-id. Expected a UUID; run 'den desk list' to find Desk IDs."
         ),
         MalformedCLIInvocation(

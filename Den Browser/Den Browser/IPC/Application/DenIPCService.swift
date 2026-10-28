@@ -198,16 +198,20 @@ final class DenIPCService {
         var beforeBoardID: BoardID?
         var afterBoardID: BoardID?
         switch destination {
-        case .automatic, .explicit:
+        case .automatic, .endOfDesk:
             let deskTarget: DeskTarget
-            if case .explicit(let id) = destination { deskTarget = .explicit(id) } else { deskTarget = .automatic }
+            if case .endOfDesk(let id) = destination { deskTarget = .explicit(id) } else { deskTarget = .automatic }
             switch DenIPCTargetResolver.resolveDesk(target: deskTarget, context: context, in: profileManager) {
             case .success(let target): resolved = target
             case .failure(let error):
                 return DenIPCResponse(result: .failure(error.localizedDescription), target: .none)
             }
-            afterBoardID = newBoardInsertionAnchor(
-                context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id)
+            if case .endOfDesk = destination {
+                afterBoardID = resolved.desk.boards.last?.id
+            } else {
+                afterBoardID = newBoardInsertionAnchor(
+                    context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id)
+            }
         case .leftOf(let id), .rightOf(let id):
             switch DenIPCTargetResolver.resolveBoard(
                 target: .explicit(id), context: context, kind: .any, in: profileManager)
@@ -1071,7 +1075,7 @@ final class DenIPCService {
         let desk: DeskState
         let anchorID: BoardID?
         switch destination {
-        case .desk(let id):
+        case .endOfDesk(let id):
             guard let target = window.resources.snapshot.den.desks.first(where: { $0.id == DeskID(id) }) else {
                 return .failure(
                     DenIPCTargetResolver.TargetResolutionError.deskNotFound(id.uuidString).localizedDescription)

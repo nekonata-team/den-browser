@@ -35,22 +35,22 @@ If readiness is uncertain, run `den health --json`; it does not target a Desk or
 
 When you need to discover Boards on the ambient Desk, use `den board list --json`; add `--desk <uuid>` to list another Desk in the resolved Profile without changing focus. Use `den board list -l` only when a person needs full Board IDs in TTY output.
 
-To create a Web or Terminal Board on another Desk, discover its UUID with `den desk list --json` and pass `--desk <uuid>` to `den board web new` or `den board terminal new`. The Desk must exist in the resolved Profile.
+To create a Web or Terminal Board on another Desk, discover its UUID with `den desk list --json` and pass `--end-of <desk-id>` to `den board web new` or `den board terminal new` to append it to that Desk. The Desk must exist in the resolved Profile. Creation accepts at most one of `--left-of`, `--right-of`, or `--end-of`; these options are mutually exclusive.
 
 Web and Terminal `new` support relative placement with `--left-of <board-id>` or `--right-of <board-id>`; see each command’s `--help` for details.
 
 Board and Desk `new` commands preserve focus by default. Add `--focus` to focus the created target (or reused Inspection Board), switching Desks when needed.
 
 Move an existing Board Group with `den board move --board <id>` and exactly one of
-`--left-of <board-id>`, `--right-of <board-id>`, or `--desk <uuid>`. Left/right placement
-can move across Desks; `--desk` appends to that Desk. Side Boards move with their primary
+`--left-of <board-id>`, `--right-of <board-id>`, or `--end-of <desk-id>`. Left/right placement
+can move across Desks; `--end-of` appends to that Desk. Side Boards move with their primary
 Board. Movement preserves the displayed Desk; use `den board focus --board <id> --json`
 separately to show the moved Board.
 
 ## Desk management
 
 Create an empty Desk with `den desk new <label> --json`; the response's
-`desk_id` can be passed to Board creation and listing commands with `--desk`.
+`desk_id` can be passed to Board creation with `--end-of`, or Board listing with `--desk`.
 Remove a Desk with `den desk remove --desk <uuid> --json`. Removing a Desk containing Boards
 requires `--force`, which removes its Boards and disposes their live runtimes.
 The last Desk cannot be removed. Discover target UUIDs with `den desk list --json`.

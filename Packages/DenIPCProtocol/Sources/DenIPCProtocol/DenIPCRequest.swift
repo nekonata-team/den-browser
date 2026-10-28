@@ -33,12 +33,12 @@ public nonisolated struct DenIPCCallerContext: Codable, Equatable, Sendable {
 public nonisolated enum DenBoardMoveDestination: Codable, Equatable, Sendable {
     case leftOf(UUID)
     case rightOf(UUID)
-    case desk(UUID)
+    case endOfDesk(UUID)
 }
 
 public nonisolated enum DenBoardCreationDestination: Codable, Equatable, Sendable {
     case automatic
-    case explicit(UUID)
+    case endOfDesk(UUID)
     case leftOf(UUID)
     case rightOf(UUID)
 }

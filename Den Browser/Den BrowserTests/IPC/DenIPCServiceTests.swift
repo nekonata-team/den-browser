@@ -11,8 +11,9 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct DenIPCServiceTests {
-    @Test(arguments: [("web", false), ("web", true), ("terminal", false), ("terminal", true)], ["left", "right"])
-    func boardCreationPlacesBesideGroupOnAnotherDesk(creation: (String, Bool), position: String) async throws {
+    @Test(
+        arguments: [("web", false), ("web", true), ("terminal", false), ("terminal", true)], ["left", "right", "end"])
+    func boardCreationRespectsPlacementOnAnotherDesk(creation: (String, Bool), position: String) async throws {
         // Arrange
         let (kind, focus) = creation
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
@@ -33,7 +34,11 @@ struct DenIPCServiceTests {
         let tail = try #require(session.boardOpening.createBoard(urlString: "https://example.com/tail", focus: false))
         session.boardNavigation.focusDesk(sourceDeskID)
         let destination: DenBoardCreationDestination =
-            position == "left" ? .leftOf(side.rawValue) : .rightOf(side.rawValue)
+            switch position {
+            case "left": .leftOf(side.rawValue)
+            case "right": .rightOf(side.rawValue)
+            default: .endOfDesk(targetDeskID.rawValue)
+            }
         let operation: DenIPCOperation =
             kind == "web"
             ? .createWebBoard(payload: .init(url: "https://example.com/new", focus: focus), destination: destination)
@@ -41,17 +46,54 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleResult(ipcRequest(operation, callerBoardID: caller.rawValue))
+        let response = await service.handleResult(
+            ipcRequest(operation, callerBoardID: (position == "end" ? anchor : caller).rawValue))
 
         // Assert
         let created = try responseBoardID(response)
         let target = try #require(session.resources.state.desks.first(where: { $0.id == targetDeskID }))
-        #expect(
-            target.boards.map(\.id)
-                == (position == "left" ? [created, anchor, side, tail] : [anchor, side, created, tail]))
+        let expectedOrder =
+            switch position {
+            case "left": [created, anchor, side, tail]
+            case "right": [anchor, side, created, tail]
+            default: [anchor, side, tail, created]
+            }
+        #expect(target.boards.map(\.id) == expectedOrder)
         #expect(target.focusedBoardID == (focus ? created : anchor))
         #expect(session.navigation.presentedDeskID == (focus ? targetDeskID : sourceDeskID))
         #expect(session.resources.state.board(for: created)?.isWeb == (kind == "web"))
+    }
+
+    @Test(arguments: ["web", "terminal"], [false, true])
+    func boardCreationUsesCallerUnlessEndOfDeskIsExplicit(kind: String, append: Bool) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let deskID = session.navigation.presentedDeskID
+        let caller = try #require(session.boardOpening.createBoard(urlString: "https://example.com/caller"))
+        let tail = try #require(session.boardOpening.createBoard(urlString: "https://example.com/tail", focus: false))
+        let destination: DenBoardCreationDestination = append ? .endOfDesk(deskID.rawValue) : .automatic
+        let operation: DenIPCOperation =
+            kind == "web"
+            ? .createWebBoard(payload: .init(url: "https://example.com/new", focus: false), destination: destination)
+            : .createTerminalBoard(payload: .init(path: nil, runCommand: nil, focus: false), destination: destination)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(ipcRequest(operation, callerBoardID: caller.rawValue))
+
+        // Assert
+        let created = try responseBoardID(response)
+        let desk = try #require(session.resources.state.desks.first(where: { $0.id == deskID }))
+        #expect(desk.boards.map(\.id) == (append ? [caller, tail, created] : [caller, created, tail]))
+        #expect(desk.focusedBoardID == caller)
     }
 
     @Test(arguments: ["web", "terminal"], [false, true])
@@ -108,7 +150,7 @@ struct DenIPCServiceTests {
         switch position {
         case "left": destination = .leftOf(anchorSide.rawValue)
         case "right": destination = .rightOf(anchorSide.rawValue)
-        default: destination = .desk(targetDeskID.rawValue)
+        default: destination = .endOfDesk(targetDeskID.rawValue)
         }
         let service = DenIPCService(profileManager: manager)
 
@@ -147,11 +189,11 @@ struct DenIPCServiceTests {
         let before = session.resources.state
         let destination: DenBoardMoveDestination
         switch target {
-        case "desk": destination = .desk(UUID())
+        case "desk": destination = .endOfDesk(UUID())
         case "left": destination = .leftOf(UUID())
         case "right": destination = .rightOf(UUID())
         case "same-group": destination = .rightOf(sideID.rawValue)
-        default: destination = .desk(session.navigation.presentedDeskID.rawValue)
+        default: destination = .endOfDesk(session.navigation.presentedDeskID.rawValue)
         }
         let service = DenIPCService(profileManager: manager)
 
@@ -280,7 +322,7 @@ struct DenIPCServiceTests {
             ipcRequest(
                 .createWebBoard(
                     payload: DenBoardWebNewPayload(url: "https://web.example/", focus: false),
-                    destination: .explicit(targetDeskID.rawValue)
+                    destination: .endOfDesk(targetDeskID.rawValue)
                 ),
                 callerBoardID: visibleBoardID.rawValue
             ))
@@ -288,7 +330,7 @@ struct DenIPCServiceTests {
             ipcRequest(
                 .createTerminalBoard(
                     payload: DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false),
-                    destination: .explicit(targetDeskID.rawValue)
+                    destination: .endOfDesk(targetDeskID.rawValue)
                 )))
         let presentedAfterBackgroundCreation = session.navigation.presentedDeskID
         let focusedAfterBackgroundCreation = session.navigation.focusedBoard?.id

@@ -10,17 +10,23 @@ private func validateBoardWidth(_ width: Double?) throws {
 }
 
 struct BoardCreationOptions: ParsableArguments {
-    @Option(name: .customLong("desk"), help: "Destination Desk UUID (defaults to the ambient Desk)") var deskID: String?
-    @Option(name: .customLong("left-of"), help: "Create left of this Board Group") var leftOf: String?
-    @Option(name: .customLong("right-of"), help: "Create right of this Board Group") var rightOf: String?
+    static let discussion =
+        "Specify at most one placement option: --left-of, --right-of, or --end-of. Without one, create after the caller's Board Group, otherwise the destination Desk's Focused Board Group."
+    @Option(name: .customLong("end-of"), help: ArgumentHelp("Create at the end of this Desk", valueName: "desk-id"))
+    var endOfDeskID: String?
+    @Option(name: .customLong("left-of"), help: ArgumentHelp("Create left of this Board Group", valueName: "board-id"))
+    var leftOf: String?
+    @Option(
+        name: .customLong("right-of"), help: ArgumentHelp("Create right of this Board Group", valueName: "board-id"))
+    var rightOf: String?
 
     func destination() throws -> DenBoardCreationDestination {
-        guard [deskID, leftOf, rightOf].compactMap({ $0 }).count <= 1 else {
-            throw ValidationError("Specify at most one of --left-of, --right-of, or --desk")
+        guard [endOfDeskID, leftOf, rightOf].compactMap({ $0 }).count <= 1 else {
+            throw ValidationError("Specify at most one of --left-of, --right-of, or --end-of")
         }
         if let leftOf { return .leftOf(try DenIPCClient.requiredBoardID(leftOf)) }
         if let rightOf { return .rightOf(try DenIPCClient.requiredBoardID(rightOf)) }
-        if let deskID { return .explicit(try DenIPCClient.requiredDeskID(deskID)) }
+        if let endOfDeskID { return .endOfDesk(try DenIPCClient.requiredDeskID(endOfDeskID)) }
         return .automatic
     }
 }
@@ -200,11 +206,12 @@ struct BoardWebCommand: ParsableCommand {
 struct BoardWebNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
-        abstract: "Open a new Web Board with a URL or search query")
+        abstract: "Open a new Web Board with a URL or search query",
+        discussion: BoardCreationOptions.discussion)
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "URL or search query for the new board") var url: String
-    @OptionGroup var placement: BoardCreationOptions
+    @OptionGroup(title: "Placement (mutually exclusive; optional)") var placement: BoardCreationOptions
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the newly created Board")
     var focus: Bool = false
@@ -241,11 +248,12 @@ struct BoardTerminalCommand: ParsableCommand {
 struct BoardTerminalNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
-        abstract: "Open a new Terminal Board")
+        abstract: "Open a new Terminal Board",
+        discussion: BoardCreationOptions.discussion)
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "Working directory for the terminal board") var path: String?
-    @OptionGroup var placement: BoardCreationOptions
+    @OptionGroup(title: "Placement (mutually exclusive; optional)") var placement: BoardCreationOptions
     @Option(name: .customLong("run"), help: "Initial command to run in the terminal") var runCommand: String?
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the new terminal board") var focus = false
@@ -288,21 +296,27 @@ struct BoardCloseCommand: ParsableCommand {
 
 struct BoardMoveCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "move", abstract: "Move a Board Group beside another Board or to the end of a Desk")
+        commandName: "move", abstract: "Move a Board Group beside another Board or to the end of a Desk",
+        discussion:
+            "Placement options are mutually exclusive: specify exactly one of --left-of, --right-of, or --end-of."
+    )
 
     @OptionGroup var common: CLIOptions
     @Option(name: .customLong("board"), help: "Board ID to move") var boardID: String
-    @Option(name: .customLong("left-of"), help: "Place left of this Board Group") var leftOf: String?
-    @Option(name: .customLong("right-of"), help: "Place right of this Board Group") var rightOf: String?
-    @Option(name: .customLong("desk"), help: "Place at the end of this Desk") var deskID: String?
+    @Option(name: .customLong("left-of"), help: ArgumentHelp("Place left of this Board Group", valueName: "board-id"))
+    var leftOf: String?
+    @Option(name: .customLong("right-of"), help: ArgumentHelp("Place right of this Board Group", valueName: "board-id"))
+    var rightOf: String?
+    @Option(name: .customLong("end-of"), help: ArgumentHelp("Place at the end of this Desk", valueName: "desk-id"))
+    var endOfDeskID: String?
 
     private func destination() throws -> DenBoardMoveDestination {
-        guard [leftOf, rightOf, deskID].compactMap({ $0 }).count == 1 else {
-            throw ValidationError("Specify exactly one of --left-of, --right-of, or --desk")
+        guard [leftOf, rightOf, endOfDeskID].compactMap({ $0 }).count == 1 else {
+            throw ValidationError("Specify exactly one of --left-of, --right-of, or --end-of")
         }
         if let leftOf { return .leftOf(try DenIPCClient.requiredBoardID(leftOf)) }
         if let rightOf { return .rightOf(try DenIPCClient.requiredBoardID(rightOf)) }
-        if let deskID { return .desk(try DenIPCClient.requiredDeskID(deskID)) }
+        if let endOfDeskID { return .endOfDesk(try DenIPCClient.requiredDeskID(endOfDeskID)) }
         throw ValidationError("Missing move destination")
     }
 

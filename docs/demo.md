@@ -14,7 +14,7 @@ just demo pv agent-verify  # record a specific scenario
 `demo` and `demo pv` support four scenarios: `promotional` (default), `agent-verify`, `agent-desk`, and `agent-show-me`.
 - `promotional`: replays a mouse-led workflow across Research, Build, Gemini presets, and Den Mode.
 - `agent-verify`: demonstrates human-AI agent cooperation with side-by-side Terminal and Web Boards, executing `den board web snapshot` and semantic tree click actions.
-- `agent-desk`: demonstrates background Desk deployment via `den desk list` and `den board web new --desk`, preserving the human's active workspace and inspecting collected material via tab click.
+- `agent-desk`: demonstrates background Desk deployment via `den desk list` and `den board web new --end-of`, preserving the human's active workspace and inspecting collected material via tab click.
 - `agent-show-me`: demonstrates visual diagram delivery via `den board web new`, presenting instant architecture and design boards adjacent to the agent's Terminal.
 
 `demo pv` records the demo window, exports `demo.mp4` and its editable `demo.openscreen`, and optimizes the video for web delivery.

@@ -376,8 +376,8 @@ struct DenIPCTargetResolverTests {
         switch target {
         case "left": destination = .leftOf(otherBoardID.rawValue)
         case "right": destination = .rightOf(otherBoardID.rawValue)
-        case "desk": destination = .desk(otherSession.navigation.presentedDeskID.rawValue)
-        default: destination = .desk(session.navigation.presentedDeskID.rawValue)
+        case "desk": destination = .endOfDesk(otherSession.navigation.presentedDeskID.rawValue)
+        default: destination = .endOfDesk(session.navigation.presentedDeskID.rawValue)
         }
         let request = DenIPCRequest(
             operation: .moveBoard(

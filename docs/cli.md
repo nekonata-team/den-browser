@@ -56,13 +56,13 @@ When a command is received with `DEN_BOARD_ID`:
 
 Board creation commands fall back to the active Desk when the ambient Board ID no longer exists, so a persistent Terminal session can still open a new Board after its original Board is removed.
 
-`den board web new` and `den board terminal new` accept `--desk <uuid>` to override the ambient Desk within the resolved Profile. Use `den desk list --json` to discover Desk IDs. Invalid or missing Desks fail without falling back.
+`den board web new` and `den board terminal new` accept `--end-of <desk-id>` to append a Board to that Desk within the resolved Profile. Use `den desk list --json` to discover Desk IDs. Invalid or missing Desks fail without falling back.
 
 Both creation commands also accept `--left-of <board-id>` or `--right-of <board-id>`.
-At most one of `--desk`, `--left-of`, or `--right-of` may be specified.
+These placement options are mutually exclusive: specify at most one of `--end-of`, `--left-of`, or `--right-of`.
 Relative placement creates directly on the reference Board's Desk, before or after its entire Board Group;
 referencing a Side Board gives the same placement as its Primary Board. Invalid or missing reference Boards fail before creation.
-Without a relative placement option, creation remains after the caller's Board Group when it belongs to the destination Desk,
+With no placement option, creation remains after the caller's Board Group when it belongs to the ambient Desk,
 otherwise after that Desk's Focused Board Group, or in the empty Desk.
 Placement preserves the displayed Desk and Board focus unless `--focus` is supplied.
 
@@ -117,7 +117,7 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 
 ### 3.2 `den board` (Board Surfaces & Layout)
 
-Commands for listing, focusing, creating, and managing Boards. Listing and creation use the ambient Desk and can specify `--desk`; explicit Board IDs can target other Desks.
+Commands for listing, focusing, creating, and managing Boards. Listing uses `--desk` to select a Desk; creation uses `--end-of` to append to a Desk. Both use the ambient Desk when no destination is specified. Explicit Board IDs can target other Desks.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
@@ -125,7 +125,7 @@ Commands for listing, focusing, creating, and managing Boards. Listing and creat
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board exists` | `--board <uuid> [--profile <uuid>]` | Check whether a Board exists. | `den board exists --board <uuid> --json` |
 | `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
-| `den board move` | `--board <id> (--left-of <board-id> \| --right-of <board-id> \| --desk <uuid>)` | Move the entire Board Group left/right of another Board Group, including across Desks, or to the end of a Desk. Exactly one destination is required. | `den board move --board <id> --right-of <board-id>` |
+| `den board move` | `--board <id> (--left-of <board-id> \| --right-of <board-id> \| --end-of <desk-id>)` | Move the entire Board Group left/right of another Board Group, including across Desks, or to the end of a Desk. The placement options are mutually exclusive; exactly one is required. | `den board move --board <id> --right-of <board-id>` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
 `board exists` searches all Desks in open Profiles, restricted only by explicit `--profile`;
@@ -136,7 +136,7 @@ TTY output is silent unless an error occurs.
 
 `board move` requires explicit source and destination IDs within the same resolved Profile.
 Selecting a Side Board moves its entire Board Group; a Side Board destination identifies its whole group.
-Left/right placement within the source group succeeds without changes. `--desk` appends the group,
+Left/right placement within the source group succeeds without changes. `--end-of` appends the group,
 including when it is already on that Desk. Invalid or missing targets fail without moving anything.
 The displayed Desk is preserved. Reordering preserves Board focus; transfer preserves destination focus
 (or selects the moved Board when the destination is empty) and reassigns source focus only if its focused
@@ -163,7 +163,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--desk <uuid> \| --left-of <board-id> \| --right-of <board-id>] [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --desk <uuid> --width 800` |
+| `den board web new` | `<url> [--end-of <desk-id> \| --left-of <board-id> \| --right-of <board-id>] [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --end-of <desk-id> --width 800` |
 | `den board web navigate` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den board web navigate https://example.com` |
 | `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
 | `den board web status` | None | Print the main page's final HTTP status code, or `null` when unavailable. | `den board web status` |
@@ -211,7 +211,7 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board terminal new` | `[<path>] [--desk <uuid> \| --left-of <board-id> \| --right-of <board-id>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --desk <uuid> --run "npm test" --width 800 --focus` |
+| `den board terminal new` | `[<path>] [--end-of <desk-id> \| --left-of <board-id> \| --right-of <board-id>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --end-of <desk-id> --run "npm test" --width 800 --focus` |
 | `den board terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den board terminal text` |
 | `den board terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den board terminal send "git status"` |
 | `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |
@@ -250,7 +250,7 @@ its Boards to restoration history.
 
 JSON creation returns `{"ok":true,"desk_id":"<uuid>"}`; removal returns
 `{"ok":true,"removed_desk_id":"<uuid>"}`. Use the created UUID with
-`board web new --desk`, `board terminal new --desk`, or `board list --desk`.
+`board web new --end-of`, `board terminal new --end-of`, or `board list --desk`.
 
 ### 3.7 `den drawer` (Drawer & Web Material)
 
