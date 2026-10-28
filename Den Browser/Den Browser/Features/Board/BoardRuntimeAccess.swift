@@ -176,8 +176,10 @@ final class BoardRuntimeAccess {
             runtime.webView.magnification = 1
             runtime.webView.pageZoom = CGFloat(scale) / 100
         }
-        drawerPeekRuntime?.webView.magnification = 1
-        drawerPeekRuntime?.webView.pageZoom = CGFloat(scale) / 100
+        for runtime in storage.drawerRuntimes.web.values {
+            runtime.webView.magnification = 1
+            runtime.webView.pageZoom = CGFloat(scale) / 100
+        }
     }
 
     func adjustFocusedSheetSize(by delta: Int) {
@@ -219,7 +221,10 @@ final class BoardRuntimeAccess {
 
     func releaseWebRuntimes() {
         storage.boardRuntimes.releaseWeb()
-        releaseDrawerPeek()
+        for window in storage.windowConnections.allObjects {
+            window.runtimes?.releaseDrawerPeek()
+        }
+        storage.drawerRuntimes.releaseAll()
     }
 
     func releaseWindowResources() {
@@ -284,7 +289,7 @@ final class BoardRuntimeAccess {
     }
 
     var hasWebExtensionDemand: Bool {
-        !webRuntimes.isEmpty || drawerPeekRuntime != nil
+        !webRuntimes.isEmpty || !storage.drawerRuntimes.web.isEmpty
     }
 
     func ensureWebExtensionContext() {
@@ -293,9 +298,15 @@ final class BoardRuntimeAccess {
         webExtensionWindow = window
     }
 
+    /// Detach this window's selection; the Profile retains the Item's live runtime.
     func releaseDrawerPeek() {
         guard let runtime = drawerPeekRuntime else { return }
-        runtime.dispose()
+        if let window = runtime.webView.window,
+            let responder = window.firstResponder as? NSView,
+            responder === runtime.webView || responder.isDescendant(of: runtime.webView)
+        {
+            _ = window.makeFirstResponder(nil)
+        }
         drawerPeekRuntime = nil
         if let focusedBoardID = focusedBoard?.id, let focusedWebRuntime = webRuntimes[focusedBoardID] {
             webExtensionHost?.activate(webView: focusedWebRuntime.webView)

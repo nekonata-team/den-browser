@@ -66,6 +66,7 @@ final class DenProfileResources {
     }
 
     let boardRuntimes: DenBoardRuntimes
+    let drawerRuntimes = DenDrawerRuntimes()
 
     var webRuntimes: [BoardID: WebRuntime] {
         get { boardRuntimes.web }

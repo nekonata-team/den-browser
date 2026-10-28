@@ -17,6 +17,7 @@ public enum DenWindowEffect {
     case revealNextBoard
     case requestConfirmation(DenConfirmationRequest)
     case openDrawerItem(UUID)
+    case drawerPeekMoved(UUID)
     case notificationAdded(UUID)
     case resetPresentation
     case fullscreenChanged(Bool)

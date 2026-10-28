@@ -93,8 +93,22 @@ final class DrawerActions {
 
     func drawerRuntime(for item: DrawerItem) -> WebRuntime {
         runtimes.ensureWebExtensionContext()
-        if let drawerPeekRuntime, drawerPeekRuntime.id == item.id {
-            return drawerPeekRuntime
+        for window in storage.windowConnections.allObjects
+        where window !== context.connection && window.windowResources?.drawerPeek?.id == item.id {
+            window.runtimes?.releaseDrawerPeek()
+            window.onWindowEffect?(.drawerPeekMoved(item.id))
+        }
+        if let runtime = storage.drawerRuntimes.web[item.id] {
+            if drawerPeekRuntime !== runtime { runtimes.releaseDrawerPeek() }
+            runtime.updateDrawerOwner(itemID: item.id, storage: storage, connection: context.connection)
+            if let webExtensionHost, let webExtensionWindow {
+                webExtensionHost.register(webView: runtime.webView, in: webExtensionWindow, initialURL: nil) {
+                    [weak runtime] url in runtime?.load(url)
+                }
+            }
+            webExtensionHost?.activate(webView: runtime.webView)
+            drawerPeekRuntime = runtime
+            return runtime
         }
         runtimes.releaseDrawerPeek()
         let runtime = WebRuntime(
@@ -104,51 +118,12 @@ final class DrawerActions {
             webExtensionHost: webExtensionHost,
             webExtensionWindow: webExtensionWindow,
             sheetScale: preferences.sheetScale,
-            onKeepInDrawer: { [weak self] url in
-                self?.keepInDrawer(url, opensDrawer: false)
-            },
-            onKeepInDrawerInBackground: { [weak self] url in
-                self?.keepInDrawerInBackground(url)
-            },
-            onDiscard: { [weak self] in
-                self?.discardDrawerItem(item.id)
-            },
-            onChange: { [weak self] itemID, url, title in
-                self?.updateDrawerItem(itemID: itemID, url: url, title: title)
-            },
-            onCopyURLSucceeded: { [weak self] in
-                self?.context.feedback.publish("Copied Current Sheet URL.", severity: .success)
-            },
-            onCopyURLFailed: { [weak self] in
-                self?.context.feedback.publish("Could not copy Current Sheet URL.", severity: .error)
-            },
-            onCopyMarkdownLinkSucceeded: { [weak self] in
-                self?.context.feedback.publish("Copied Current Sheet Markdown link.", severity: .success)
-            },
-            onCopyMarkdownLinkFailed: { [weak self] in
-                self?.context.feedback.publish("Could not copy Current Sheet Markdown link.", severity: .error)
-            },
-            onPasteURLFailed: { [weak self] in
-                self?.context.feedback.publish("Clipboard does not contain a supported URL.", severity: .warning)
-            },
-            downloadActivityOwnerID: ObjectIdentifier(self),
-            onDownloadActivity: { [weak self] event in
-                self?.context.connection.onDownloadActivity?(event)
-            },
-            onDownloadFinished: { [weak self] filename in
-                self?.context.feedback.publish("Downloaded '\(filename)'", severity: .success)
-            },
-            onDownloadFailed: { [weak self] filename in
-                self?.context.feedback.publish("Failed to download '\(filename)'", severity: .warning)
-            }
-        )
+            storage: storage,
+            connection: context.connection)
+        storage.drawerRuntimes.web[item.id] = runtime
         webExtensionHost?.activate(webView: runtime.webView)
         drawerPeekRuntime = runtime
         return runtime
-    }
-
-    private func updateDrawerItem(itemID: UUID, url: URL?, title: String?) {
-        storage.drawerItems.update(itemID, url: url, title: title)
     }
 
     func clearDrawer() {
@@ -156,8 +131,18 @@ final class DrawerActions {
     }
 
     func drawerBoardCreationNotifications(_ itemID: UUID) -> (BoardCreation.Notice) -> Void {
-        boardOpening.boardCreationNotifications(
-            existingRuntime: drawerPeekRuntime?.id == itemID ? drawerPeekRuntime : nil)
+        let runtime = storage.drawerRuntimes.web[itemID]
+        let notify = boardOpening.boardCreationNotifications(existingRuntime: runtime)
+        return { [self] notice in
+            if case .willInsert = notice, let runtime {
+                storage.drawerRuntimes.web.removeValue(forKey: itemID)
+                for window in storage.windowConnections.allObjects
+                where window.windowResources?.drawerPeek === runtime {
+                    window.runtimes?.releaseDrawerPeek()
+                }
+            }
+            notify(notice)
+        }
     }
 
     func drawerItemNotifications(opensDrawer: Bool = true, selectsItem: Bool = true) -> (DrawerItems.Notice) -> Void {
@@ -172,6 +157,7 @@ final class DrawerActions {
             case .didRestore(let id):
                 onWindowEffect?(.drawerItemRestored(id))
             case .didDiscard(let id, let previousItems, let advancesPeek, let focusNext):
+                storage.drawerRuntimes.dispose(id)
                 for presentation in storage.windowConnections.allObjects {
                     if presentation.windowResources?.drawerPeek?.id == id { presentation.runtimes?.releaseDrawerPeek() }
                     presentation.onWindowEffect?(
@@ -179,6 +165,7 @@ final class DrawerActions {
                             id, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
                 }
             case .didClear:
+                storage.drawerRuntimes.releaseAll()
                 for presentation in storage.windowConnections.allObjects {
                     presentation.runtimes?.releaseDrawerPeek()
                     presentation.onWindowEffect?(.drawerCleared)

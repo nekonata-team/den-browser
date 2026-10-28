@@ -365,6 +365,59 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         return url
     }
 
+    // Protects WebView remounting and responder activation after switching and closing Drawer.
+    // Unit tests cannot observe form state and key delivery through the mounted native surface.
+    @MainActor
+    func testDrawerRetainsFormAndReceivesInputAfterSwitchingAndReopening() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        fixtureDirectories.append(directory)
+        let url = directory.appending(path: "retained.html")
+        try "<html><head><title>Drawer Fixture</title></head><body><input aria-label='Retained input'></body></html>"
+            .write(
+                to: url, atomically: true, encoding: .utf8)
+        let app = launchApp(boardCount: .one, multipleDrawerItems: true, drawerSheetURL: url)
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        let input = drawer.textFields["Retained input"].firstMatch
+        let item = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Drawer Fixture")).firstMatch
+        let otherItem = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Next Drawer Fixture"))
+            .firstMatch
+
+        given("an opened Drawer Item holds a form value") {
+            enterDenMode(in: app)
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(item.waitForExistence(timeout: 5))
+            item.click()
+            XCTAssertTrue(input.waitForExistence(timeout: 10))
+            input.click()
+            app.typeText("seed")
+        }
+
+        when("switching to another Item and returning") {
+            otherItem.click()
+            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
+            item.click()
+        }
+
+        then("the original form value survives") {
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertEqual(input.value as? String, "seed")
+        }
+
+        when("closing and reopening Drawer, then typing without clicking the form") {
+            app.typeKey(.escape, modifierFlags: [.control])
+            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            enterDenMode(in: app)
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            app.typeText("continued")
+        }
+
+        then("the retained form receives the input") {
+            XCTAssertEqual(input.value as? String, "seedcontinued")
+        }
+    }
+
     // Protects WebView reparenting and responder activation through SwiftUI placement.
     // Unit tests cannot observe keyboard delivery to the newly mounted Board surface.
     @MainActor

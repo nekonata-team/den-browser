@@ -1,6 +1,6 @@
 import Foundation
 
-/// Peek and operation tasks belong to the window, rather than the Profile's Board registry.
+/// The window selects a Profile-owned Peek and owns its cancellable operation tasks.
 @MainActor
 final class DenWindowResources {
     var drawerPeek: WebRuntime?

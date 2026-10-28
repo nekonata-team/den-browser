@@ -147,11 +147,11 @@ Web material enters the Drawer when it is kept there. Keeping it does not change
 _Avoid_: Inbox item, task, bookmark, history entry
 
 **Drawer Peek**:
-The temporary live web presentation expanded beneath a Drawer Item in one Profile window. Its selection and live state belong to that window; the underlying Drawer Item remains Den-wide.
+The temporary live web presentation expanded beneath a Drawer Item in one Profile window. Selection belongs to the window; an opened Item's live state belongs to the Profile and survives closing or switching the Peek. Opening the same Item in another window moves its presentation there.
 _Avoid_: Board, floating Board, temporary Desk, Drawer Preview
 
 **Drawer Placement**:
-Creating a Board from a Drawer Item in the Focused Desk. Placement continues the invoking window’s live Drawer Peek when present; the placed item leaves the Drawer.
+Creating a Board from a Drawer Item in the Focused Desk. Placement continues the Item's live Drawer Peek when present, including a Peek last shown in another window; the placed item leaves the Drawer.
 _Avoid_: Restore, open tab, move to workspace
 
 **Drawer Discard**:

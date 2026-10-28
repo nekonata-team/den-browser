@@ -225,6 +225,8 @@ public final class DenWindowModel {
             pendingConfirmation = request
         case .openDrawerItem(let itemID):
             focusDrawerItem(itemID)
+        case .drawerPeekMoved(let itemID):
+            if drawer.expandedItemID == itemID { drawer.expandedItemID = nil }
         case .notificationAdded(let notificationID):
             notificationList.notificationWasAdded(notificationID)
         case .cancelBoardDrag:

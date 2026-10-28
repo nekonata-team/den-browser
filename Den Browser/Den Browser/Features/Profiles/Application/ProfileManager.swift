@@ -627,6 +627,7 @@ final class ProfileManager {
         storage.facingCache.removeAll()
         storage.boardRuntimes.releaseWeb()
         storage.boardRuntimes.releaseTerminal()
+        storage.drawerRuntimes.releaseAll()
     }
 
     private func load() {

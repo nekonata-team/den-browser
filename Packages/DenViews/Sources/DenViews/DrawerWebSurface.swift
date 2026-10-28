@@ -20,8 +20,18 @@ public struct DrawerWebSurface: NSViewRepresentable {
         update(nsView)
     }
 
+    public static func dismantleNSView(_ nsView: SurfaceHost<Bool, NSView>, coordinator: Void) {
+        // A newer Drawer or Board host may already own the same live WebView.
+        guard nsView.content.superview === nsView else { return }
+        nsView.content.isHidden = true
+        nsView.content.removeFromSuperview()
+    }
+
     private func update(_ host: SurfaceHost<Bool, NSView>) {
-        host.update(request: isFocused ? true : nil) { window in
+        guard webView.superview === host else { return }
+        webView.isHidden = false
+        host.update(request: isFocused ? true : nil) { [weak host] window in
+            guard let host, webView.superview === host else { return false }
             guard needsFirstResponderActivation(window.firstResponder, target: webView) else {
                 return true
             }

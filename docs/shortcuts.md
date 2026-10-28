@@ -178,13 +178,15 @@ Option-clicking a supported HTTP, HTTPS, or local file link captures it without 
 New Drawer Items appear first, and duplicate URLs remain separate.
 
 One Item at a time expands into a live Peek in each Profile window.
-Closing the Drawer retains that window's expanded Peek for reopening; collapsing the Peek releases its runtime but keeps the Item.
+Closing the Drawer retains that window's expanded Peek selection for reopening. Closing, collapsing or switching a Peek retains its live web state; unopened Items do not load.
+Opening the same Item in another Profile window moves its presentation there and collapses the previous window's Peek.
+Discarding an Item releases its live state. Opened Items consume resources until discarded, placed or the last Profile window closes.
 Opening a Drawer with an expanded Peek enters Sheet Input; without one it keeps Den Mode.
 Toggling Den Mode while the Drawer is open moves keyboard focus between its Items and the expanded Peek without collapsing it.
 Links opening a new browsing context in a Peek become Drawer Items; Command-click or middle-click keeps the current Peek, while adding Shift opens the new Item.
 Discarding an expanded Item opens the next visible Item's Peek, or the previous one when it was last; discarding a collapsed Item leaves the current Peek unchanged.
 Restoration selects and expands the Item, preserving Den Mode when invoked there; its ten-Item history lasts only for the current app run.
-Placement focuses the new Board, removes the Item, and closes the Drawer; it transfers an existing Peek from the invoking window without reloading and releases other windows' Peeks for that Item.
+Placement focuses the new Board, removes the Item, and closes the Drawer; it transfers the Item's retained live state without reloading, including when the Item is collapsed or was last shown in another window.
 URLs and titles persist; expanded Peek identity and live web state do not.
 
 ### Overview Controls

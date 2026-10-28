@@ -19,10 +19,6 @@ final class BoardOpeningActions {
     private var zmxClient: ZmxClient { context.zmxClient }
     private var zellijClient: ZellijClient { context.zellijClient }
     private var onWindowEffect: ((DenWindowEffect) -> Void)? { context.connection.onWindowEffect }
-    private var drawerPeekRuntime: WebRuntime? {
-        get { context.windowResources.drawerPeek }
-        set { context.windowResources.drawerPeek = newValue }
-    }
     private var webRuntimes: [BoardID: WebRuntime] {
         get { context.storage.webRuntimes }
         set { context.storage.webRuntimes = newValue }
@@ -65,7 +61,6 @@ final class BoardOpeningActions {
             switch notice {
             case .willInsert(let board):
                 if let existingRuntime {
-                    if drawerPeekRuntime === existingRuntime { drawerPeekRuntime = nil }
                     runtimes.attachWebRuntime(existingRuntime, to: board)
                 }
             case .prepareLinkFocus(let boardID, let origin):

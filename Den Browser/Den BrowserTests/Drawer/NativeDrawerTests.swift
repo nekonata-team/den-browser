@@ -165,7 +165,7 @@ struct NativeDrawerTests {
         #expect(session.windowResources.drawerPeek === runtime)
     }
 
-    @Test func drawerPeekPresentationIsWindowLocalAndSharedMetadataUsesLatestUpdate() throws {
+    @Test func drawerPeekMovesBetweenWindowsAndKeepsSharedMetadata() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://initial.example/")))
         try withSharedDrawerSessions(items: [item]) { first, second in
             let firstComposition = DenWindowComposition(session: first)
@@ -185,7 +185,10 @@ struct NativeDrawerTests {
             secondWindowModel.focusDrawerItem(item.id)
             let secondRuntime = second.drawer.drawerRuntime(for: item)
             #expect(secondWindowModel.drawer.expandedItemID == item.id)
-            #expect(firstRuntime !== secondRuntime)
+            #expect(firstRuntime === secondRuntime)
+            #expect(firstWindowModel.drawer.expandedItemID == nil)
+            #expect(first.windowResources.drawerPeek == nil)
+            #expect(second.windowResources.drawerPeek === firstRuntime)
 
             let firstURL = try #require(URL(string: "https://first.example/"))
             let secondURL = try #require(URL(string: "https://second.example/"))
@@ -219,7 +222,7 @@ struct NativeDrawerTests {
             #expect(first.resources.state.drawerItems.map(\.id) == [secondItem.id])
             #expect(firstWindowModel.drawer.selectedItemID == secondItem.id)
             #expect(secondWindowModel.drawer.selectedItemID == secondItem.id)
-            #expect(firstWindowModel.drawer.expandedItemID == secondItem.id)
+            #expect(firstWindowModel.drawer.expandedItemID == nil)
             #expect(secondWindowModel.drawer.expandedItemID == secondItem.id)
             #expect(first.windowResources.drawerPeek == nil)
             #expect(second.windowResources.drawerPeek == nil)
@@ -513,7 +516,7 @@ struct NativeDrawerTests {
         #expect(session.resources.webRuntimes.isEmpty)
     }
 
-    @Test func sharedPlacementTransfersInvokingWindowsPeekAndDisposesOtherPeek() throws {
+    @Test func sharedPlacementTransfersTheSameRuntimeFromAnotherWindow() throws {
         // Arrange
         let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
         try withSharedDrawerSessions(items: [item]) { first, second in
@@ -527,9 +530,125 @@ struct NativeDrawerTests {
             #expect(first.resources.webRuntimes[boardID] === firstPeek)
             #expect(second.resources.webRuntimes[boardID] === firstPeek)
             #expect(firstPeek.webView.navigationDelegate === firstPeek)
-            #expect(secondPeek.webView.navigationDelegate == nil)
+            #expect(secondPeek === firstPeek)
+            #expect(secondPeek.webView.navigationDelegate === secondPeek)
+            #expect(first.resources.drawerRuntimes.web.isEmpty)
             #expect(first.windowResources.drawerPeek == nil)
             #expect(second.windowResources.drawerPeek == nil)
+        }
+    }
+
+    @Test func switchingAndCollapsingItemsRetainsOnlyOpenedRuntimes() throws {
+        // Arrange
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        let unopened = DrawerItem(url: try #require(URL(string: "https://unopened.example/")))
+        withSharedDrawerSessions(items: [first, second, unopened]) { session, _ in
+            let composition = DenWindowComposition(session: session)
+            composition.connect()
+            defer {
+                composition.disconnect()
+                session.runtimes.releaseRuntimes()
+            }
+            composition.model.focusDrawerItem(first.id)
+            let firstRuntime = session.drawer.drawerRuntime(for: first)
+
+            // Act
+            composition.model.drawer.toggleItem(second.id)
+            let secondRuntime = session.drawer.drawerRuntime(for: second)
+            composition.model.drawer.toggleItem(second.id)
+
+            // Assert
+            #expect(session.windowResources.drawerPeek == nil)
+            #expect(session.resources.drawerRuntimes.web.count == 2)
+            #expect(session.resources.drawerRuntimes.web[unopened.id] == nil)
+            #expect(firstRuntime.webView.navigationDelegate === firstRuntime)
+            #expect(secondRuntime.webView.navigationDelegate === secondRuntime)
+            #expect((firstRuntime.webView as? RuntimeWKWebView)?.isFocusAllowed() == false)
+            #expect(session.drawer.drawerRuntime(for: first) === firstRuntime)
+        }
+    }
+
+    @Test func disconnectedWindowKeepsRuntimeAndBackgroundMetadataUntilAnotherWindowOpensIt() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://initial.example/")))
+        try withSharedDrawerSessions(items: [item]) { first, second in
+            defer { second.runtimes.releaseRuntimes() }
+            let runtime = first.drawer.drawerRuntime(for: item)
+            let nextURL = try #require(URL(string: "https://initial.example/next"))
+
+            // Act
+            first.connection.disconnect()
+            first.runtimes.releaseWindowResources()
+            runtime.handleURLOrTitleChange(url: nextURL, title: "Continued")
+
+            // Assert
+            #expect(first.windowResources.drawerPeek == nil)
+            #expect(first.resources.drawerRuntimes.web[item.id] === runtime)
+            #expect(second.resources.state.drawerItems[0].url == nextURL)
+            #expect(second.resources.state.drawerItems[0].title == "Continued")
+            #expect(second.drawer.drawerRuntime(for: item) === runtime)
+            #expect(runtime.webView.navigationDelegate === runtime)
+        }
+    }
+
+    @Test func discardingCollapsedItemDisposesItsRetainedRuntime() throws {
+        // Arrange
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        withSharedDrawerSessions(items: [first, second]) { session, _ in
+            defer { session.runtimes.releaseRuntimes() }
+            let discarded = session.drawer.drawerRuntime(for: first)
+            let retained = session.drawer.drawerRuntime(for: second)
+
+            // Act
+            session.drawer.discardDrawerItem(first.id)
+
+            // Assert
+            #expect(session.resources.drawerRuntimes.web[first.id] == nil)
+            #expect(discarded.webView.navigationDelegate == nil)
+            #expect(session.windowResources.drawerPeek === retained)
+            #expect(retained.webView.navigationDelegate === retained)
+        }
+    }
+
+    @Test func placementTransfersCollapsedRuntime() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://retained.example/")))
+        try withSharedDrawerSessions(items: [item]) { session, _ in
+            defer { session.runtimes.releaseRuntimes() }
+            let runtime = session.drawer.drawerRuntime(for: item)
+            session.runtimes.releaseDrawerPeek()
+
+            // Act
+            let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))
+
+            // Assert
+            #expect(session.resources.webRuntimes[boardID] === runtime)
+            #expect(runtime.boardID == boardID)
+            #expect(runtime.webView.navigationDelegate === runtime)
+            #expect(session.resources.drawerRuntimes.web.isEmpty)
+            #expect(session.resources.state.drawerItems.isEmpty)
+        }
+    }
+
+    @Test func releasingProfileRuntimesDisposesEveryRetainedItem() throws {
+        // Arrange
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        withSharedDrawerSessions(items: [first, second]) { session, other in
+            let firstRuntime = session.drawer.drawerRuntime(for: first)
+            let secondRuntime = other.drawer.drawerRuntime(for: second)
+
+            // Act
+            session.runtimes.releaseRuntimes()
+
+            // Assert
+            #expect(session.resources.drawerRuntimes.web.isEmpty)
+            #expect(session.windowResources.drawerPeek == nil)
+            #expect(other.windowResources.drawerPeek == nil)
+            #expect(firstRuntime.webView.navigationDelegate == nil)
+            #expect(secondRuntime.webView.navigationDelegate == nil)
         }
     }
 

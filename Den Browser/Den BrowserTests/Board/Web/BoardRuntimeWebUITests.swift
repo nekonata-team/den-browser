@@ -209,16 +209,18 @@ struct BoardRuntimeWebUITests {
         var keptURL: URL?
         var backgroundURL: URL?
         let runtime = WebRuntime(
-            item: item,
+            id: item.id,
+            initialURL: item.url,
+            presentation: .drawer,
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
             sheetScale: 100,
-            onKeepInDrawer: { keptURL = $0 },
-            onKeepInDrawerInBackground: { backgroundURL = $0 },
-            onDiscard: {},
-            onChange: { _, _, _ in },
-            onDownloadFinished: { _ in },
-            onDownloadFailed: { _ in }
+            sheetNavigationActions: .init(
+                onOpenBoard: { keptURL = $0 },
+                onOpenBoardInBackground: { backgroundURL = $0 },
+                onKeepInDrawer: { keptURL = $0 },
+                isSupportedSheetURL: WebURLPolicy.isSupported),
+            events: .init(onChange: { _, _, _ in })
         )
         defer { runtime.dispose() }
 

@@ -173,7 +173,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
 
         if let boardWebView = webView as? RuntimeWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
-                self?.presentation == .drawer || (self?.events.isFocused() ?? false)
+                self?.events.isFocused() ?? false
             }
             boardWebView.onRejectedFocus = { [weak self] in
                 self?.events.restoreFocusedFirstResponder()
@@ -266,7 +266,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         sheetNavigation.updateActions(sheetNavigationActions, for: webView)
         if let boardWebView = webView as? RuntimeWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
-                self?.presentation == .drawer || (self?.events.isFocused() ?? false)
+                self?.events.isFocused() ?? false
             }
             boardWebView.onRejectedFocus = { [weak self] in
                 self?.events.restoreFocusedFirstResponder()
