@@ -25,7 +25,13 @@ struct DenIPCTransportTests {
         #expect(
             DenSocketPath.resolve(
                 environment: ["DEN_SOCKET": "/tmp/environment.sock"],
+                defaultPath: "/tmp/private.sock",
                 homeDirectory: home) == "/tmp/environment.sock")
+        #expect(
+            DenSocketPath.resolve(
+                environment: [:],
+                defaultPath: "/tmp/private.sock",
+                homeDirectory: home) == "/tmp/private.sock")
         #expect(
             DenSocketPath.resolve(environment: [:], homeDirectory: home) == "/tmp/den-home/.den/den.sock")
     }

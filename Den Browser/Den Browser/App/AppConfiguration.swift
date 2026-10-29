@@ -42,9 +42,9 @@ struct AppConfiguration {
                 defaults.set(MotionPreference.standard.rawValue, forKey: "preferences.appearance.motion.mode")
                 defaults.set(
                     FocusedBoardCentering.onOverflow.rawValue, forKey: "preferences.appearance.board-centering.mode")
-                let socket =
-                    processInfo.environment["DEN_SOCKET"]
-                    ?? DenSocketPath.temporary(prefix: "den-demo", identifier: runID)
+                let socket = DenSocketPath.resolve(
+                    environment: processInfo.environment,
+                    defaultPath: DenSocketPath.temporary(prefix: "den-demo", identifier: runID))
                 let initialProfile: PersistedProfile =
                     if let seedPath = argumentValue(after: "--initial-profile", in: processInfo.arguments),
                         let profile = try? loadInitialProfile(at: URL(fileURLWithPath: seedPath))
@@ -64,12 +64,9 @@ struct AppConfiguration {
             if let domainName = Bundle.main.bundleIdentifier {
                 WindowStatePreferences.removeLegacyProfileState(defaults: .standard, domainName: domainName)
             }
-            let ipcSocketPath =
-                if isPrivateDen {
-                    DenSocketPath.temporary(prefix: "den-private")
-                } else {
-                    DenSocketPath.resolve()
-                }
+            let ipcSocketPath = DenSocketPath.resolve(
+                environment: processInfo.environment,
+                defaultPath: isPrivateDen ? DenSocketPath.temporary(prefix: "den-private") : nil)
             return AppConfiguration(
                 profileDirectoryURL: ProfileManager.defaultDirectoryURL(),
                 defaults: .standard,

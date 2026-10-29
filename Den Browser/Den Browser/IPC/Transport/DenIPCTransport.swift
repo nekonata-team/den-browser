@@ -12,12 +12,13 @@ nonisolated enum DenSocketPath {
     static func resolve(
         explicit: String? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment,
+        defaultPath: String? = nil,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> String {
         if let explicit { return explicit }
         if let socket = environment["DEN_SOCKET"], !socket.isEmpty {
             return socket
         }
-        return homeDirectory.appending(path: ".den/den.sock").path
+        return defaultPath ?? homeDirectory.appending(path: ".den/den.sock").path
     }
 }
