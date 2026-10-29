@@ -45,6 +45,7 @@ enum EssentialsAction: Equatable {
     case launchSelectedInDrawer
     case showNotFound(String)
     case launch(UUID)
+    case launchInDrawer(UUID)
     case saveFocusedBoardAsEssential
 }
 
@@ -232,6 +233,7 @@ enum AppActionHandler {
                 }
                 session.context.feedback.publish("No Essential assigned to '\(label)'.", severity: .warning)
             case .launch(let id): windowModel.launchEssential(id: id)
+            case .launchInDrawer(let id): windowModel.launchEssential(id: id, inDrawer: true)
             case .saveFocusedBoardAsEssential: windowModel.saveFocusedBoardAsEssential()
             }
         case .desk(let action):

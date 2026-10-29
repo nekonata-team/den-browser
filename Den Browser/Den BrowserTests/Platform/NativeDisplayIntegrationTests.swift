@@ -12,6 +12,49 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct NativeDisplayIntegrationTests {
+    @Test func essentialsPanelHeightFollowsContentUntilScrollLimit() async throws {
+        // Arrange
+        func panelHeight(count: Int) async throws -> CGFloat {
+            let essentials = (0..<count).map {
+                Essential(name: "Essential \($0)", key: "a", input: "https://example.com/\($0)")
+            }
+            let window = TestWindow()
+            defer { window.contentView = nil }
+            var height: CGFloat = 0
+            window.contentView = NSHostingView(
+                rootView: EssentialsPrefixPanel(
+                    profileColor: .blue, essentials: essentials, onSelect: { _ in }, onOpenInDrawer: { _ in }
+                )
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: {
+                    height = $0
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top))
+            let deadline = ContinuousClock.now + .seconds(5)
+            var stableSamples = 0
+            while stableSamples < 3, ContinuousClock.now < deadline {
+                let previous = height
+                window.contentView?.layoutSubtreeIfNeeded()
+                try await Task.sleep(for: .milliseconds(20))
+                stableSamples = height > 0 && height == previous ? stableSamples + 1 : 0
+            }
+            #expect(stableSamples == 3)
+            return height
+        }
+
+        // Act
+        let one = try await panelHeight(count: 1)
+        let three = try await panelHeight(count: 3)
+        let thirty = try await panelHeight(count: 30)
+        let sixty = try await panelHeight(count: 60)
+
+        // Assert
+        #expect(one < three)
+        #expect(three < thirty)
+        #expect(abs(thirty - sixty) < 1)
+    }
+
     @Test func appConstructsNotificationViewWithTheWindowModel() {
         // Arrange
         let session = ProfileWindowSession(

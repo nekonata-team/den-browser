@@ -264,8 +264,8 @@ enum KeyboardRouter {
             if event.modifiers == [.option] { return .perform(.essentials(.launchSelectedInDrawer)) }
         }
         guard
-            event.modifiers == [] || event.modifiers == [.shift],
-            let character = event.characters,
+            event.modifiers.subtracting([.option, .shift]).isEmpty,
+            let character = event.modifiers.contains(.option) ? event.character : event.characters,
             !character.isEmpty
         else {
             return .perform(.essentials(.exitPrefix))
@@ -273,7 +273,8 @@ enum KeyboardRouter {
         guard let essential = shortcuts.essential(matching: character) else {
             return .perform(.essentials(.showNotFound(character)))
         }
-        return .perform(.essentials(.launch(essential.id)))
+        return .perform(
+            .essentials(event.modifiers.contains(.option) ? .launchInDrawer(essential.id) : .launch(essential.id)))
     }
 
     private static func routeDenMode(_ event: KeyEvent) -> InputDecision {

@@ -1730,6 +1730,39 @@ struct KeyboardShortcutTests {
         #expect(windowModel.selectedEssentialID == nil)
     }
 
+    @Test(arguments: ["c", "C", " "])
+    func essentialsPrefixOptionKeyOpensMatchingEssentialInDrawer(key: String) throws {
+        // Arrange
+        let original = board("First")
+        let session = try makeSession(boards: [original])
+        let composition = DenWindowComposition(session: session)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let first = Essential(name: "First", key: "a", input: "https://first.example")
+        let matching = Essential(name: "Matching", key: key, input: "https://drawer.example")
+        let otherCase = Essential(name: "Other case", key: key == "C" ? "c" : "C", input: "https://other.example")
+        #expect(session.configuration.preferences.setEssentials([first, matching, otherCase]))
+        windowModel.showEssentialsPrefix()
+        let event = try keyEvent(
+            characters: key == " " ? " " : "ç", charactersIgnoringModifiers: key,
+            modifiers: key == "C" ? [.option, .shift] : [.option], keyCode: key == " " ? 49 : 8)
+
+        // Act
+        let decision = KeyboardController.decision(for: event, session: session, windowModel: windowModel)
+        let handled = KeyboardController.handle(event, session: session, windowModel: windowModel)
+
+        // Assert
+        #expect(decision == .perform(.essentials(.launchInDrawer(matching.id))))
+        #expect(handled)
+        let item = try #require(session.resources.state.drawerItems.first)
+        #expect(item.url?.host == "drawer.example")
+        #expect(session.navigation.focusedDesk?.boards.map(\.id) == [original.id])
+        #expect(windowModel.isDrawerOpen)
+        #expect(windowModel.drawer.expandedItemID == item.id)
+        #expect(windowModel.selectedEssentialID == nil)
+    }
+
     @Test func essentialsPrefixOptionReturnRejectsBoardCommands() throws {
         // Arrange
         let session = try makeSession(boards: [board("First")])

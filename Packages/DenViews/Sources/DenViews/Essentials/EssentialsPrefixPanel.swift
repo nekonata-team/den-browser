@@ -9,6 +9,8 @@ public struct EssentialsPrefixPanel: View {
     public let selectedEssentialID: UUID?
     public let onSelect: (UUID) -> Void
     public let onOpenInDrawer: (UUID) -> Void
+    @State private var opensInDrawer = false
+    @State private var listHeight: CGFloat = 0
 
     public init(
         profileColor: Color, essentials: [Essential], selectedEssentialID: UUID? = nil,
@@ -26,6 +28,15 @@ public struct EssentialsPrefixPanel: View {
             DenPanelHeader(systemSymbol: .sparkles) {
                 Text("Essentials")
                     .font(.headline)
+                Spacer()
+                if !essentials.isEmpty {
+                    Label(
+                        opensInDrawer ? "Add to Drawer" : "Open Board",
+                        systemSymbol: opensInDrawer ? .tray : .plusRectangle
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
             }
 
             if essentials.isEmpty {
@@ -36,29 +47,39 @@ public struct EssentialsPrefixPanel: View {
                 }
                 .foregroundStyle(.secondary)
             } else {
-                ViewThatFits(in: .vertical) {
-                    essentialRows
-                        .fixedSize(horizontal: false, vertical: true)
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            essentialRows
-                        }
-                        .onAppear { scrollToSelectedEssential(using: proxy) }
-                        .onChange(of: selectedEssentialID) { _, _ in
-                            scrollToSelectedEssential(using: proxy)
-                        }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        essentialRows
+                            .fixedSize(horizontal: false, vertical: true)
+                            .onGeometryChange(for: CGFloat.self) {
+                                $0.size.height
+                            } action: {
+                                listHeight = $0
+                            }
+                    }
+                    .frame(height: min(listHeight, DenPanelLayout.standardListMaxHeight))
+                    .onChange(of: listHeight) { _, _ in
+                        scrollToSelectedEssential(using: proxy)
+                    }
+                    .onChange(of: selectedEssentialID) { _, _ in
+                        scrollToSelectedEssential(using: proxy)
                     }
                 }
-                .frame(maxHeight: DenPanelLayout.standardListMaxHeight)
             }
 
-            DenPanelHint(
-                essentials.isEmpty
-                    ? "Press Escape to cancel"
-                    : "↑↓ Focus · Return Start · ⌥Return / ⌥Click Drawer · Essential key Start · Esc Cancel"
-            )
+            if essentials.isEmpty {
+                DenPanelHint("Press Escape to cancel")
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    DenPanelHint(opensInDrawer ? "⌥Key / ⌥Return Add to Drawer" : "Essential key / Return Open Board")
+                    DenPanelHint("↑↓ Select · Hold ⌥ for Drawer · Click Select · ⌥Click Drawer · Esc Cancel")
+                }
+            }
         }
         .denPanel()
+        .onModifierKeysChanged(mask: .option) { _, modifiers in
+            opensInDrawer = modifiers.contains(.option)
+        }
     }
 
     private var essentialRows: some View {
@@ -66,14 +87,25 @@ public struct EssentialsPrefixPanel: View {
             ForEach(essentials) { essential in
                 let isSelected = essential.id == selectedEssentialID
                 HStack(spacing: DenPanelLayout.controlSpacing) {
-                    ShortcutChip(tokens: [essential.displayKey], width: 42)
-                    Text(essential.name)
-                        .fontWeight(isSelected ? .semibold : .regular)
-                        .lineLimit(1)
+                    Image(systemSymbol: inputSymbol(for: essential))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(essential.name)
+                            .fontWeight(isSelected ? .semibold : .regular)
+                            .lineLimit(1)
+                        Text(essential.input)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
                     Spacer(minLength: 0)
+                    ShortcutChip(tokens: [essential.displayKey], width: 42)
                 }
                 .padding(.horizontal, 8)
-                .frame(minHeight: 36)
+                .padding(.vertical, 8)
                 .denSelectionHighlight(isSelected, profileColor: profileColor, showsInactiveBackground: true)
                 .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
                 .onTapGesture {
@@ -88,9 +120,18 @@ public struct EssentialsPrefixPanel: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
                 .accessibilityHint(
-                    "Return starts this Essential. Option Return or Option click opens a URL, search, or Terminal command in Drawer. Its shortcut starts it directly."
+                    "Return or its shortcut opens a Board. Hold Option with Return, its shortcut, or a click to open in Drawer."
                 )
             }
+        }
+    }
+
+    private func inputSymbol(for essential: Essential) -> SFSymbol {
+        switch essential.input.split(maxSplits: 1, whereSeparator: \.isWhitespace).first {
+        case ":terminal": .appleTerminal
+        case ":zellij": .rectangleSplit3x1
+        case ":zmx": .appleTerminalOnRectangle
+        default: .link
         }
     }
 

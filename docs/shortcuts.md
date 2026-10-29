@@ -18,7 +18,7 @@ Available globally or while focused in a Sheet.
 
 When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
 
-In Essentials, **Option + Return** or **Option-click** opens the selected Essential’s URL, search or Terminal command in Drawer. Tutorials and the unnamed zmx session picker require a Board.
+In Essentials, **Option + an Essential key** opens that Essential in Drawer; Shift preserves uppercase keys. **Option + Return** opens the selected Essential, and **Option-click** opens the clicked one in Drawer. URLs, searches and Terminal commands are supported; tutorials and the unnamed zmx session picker require a Board. The panel shows each Essential’s input and changes its destination hint while Option is held.
 
 In Open Board, **Option + Return** opens the typed URL, search, Terminal command, or selected Recent Item in a new Drawer Peek without adding a Board. `:terminal [path]`, `:zellij [session]` and `:zmx <session>` use the same validation as opening a Board. `:tutorial` and unnamed `:zmx` show a validation message instead. Return continues to open a Board. Option-clicking a Recent Item also opens it in Drawer.
 
@@ -85,6 +85,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `o` | Toggle Overview |
 | `i` | Show Notifications (`Up` / `Down` to select, `Return` to open) |
 | `g`, then Essential key | Start that Essential Board input directly |
+| `g`, then `Option` + Essential key | Open that Essential in Drawer |
 | After `g`: `Up` / `Down`, then `Return` | Focus an Essential and start it; focus wraps at either end |
 | `,` | Open Settings |
 | `?` | Show Keyboard Shortcuts guide |
