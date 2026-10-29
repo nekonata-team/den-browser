@@ -5,7 +5,7 @@ import SFSafeSymbols
 import SwiftUI
 
 public struct OpenBoardPanel: View {
-    private static let maximumVisibleRecentItemCount = 5
+    private static let maximumInitialRecentItemCount = 20
 
     @Environment(BoardEditingModel.self) private var editing
     @Environment(DenWindowModel.self) private var windowModel
@@ -24,11 +24,13 @@ public struct OpenBoardPanel: View {
 
     private var filteredRecentItems: [RecentItem] {
         let query = openBoard.input.trimmingCharacters(in: .whitespacesAndNewlines)
-        return Array(
-            editing.recentItems.lazy.filter {
-                query.isEmpty || $0.displayText.localizedCaseInsensitiveContains(query)
-                    || ($0.title?.localizedCaseInsensitiveContains(query) ?? false)
-            }.prefix(Self.maximumVisibleRecentItemCount))
+        if query.isEmpty {
+            return Array(editing.recentItems.prefix(Self.maximumInitialRecentItemCount))
+        }
+        return editing.recentItems.filter {
+            $0.displayText.localizedCaseInsensitiveContains(query)
+                || ($0.title?.localizedCaseInsensitiveContains(query) ?? false)
+        }
     }
 
     private var urlTextBinding: Binding<String> {
@@ -36,6 +38,13 @@ public struct OpenBoardPanel: View {
             get: { openBoard.input },
             set: { openBoard.input = $0 }
         )
+    }
+
+    private var recentListHeight: CGFloat {
+        let items = filteredRecentItems
+        let rowsHeight = items.reduce(CGFloat.zero) { $0 + ($1.title == nil ? 30 : 38) }
+        let spacing = CGFloat(max(0, items.count - 1)) * DenPanelLayout.contentSpacing
+        return min(rowsHeight + spacing, DenPanelLayout.standardListMaxHeight)
     }
 
     public var body: some View {
@@ -107,17 +116,28 @@ public struct OpenBoardPanel: View {
                     .accessibilityLabel("Clear Recent")
                 }
 
-                ForEach(filteredRecentItems) { item in
-                    OpenBoardRecentRow(
-                        item: item,
-                        opensInDrawer: openBoard.opensInDrawer,
-                        isSelected: item.id == selectedRecentItemID,
-                        matchedEssential: editing.essentials.first { item.matches(essential: $0) },
-                        profileColor: profileColor,
-                        onOpen: { submitBoard(item.displayText, inDrawer: $0) },
-                        onSaveEssential: { windowModel.showSaveEssentialPanel(for: item) },
-                        onRemove: { editing.removeRecentItem(item) }
-                    )
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: DenPanelLayout.contentSpacing) {
+                            ForEach(filteredRecentItems) { item in
+                                OpenBoardRecentRow(
+                                    item: item,
+                                    opensInDrawer: openBoard.opensInDrawer,
+                                    isSelected: item.id == selectedRecentItemID,
+                                    matchedEssential: editing.essentials.first { item.matches(essential: $0) },
+                                    profileColor: profileColor,
+                                    onOpen: { submitBoard(item.displayText, inDrawer: $0) },
+                                    onSaveEssential: { windowModel.showSaveEssentialPanel(for: item) },
+                                    onRemove: { editing.removeRecentItem(item) }
+                                )
+                                .id(item.id)
+                            }
+                        }
+                    }
+                    .frame(height: recentListHeight)
+                    .onChange(of: selectedRecentItemID) { _, id in
+                        if let id { proxy.scrollTo(id) }
+                    }
                 }
             }
 
