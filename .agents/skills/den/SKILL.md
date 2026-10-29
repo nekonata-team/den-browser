@@ -29,7 +29,7 @@ If `den` is not in PATH, use `/Applications/Den Browser.app/Contents/MacOS/den`.
 
 Use `--json` for every operational command. Use TTY output only when presenting results to a person.
 
-Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, `.drawer_items[]`, and `.profiles[]`. Common fields include `.id`, `.board_id`, `.target_board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
+Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, `.drawer_items[]`, and `.profiles[]`. Common fields include `.id`, `.board_id`, `.target_board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.markdown`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
 
 If readiness is uncertain, run `den health --json`; it does not target a Desk or Board. When running inside a Terminal Board, Den provides `DEN_BOARD_ID`, `DEN_PROFILE`, and `DEN_SOCKET`. Use ambient targeting by default. Use `--profile <uuid>` to target another Profile; it must have an active window. Use `--board <id>` on operations that target an existing Board when the target is newly created, ambiguous, or another Board. Web and Terminal operations require the corresponding Board kind; `new` creates a Board and does not accept `--board` or `--snapshot`.
 
@@ -57,6 +57,8 @@ The last Desk cannot be removed. Discover target UUIDs with `den desk list --jso
 
 ## Web interaction
 
+Use `den board web read` to understand page content as Markdown, `text` for plain text or API response bodies, and `snapshot` for interaction targets and state. `read --within <selector|ref>` limits reading to an observed region, such as the main content; see `den board web read --help` for options.
+
 Create a Web Board with `den board web new <url> --json`. To reuse one, pass its Board ID to `den board web navigate <url> --board <id> --json`; `new` creates a Board, while `navigate` changes the Current Sheet in an existing Board's Sheet Stack.
 
 For existing-Board Sheet operations, add `--snapshot` when the resulting state determines the next action. The response keeps the usual result and adds `.snapshot` from the same resolved Web Board. For known short sequences, prefer `den board web interact`: it fixes the target Board once and returns completion metadata. Add `--snapshot` for one final observation, or `--snapshot --full` for the full semantic tree. Without `--snapshot`, it does not capture a snapshot.
@@ -65,7 +67,7 @@ Snapshots show interactive elements inside their semantic ancestor areas, short 
 
 Snapshot capture does not wait for asynchronous page updates. Use condition-based `wait --snapshot`, or include `wait` as the final batch step, when the next decision depends on unfinished state. Otherwise, proceed; fixed-duration waits are unsupported. If an action succeeds but snapshot capture fails, inspect the error and current state before repeating the action.
 
-See [Web Board operation examples](references/web.md) to choose between body text and snapshots, or to work with controls, forms, waits, extraction, and dynamic scrolling. Optional HTTP status diagnostics are covered at the end.
+See [Web Board operation examples](references/web.md) to choose between Markdown, plain text, and snapshots, or to work with controls, forms, waits, extraction, and dynamic scrolling. Optional HTTP status diagnostics are covered at the end.
 
 ## Terminal work
 

@@ -186,6 +186,7 @@ struct BoardWebCommand: ParsableCommand {
             WebWaitCommand.self,
             WebEvalCommand.self,
             WebTextCommand.self,
+            WebReadCommand.self,
             WebSnapshotCommand.self,
             WebQueryCommand.self,
             WebGetCommand.self,

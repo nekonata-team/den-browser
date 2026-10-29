@@ -5,6 +5,55 @@ import Testing
 @testable import Den_Browser
 
 struct DenWebCommandTests {
+    @Test(arguments: [String?.none, "main", "@e1"])
+    func readReturnsMarkdownAndSourceMetadataForExplicitBoard(within: String?) async throws {
+        // Arrange
+        let boardID = UUID()
+        let socketPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("den-read-\(UUID().uuidString).sock").path
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            do {
+                let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
+                guard request.operation == .sheet(command: .read(within: within), target: .explicit(boardID)) else {
+                    return try encodeResponse(.failure("Expected read command with explicit Board"))
+                }
+                return try encodeResponse(
+                    .success(.reading(title: "Guide", url: "https://example.com/", markdown: "# Guide")))
+            } catch {
+                return Data()
+            }
+        }
+        defer { server.stop() }
+        let process = Process()
+        process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
+        process.arguments = [
+            "board", "web", "read", "--board", boardID.uuidString, "--socket", socketPath, "--json",
+        ]
+        if let within { process.arguments?.append(contentsOf: ["--within", within]) }
+        let output = Pipe()
+        process.standardOutput = output
+
+        // Act
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            process.terminationHandler = { _ in continuation.resume() }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+        let result = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
+
+        // Assert
+        #expect(process.terminationStatus == 0)
+        #expect(result["ok"] as? Bool == true)
+        #expect(result["title"] as? String == "Guide")
+        #expect(result["url"] as? String == "https://example.com/")
+        #expect(result["markdown"] as? String == "# Guide")
+        #expect(result["text"] == nil)
+    }
+
     @Test(arguments: [Int?.none, 200, 404, 500])
     func statusReturnsHTTPCodeOrExplicitNull(status: Int?) async throws {
         // Arrange

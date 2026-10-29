@@ -95,6 +95,20 @@ struct WebTextCommand: ParsableCommand {
     }
 }
 
+struct WebReadCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "read",
+        abstract: "Read the Current Sheet as Markdown, preserving headings, links, lists, tables, and code")
+
+    @OptionGroup var target: WebTargetOptions
+    @Option(name: .long, help: "Read only one CSS selector or element reference")
+    var within: String?
+
+    func run() throws {
+        try DenIPCClient.execute(command: .read(within: within), options: target)
+    }
+}
+
 struct WebSnapshotCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "snapshot",
@@ -638,6 +652,12 @@ private enum DenSheetInteractParser {
         case "text":
             try requireArguments(0...0, "text does not accept arguments")
             return .text
+        case "read":
+            let parsed = try parseOptions(arguments, valued: ["--within"], flags: [])
+            guard parsed.positionals.isEmpty else {
+                throw usage("Usage: den board web read [--within <selector|ref>]")
+            }
+            return .read(within: parsed.values["--within"])
 
         case "back":
             try requireArguments(0...0, "back does not accept arguments")

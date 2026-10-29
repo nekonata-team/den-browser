@@ -43,6 +43,7 @@ private enum DenMCPToolName: String, Sendable {
     case openSheet = "open_sheet"
     case inspectSheet = "inspect_sheet"
     case readSheetText = "read_sheet_text"
+    case readSheetMarkdown = "read_sheet_markdown"
     case querySheet = "query_sheet"
     case readSheetElement = "read_sheet_element"
     case readSheetState = "read_sheet_state"
@@ -99,6 +100,8 @@ private enum DenMCPArgument: String, Sendable {
 }
 
 private enum DenMCPOutputField: String {
+    case title
+    case markdown
     case profiles
     case profile
     case profileID = "profile_id"
@@ -210,6 +213,10 @@ private struct DenMCPToolDefinition: Sendable {
             .inspectSheet, "Read the Current Sheet URL and semantic snapshot; full defaults to false.",
             [.profileID: uuid(), .boardID: uuid(), .full: bool(), .within: string()], readOnly: true),
         .init(.readSheetText, "Read visible text from the Current Sheet.", sheetTarget, readOnly: true),
+        .init(
+            .readSheetMarkdown,
+            "Read the Current Sheet as Markdown with title and URL; within scopes to one selector or ref. No article extraction.",
+            sheetTarget.merging([.within: string()]) { _, new in new }, readOnly: true),
         .init(
             .querySheet,
             "Return matching elements; fields defaults to tag, role, name, and text; visible and all default to false.",
@@ -361,6 +368,8 @@ private struct DenMCPToolDefinition: Sendable {
             case .openSheet: board.merging([.url: stringSchema, .message: stringSchema]) { _, new in new }
             case .inspectSheet: board.merging([.url: stringSchema, .snapshot: stringSchema]) { _, new in new }
             case .readSheetText, .readTerminalSession: board.merging([.text: stringSchema]) { _, new in new }
+            case .readSheetMarkdown:
+                board.merging([.title: stringSchema, .url: stringSchema, .markdown: stringSchema]) { _, new in new }
             case .querySheet: board.merging([.elements: arraySchema]) { _, new in new }
             case .readSheetElement:
                 board.merging([
@@ -510,6 +519,8 @@ private struct DenMCPToolRunner: Sendable {
             )
         case .readSheetText:
             return try sheetOperation(.text, input: input)
+        case .readSheetMarkdown:
+            return try sheetOperation(.read(within: try input.string(.within)), input: input)
         case .querySheet:
             let fields = try input.strings(.fields)
             return try sheetOperation(

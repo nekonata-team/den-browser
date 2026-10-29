@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { build } from 'esbuild';
 
 const execFileAsync = promisify(execFile);
 
@@ -37,6 +38,18 @@ const entries = [
 
 try {
   await mkdir(resolve(outputDir), { recursive: true });
+
+  await build({
+    entryPoints: [resolve(packageRoot, 'src/sheet-read/entry.ts')],
+    outfile: resolve(outputDir, 'SheetRead.js'),
+    bundle: true,
+    format: 'iife',
+    globalName: 'denSheetRead',
+    target: 'es2022',
+    banner: {
+      js: `/* Turndown and turndown-plugin-gfm; includes collapse-whitespace\nCopyright (c) 2014 Luc Thevenard <lucthevenard@gmail.com>\n${await readFile(resolve(packageRoot, 'node_modules/turndown/LICENSE'), 'utf8')}*/`,
+    },
+  });
 
   for (const { entry, output } of entries) {
     let result;
@@ -75,4 +88,4 @@ try {
   await rm(tempRoot, { force: true, recursive: true });
 }
 
-console.log(`Embedded JavaScript built (${entries.length} resources)`);
+console.log(`Embedded JavaScript built (${entries.length + 1} resources)`);

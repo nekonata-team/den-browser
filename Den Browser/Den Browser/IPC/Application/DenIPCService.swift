@@ -559,6 +559,9 @@ final class DenIPCService {
                     "document.body?.innerText ?? document.documentElement?.textContent ?? ''")
                 return .success(.text("\(evalResult ?? "")"))
 
+            case .read(let within):
+                return .success(try await SheetReading.read(in: runtime.webView, within: within))
+
             case .back:
                 guard runtime.webView.canGoBack else {
                     return .failure("Cannot go back: no previous page in history")

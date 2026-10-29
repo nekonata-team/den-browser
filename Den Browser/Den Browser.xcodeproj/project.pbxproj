@@ -435,6 +435,8 @@
 				"$(SRCROOT)/../scripts/embedded-js/globals.d.ts",
 				"$(SRCROOT)/../scripts/embedded-js/package.json",
 				"$(SRCROOT)/../scripts/embedded-js/pnpm-lock.yaml",
+				"$(SRCROOT)/../scripts/embedded-js/pnpm-workspace.yaml",
+				"$(SRCROOT)/../scripts/embedded-js/src/sheet-read/entry.ts",
 				"$(SRCROOT)/../scripts/embedded-js/src/picture-in-picture/entry.ts",
 				"$(SRCROOT)/../scripts/embedded-js/src/inspection/entry.ts",
 				"$(SRCROOT)/../scripts/embedded-js/src/sheet-dom/entry.ts",
@@ -444,6 +446,7 @@
 			);
 			name = "Generate embedded JavaScript";
 			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetRead.js",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetDOM.js",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetNavigation.js",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/PictureInPicture.js",

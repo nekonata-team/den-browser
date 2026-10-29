@@ -8,6 +8,9 @@ Den Browser includes the following MIT-licensed software:
 - [Ghostty](https://github.com/ghostty-org/ghostty), copyright © 2024 Mitchell Hashimoto and Ghostty contributors.
 - [libghostty-spm](https://github.com/Lakr233/libghostty-spm), copyright © 2026 Lakr233.
 - [MSDisplayLink](https://github.com/Lakr233/MSDisplayLink), copyright © 2024 Lakr Aream.
+- [Turndown](https://github.com/mixmark-io/turndown), copyright © 2017 Dom Christie.
+- [turndown-plugin-gfm](https://github.com/mixmark-io/turndown-plugin-gfm), copyright © 2017 Dom Christie.
+- collapse-whitespace, adapted within Turndown, copyright © 2014 Luc Thevenard.
 
 For each work, the following license applies:
 

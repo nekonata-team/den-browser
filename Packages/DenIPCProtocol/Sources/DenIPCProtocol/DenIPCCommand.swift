@@ -38,6 +38,7 @@ public nonisolated enum DenIPCCommand {
         case reload
         case eval(DenSheetEvalPayload)
         case text
+        case read(within: String?)
         case back
         case forward
         case press(DenSheetPressPayload)

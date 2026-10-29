@@ -253,6 +253,8 @@ enum DenIPCClient {
             }
         case .text(let text), .value(let text), .attribute(let text), .screenshotPath(let text):
             print(text)
+        case .reading(let title, let url, let markdown):
+            print("Title: \(title)\nURL: \(url)\n\n\(markdown)")
         case .checked(let checked), .visible(let checked), .enabled(let checked):
             print(checked ? "true" : "false")
         case .count(let count):

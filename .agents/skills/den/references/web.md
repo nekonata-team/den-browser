@@ -6,7 +6,8 @@ Examples use `den board web` to operate on a Web Board's Current Sheet. Replace 
 
 | Goal | Command | Read from JSON |
 | --- | --- | --- |
-| Read a page or API response body | `text` | `.text`, a string |
+| Understand page content with headings, links, tables, and code | `read` | `.markdown`, with `.title` and `.url` |
+| Read plain text or an API response body | `text` | `.text`, a string |
 | Find controls and their semantic context | `snapshot` | `.snapshot`, with element references |
 | Inspect visual layout or Canvas content | `screenshot` | `.screenshot_path`, a PNG file path |
 | Extract selected DOM data | `query` or `get` | Requested element fields |
@@ -21,7 +22,23 @@ board_id="$(den board web new https://example.com --json | jq -er '.board_id')"
 
 `new` returns `.board_id` before loading completes. Pass that ID with `--board "$board_id"` on subsequent operations. Use `navigate` to change the Current Sheet in the existing Board instead of creating another Board.
 
-## Read a page or API response
+## Read structured Web content
+
+After waiting for the intended page content, read it as Markdown:
+
+```sh
+den board web read --board "$board_id" --json
+```
+
+To avoid surrounding navigation and footers, scope the read to an observed content element. For example, if inspection identified one `main` region:
+
+```sh
+den board web read --within main --board "$board_id" --json
+```
+
+`--within` also accepts a current element reference. A missing or ambiguous scope fails instead of reading the whole page. Without a scope, `read` includes navigation and footers; it preserves structure without summarizing or inferring article content, and can produce more text than `text`. Shadow DOM and iframe contents are not included.
+
+## Read plain text or an API response
 
 Navigate and wait for the destination before reading its response:
 
@@ -58,7 +75,7 @@ If the latest snapshot identifies the intended link as `@e3`, open it separately
 ```sh
 linked_board_id="$(den board web click @e3 --new-board --board "$board_id" --json | jq -er '.board_id')"
 den board web wait --text 'Documentation overview' --board "$linked_board_id" --json
-den board web text --board "$linked_board_id" --json
+den board web read --board "$linked_board_id" --json
 ```
 
 `--new-board` requires a link with an `href`. Keep `board_id` for the source; close the temporary destination when finished with `den board close --board "$linked_board_id" --json`.
