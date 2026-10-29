@@ -84,6 +84,29 @@ just test ui Den_BrowserUIPerformanceTests/testApplicationLaunchPerformance
 xcrun xcresulttool get test-results metrics --path <path-to-xcresult>
 ```
 
+## Board Strip hitch metric
+
+`Den_BrowserUIPerformanceTests/testBoardStripScrollHitches` measures a native horizontal
+swipe using `XCTHitchMetric`. It uses the local `rapidBoardFocus` fixture, Den Mode
+and Standard Motion. Launch, initial page loading, a warm-up swipe, position checks
+and Focused Board centering resets are outside the measured interval. Five measured
+iterations report metrics in the result bundle; no regression baseline is configured.
+
+Run on the same Mac/display configuration with no competing UI tests or profiling tools.
+The window must be narrow enough for the fixture Boards to overflow. Window and Strip
+frames and OS version are attached to the result; compare only matching geometry and
+display configurations. The test rejects window-size changes during measurement.
+This is a diagnostic performance test, separate from the default interaction test class.
+
+```sh
+just test ui Den_BrowserUIPerformanceTests/testBoardStripScrollHitches Release
+xcrun xcresulttool get test-results metrics --path .derived-data-ui/TestResults.xcresult
+```
+
+The native scroll/render boundary requires a UI performance test; unit layout tests
+cannot observe hitches. The test also checks that each measured swipe moves the Strip
+and that resetting restores the starting position, so a no-op gesture cannot look fast.
+
 ## Scenario benchmark
 
 ```sh
