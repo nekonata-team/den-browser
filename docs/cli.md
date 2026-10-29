@@ -45,7 +45,7 @@ These variables are attached when the Terminal Session is created and remain wit
 
 #### Profile Resolution
 Except for `board exists`, target Profile resolution follows this strict priority:
-1. **Explicit Profile ID**: Supplied via `--profile <uuid>`. If specified, it must be a valid UUID of an existing profile with an active window; invalid UUIDs, non-existent profiles, or profiles without an active window fail immediately (`exit 1`) with an explicit error and never fall back.
+1. **Explicit Profile ID**: Supplied via `--profile <uuid>`. If specified, it must be a valid UUID of an existing profile with an active window. Invalid UUIDs fail with `exit 64`; non-existent profiles or profiles without an active window fail with `exit 1`. Errors are explicit and never fall back.
 2. **Ambient Profile**: From `$DEN_PROFILE`. Follows the same strict validation as explicit profile ID.
 3. **Ambient Board**: From `$DEN_BOARD_ID`. Locates the profile store containing that Board.
 4. **Active Profile**: Fallback to the active window's profile (for external shells without profile scoping).
@@ -68,7 +68,7 @@ Placement preserves the displayed Desk and Board focus unless `--focus` is suppl
 
 
 For `den board web` operations on an existing Board, target Board resolution follows this priority:
-1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
+1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board. Invalid UUIDs fail with `exit 64`; non-existent Boards fail with `exit 1`. Errors are explicit and never fall back to ambient candidates.
 2. **Adjacent Web Board**: Resolved relative to `callerBoardID` on its current Desk.
 3. **Focused Board**: The currently focused Board on the active Desk, if it is a Web Board.
 4. **First Web Board**: The first Web Board found on the active Desk.
@@ -79,7 +79,7 @@ For `den board terminal` operations on an existing Board, the caller's Terminal 
 - `--version`: Print the bundled Den Browser version and exit.
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
 - `--socket <path>`: Override the Unix domain socket path. Resolution order is explicit `--socket`, `$DEN_SOCKET`, then `~/.den/den.sock`.
-- `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.
+- `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Invalid UUIDs fail with `exit 64`; profiles not found or without an active window fail with `exit 1`.
 
 ### Creation Focus
 
@@ -126,12 +126,12 @@ Commands for listing, focusing, creating, and managing Boards. Listing uses `--d
 | `den board exists` | `--board <uuid> [--profile <uuid>]` | Check whether a Board exists. | `den board exists --board <uuid> --json` |
 | `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
 | `den board move` | `--board <id> (--left-of <board-id> \| --right-of <board-id> \| --end-of <desk-id>)` | Move the entire Board Group left/right of another Board Group, including across Desks, or to the end of a Desk. The placement options are mutually exclusive; exactly one is required. | `den board move --board <id> --right-of <board-id>` |
-| `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
+| `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Invalid UUIDs fail with `exit 64`; Boards not found fail with `exit 1`. | `den board close --board 4F72344C-...` |
 
 `board exists` searches all Desks in open Profiles, restricted only by explicit `--profile`;
 it ignores `DEN_PROFILE` and `DEN_BOARD_ID`. Closed Profiles do not match.
 JSON returns `ok`, `exists`, and `board_id`, adding `desk_id` and `profile_id` only when found.
-Exit codes: `0` found, `1` absent or lookup error; JSON distinguishes absence from errors via `ok`.
+Exit code is `0` whether found or absent; read `exists` for the result. Lookup errors return `1`, and invalid arguments return `64`.
 TTY output is silent unless an error occurs.
 
 `board move` requires explicit source and destination IDs within the same resolved Profile.
@@ -280,6 +280,8 @@ Commands inspecting and managing profiles in Den Browser.
 
 ## 4. Output Contract (Dual Human + Agent Ergonomics)
 
+See [ADR 0072](adr/0072-use-cli-exit-codes-for-operation-completion.md) for the exit-code policy and its relationship to JSON results.
+
 ### TTY Output (Human Mode)
 When connected to an interactive terminal, `den` prints readable plain text and writes error messages to `stderr`.
 
@@ -375,7 +377,7 @@ Use full UUIDs rather than labels: `den board list -l`, `den desk list`, and `de
 A Profile without an open window can be opened with `den profile open <uuid>`.
 An invalid `DEN_BOARD_ID` is reported as an environment error; pass `--board <uuid>` explicitly or unset it.
 
-**Failure (`exit 1`)**:
+**Operation Failure (`exit 1`)**:
 ```json
 {"error":"Element not found: @e1","ok":false}
 ```

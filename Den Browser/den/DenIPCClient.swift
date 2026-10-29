@@ -133,7 +133,8 @@ enum DenIPCClient {
             let message = (error as? ValidationError)?.message ?? error.localizedDescription
             let result = DenIPCOperationResult.failure(message)
             let responseData = (try? JSONEncoder().encode(result.publicJSON)) ?? Data()
-            try writeResult(result, data: responseData, output: output, isHealth: false)
+            try writeResult(
+                result, data: responseData, output: output, isHealth: false, failureExitCode: exitCode(for: error))
             return
         }
 
@@ -142,7 +143,7 @@ enum DenIPCClient {
             response = try sendRequest(request: request, socketPath: options.socketPath)
         } catch {
             fputs("Error: \(error.localizedDescription)\n", stderr)
-            throw ExitCode.failure
+            throw exitCode(for: error)
         }
 
         let result = response.result
@@ -150,11 +151,23 @@ enum DenIPCClient {
         try writeResult(result, data: responseData, output: output, isHealth: operation == .health)
     }
 
+    private static func exitCode(for error: Error) -> ExitCode {
+        switch error {
+        case is ValidationError, is DenIPCInputError,
+            DenIPCClientError.invalidBoardID(_), DenIPCClientError.invalidProfileID(_), DenIPCClientError.usage(_),
+            DenIPCClientError.socketPathTooLong(_):
+            .validationFailure
+        default:
+            .failure
+        }
+    }
+
     private static func writeResult(
         _ result: DenIPCOperationResult,
         data responseData: Data,
         output: CLIOutputOptions,
-        isHealth: Bool
+        isHealth: Bool,
+        failureExitCode: ExitCode = .failure
     ) throws {
         let isJSONOutput = output.isJSON || isatty(STDOUT_FILENO) == 0
 
@@ -181,10 +194,7 @@ enum DenIPCClient {
         }
 
         if !result.isOk {
-            throw ExitCode.failure
-        }
-        if case .boardExistence(_, nil) = result.payload {
-            throw ExitCode.failure
+            throw failureExitCode
         }
     }
 

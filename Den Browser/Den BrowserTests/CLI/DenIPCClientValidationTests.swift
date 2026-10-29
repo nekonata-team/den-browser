@@ -52,7 +52,7 @@ struct DenIPCClientValidationTests {
         let object = try jsonResult(result.output)
 
         // Assert
-        #expect(result.status == (state == "found" ? 0 : 1))
+        #expect(result.status == (state == "error" ? 1 : 0))
         #expect(object["ok"] as? Bool == (state != "error"))
         if state != "error" {
             #expect(object["board_id"] as? String == boardID)
@@ -65,9 +65,9 @@ struct DenIPCClientValidationTests {
     @Test(arguments: [
         ["--board", "invalid"],
         ["--board", UUID().uuidString, "--profile", "invalid"],
-        ["--board", UUID().uuidString],
+        [],
     ])
-    func boardExistsValidationAndConnectionFailuresUseStandardFailure(arguments: [String]) async throws {
+    func boardExistsInvalidArgumentsUseValidationFailure(arguments: [String]) async throws {
         // Arrange
         let socketPath = temporarySocketPath()
 
@@ -75,15 +75,16 @@ struct DenIPCClientValidationTests {
         let result = try await runCLI(["board", "exists"] + arguments, socketPath: socketPath)
 
         // Assert
-        #expect(result.status == 1)
+        #expect(result.status == 64)
     }
 
-    @Test func connectionFailureExplainsSocketAndRecovery() async throws {
+    @Test(arguments: [["health"], ["board", "exists", "--board", UUID().uuidString]])
+    func connectionFailureExplainsSocketAndRecovery(arguments: [String]) async throws {
         // Arrange
         let socketPath = temporarySocketPath()
 
         // Act
-        let result = try await runCLI(["health"], socketPath: socketPath)
+        let result = try await runCLI(arguments, socketPath: socketPath)
         let message = try #require(String(data: result.error, encoding: .utf8))
 
         // Assert
@@ -91,6 +92,41 @@ struct DenIPCClientValidationTests {
         #expect(message.contains(socketPath))
         #expect(message.contains("Open Den Browser and retry"))
         #expect(message.contains("--socket and DEN_SOCKET"))
+    }
+
+    @Test(arguments: [false, true])
+    func webStateResultSeparatesFalseFromFailure(fails: Bool) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { _ in
+            encodedResponse(fails ? .failure("Board not found") : .success(.visible(false)))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(["board", "web", "is", "visible", "@e1"], socketPath: socketPath)
+        let object = try jsonResult(result.output)
+
+        // Assert
+        #expect(result.status == (fails ? 1 : 0))
+        #expect(object["ok"] as? Bool == !fails)
+        #expect(object["visible"] as? Bool == (fails ? nil : false))
+        #expect(object["error"] as? String == (fails ? "Board not found" : nil))
+    }
+
+    @Test func oversizedSocketPathUsesValidationFailure() async throws {
+        // Arrange
+        let socketPath = "/tmp/" + String(repeating: "a", count: 200)
+
+        // Act
+        let result = try await runCLI(["health"], socketPath: socketPath)
+        let message = try #require(String(data: result.error, encoding: .utf8))
+
+        // Assert
+        #expect(result.status == 64)
+        #expect(message.contains("Socket path too long"))
+        #expect(message.contains("Use a shorter --socket path"))
     }
 
     @Test(arguments: [["board", "web", "new"], ["board", "terminal", "new"], ["board", "move"]])
@@ -124,7 +160,7 @@ struct DenIPCClientValidationTests {
         let message = try #require(object["error"] as? String)
 
         // Assert
-        #expect(result.status == 1)
+        #expect(result.status == 64)
         #expect(message == "Specify at most one of --left-of, --right-of, or --end-of")
     }
 
@@ -190,7 +226,7 @@ struct DenIPCClientValidationTests {
             socketPath: socketPath)
 
         // Assert
-        #expect(result.status != 0)
+        #expect(result.status == 64)
     }
 
     @Test(arguments: ["--left-of", "--right-of", "--end-of"])
@@ -242,7 +278,7 @@ struct DenIPCClientValidationTests {
         let result = try await runCLI(["board", "move"] + arguments, socketPath: socketPath)
 
         // Assert
-        #expect(result.status != 0)
+        #expect(result.status == 64)
     }
 
     @Test(arguments: [false, true], [false, true])
@@ -288,7 +324,7 @@ struct DenIPCClientValidationTests {
         let result = try await runCLI(["desk", "remove"], socketPath: socketPath)
 
         // Assert
-        #expect(result.status != 0)
+        #expect(result.status == 64)
     }
 
     @Test(arguments: ["web", "terminal", "list"], [false, true])
@@ -410,6 +446,10 @@ struct DenIPCClientValidationTests {
             expectedError:
                 "Invalid Profile ID: bad-id. Expected a UUID; run 'den profile list' to find Profile IDs. Check the supplied ID or DEN_PROFILE."
         ),
+        MalformedCLIInvocation(
+            arguments: ["board", "web", "get", "value", ""],
+            expectedError: "The Sheet get target must not be empty"
+        ),
     ])
     func malformedExplicitIDsReturnStructuredFailures(_ invocation: MalformedCLIInvocation) async throws {
         // Arrange
@@ -420,7 +460,7 @@ struct DenIPCClientValidationTests {
         let operationResult = try jsonResult(result.output)
 
         // Assert
-        #expect(result.status != 0)
+        #expect(result.status == 64)
         #expect(operationResult["ok"] as? Bool == false)
         #expect(operationResult["error"] as? String == invocation.expectedError)
     }
@@ -497,7 +537,7 @@ struct DenIPCClientValidationTests {
         let operationResult = try jsonResult(result.output)
 
         // Assert
-        #expect(result.status != 0)
+        #expect(result.status == 64)
         #expect(
             operationResult["error"] as? String
                 == "Invalid DEN_BOARD_ID: bad-caller. Expected a UUID; pass --board <uuid> explicitly or unset DEN_BOARD_ID."

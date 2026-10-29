@@ -321,8 +321,12 @@ struct BoardMoveCommand: ParsableCommand {
     }
 
     func validate() throws {
-        _ = try DenIPCClient.requiredBoardID(boardID)
-        _ = try destination()
+        do {
+            _ = try DenIPCClient.requiredBoardID(boardID)
+            _ = try destination()
+        } catch {
+            throw ValidationError((error as? ValidationError)?.message ?? error.localizedDescription)
+        }
     }
 
     func run() throws {
