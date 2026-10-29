@@ -3,6 +3,18 @@
   "extends": [
     "config:recommended"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "(^|/)project\\.pbxproj$"
+      ],
+      "matchStrings": [
+        "repositoryURL = \"https://github\\.com/(?<depName>[^/]+/[^/\"]+?)(?:\\.git)?\";\\s*requirement = \\{\\s*kind = [^;]+;\\s*minimumVersion = (?<currentValue>[^;]+);"
+      ],
+      "datasourceTemplate": "github-releases"
+    }
+  ],
   "packageRules": [
     {
       "matchManagers": ["npm"],
@@ -14,6 +26,11 @@
       "matchManagers": ["mise"],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "development tools"
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "swift packages"
     },
     {
       "matchUpdateTypes": ["major"],
