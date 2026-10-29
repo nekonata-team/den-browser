@@ -361,6 +361,11 @@ private struct DenCommands: Commands {
                         session?.deskLinks.copyFocusedDeskLinks()
                     }
                     .disabled(windowModel?.desks.canExportFocusedDeskLinks != true)
+
+                    Button("Copy Desk Links as URLs") {
+                        session?.deskLinks.copyFocusedDeskLinks(asURLs: true)
+                    }
+                    .disabled(windowModel?.desks.canExportFocusedDeskLinks != true)
                 }
                 .disabled(session == nil)
 

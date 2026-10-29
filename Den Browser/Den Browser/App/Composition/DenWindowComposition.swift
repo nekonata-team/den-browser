@@ -108,6 +108,7 @@ final class DenWindowComposition {
             },
             copyID: { session.desks.copyDeskID($0) }, exportLinks: { session.deskLinks.exportDeskLinks(for: $0) },
             copyLinks: { session.deskLinks.copyDeskLinks(for: $0) },
+            copyURLs: { session.deskLinks.copyDeskLinks(for: $0, asURLs: true) },
             create: { label, selection in
                 switch selection {
                 case .builtIn(let preset): session.desks.createDesk(label: label, preset: preset)

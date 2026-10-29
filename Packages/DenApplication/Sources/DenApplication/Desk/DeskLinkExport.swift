@@ -13,6 +13,12 @@ public enum DeskLinkExport {
         return (["# \(escapeMarkdownLabel(desk.label))", ""] + links + [""]).joined(separator: "\n")
     }
 
+    public static func urls(for desk: DeskState) -> String? {
+        let links = desk.boards.compactMap { $0.currentSheetURL?.absoluteString }
+        guard !links.isEmpty else { return nil }
+        return links.joined(separator: "\n")
+    }
+
     private static func escapeMarkdownLabel(_ label: String) -> String {
         label
             .replacingOccurrences(of: "\\", with: "\\\\")

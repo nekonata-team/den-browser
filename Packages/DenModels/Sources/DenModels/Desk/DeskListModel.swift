@@ -21,6 +21,7 @@ public final class DeskListModel {
     @ObservationIgnored private let copyID: (DeskID) -> Void
     @ObservationIgnored private let exportLinks: (DeskID) -> Void
     @ObservationIgnored private let copyLinks: (DeskID) -> Void
+    @ObservationIgnored private let copyURLs: (DeskID) -> Void
 
     @ObservationIgnored private let create: (String, DeskPresetSelection) -> Void
     @ObservationIgnored private let replace: (String, DeskPresetSelection) -> DeskReplacementResult?
@@ -33,6 +34,7 @@ public final class DeskListModel {
         requestDeletion: @escaping (DeskState) -> Void, warn: @escaping (String) -> Void,
         finishEditing: @escaping () -> Void, copyID: @escaping (DeskID) -> Void,
         exportLinks: @escaping (DeskID) -> Void, copyLinks: @escaping (DeskID) -> Void,
+        copyURLs: @escaping (DeskID) -> Void,
         create: @escaping (String, DeskPresetSelection) -> Void,
         replace: @escaping (String, DeskPresetSelection) -> DeskReplacementResult?
     ) {
@@ -53,6 +55,7 @@ public final class DeskListModel {
         self.copyID = copyID
         self.exportLinks = exportLinks
         self.copyLinks = copyLinks
+        self.copyURLs = copyURLs
     }
 
     public var deskPresets: [PersonalDeskPreset] { state.snapshot.deskPresets }
@@ -78,6 +81,7 @@ public final class DeskListModel {
     public func copyDeskID(_ id: DeskID) { copyID(id) }
     public func exportDeskLinks(for id: DeskID) { exportLinks(id) }
     public func copyDeskLinks(for id: DeskID) { copyLinks(id) }
+    public func copyDeskURLs(for id: DeskID) { copyURLs(id) }
     public func beginDeskDrag(_ id: DeskID) -> Bool { movement.beginDrag(id) }
     public func previewDeskMove(_ id: DeskID, to index: DeskIndex) { movement.preview(id, to: index) }
     public func restoreDeskOrder(_ ids: [DeskID]) { movement.restoreOrder(ids) }

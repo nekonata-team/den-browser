@@ -52,12 +52,12 @@ final class DeskLinkActions {
         exportDeskLinks(for: focusedDesk.id)
     }
 
-    func copyFocusedDeskLinks() {
+    func copyFocusedDeskLinks(asURLs: Bool = false) {
         guard let focusedDesk else {
             context.feedback.publish("No Focused Desk.", severity: .warning)
             return
         }
-        copyDeskLinks(for: focusedDesk.id)
+        copyDeskLinks(for: focusedDesk.id, asURLs: asURLs)
     }
 
     func exportDeskLinks(for deskID: DeskID) {
@@ -86,17 +86,18 @@ final class DeskLinkActions {
         }
     }
 
-    func copyDeskLinks(for deskID: DeskID) {
+    func copyDeskLinks(for deskID: DeskID, asURLs: Bool = false) {
         guard
             let desk = state.desks.first(where: { $0.id == deskID }),
-            let markdown = DeskLinkExport.markdown(for: desk)
+            let links = asURLs ? DeskLinkExport.urls(for: desk) : DeskLinkExport.markdown(for: desk)
         else {
             context.feedback.publish("Desk has no Current Sheet links.", severity: .warning)
             return
         }
 
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(markdown, forType: .string)
-        context.feedback.publish("Copied Desk Links as Markdown.", severity: .success)
+        NSPasteboard.general.setString(links, forType: .string)
+        let format = asURLs ? "URLs" : "Markdown"
+        context.feedback.publish("Copied Desk Links as \(format).", severity: .success)
     }
 }

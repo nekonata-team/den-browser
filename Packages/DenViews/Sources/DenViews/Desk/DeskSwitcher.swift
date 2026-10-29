@@ -195,6 +195,13 @@ public struct DeskSwitcher: View {
                     Label("Copy Desk Links as Markdown", systemSymbol: .documentOnDocument)
                 }
                 .disabled(!desks.canExportDeskLinks(for: desk.id))
+
+                Button {
+                    desks.copyDeskURLs(for: desk.id)
+                } label: {
+                    Label("Copy Desk Links as URLs", systemSymbol: .documentOnDocument)
+                }
+                .disabled(!desks.canExportDeskLinks(for: desk.id))
             }
 
             Button {
