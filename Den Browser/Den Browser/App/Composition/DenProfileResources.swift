@@ -19,6 +19,7 @@ final class DenProfileResources {
     @ObservationIgnored let tutorialProgress: TutorialProgress
     @ObservationIgnored let recents: Recents
     @ObservationIgnored let boardRemoval: BoardRemoval
+    @ObservationIgnored let boardUndo: BoardUndo
     @ObservationIgnored let boardSizing: BoardSizing
     @ObservationIgnored let deskLifecycle: DeskLifecycle
     @ObservationIgnored let deskUpdates: DeskUpdates
@@ -123,6 +124,7 @@ final class DenProfileResources {
         boardRemoval = BoardRemoval(
             store: shared.reader, writer: shared.writer,
             persist: persistState)
+        boardUndo = BoardUndo(store: shared.reader, writer: shared.writer, persist: persistState)
         boardUpdates = BoardUpdates(store: shared.reader, writer: shared.writer, persist: persistState)
         recents = Recents(
             store: shared.reader, writer: shared.writer, persist: persistState, persistRecent: onRecentItemsSave)
@@ -131,7 +133,8 @@ final class DenProfileResources {
             persist: persistState,
             directoryExists: TerminalWorkingDirectory.exists)
         drawerItems = DrawerItems(store: shared.reader, writer: shared.writer, persist: persistState)
-        drawerPlacement = DrawerPlacement(store: shared.reader, creation: boardCreation, items: drawerItems)
+        drawerPlacement = DrawerPlacement(
+            store: shared.reader, writer: shared.writer, creation: boardCreation, items: drawerItems)
         drawerTransfer = DrawerTransfer(store: shared.reader, writer: shared.writer, persist: persistState)
         inputOpening = InputOpening(creation: boardCreation, drawer: drawerItems)
         tutorialProgress = TutorialProgress(store: shared.reader, writer: shared.writer)

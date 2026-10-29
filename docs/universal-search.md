@@ -16,8 +16,8 @@ show a validation message instead. The palette stays open when the input cannot 
 - Search all Recent titles and inputs in the current Profile, showing at most five matches.
   Selecting a Recent Item creates another Board in the current Desk.
 - Open a URL, local path, web search, or existing `:terminal`, `:tutorial`, `:zellij`, and `:zmx` Board input.
-- Run New Desk, Open Profile, Open Settings, Toggle Zen View, Toggle Focus Mode, and Restore Recently Removed Board.
-  Restoration is offered only when a removed Board is available.
+- Run New Desk, Open Profile, Open Settings, Toggle Zen View, Toggle Focus Mode, and Undo Board Operation.
+  Undo is offered only when the Board Undo history is nonempty.
 
 With empty input, display Recent (the five newest items), Essentials, Boards, Desks, Profiles, then commands.
 Boards include all Desks in the current Profile, preserving Desk and Board order.

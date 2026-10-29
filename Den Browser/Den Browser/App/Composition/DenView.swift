@@ -128,7 +128,7 @@ private struct DenActivePanelOverlay: View {
                 profileColor: profileColor,
                 sourceItems: UniversalSearchModel.sourceItems(
                     state: session.resources.data.snapshot.den, essentials: preferences.essentials,
-                    hasRemovedBoards: !session.resources.data.snapshot.recentlyRemovedBoards.isEmpty,
+                    hasBoardUndoHistory: !session.resources.data.snapshot.boardUndoHistory.isEmpty,
                     profiles: profileManager.profiles, profileName: profileName ?? ""),
                 recentItems: session.resources.data.snapshot.recentItems,
                 boards: session.resources.data.snapshot.den.desks.flatMap(\.boards),

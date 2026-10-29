@@ -41,12 +41,7 @@ final class DenWindowComposition {
                         $0, presentedDeskID: navigation.presentedDeskID, focusNext: $1,
                         notify: session.boardRemoval.boardRemovalNotifications())
                 },
-                restoreBoard: {
-                    let result = session.resources.boardRemoval.restore(
-                        presentedDeskID: navigation.presentedDeskID, present: false,
-                        notify: session.boardRemoval.boardRemovalNotifications())
-                    return session.boardRemoval.handleBoardRestorationResult(result, present: false)
-                },
+                undoBoardOperation: { session.boardRemoval.undoBoardOperation(present: false) },
                 enterSelection: { session.boardNavigation.enterOverviewSelection(deskID: $0, boardID: $1) },
                 beginDrag: { session.resources.boardMovement.beginOverviewDrag($0) },
                 finishDrag: { session.resources.boardMovement.finishOverviewDrag($0, to: $1, at: $2) },

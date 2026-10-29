@@ -17,7 +17,7 @@ public struct OverviewSelection: Equatable {
 public final class OverviewModel {
     public struct Actions {
         public let removeBoard: (BoardID, Bool) -> Void
-        public let restoreBoard: () -> BoardID?
+        public let undoBoardOperation: () -> BoardID?
         public let enterSelection: (DeskID, BoardID?) -> Void
         public let beginDrag: (BoardID) -> Bool
         public let finishDrag: (BoardID, DeskID, BoardIndex) -> Void
@@ -27,7 +27,7 @@ public final class OverviewModel {
 
         public init(
             removeBoard: @escaping (BoardID, Bool) -> Void,
-            restoreBoard: @escaping () -> BoardID?,
+            undoBoardOperation: @escaping () -> BoardID?,
             enterSelection: @escaping (DeskID, BoardID?) -> Void,
             beginDrag: @escaping (BoardID) -> Bool,
             finishDrag: @escaping (BoardID, DeskID, BoardIndex) -> Void,
@@ -36,7 +36,7 @@ public final class OverviewModel {
             moveBoardToDesk: @escaping (BoardID, Int) -> Void
         ) {
             self.removeBoard = removeBoard
-            self.restoreBoard = restoreBoard
+            self.undoBoardOperation = undoBoardOperation
             self.enterSelection = enterSelection
             self.beginDrag = beginDrag
             self.finishDrag = finishDrag
@@ -175,8 +175,8 @@ public final class OverviewModel {
                 deskID: desk.id, boardID: focusNext ? (next ?? previous) : (previous ?? next)))
     }
 
-    public func restoreRemovedBoard() {
-        guard !isDragging(), let boardID = actions.restoreBoard() else { return }
+    public func undoBoardOperation() {
+        guard !isDragging(), let boardID = actions.undoBoardOperation() else { return }
         exitFilterMode()
         selectBoard(boardID)
     }

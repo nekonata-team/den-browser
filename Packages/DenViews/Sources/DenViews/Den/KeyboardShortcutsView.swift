@@ -126,7 +126,7 @@ public struct KeyboardShortcutsView: View {
                     item(["⌘", "W"], "Remove Focused Board"),
                     item(["d"], "Den Mode: Remove Focused Board and focus next Board"),
                     item(["x"], "Den Mode: Remove Focused Board and focus previous Board"),
-                    item(["u"], "Den Mode: Restore Removed Board"),
+                    item(["u"], "Den Mode: Undo Board Operation"),
                 ]),
             ShortcutGuideSection(
                 title: "Desk",
@@ -170,7 +170,7 @@ public struct KeyboardShortcutsView: View {
                     item(["d", "or", "Delete"], "Discard Drawer Item and focus next"),
                     item(["x"], "Discard Drawer Item and focus previous"),
                     item(["⌘", "W"], "Discard selected Drawer Item and focus next"),
-                    item(["u"], "Restore discarded Drawer Item"),
+                    item(["u"], "Undo Board operation"),
                     item(["Tab"], "Close Drawer in Den Mode"),
                     item(["⌃", "Escape"], "Close Drawer"),
                     item(["Escape"], "Exit Den Mode / close Drawer"),
@@ -180,7 +180,7 @@ public struct KeyboardShortcutsView: View {
                 items: [
                     item(["o"], "Den Mode: Overview"),
                     item(["x", "/", "d"], "Remove selected Board / remove and select next"),
-                    item(["u"], "Restore removed Board"),
+                    item(["u"], "Undo Board operation"),
                     item(["=", "/", "-"], "Zoom Overview (⌘ + / - also work)"),
                     item(["0"], "Reset Overview view (⌘0 also works)"),
                     item(["⌘", "+", "scroll"], "Zoom Overview at pointer"),

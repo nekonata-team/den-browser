@@ -132,7 +132,7 @@ public struct UniversalSearchPanel: View {
             case .openSettings: .gearshape
             case .toggleZenView: .rectangle
             case .toggleFocusMode: .eye
-            case .restoreBoard: .arrowCounterclockwise
+            case .undoBoardOperation: .arrowCounterclockwise
             }
         }
     }

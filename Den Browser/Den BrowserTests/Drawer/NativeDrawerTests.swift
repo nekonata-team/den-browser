@@ -1116,7 +1116,7 @@ struct NativeDrawerTests {
         #expect(windowModel.isDrawerOpen)
     }
 
-    @Test func denModeKeyboardRestoresNewestDiscardedDrawerItemWithU() throws {
+    @Test func restorationActionRestoresNewestDiscardedDrawerItemAndPreservesDenMode() throws {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://restore.example/")))
         let session = ProfileWindowSession(
@@ -1136,8 +1136,8 @@ struct NativeDrawerTests {
         windowModel.openDrawer()
         windowModel.isDenMode = true
 
-        #expect(
-            KeyboardController.handle(try keyEvent("u", keyCode: 32), session: session, windowModel: windowModel))
+        AppActionHandler.perform(
+            .drawer(.restoreDiscardedItem), session: session, windowModel: windowModel, openSettings: {})
         #expect(session.resources.state.drawerItems.map(\.id) == [item.id])
         #expect(session.resources.recentlyDiscardedDrawerItems.isEmpty)
         #expect(windowModel.drawer.selectedItemID == item.id)

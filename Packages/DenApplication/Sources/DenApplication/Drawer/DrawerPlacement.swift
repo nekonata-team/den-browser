@@ -17,11 +17,13 @@ public struct DrawerPlacement {
     }
 
     private let store: DenStateReader
+    private let writer: DenStateWriter
     private let creation: BoardCreation
     private let items: DrawerItems
 
-    public init(store: DenStateReader, creation: BoardCreation, items: DrawerItems) {
+    public init(store: DenStateReader, writer: DenStateWriter, creation: BoardCreation, items: DrawerItems) {
         self.store = store
+        self.writer = writer
         self.creation = creation
         self.items = items
     }
@@ -32,7 +34,10 @@ public struct DrawerPlacement {
         _ request: Request,
         notifyBoard: (BoardCreation.Notice) -> Void, notifyDrawer: (DrawerItems.Notice) -> Void
     ) -> BoardID? {
-        guard let item = store.snapshot.den.drawerItems.first(where: { $0.id == request.itemID }) else { return nil }
+        guard let index = store.snapshot.den.drawerItems.firstIndex(where: { $0.id == request.itemID }) else {
+            return nil
+        }
+        let item = store.snapshot.den.drawerItems[index]
         let boardID: BoardID?
         switch item.content {
         case .web(let url):
@@ -52,6 +57,7 @@ public struct DrawerPlacement {
         }
         guard let boardID else { return nil }
         items.consume(request.itemID, notify: notifyDrawer)
+        writer.update { $0.rememberBoardOperation(.placedFromDrawer(itemID: item.id, sourceIndex: index)) }
         return boardID
     }
 }

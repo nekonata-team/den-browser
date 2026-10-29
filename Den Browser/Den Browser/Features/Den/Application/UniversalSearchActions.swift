@@ -64,7 +64,7 @@ enum UniversalSearchActions {
             case .openSettings: action = .application(.openSettings)
             case .toggleZenView: action = .application(.toggleZenView)
             case .toggleFocusMode: action = .application(.toggleFocusMode)
-            case .restoreBoard: action = .board(.restore)
+            case .undoBoardOperation: action = .board(.undo)
             }
             AppActionHandler.perform(
                 action, session: session, windowModel: windowModel, openSettings: openSettings)

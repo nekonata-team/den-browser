@@ -331,8 +331,8 @@ private struct DenCommands: Commands {
                     .disabled(
                         windowModel?.focusedDesk?.focusedBoardID == nil
                             || windowModel?.pendingConfirmation != nil)
-                Button("Restore Removed Board") { perform(.board(.restore)) }
-                    .disabled(session?.resources.data.snapshot.recentlyRemovedBoards.isEmpty ?? true)
+                Button("Undo Board Operation") { perform(.board(.undo)) }
+                    .disabled(session?.resources.data.snapshot.boardUndoHistory.isEmpty ?? true)
             }
 
             Button("zmx Sessions…") { windowModel?.showZmxSessions() }

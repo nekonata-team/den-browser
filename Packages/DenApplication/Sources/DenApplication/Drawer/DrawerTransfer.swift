@@ -27,7 +27,7 @@ public struct DrawerTransfer {
 
     /// Move atomically without recording a removed Board or restarting its runtime.
     @discardableResult
-    public func move(_ boardID: BoardID, notify: (Notice) -> Void) -> UUID? {
+    public func move(_ boardID: BoardID, recordsUndo: Bool = true, notify: (Notice) -> Void) -> UUID? {
         guard store.snapshot.activeDrag == nil,
             let deskIndex = store.snapshot.den.desks.firstIndex(where: { $0.boards.contains { $0.id == boardID } })
         else { return nil }
@@ -50,6 +50,7 @@ public struct DrawerTransfer {
         writer.update {
             $0.den.desks[deskIndex] = removal.desk
             $0.den.drawerItems.insert(item, at: 0)
+            if recordsUndo { $0.rememberBoardOperation(.movedToDrawer(removal.historyEntry)) }
         }
         notify(.didMove(source: source, plan: removal, item: item))
         _ = persist?(store.snapshot.den)

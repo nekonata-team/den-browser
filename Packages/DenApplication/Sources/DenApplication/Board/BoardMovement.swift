@@ -25,7 +25,10 @@ public struct BoardMovement {
         return delta < 0 ? firstIndex > 0 : lastIndex < boards.count - 1
     }
 
-    public func transfer(_ boardID: BoardID, from sourceDeskID: DeskID, to targetDeskID: DeskID, at index: BoardIndex) {
+    public func transfer(
+        _ boardID: BoardID, from sourceDeskID: DeskID, to targetDeskID: DeskID, at index: BoardIndex,
+        recordsUndo: Bool = true
+    ) {
         writer.update { snapshot in
             guard let sourceIndex = snapshot.den.desks.firstIndex(where: { $0.id == sourceDeskID }),
                 let targetIndex = snapshot.den.desks.firstIndex(where: { $0.id == targetDeskID })
@@ -35,6 +38,12 @@ public struct BoardMovement {
             let groupBoards = group.boards
             let ids = Set(groupBoards.map(\.id))
             let removedIndex = sourceBoards.firstIndex { ids.contains($0.id) } ?? 0
+            if sourceIndex != targetIndex && recordsUndo {
+                snapshot.rememberBoardOperation(
+                    .movedToDesk(
+                        boardID: groupBoards[0].id, sourceDeskID: sourceDeskID,
+                        sourceIndex: .init(rawValue: removedIndex)))
+            }
             let sourceWasFocused = snapshot.den.desks[sourceIndex].focusedBoardID.map(ids.contains) ?? false
             snapshot.den.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
             if sourceWasFocused && sourceIndex != targetIndex {

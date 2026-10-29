@@ -99,6 +99,44 @@ final class BoardRemovalPresentation {
     }
 
     @discardableResult
+    func undoBoardOperation(present: Bool = true) -> BoardID? {
+        guard let drawer = context.connection.drawer else { return nil }
+        var placementNotifications: ((BoardCreation.Notice) -> Void)?
+        let result = storage.boardUndo.undo(
+            presentedDeskID: context.navigation.presentedDeskID,
+            notifyRemoval: boardRemovalNotifications(),
+            notifyTransfer: drawer.drawerTransferNotifications(),
+            notifyPlacement: { id, notice in
+                if placementNotifications == nil {
+                    placementNotifications = drawer.drawerBoardCreationNotifications(id)
+                }
+                placementNotifications?(notice)
+            },
+            notifyDrawer: drawer.drawerItemNotifications(opensDrawer: false))
+        switch result {
+        case .board(let id):
+            if present {
+                onWindowEffect?(.dismissTemporaryPresentation)
+                boardNavigation.focusBoard(id, exitsDenMode: false)
+            }
+            return id
+        case .drawer(let id):
+            if present {
+                onWindowEffect?(.drawerItemRestored(id))
+            } else {
+                context.feedback.publish("Board returned to Drawer.")
+            }
+        case .empty:
+            context.feedback.publish("No Board operation to undo.", severity: .warning)
+        case .unavailable:
+            context.feedback.publish(
+                "Could not undo. The Board or its original destination is unavailable.", severity: .warning)
+        case .dragging: break
+        }
+        return nil
+    }
+
+    @discardableResult
     func restoreRecentlyRemovedBoard(present: Bool = true) -> BoardID? {
         let result = storage.boardRemoval.restore(
             presentedDeskID: presentedDeskID, present: present, notify: boardRemovalNotifications())

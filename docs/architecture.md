@@ -59,7 +59,7 @@ values. Shared data is read from the source rather than copied into per-Feature 
 | State | Source and scope | Persistence |
 | --- | --- | --- |
 | Desks, Boards, Drawer Items, Presets, Recents | Profile Store | Profile document |
-| Notifications, active drag, removal histories, Tutorial progress | Profile Store | Transient |
+| Notifications, active drag, Board Undo and removal histories, Tutorial progress | Profile Store | Transient |
 | Panels, queries, selections, drafts, layout and download presentation | Window and Feature Models | Window lifetime |
 | Live Sheet Stack, WebKit and Terminal execution | Profile-owned runtimes | Never serialized |
 | Profile metadata and app preferences | ProfileManager and AppPreferences | Profile/preferences storage |

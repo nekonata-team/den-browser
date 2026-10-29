@@ -366,7 +366,7 @@ enum KeyboardRouter {
             if modifiers == [], event.character?.lowercased() == "u" {
                 return event.isRepeat
                     ? .consume(.ignoredRepeat)
-                    : .perform(.drawer(.restoreDiscardedItem))
+                    : .perform(.board(.undo))
             }
             if modifiers == [.shift], event.character?.lowercased() == "d" {
                 return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.requestClearConfirmation))
@@ -472,7 +472,7 @@ enum KeyboardRouter {
         {
             if event.isRepeat { return .consume(.ignoredRepeat) }
             return .perform(
-                .overview(character == "u" ? .restoreRemovedBoard : .removeSelection(focusNext: character == "d")))
+                .overview(character == "u" ? .undoBoardOperation : .removeSelection(focusNext: character == "d")))
         }
         if activeDrag == nil, let action = overviewZoomAction(event) {
             return .perform(.overview(action))
@@ -628,7 +628,7 @@ enum KeyboardRouter {
         binding("z"): KeyboardCommand(action: .application(.toggleZenView), repeatPolicy: .ignore),
         binding("x"): KeyboardCommand(action: .board(.remove), repeatPolicy: .ignore),
         binding("q"): KeyboardCommand(action: .board(.quit), repeatPolicy: .ignore),
-        binding("u"): KeyboardCommand(action: .board(.restore), repeatPolicy: .ignore),
+        binding("u"): KeyboardCommand(action: .board(.undo), repeatPolicy: .ignore),
         binding("r"): KeyboardCommand(action: .board(.showRenamePanel), repeatPolicy: .ignore),
         binding("r", modifiers: [.shift]): KeyboardCommand(action: .desk(.showRenamePanel), repeatPolicy: .ignore),
         binding("d"): KeyboardCommand(action: .board(.removeAndFocusNext), repeatPolicy: .ignore),

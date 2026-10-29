@@ -36,6 +36,12 @@ public struct DenSharedState: Equatable {
     public var activeDrag: ActiveDrag?
     public var recentlyRemovedBoards: [RecentlyRemovedBoard] = []
     public var recentlyDiscardedDrawerItems: [DrawerItem] = []
+    public var boardUndoHistory: [BoardUndoEntry] = []
+
+    mutating func rememberBoardOperation(_ entry: BoardUndoEntry) {
+        boardUndoHistory.insert(entry, at: 0)
+        if boardUndoHistory.count > BoardUndo.maximumHistoryCount { boardUndoHistory.removeLast() }
+    }
 
     public init(den: DenState, deskPresets: [PersonalDeskPreset] = [], recentItems: [RecentItem] = []) {
         self.den = den
@@ -51,6 +57,7 @@ public struct DenSharedState: Equatable {
             && lhs.activeDrag == rhs.activeDrag
             && lhs.recentlyRemovedBoards == rhs.recentlyRemovedBoards
             && lhs.recentlyDiscardedDrawerItems == rhs.recentlyDiscardedDrawerItems
+            && lhs.boardUndoHistory == rhs.boardUndoHistory
     }
 
     // RecentItem equality identifies a work target; snapshot equality also includes its saved metadata.

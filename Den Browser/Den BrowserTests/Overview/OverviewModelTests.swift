@@ -250,7 +250,7 @@ struct OverviewModelTests {
             model.overview.setQuery("Active")
 
             // Act
-            model.overview.restoreRemovedBoard()
+            model.overview.undoBoardOperation()
 
             // Assert
             #expect(session.resources.state.desks[1].boards.map(\.id) == [removed.id])

@@ -29,6 +29,7 @@ public struct DenReset {
         notify(.clearInputRequests)
         writer.update {
             $0.recentlyRemovedBoards.removeAll()
+            $0.boardUndoHistory.removeAll()
             $0.recentlyDiscardedDrawerItems.removeAll()
             $0.notifications.removeAll()
         }

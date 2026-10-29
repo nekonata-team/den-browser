@@ -131,7 +131,7 @@ struct OverviewKeyboardRoutingTests {
 
             // Assert
             let action: OverviewAction =
-                character == "u" ? .restoreRemovedBoard : .removeSelection(focusNext: character == "d")
+                character == "u" ? .undoBoardOperation : .removeSelection(focusNext: character == "d")
             #expect(decision == .perform(.overview(action)))
         }
     }

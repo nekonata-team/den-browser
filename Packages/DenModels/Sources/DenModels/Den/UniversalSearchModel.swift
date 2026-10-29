@@ -8,7 +8,7 @@ public enum UniversalSearchCommand: String, CaseIterable {
     case openSettings
     case toggleZenView
     case toggleFocusMode
-    case restoreBoard
+    case undoBoardOperation
 }
 
 public struct UniversalSearchItem: Identifiable, Equatable {

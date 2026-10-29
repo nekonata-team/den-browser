@@ -113,7 +113,7 @@ Reordering a Desk preserves the focused Desk and Board and keeps Den Mode active
 | `d` | Remove Focused Board and focus next Board |
 | `x` | Remove Focused Board and focus previous Board |
 | `q` | zmx: confirm and end its Session; other Boards: remove and focus previous Board |
-| `u` | Restore recently removed Board |
+| `u` | Undo the latest Board move, Drawer placement, or removal |
 | `Shift` + `D` | Delete Focused Desk (or discard all Drawer items in Drawer mode) |
 | `Shift` + `R` | Rename Focused Desk |
 | `a` | Move a Web or Terminal Primary Board without a Side Board to Drawer |
@@ -152,6 +152,29 @@ Mouse clicks can focus or mark individual Sessions. Ending a Session closes its 
 
 ## Drawer and Overview
 
+### Board Undo
+
+Den Mode and Overview use `u` for one Profile-shared history of Board moves between Desks,
+moves into Drawer, placements from Drawer, and Board removals. UI and CLI operations enter
+the same history. Up to twenty operations are retained during the current app run; relaunching
+clears the history. Undo does not record another operation, and there is no Redo.
+
+Undo returns a Board to its original Desk and position, or an Item to its original Drawer
+position. A Board Group moves together. Live Web and Terminal state continues through moves;
+Undo does not rewind navigation, input, or commands. Removal restoration starts a new Shell
+or reconnects to Zellij/zmx; it cannot revive terminated processes.
+
+Focus changes, Desk switching, same-Desk reordering, Board creation, width and label changes,
+Desk operations, and Drawer Item discard are outside this history. Drawer discard restoration
+remains available through **Drawer > Restore Discarded Drawer Item**.
+
+Undo preserves Den Mode. Outside Overview it focuses a returned Board on its Desk; in Overview
+it keeps the Overview open and selects the returned Board without changing the presented Desk.
+Outside Overview, returning to Drawer opens it and expands the returned Item; returning a Board
+to a Desk closes Drawer even when other Items remain. In Overview, returning to Drawer leaves
+Overview open and reports the destination. A missing Board, original Desk, or
+incompatible Board Group prevents Undo and leaves both state and history unchanged.
+
 ### Drawer Controls
 
 Open with `Tab` in Den Mode.
@@ -170,7 +193,7 @@ Click **Add to Drawer** (+) in the Drawer header, enter a URL, search, or Termin
 | `x` | Discard item and focus previous |
 | `d` or `Delete` | Discard item and focus next |
 | `Command` + `W` | Discard selected item |
-| `u` | Restore newest discarded item (up to 10) |
+| `u` | Undo the latest Board move, Drawer placement, or removal (Den Mode) |
 | `f` | Toggle presentation style (floating card vs. bottom sheet) |
 | `Shift` + `D` | Discard all Drawer items (with confirmation) |
 | `Escape` | Clear filter or exit Drawer |
@@ -226,7 +249,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
 | `Up` / `Down` or `j` / `k` | Select Desk |
 | `Shift` + movement | Move selected Board |
 | `x` / `d` | Remove selected Board and select previous / next (Overview stays open) |
-| `u` | Restore the most recently removed Board and select it (Overview stays open) |
+| `u` | Undo the latest Board move, Drawer placement, or removal (Overview stays open) |
 | `=` / `+` / `-` | Zoom Overview in / out (plain keys remain text while searching) |
 | `Command` + `+` / `-` | Zoom Overview in / out |
 | `0` / `Command` + `0` | Reset Overview to its initial scale and center the selection (`0` remains text while searching) |

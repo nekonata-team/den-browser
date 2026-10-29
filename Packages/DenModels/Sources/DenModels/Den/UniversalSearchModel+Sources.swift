@@ -3,7 +3,7 @@ import Foundation
 
 extension UniversalSearchModel {
     public static func sourceItems(
-        state: DenState, essentials: [Essential], hasRemovedBoards: Bool,
+        state: DenState, essentials: [Essential], hasBoardUndoHistory: Bool,
         profiles: [ProfileState], profileName: String
     ) -> [UniversalSearchItem] {
         var items: [UniversalSearchItem] = []
@@ -31,7 +31,7 @@ extension UniversalSearchModel {
             UniversalSearchItem(target: .profile($0.id), title: $0.name, detail: "Switch to Profile")
         }
         for command in UniversalSearchCommand.allCases {
-            if command == .restoreBoard, !hasRemovedBoards { continue }
+            if command == .undoBoardOperation, !hasBoardUndoHistory { continue }
             let title: String
             switch command {
             case .newDesk: title = "New Desk…"
@@ -39,7 +39,7 @@ extension UniversalSearchModel {
             case .openSettings: title = "Open Settings"
             case .toggleZenView: title = "Toggle Zen View"
             case .toggleFocusMode: title = "Toggle Focus Mode"
-            case .restoreBoard: title = "Restore Recently Removed Board"
+            case .undoBoardOperation: title = "Undo Board Operation"
             }
             items.append(UniversalSearchItem(target: .command(command), title: title, detail: "Command"))
         }

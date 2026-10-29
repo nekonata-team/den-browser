@@ -44,6 +44,7 @@ public final class BoardRemoval {
         writer.update {
             $0.den.desks[deskIndex] = removal.desk
             $0.recentlyRemovedBoards.insert(removal.historyEntry, at: 0)
+            $0.rememberBoardOperation(.removed(removal.historyEntry))
             if $0.recentlyRemovedBoards.count > Self.maximumHistoryCount { $0.recentlyRemovedBoards.removeLast() }
         }
         notify(.removed(source: source, plan: removal))
@@ -57,18 +58,32 @@ public final class BoardRemoval {
 
     public func restore(presentedDeskID: DeskID, present: Bool = true, notify: (Notice) -> Void) -> RestoreResult {
         guard let history = store.snapshot.recentlyRemovedBoards.first else { return .emptyHistory }
+        return restore(history, presentedDeskID: presentedDeskID, present: present, notify: notify)
+    }
+
+    func restore(
+        _ history: RecentlyRemovedBoard, presentedDeskID: DeskID, present: Bool,
+        notify: (Notice) -> Void
+    ) -> RestoreResult {
         switch BoardRestoration.restore(history, in: store.snapshot.den.desks, presentedDeskID: presentedDeskID) {
         case .focusExistingTutorial(let id):
-            writer.update { $0.recentlyRemovedBoards.removeFirst() }
+            forget(history)
             return .existingTutorial(id)
         case .rejected(let failure):
             return .rejected(failure)
         case .restored(let deskIndex, let desk):
             writer.update { $0.den.desks[deskIndex.rawValue] = desk }
             notify(.restored(board: history.board, deskID: desk.id, present: present))
-            writer.update { $0.recentlyRemovedBoards.removeFirst() }
+            forget(history)
             save()
             return .restored(history.board.id)
+        }
+    }
+
+    private func forget(_ history: RecentlyRemovedBoard) {
+        writer.update {
+            $0.recentlyRemovedBoards.removeAll { $0 == history }
+            $0.boardUndoHistory.removeAll { $0 == .removed(history) }
         }
     }
 

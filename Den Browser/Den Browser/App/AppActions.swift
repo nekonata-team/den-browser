@@ -108,7 +108,7 @@ enum BoardAction: Equatable {
     case moveBoardToDrawer
     case remove
     case removeAndFocusNext
-    case restore
+    case undo
     case showRenamePanel
     case showEditLinkPanel
     case duplicate
@@ -133,7 +133,7 @@ enum ZmxSessionsAction: Equatable {
 
 enum OverviewAction: Equatable {
     case removeSelection(focusNext: Bool)
-    case restoreRemovedBoard
+    case undoBoardOperation
     case zoomIn
     case zoomOut
     case resetZoom
@@ -306,7 +306,12 @@ enum AppActionHandler {
             case .remove: session.boardRemoval.removeFocusedBoard()
             case .quit: session.zmx.quitFocusedBoard()
             case .removeAndFocusNext: session.boardRemoval.removeFocusedBoard(focusNext: true)
-            case .restore: session.boardRemoval.restoreRecentlyRemovedBoard()
+            case .undo:
+                if windowModel.isOverviewPresented {
+                    windowModel.overview.undoBoardOperation()
+                } else {
+                    session.boardRemoval.undoBoardOperation()
+                }
             case .showRenamePanel: windowModel.showRenameBoardPanel()
             case .showEditLinkPanel: windowModel.showEditBoardLinkPanel()
             case .duplicate: session.zmx.duplicateFocusedBoard()
@@ -334,7 +339,7 @@ enum AppActionHandler {
         case .overview(let action):
             switch action {
             case .removeSelection(let focusNext): windowModel.overview.removeSelectedBoard(focusNext: focusNext)
-            case .restoreRemovedBoard: windowModel.overview.restoreRemovedBoard()
+            case .undoBoardOperation: windowModel.overview.undoBoardOperation()
             case .zoomIn: windowModel.overview.adjustCanvasZoom(by: 1)
             case .zoomOut: windowModel.overview.adjustCanvasZoom(by: -1)
             case .resetZoom: windowModel.overview.resetCanvasZoom()

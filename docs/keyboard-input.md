@@ -51,7 +51,7 @@ Den Mode actions must never be implemented by forwarding an event and relying on
 
 [ADR 0026](./adr/0026-return-to-sheet-input-after-completing-den-mode-actions.md) records the intent behind these rules.
 
-- Relative Board, Desk, and Sheet Stack navigation; Board movement, removal, and restoration; layout adjustment; and Zen View keep Den Mode active.
+- Relative Board, Desk, and Sheet Stack navigation; Board movement, removal, restoration, and Undo; layout adjustment; and Zen View keep Den Mode active.
 - Direct Desk or Board selection, entering the Overview Selection, and moving a Board to a numbered Desk return to Sheet Input. Selecting an already focused target still succeeds; moving a Board to its current Desk does not.
 - Successful Board or Desk creation, Desk deletion, Board duplication, URL or label confirmation, and Desk Preset saving or replacement return to Sheet Input. Finishing Preset management with Done does too; deleting individual Presets keeps management open.
 - Confirming a Drawer Peek enters Sheet Input. Drawer filtering and selection keep the current context; restoration invoked in Den Mode preserves it.

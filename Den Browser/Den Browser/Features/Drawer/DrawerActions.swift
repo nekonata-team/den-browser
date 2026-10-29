@@ -52,7 +52,15 @@ final class DrawerActions {
     }
 
     func moveBoardToDrawer(_ boardID: BoardID) {
-        let result = storage.drawerTransfer.move(boardID) { [self] notice in
+        let result = storage.drawerTransfer.move(boardID, notify: drawerTransferNotifications())
+        context.feedback.publish(
+            result == nil
+                ? "Only Web or Terminal Primary Boards without a Side Board can move to Drawer." : "Moved to Drawer.",
+            severity: result == nil ? .warning : .success)
+    }
+
+    func drawerTransferNotifications() -> (DrawerTransfer.Notice) -> Void {
+        { [self] notice in
             switch notice {
             case .willMove(let board, let item):
                 if let runtime = storage.webRuntimes.removeValue(forKey: board.id) {
@@ -72,6 +80,7 @@ final class DrawerActions {
                 }
                 storage.boardRuntimes.receivers.removeValue(forKey: board.id)
             case .didMove(let source, let plan, let item):
+                let boardID = plan.historyEntry.board.id
                 storage.facingCache.invalidate(for: boardID)
                 context.inputSourceTracker.boardWillRemove(boardID)
                 onWindowEffect?(
@@ -81,10 +90,6 @@ final class DrawerActions {
                 onWindowEffect?(.drawerItemKept(item.id, opensDrawer: false, selectsItem: true))
             }
         }
-        context.feedback.publish(
-            result == nil
-                ? "Only Web or Terminal Primary Boards without a Side Board can move to Drawer." : "Moved to Drawer.",
-            severity: result == nil ? .warning : .success)
     }
 
     @discardableResult
