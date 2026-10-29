@@ -161,6 +161,7 @@ Click **Add to Drawer** (+) in the Drawer header, enter a URL, search, or Termin
 | Shortcut | Action |
 | --- | --- |
 | `Tab` | Close Drawer in Den Mode |
+| `n` / `Space` | Open Add to Drawer in Den Mode (outside filtering) |
 | `Control` + `Escape` | Close Drawer |
 | `/` | Search / filter Drawer items |
 | `Up` / `Down` or `k` / `j` | Select Drawer item |

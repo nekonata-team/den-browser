@@ -696,16 +696,17 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let surfaces = app.scrollViews["board-strip"].firstMatch.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'board-surface.'"))
 
-        given("Drawer is open") {
-            app.buttons["drawer-button"].click()
+        given("Drawer is open in Den Mode") {
+            enterDenMode(in: app)
+            app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(drawer.waitForExistence(timeout: 5))
         }
 
         when("opening the Terminal in Drawer and setting Shell state") {
-            drawer.buttons["drawer-add-item"].click()
+            app.typeKey(" ", modifierFlags: [])
             let input = app.textFields["open-board-input"].firstMatch
             XCTAssertTrue(input.waitForExistence(timeout: 5))
-            input.click()
+            XCTAssertEqual(input.value as? String, "")
             paste(":terminal /tmp", in: app)
             app.typeKey(.return, modifierFlags: [])
             XCTAssertTrue(drawer.waitForExistence(timeout: 5))

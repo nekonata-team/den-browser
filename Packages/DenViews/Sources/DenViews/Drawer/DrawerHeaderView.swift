@@ -32,7 +32,7 @@ struct DrawerHeaderView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Add to Drawer")
                     .accessibilityIdentifier("drawer-add-item")
-                    .help("Add to Drawer")
+                    .help("Add to Drawer (n / Space in Den Mode)")
 
                     Button(role: .destructive) {
                         drawer.requestClearConfirmation()

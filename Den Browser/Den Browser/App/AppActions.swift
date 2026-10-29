@@ -158,6 +158,7 @@ enum OverviewAction: Equatable {
 
 enum DrawerAction: Equatable {
     case toggle
+    case addItem
     case toggleStyle
     case close
     case enterFilterMode
@@ -358,6 +359,7 @@ enum AppActionHandler {
         case .drawer(let action):
             switch action {
             case .toggle: windowModel.toggleDrawer()
+            case .addItem: windowModel.drawer.addItem()
             case .toggleStyle: windowModel.drawer.toggleStyle()
             case .close: windowModel.closeDrawer()
             case .enterFilterMode: windowModel.drawer.enterFilterMode()

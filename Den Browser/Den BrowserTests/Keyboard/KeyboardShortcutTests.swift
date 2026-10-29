@@ -983,6 +983,42 @@ struct KeyboardShortcutTests {
         #expect(!windowModel.isBoardActivityPresented)
     }
 
+    @Test(arguments: ["n", " "])
+    func drawerDenModeOpensAdditionWithoutInterceptingFilterInput(character: String) throws {
+        // Arrange
+        let session = try makeSession(boards: [board("First")])
+        let composition = DenWindowComposition(session: session)
+        let model = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        model.openDrawer()
+        model.isDenMode = true
+        let initial = session.resources.state
+        let keyCode: UInt16 = character == "n" ? 45 : 49
+        let event = try keyEvent(characters: character, charactersIgnoringModifiers: character, keyCode: keyCode)
+        let repeated = try keyEvent(
+            characters: character, charactersIgnoringModifiers: character, isARepeat: true, keyCode: keyCode)
+
+        // Act / Assert
+        #expect(
+            KeyboardController.decision(for: repeated, session: session, windowModel: model)
+                == .consume(.ignoredRepeat))
+        for phase in [FilterPhase.filtering, .selecting] {
+            model.drawer.filterPhase = phase
+            #expect(
+                KeyboardController.decision(for: event, session: session, windowModel: model)
+                    == (phase == .filtering ? .forward(.filterTextInput) : .consume(.exclusiveContext)))
+        }
+        model.drawer.filterPhase = .inactive
+        #expect(
+            KeyboardController.decision(for: event, session: session, windowModel: model)
+                == .perform(.drawer(.addItem)))
+        #expect(KeyboardController.handle(event, session: session, windowModel: model))
+        #expect(model.isAddingToDrawer)
+        #expect(model.isDrawerPresented)
+        #expect(session.resources.state == initial)
+    }
+
     @Test func denModeToggleRemainsAvailableInDrawer() throws {
         let preferences = try makePreferences()
         let session = try makeSession(boards: [board("First")])

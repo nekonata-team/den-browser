@@ -374,6 +374,9 @@ enum KeyboardRouter {
             guard modifiers == [] else { return .consume(.exclusiveContext) }
             if event.key == .tab { return .perform(.drawer(.close)) }
             if event.isEscape { return .perform(.application(.exitDenMode)) }
+            if character == "n" || character == " " {
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.addItem))
+            }
             if event.key == .returnKey {
                 return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.toggleSelectedItem))
             }
