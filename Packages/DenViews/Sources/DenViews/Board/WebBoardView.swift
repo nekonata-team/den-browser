@@ -143,7 +143,7 @@ public struct WebBoardView: View {
 
     private var isSurfaceVisible: Bool {
         isVisibleInViewport && !windowModel.isOverviewPresented
-            && !(windowModel.isDrawerOpen && model.drawerStyle == .bottom)
+            && !(windowModel.isDrawerPresented && model.drawerStyle == .bottom)
     }
 
     private var initialLoadFallback: some View {
@@ -252,10 +252,11 @@ public struct WebBoardView: View {
 
         Button {
             model.perform(.focus)
-            model.perform(.keepInDrawer)
+            model.perform(.moveToDrawer)
         } label: {
-            Label("Keep Current Sheet in Drawer", systemSymbol: .trayAndArrowDown)
+            Label("Move to Drawer", systemSymbol: .trayAndArrowDown)
         }
+        .disabled(!model.canMoveToDrawer(board))
 
         Button {
             model.perform(.focus)

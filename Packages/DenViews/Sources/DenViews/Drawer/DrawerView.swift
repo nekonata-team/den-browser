@@ -12,7 +12,7 @@ public struct DrawerView<Peek: View>: View {
     let profileColor: Color
     var shouldShowHeader: Bool = true
     let isDenMode: () -> Bool
-    let isDrawerOpen: () -> Bool
+    let isInputActive: () -> Bool
     let motionPreference: MotionPreference
     @ViewBuilder let peek: (DrawerItem, Bool) -> Peek
     let placeFromContextMenu: (UUID) -> Void
@@ -23,7 +23,7 @@ public struct DrawerView<Peek: View>: View {
 
     public init(
         availableHeight: CGFloat, availableWidth: CGFloat, profileColor: Color,
-        shouldShowHeader: Bool = true, isDenMode: @escaping () -> Bool, isDrawerOpen: @escaping () -> Bool,
+        shouldShowHeader: Bool = true, isDenMode: @escaping () -> Bool, isInputActive: @escaping () -> Bool,
         motionPreference: MotionPreference, @ViewBuilder peek: @escaping (DrawerItem, Bool) -> Peek,
         placeFromContextMenu: @escaping (UUID) -> Void, placeAsBoard: @escaping (UUID) -> Void
     ) {
@@ -32,7 +32,7 @@ public struct DrawerView<Peek: View>: View {
         self.profileColor = profileColor
         self.shouldShowHeader = shouldShowHeader
         self.isDenMode = isDenMode
-        self.isDrawerOpen = isDrawerOpen
+        self.isInputActive = isInputActive
         self.motionPreference = motionPreference
         self.peek = peek
         self.placeFromContextMenu = placeFromContextMenu
@@ -57,7 +57,7 @@ public struct DrawerView<Peek: View>: View {
             restoreKeyboardFocus()
         }
         .onChange(of: drawer.selectedItemID) { _, itemID in
-            if isDenMode(), !drawer.isFilterInputActive {
+            if isInputActive(), isDenMode(), !drawer.isFilterInputActive {
                 focusedDrawerItemID = itemID
             }
         }
@@ -72,6 +72,7 @@ public struct DrawerView<Peek: View>: View {
             profileColor: profileColor
         )
         .onChange(of: drawer.isFilterInputActive) { _, newValue in
+            guard isInputActive() else { return }
             if newValue {
                 isSearchFocused = true
             } else {
@@ -79,7 +80,7 @@ public struct DrawerView<Peek: View>: View {
             }
         }
         .onChange(of: drawer.query) { _, newValue in
-            if isSearchFocused {
+            if isInputActive(), isSearchFocused {
                 TextInputComposition.syncActiveFieldEditor(to: newValue)
             }
         }
@@ -92,7 +93,7 @@ public struct DrawerView<Peek: View>: View {
                     ContentUnavailableView(
                         "Drawer is empty",
                         systemSymbol: .tray,
-                        description: Text("Keep a Current Sheet here, or start a new Terminal from the header.")
+                        description: Text("Add a URL, search, or Terminal command using the + button.")
                     )
                 } else if drawer.filteredItems.isEmpty {
                     ContentUnavailableView.search(text: drawer.query)
@@ -100,14 +101,13 @@ public struct DrawerView<Peek: View>: View {
                     ScrollView {
                         LazyVStack(spacing: 6) {
                             ForEach(drawer.filteredItems) { item in
-                                let isPeekFocused = !isDenMode()
+                                let isPeekFocused = isInputActive() && !isDenMode() && !drawer.isFilterPresented
                                 DrawerItemView(
                                     focusedDrawerItemID: $focusedDrawerItemID,
                                     item: item,
                                     isSelected: drawer.selectedItemID == item.id,
                                     isExpanded: drawer.expandedItemID == item.id,
-                                    isPeekVisible: isDrawerOpen()
-                                        && drawer.expandedItemID == item.id,
+                                    isPeekVisible: drawer.expandedItemID == item.id,
                                     profileColor: profileColor,
                                     peekHeight: peekHeight,
                                     onToggle: { drawer.toggleItem(item.id) },
@@ -128,10 +128,13 @@ public struct DrawerView<Peek: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: drawer.expandedItemID) { _, itemID in
-                guard isDrawerOpen(), let itemID else { return }
+                guard isInputActive(), let itemID else { return }
                 schedulePeekScroll(to: itemID, using: proxy)
             }
-            .onChange(of: isDrawerOpen()) { _, isOpen in
+            .onChange(of: isInputActive()) { _, isOpen in
+                if isOpen {
+                    if drawer.isFilterInputActive { isSearchFocused = true } else { restoreKeyboardFocus() }
+                }
                 guard isOpen, let itemID = drawer.expandedItemID else { return }
                 schedulePeekScroll(to: itemID, using: proxy)
             }
@@ -142,7 +145,7 @@ public struct DrawerView<Peek: View>: View {
         let animation = DenMotion.spatial(reduceMotion: shouldReduceMotion)
         Task { @MainActor in
             await Task.yield()
-            guard isDrawerOpen(), drawer.expandedItemID == itemID else { return }
+            guard isInputActive(), drawer.expandedItemID == itemID else { return }
             withAnimation(animation) {
                 proxy.scrollTo(drawerItemScrollID(for: itemID), anchor: .top)
             }
@@ -211,8 +214,8 @@ public struct DrawerView<Peek: View>: View {
     }
 
     private func restoreKeyboardFocus() {
-        guard !drawer.isFilterInputActive else { return }
-        if !isDenMode(), drawer.expandedItemID != nil {
+        guard isInputActive(), !drawer.isFilterInputActive else { return }
+        if !isDenMode(), drawer.expandedItemID != nil, !drawer.isFilterPresented {
             return
         }
         focusedDrawerItemID = drawer.selectedItemID

@@ -116,7 +116,7 @@ Reordering a Desk preserves the focused Desk and Board and keeps Den Mode active
 | `u` | Restore recently removed Board |
 | `Shift` + `D` | Delete Focused Desk (or discard all Drawer items in Drawer mode) |
 | `Shift` + `R` | Rename Focused Desk |
-| `a` | Keep Current Sheet in Drawer |
+| `a` | Move a Web or Terminal Primary Board without a Side Board to Drawer |
 | `s` | Capture screenshot of Current Sheet to file |
 | `Control` + `s` | Copy screenshot of Current Sheet to clipboard |
 | `y` | Copy Focused Board URL, working directory, or session name |
@@ -156,7 +156,7 @@ Mouse clicks can focus or mark individual Sessions. Ending a Session closes its 
 
 Open with `Tab` in Den Mode.
 
-Click **New Terminal** in the Drawer header to start a Shell in the home directory and open its Peek.
+Click **Add to Drawer** (+) in the Drawer header, enter a URL, search, or Terminal command, and press Return. Recent Items also open in Drawer from this panel. Drawer and its Peek remain visible behind the input panel; only the input panel accepts interaction until it closes. Escape returns to the same Drawer selection and filter.
 
 | Shortcut | Action |
 | --- | --- |
@@ -175,7 +175,7 @@ Click **New Terminal** in the Drawer header to start a Shell in the home directo
 | `Escape` | Clear filter or exit Drawer |
 
 External links enter the receiving Profile's Drawer by default; the External Links setting can instead create a Board beside the Focused Board.
-Keeping a Current Sheet copies its URL and label with a new identity, leaving the source Board and Drawer visibility unchanged.
+Den Mode `a` and the Web/Terminal Board header menu’s **Move to Drawer** remove the Primary Board from its Desk and retain its live Sheet Stack or Terminal Session. The Item keeps the Board ID, Drawer stays closed, and Den Mode remains active when invoked there. Boards in a group with a Side Board, Inspection Boards and Tutorials cannot move. Moving does not add a Board to removal history.
 Option-clicking a supported HTTP, HTTPS, or local file link captures it without changing the Current Sheet or Desk layout.
 New Drawer Items appear first, and duplicate URLs remain separate.
 
@@ -244,7 +244,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
 - **Board Headers**:
   - Double-click to focus and center the Board.
   - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together.
-  - Web, Terminal, and Inspection Board headers provide context menus with actions appropriate to their Board kind. Web Board actions include copying the Current Sheet URL or Board ID, keeping the Sheet in Drawer, duplicating, reloading, adjusting Sheet size, centering, maximizing, moving to a Desk, and removing. Tutorial Board headers have no context menu.
+  - Web, Terminal, and Inspection Board headers provide context menus with actions appropriate to their Board kind. Web Board actions include copying the Current Sheet URL or Board ID, moving to Drawer, duplicating, reloading, adjusting Sheet size, centering, maximizing, moving to a Desk, and removing. Tutorial Board headers have no context menu.
 - **BoardRail**:
   - Right-click or Control-click a Board for its context menu (set or clear Anchor, rename, duplicate, move to Desk, copy Current Sheet URL for Web Boards, remove). Opening the menu does not change focus.
 - **Board Resize**:

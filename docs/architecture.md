@@ -157,7 +157,7 @@ are retained for the request lifetime. Keyboard precedence is defined in [keyboa
 | Desk | Desk lifecycle, ordering and Presets |
 | Board | Board state/grouping and Web, Terminal, Inspection and Tutorial kind adapters |
 | Web | Live WebKit execution shared by Web Boards and Drawer Peek |
-| Drawer | Item collection, placement, Profile-owned runtimes and window-local Peek selection |
+| Drawer | Item collection, Board transfer, placement, Profile-owned runtimes and window-local Peek selection |
 | Overview | Spatial selection and Facing capture/cache bindings |
 | BoardActivity | Runtime process selection and mounted sampling work |
 | Essentials | App-wide preference collection, Prefix panel and Essential settings |

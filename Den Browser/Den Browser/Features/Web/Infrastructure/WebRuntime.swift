@@ -229,6 +229,13 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     }
 
     /// Changes the presentation owner without loading or disposing the live page.
+    func presentInDrawer(sheetNavigationActions: SheetNavigationManager.Actions, events: Events) {
+        presentation = .drawer
+        webView.configuration.preferences.isElementFullscreenEnabled = false
+        updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
+        sheetNavigation.didOpen(webView, boardID: nil, paused: false, actions: self.sheetNavigationActions)
+    }
+
     func attach(
         to board: BoardState,
         sheetNavigationActions: SheetNavigationManager.Actions,
@@ -257,13 +264,16 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             }
         }
         self.sheetNavigationActions = sheetNavigationActions
+        if presentation == .drawer {
+            self.sheetNavigationActions.onNavigateCurrentSheet = { [weak self] url in self?.load(url) }
+        }
         self.events = events
         if didChangeDownloadActivityOwner {
             for activity in downloadHandler.activeActivities {
                 self.events.onDownloadActivity(.started(activity))
             }
         }
-        sheetNavigation.updateActions(sheetNavigationActions, for: webView)
+        sheetNavigation.updateActions(self.sheetNavigationActions, for: webView)
         if let boardWebView = webView as? RuntimeWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
                 self?.events.isFocused() ?? false

@@ -317,7 +317,7 @@ struct NativeDrawerTests {
         #expect(windowModel.drawer.query.isEmpty)
     }
 
-    @Test func keepCurrentSheetCopiesWithoutOpeningDrawerOrChangingBoard() {
+    @Test func moveBoardRemovesSourceWithoutOpeningDrawer() {
         let existingBoard = board("Reference", url: "https://example.com/reference")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let session = ProfileWindowSession(
@@ -329,9 +329,10 @@ struct NativeDrawerTests {
         composition.connect()
         defer { composition.disconnect() }
 
-        session.drawer.keepFocusedSheetInDrawer()
+        session.drawer.moveBoardToDrawer(existingBoard.id)
 
-        #expect(session.navigation.focusedBoard == existingBoard)
+        #expect(session.navigation.focusedBoard == nil)
+        #expect(session.resources.recentlyRemovedBoards.isEmpty)
         #expect(session.resources.state.drawerItems.first?.url == existingBoard.currentSheetURL)
         #expect(session.resources.state.drawerItems.first?.title == existingBoard.displayName)
         #expect(!windowModel.isDrawerOpen)

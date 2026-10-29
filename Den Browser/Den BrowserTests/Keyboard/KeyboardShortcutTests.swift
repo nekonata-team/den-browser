@@ -2378,7 +2378,7 @@ struct KeyboardShortcutTests {
         #expect(!KeyboardController.handle(commandW, session: session, windowModel: windowModel))
     }
 
-    @Test func denModeAKeepsFocusedSheetInDrawer() throws {
+    @Test func denModeAMovesFocusedBoardToDrawer() throws {
         let focused = board("Focused", url: "https://drawer.example/")
         let session = try makeSession(boards: [focused])
         let composition = DenWindowComposition(session: session)
@@ -2392,7 +2392,12 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "a",
             keyCode: 0)
 
+        #expect(
+            KeyboardController.decision(for: keep, session: session, windowModel: windowModel)
+                == .perform(.board(.moveBoardToDrawer)))
         #expect(KeyboardController.handle(keep, session: session, windowModel: windowModel))
+        #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
+        #expect(windowModel.isDenMode)
         #expect(session.resources.state.drawerItems.first?.url == URL(string: "https://drawer.example/"))
         #expect(!windowModel.isDrawerOpen)
     }

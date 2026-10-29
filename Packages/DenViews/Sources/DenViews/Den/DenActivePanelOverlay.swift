@@ -25,11 +25,12 @@ public struct DenActivePanelOverlay<Content: View>: View {
 
     public var body: some View {
         if let context = windowModel.temporaryContext, context != .drawer {
-            dismissBlocker(onDismiss: dismissTemporaryPresentation)
-                .frame(width: size.width, height: size.height)
-                .zIndex(DenOverlayLayer.activePanel)
-            panel(context)
-                .zIndex(DenOverlayLayer.activePanel)
+            ZStack {
+                dismissBlocker(onDismiss: dismissTemporaryPresentation)
+                    .frame(width: size.width, height: size.height)
+                panel(context)
+            }
+            .zIndex(windowModel.isAddingToDrawer ? DenOverlayLayer.drawerInput : DenOverlayLayer.activePanel)
         }
     }
 
@@ -68,7 +69,7 @@ public struct DenActivePanelOverlay<Content: View>: View {
             windowModel.exitEssentialsPrefix()
         case .openBoard:
             windowModel.hideOpenBoardPanel()
-            restoreInput()
+            if !windowModel.isDrawerOpen { restoreInput() }
         case .zmxSessions:
             windowModel.hideZmxSessions()
         case .zmxDuplication:

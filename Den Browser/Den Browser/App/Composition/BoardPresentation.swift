@@ -29,7 +29,7 @@ extension BoardSurfaceModel {
                 case .copyID: session.boardNavigation.copyBoardID(board.id)
                 case .copyLocation: session.boardNavigation.copyBoardLocation(board.id)
                 case .inspect: session.sideBoards.createInspectionBoard(targetBoardID: board.id)
-                case .keepInDrawer: session.drawer.keepFocusedSheetInDrawer()
+                case .moveToDrawer: session.drawer.moveBoardToDrawer(board.id)
                 case .goToFirst: session.boardOpening.goToFirstSheetInFocusedBoard()
                 case .toggleNavigation: session.boardNavigation.toggleBoardSheetNavigationPause(board.id)
                 case .screenshot: session.screenshots.captureFocusedSheetScreenshot()

@@ -34,6 +34,12 @@ extension WebRuntime {
             events: Self.drawerEvents(itemID: itemID, storage: storage, connection: connection))
     }
 
+    func attachToDrawer(itemID: UUID, storage: DenProfileResources, connection: RuntimeWindowConnection) {
+        presentInDrawer(
+            sheetNavigationActions: Self.drawerNavigationActions(itemID: itemID, connection: connection),
+            events: Self.drawerEvents(itemID: itemID, storage: storage, connection: connection))
+    }
+
     private static func drawerNavigationActions(itemID: UUID, connection: RuntimeWindowConnection)
         -> SheetNavigationManager.Actions
     {

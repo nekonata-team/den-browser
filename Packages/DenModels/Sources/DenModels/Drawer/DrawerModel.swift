@@ -11,7 +11,6 @@ public final class DrawerModel {
     @ObservationIgnored private let discardItemAction: (UUID, Bool) -> Void
     @ObservationIgnored private let toggleStyleAction: () -> Void
     @ObservationIgnored private let requestClearConfirmationAction: () -> Void
-    @ObservationIgnored private let createTerminalAction: () -> Void
     public var query = ""
     public var filterPhase: FilterPhase = .inactive
     public var selectedItemID: UUID?
@@ -19,6 +18,7 @@ public final class DrawerModel {
 
     @ObservationIgnored public var onPeekExpanded: (() -> Void)?
     @ObservationIgnored public var onClose: (() -> Void)?
+    @ObservationIgnored public var onAddItem: (() -> Void)?
 
     public init(
         items: @escaping () -> [DrawerItem],
@@ -26,8 +26,7 @@ public final class DrawerModel {
         releasePeek: @escaping () -> Void,
         discardItem: @escaping (UUID, Bool) -> Void,
         toggleStyle: @escaping () -> Void,
-        requestClearConfirmation: @escaping () -> Void,
-        createTerminal: @escaping () -> Void
+        requestClearConfirmation: @escaping () -> Void
     ) {
         itemProvider = items
         isBottomStyleProvider = isBottomStyle
@@ -35,7 +34,6 @@ public final class DrawerModel {
         discardItemAction = discardItem
         toggleStyleAction = toggleStyle
         requestClearConfirmationAction = requestClearConfirmation
-        createTerminalAction = createTerminal
     }
 
     public var items: [DrawerItem] { itemProvider() }
@@ -149,8 +147,8 @@ public final class DrawerModel {
         toggleStyleAction()
     }
 
-    public func createTerminal() {
-        createTerminalAction()
+    public func addItem() {
+        onAddItem?()
     }
 
     public func requestClearConfirmation() {

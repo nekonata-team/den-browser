@@ -109,7 +109,7 @@ public struct DenView<Header: View, Rail: View, Strip: View, Panels: View, Drawe
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: windowModel.temporaryContext)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: deskFilter.isPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: windowModel.isZenViewPresented)
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: windowModel.isDrawerOpen)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: windowModel.isDrawerPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: drawerStyle)
         }
         .environment(windowModel.boardEditing)

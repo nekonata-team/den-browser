@@ -24,15 +24,15 @@ struct DrawerHeaderView: View {
 
                 HStack(spacing: 8) {
                     Spacer()
-                    Button(action: drawer.createTerminal) {
-                        Image(systemSymbol: .appleTerminal)
+                    Button(action: drawer.addItem) {
+                        Image(systemSymbol: .plus)
                             .font(.system(size: 12, weight: .semibold))
                             .frame(width: 30, height: 30)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("New Terminal")
-                    .accessibilityIdentifier("drawer-new-terminal")
-                    .help("New Terminal in Drawer")
+                    .accessibilityLabel("Add to Drawer")
+                    .accessibilityIdentifier("drawer-add-item")
+                    .help("Add to Drawer")
 
                     Button(role: .destructive) {
                         drawer.requestClearConfirmation()

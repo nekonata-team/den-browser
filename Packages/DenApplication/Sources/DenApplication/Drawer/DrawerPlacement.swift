@@ -36,8 +36,8 @@ public struct DrawerPlacement {
         let boardID: BoardID?
         switch item.content {
         case .web(let url):
-            boardID = creation.createWeb(
-                urlString: url.absoluteString, width: request.width, searchEngine: request.searchEngine,
+            boardID = creation.insert(
+                BoardState(id: BoardID(item.id), label: item.displayName, width: request.width, currentSheetURL: url),
                 target: request.target, recentItem: .url(WebURLPolicy.canonicalSheetURL(url)), notify: notifyBoard)
         case .terminal(let session):
             let recent: RecentItem =

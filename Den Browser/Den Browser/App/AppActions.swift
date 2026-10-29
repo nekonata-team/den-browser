@@ -105,7 +105,7 @@ enum BoardAction: Equatable {
     case copySheetScreenshot
     case copyLocation
     case copyID
-    case keepSheetInDrawer
+    case moveBoardToDrawer
     case remove
     case removeAndFocusNext
     case restore
@@ -300,7 +300,8 @@ enum AppActionHandler {
                 if let boardID = windowModel.focusedBoard?.id {
                     session.boardNavigation.copyBoardID(boardID)
                 }
-            case .keepSheetInDrawer: session.drawer.keepFocusedSheetInDrawer()
+            case .moveBoardToDrawer:
+                if let boardID = session.navigation.focusedBoard?.id { session.drawer.moveBoardToDrawer(boardID) }
             case .remove: session.boardRemoval.removeFocusedBoard()
             case .quit: session.zmx.quitFocusedBoard()
             case .removeAndFocusNext: session.boardRemoval.removeFocusedBoard(focusNext: true)

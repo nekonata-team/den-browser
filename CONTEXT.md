@@ -59,7 +59,7 @@ A separately focusable companion Board attached to a target Board. A target has 
 A Board's place in a Board Group: Primary Board or Side Board.
 
 **Primary Board**:
-The Board that a Side Board attaches to. A standalone Board is the Primary Board of its one-Board group.
+The Board that a Side Board attaches to. A Primary Board may have no Side Board.
 
 **Board Group**:
 A target Board and its optional Side Board, considered together as one unit.
@@ -143,7 +143,7 @@ _Avoid_: Inbox, Temporary Desk, scratch workspace, clipboard
 
 **Drawer Item**:
 Web material or a Terminal Session held in the Drawer before it is placed into an established context or discarded. A Drawer Item is not implicitly unread, actionable, or temporary in storage.
-Web material enters the Drawer when it is kept there; Terminal commands can also start an Item there. Keeping an Item does not change the Current Sheet or Desk layout.
+Web material enters the Drawer when it is kept there; Terminal commands can also start an Item there. Keeping a URL does not change the Current Sheet or Desk layout. Moving a Web or Terminal Primary Board without a Side Board into Drawer removes it from its Desk while retaining its live content and identity.
 _Avoid_: Inbox item, task, bookmark, history entry
 
 **Drawer Peek**:

@@ -621,7 +621,7 @@ enum KeyboardRouter {
             action: .board(.copySheetScreenshot), repeatPolicy: .ignore),
         binding("y"): KeyboardCommand(action: .board(.copyLocation), repeatPolicy: .ignore),
         binding("y", modifiers: [.shift]): KeyboardCommand(action: .board(.copyID), repeatPolicy: .ignore),
-        binding("a"): KeyboardCommand(action: .board(.keepSheetInDrawer), repeatPolicy: .ignore),
+        binding("a"): KeyboardCommand(action: .board(.moveBoardToDrawer), repeatPolicy: .ignore),
         binding("z"): KeyboardCommand(action: .application(.toggleZenView), repeatPolicy: .ignore),
         binding("x"): KeyboardCommand(action: .board(.remove), repeatPolicy: .ignore),
         binding("q"): KeyboardCommand(action: .board(.quit), repeatPolicy: .ignore),

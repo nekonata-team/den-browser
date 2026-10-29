@@ -62,12 +62,7 @@ final class DenWindowComposition {
                     itemID, focusNext: focusNext, notify: session.drawer.drawerItemNotifications())
             },
             toggleStyle: { session.configuration.preferences.toggleDrawerStyle() },
-            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() },
-            createTerminal: {
-                if let message = session.input.openInDrawer(input: ":terminal") {
-                    session.context.feedback.publish(message, severity: .warning)
-                }
-            })
+            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() })
         let zmxSessions = ZmxSessionsModel {
             let client = session.context.zmxClient
             return ZmxSessionsModel.Operations(
@@ -206,6 +201,7 @@ final class DenWindowComposition {
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }
         drawer.onPeekExpanded = { [weak model] in model?.isDenMode = false }
+        drawer.onAddItem = { [weak model] in model?.showOpenBoardPanel(inDrawer: true) }
         drawer.onClose = { [weak model] in model?.closeDrawer() }
         deskFilter.onCenterFocusedBoard = { [weak model] in model?.centerFocusedBoardRequest &+= 1 }
         notificationList.onClose = { [weak model] in model?.closeNotificationList() }

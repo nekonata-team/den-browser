@@ -12,6 +12,8 @@ public extension DenWindowModel {
     }
 
     var isDrawerOpen: Bool { temporaryContext == .drawer }
+    var isAddingToDrawer: Bool { temporaryContext == .openBoard && openBoard.opensInDrawer }
+    var isDrawerPresented: Bool { isDrawerOpen || isAddingToDrawer }
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }
     var isNewDeskPanelPresented: Bool {
@@ -63,7 +65,7 @@ public extension DenWindowModel {
         case .boardWidth:
             boardWidthPanelMessage = nil
         case .drawer:
-            drawer.endPresentation()
+            if !(nextContext == .openBoard && openBoard.opensInDrawer) { drawer.endPresentation() }
         case .zmxDuplication:
             zmxActions.cancelDuplication()
             zmxDuplicationRootSessionName = nil
@@ -176,13 +178,14 @@ public extension DenWindowModel {
         if temporaryContext == .keyboardShortcuts { setTemporaryContext(nil) }
     }
 
-    func showOpenBoardPanel(initialURL: URL? = nil, afterBoardID: BoardID? = nil) {
-        openBoard.preparePresentation(initialURL: initialURL, afterBoardID: afterBoardID)
+    func showOpenBoardPanel(initialURL: URL? = nil, afterBoardID: BoardID? = nil, inDrawer: Bool = false) {
+        openBoard.preparePresentation(initialURL: initialURL, afterBoardID: afterBoardID, inDrawer: inDrawer)
         setTemporaryContext(.openBoard)
     }
 
     func hideOpenBoardPanel() {
-        if temporaryContext == .openBoard { setTemporaryContext(nil) }
+        guard temporaryContext == .openBoard else { return }
+        setTemporaryContext(openBoard.opensInDrawer ? .drawer : nil)
     }
 
     func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {

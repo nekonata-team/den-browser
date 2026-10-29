@@ -1,3 +1,4 @@
+import DenApplication
 public import DenDomain
 
 @MainActor
@@ -11,7 +12,7 @@ public struct BoardSurfaceModel {
         case copyID
         case copyLocation
         case inspect
-        case keepInDrawer
+        case moveToDrawer
         case goToFirst
         case toggleNavigation
         case screenshot
@@ -23,6 +24,10 @@ public struct BoardSurfaceModel {
 
     private let readDesks: () -> [DeskState]
     public var desks: [DeskState] { readDesks() }
+    public func canMoveToDrawer(_ board: BoardState) -> Bool {
+        guard let desk = desks.first(where: { $0.boards.contains(where: { $0.id == board.id }) }) else { return false }
+        return DrawerTransfer.canMove(board, among: desk.boards)
+    }
     private let readBoardDeskID: () -> DeskID?
     public var boardDeskID: DeskID? { readBoardDeskID() }
     private let readCanMoveLeft: () -> Bool

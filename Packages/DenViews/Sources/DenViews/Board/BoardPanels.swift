@@ -40,10 +40,14 @@ public struct OpenBoardPanel: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            if openBoard.opensInDrawer { Text("Add to Drawer").font(.headline) }
             DenPanelHeader(systemSymbol: .plusRectangleOnRectangle) {
                 TextField(
                     text: urlTextBinding,
-                    prompt: Text(verbatim: "https://example.com, search, or :terminal / :tutorial")
+                    prompt: Text(
+                        verbatim: openBoard.opensInDrawer
+                            ? "https://example.com, search, or :terminal"
+                            : "https://example.com, search, or :terminal / :tutorial")
                 ) {
                     Text("Open URL, search, or command")
                 }
@@ -106,6 +110,7 @@ public struct OpenBoardPanel: View {
                 ForEach(filteredRecentItems) { item in
                     OpenBoardRecentRow(
                         item: item,
+                        opensInDrawer: openBoard.opensInDrawer,
                         isSelected: item.id == selectedRecentItemID,
                         matchedEssential: editing.essentials.first { item.matches(essential: $0) },
                         profileColor: profileColor,
@@ -117,9 +122,14 @@ public struct OpenBoardPanel: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                DenPanelHint("Option–Return or Option-click a Recent Item to open in Drawer")
-                DenPanelHint("Use :tutorial for the interactive guide")
-                DenPanelHint("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
+                DenPanelHint(
+                    openBoard.opensInDrawer
+                        ? "Return or click a Recent Item to add to Drawer"
+                        : "Return opens a Board · Option–Return or Option-click a Recent Item opens in Drawer")
+                if !openBoard.opensInDrawer {
+                    DenPanelHint("Use :tutorial for the interactive guide")
+                }
+                DenPanelHint("Terminal commands: :terminal [path], :zellij [session], or :zmx <session>")
             }
         }
         .denPanel(width: DenPanelLayout.wideWidth)
@@ -153,7 +163,7 @@ public struct OpenBoardPanel: View {
         }
         .onExitCommand {
             windowModel.hideOpenBoardPanel()
-            editing.restoreFocusedFirstResponder()
+            if !windowModel.isDrawerOpen { editing.restoreFocusedFirstResponder() }
         }
     }
 
@@ -182,6 +192,7 @@ public struct OpenBoardPanel: View {
 
 private struct OpenBoardRecentRow: View {
     let item: RecentItem
+    let opensInDrawer: Bool
     let isSelected: Bool
     let matchedEssential: Essential?
     let profileColor: Color
@@ -213,7 +224,8 @@ private struct OpenBoardRecentRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint("Opens a new Board. Option click opens in Drawer.")
+            .accessibilityHint(
+                opensInDrawer ? "Adds this Item to Drawer." : "Opens a new Board. Option click opens in Drawer.")
 
             if let matchedEssential {
                 HStack(spacing: 4) {

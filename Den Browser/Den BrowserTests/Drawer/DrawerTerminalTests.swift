@@ -12,7 +12,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DrawerTerminalTests {
-    @Test func creatingTerminalSelectsAndExpandsItWithoutAddingBoard() throws {
+    @Test(arguments: [":terminal", "https://example.com/", "swift concurrency"])
+    func addingFromDrawerOpensInputAndCreatesItemWithoutAddingBoard(input: String) throws {
         // Arrange
         let (session, _) = sessions(DrawerItem(terminal: .shell(workingDirectory: "/tmp")))
         let composition = DenWindowComposition(session: session)
@@ -20,17 +21,73 @@ struct DrawerTerminalTests {
         defer { composition.disconnect() }
 
         // Act
-        composition.model.drawer.createTerminal()
+        composition.model.drawer.addItem()
+        #expect(composition.model.isOpenBoardPanelPresented)
+        #expect(composition.model.isDrawerPresented)
+        #expect(!composition.model.isDrawerOpen)
+        #expect(session.resources.state.drawerItems.count == 1)
+        composition.model.openBoard.input = input
+        composition.model.openBoard.submit()
 
         // Assert
         let item = try #require(session.resources.state.drawerItems.first)
         #expect(session.resources.state.drawerItems.count == 2)
-        #expect(item.terminal == .shell(workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path))
+        if input == ":terminal" {
+            #expect(item.terminal == .shell(workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path))
+        } else {
+            #expect(item.url != nil)
+        }
         #expect(composition.model.isDrawerOpen)
         #expect(composition.model.drawer.selectedItemID == item.id)
         #expect(composition.model.drawer.expandedItemID == item.id)
         #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
         #expect(session.resources.drawerRuntimes.terminal.isEmpty)
+    }
+
+    @Test func drawerInputValidationCancellationAndNextBoardOpeningKeepTheirDestination() throws {
+        // Arrange
+        let (session, _) = sessions(DrawerItem(terminal: .shell(workingDirectory: "/tmp")))
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        let model = composition.model
+
+        // Act
+        model.openDrawer()
+        model.isDenMode = true
+        model.drawer.enterFilterMode()
+        model.drawer.setQuery("Terminal")
+        let selectedItemID = model.drawer.selectedItemID
+        model.drawer.addItem()
+        model.openBoard.input = ":tutorial"
+        model.openBoard.submit()
+
+        // Assert
+        #expect(model.isOpenBoardPanelPresented)
+        #expect(model.isDrawerPresented)
+        #expect(model.drawer.query == "Terminal")
+        #expect(model.drawer.selectedItemID == selectedItemID)
+        #expect(model.openBoard.message != nil)
+        #expect(session.resources.state.drawerItems.count == 1)
+        #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
+
+        // Act
+        model.hideOpenBoardPanel()
+        #expect(model.isDrawerOpen)
+        #expect(model.isDenMode)
+        #expect(model.drawer.isFilterInputActive)
+        #expect(model.drawer.query == "Terminal")
+        model.closeDrawer()
+        #expect(!model.isDrawerPresented)
+        model.showOpenBoardPanel()
+        #expect(!model.isDrawerPresented)
+        model.openBoard.input = "https://example.com/"
+        model.openBoard.submit()
+
+        // Assert
+        #expect(!model.openBoard.opensInDrawer)
+        #expect(session.navigation.focusedDesk?.boards.count == 1)
+        #expect(session.resources.state.drawerItems.count == 1)
     }
 
     @Test(arguments: ["project", "/work", "Build"])
@@ -163,7 +220,11 @@ struct DrawerTerminalTests {
         // Arrange
         let item = DrawerItem(terminal: .shell(workingDirectory: "/tmp"))
         let (session, _) = sessions(item)
-        let runtime = session.drawer.drawerTerminalRuntime(for: item)
+        let board = BoardState(id: BoardID(item.id), width: 640, workingDirectory: "/tmp")
+        session.resources.state.drawerItems = []
+        session.resources.state.desks[0].boards = [board]
+        session.resources.state.desks[0].focusedBoardID = board.id
+        let runtime = session.runtimes.terminalRuntime(for: board)
         let window = TestWindow()
         defer {
             window.contentView = nil
@@ -176,6 +237,11 @@ struct DrawerTerminalTests {
         try await waitForText("drawer_ready_\(token)", runtime: runtime)
 
         // Act
+        session.drawer.moveBoardToDrawer(board.id)
+        #expect(session.resources.terminalRuntimes[board.id] == nil)
+        #expect(session.resources.drawerRuntimes.terminal[item.id] === runtime)
+        #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
+        #expect(runtime.terminalView.isHidden)
         window.contentView = nil
         session.runtimes.releaseDrawerPeek()
         let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))

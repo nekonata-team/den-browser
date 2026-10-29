@@ -33,7 +33,7 @@ public struct DenDrawerOverlay<Peek: View>: View {
         let isBottom = drawerStyle == .bottom
 
         ZStack(alignment: isBottom ? .bottom : .center) {
-            if windowModel.isDrawerOpen {
+            if windowModel.isDrawerPresented {
                 dismissBlocker(onDismiss: windowModel.closeDrawer)
                     .transition(.opacity)
 
@@ -43,7 +43,7 @@ public struct DenDrawerOverlay<Peek: View>: View {
                     profileColor: profileColor,
                     shouldShowHeader: shouldShowHeader,
                     isDenMode: { windowModel.isDenMode },
-                    isDrawerOpen: { windowModel.isDrawerOpen },
+                    isInputActive: { windowModel.isDrawerOpen },
                     motionPreference: motionPreference,
                     peek: peek, placeFromContextMenu: placeFromContextMenu,
                     placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
@@ -58,6 +58,7 @@ public struct DenDrawerOverlay<Peek: View>: View {
         }
         .frame(width: size.width, height: size.height)
         .allowsHitTesting(windowModel.isDrawerOpen)
+        .accessibilityHidden(!windowModel.isDrawerOpen)
         .zIndex(DenOverlayLayer.drawer)
     }
 

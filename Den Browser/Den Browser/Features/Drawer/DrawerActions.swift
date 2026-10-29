@@ -13,7 +13,6 @@ final class DrawerActions {
     private var storage: DenProfileResources { context.storage }
     private var state: DenState { context.storage.state }
     private var preferences: AppPreferences { context.configuration.preferences }
-    private var focusedBoard: BoardState? { context.focusedBoard }
     private var sheetNavigation: SheetNavigationManager { context.configuration.sheetNavigation }
     private var webExtensionHost: WebExtensionHost? { context.runtimes.webExtensionHost }
     private var webExtensionWindow: MV3WebExtensionWindow? { context.runtimes.webExtensionWindow }
@@ -52,9 +51,40 @@ final class DrawerActions {
         keepInDrawer(url, title: title, opensDrawer: false, selectsItem: false)
     }
 
-    func keepFocusedSheetInDrawer() {
-        guard let board = focusedBoard, let url = board.currentSheetURL else { return }
-        keepInDrawer(url, title: board.displayName, opensDrawer: false)
+    func moveBoardToDrawer(_ boardID: BoardID) {
+        let result = storage.drawerTransfer.move(boardID) { [self] notice in
+            switch notice {
+            case .willMove(let board, let item):
+                if let runtime = storage.webRuntimes.removeValue(forKey: board.id) {
+                    runtime.webView.isHidden = true
+                    runtime.webView.removeFromSuperview()
+                    runtime.attachToDrawer(itemID: item.id, storage: storage, connection: context.connection)
+                    storage.drawerRuntimes.web[item.id] = runtime
+                }
+                if let runtime = storage.terminalRuntimes.removeValue(forKey: board.id) {
+                    runtime.setSurfaceVisible(false)
+                    runtime.terminalView.isHidden = true
+                    runtime.terminalView.removeFromSuperview()
+                    runtime.updateOwner(
+                        events: TerminalRuntime.drawerEvents(
+                            itemID: item.id, storage: storage, connection: context.connection))
+                    storage.drawerRuntimes.terminal[item.id] = runtime
+                }
+                storage.boardRuntimes.receivers.removeValue(forKey: board.id)
+            case .didMove(let source, let plan, let item):
+                storage.facingCache.invalidate(for: boardID)
+                context.inputSourceTracker.boardWillRemove(boardID)
+                onWindowEffect?(
+                    .overviewBoardRemoved(
+                        boardID: boardID, deskID: source.id, oldIndex: plan.historyEntry.sourceBoardIndex))
+                storage.invalidateReferences(toRemovedBoardIDs: [boardID])
+                onWindowEffect?(.drawerItemKept(item.id, opensDrawer: false, selectsItem: true))
+            }
+        }
+        context.feedback.publish(
+            result == nil
+                ? "Only Web or Terminal Primary Boards without a Side Board can move to Drawer." : "Moved to Drawer.",
+            severity: result == nil ? .warning : .success)
     }
 
     @discardableResult

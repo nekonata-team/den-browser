@@ -26,6 +26,7 @@ final class DenProfileResources {
     @ObservationIgnored let denReset: DenReset
     @ObservationIgnored let drawerItems: DrawerItems
     @ObservationIgnored let drawerPlacement: DrawerPlacement
+    @ObservationIgnored let drawerTransfer: DrawerTransfer
 
     @ObservationIgnored let boardMovement: BoardMovement
 
@@ -131,6 +132,7 @@ final class DenProfileResources {
             directoryExists: TerminalWorkingDirectory.exists)
         drawerItems = DrawerItems(store: shared.reader, writer: shared.writer, persist: persistState)
         drawerPlacement = DrawerPlacement(store: shared.reader, creation: boardCreation, items: drawerItems)
+        drawerTransfer = DrawerTransfer(store: shared.reader, writer: shared.writer, persist: persistState)
         inputOpening = InputOpening(creation: boardCreation, drawer: drawerItems)
         tutorialProgress = TutorialProgress(store: shared.reader, writer: shared.writer)
         self.onSave = onSave

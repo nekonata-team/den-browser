@@ -118,7 +118,7 @@ public struct TerminalBoardView: View {
 
     private var isSurfaceVisible: Bool {
         isVisibleInViewport && !windowModel.isOverviewPresented
-            && !(windowModel.isDrawerOpen && model.drawerStyle == .bottom)
+            && !(windowModel.isDrawerPresented && model.drawerStyle == .bottom)
     }
 
     private var isFocusModeDeemphasized: Bool {
@@ -196,6 +196,12 @@ public struct TerminalBoardView: View {
                     : (board.isZmx ? "Duplicate zmx Board…" : "Duplicate Terminal Board"),
                 systemSymbol: .plusSquareOnSquare)
         }
+        Button {
+            model.perform(.moveToDrawer)
+        } label: {
+            Label("Move to Drawer", systemSymbol: .trayAndArrowDown)
+        }
+        .disabled(!model.canMoveToDrawer(board))
         Button {
             model.perform(.focus)
             windowModel.showSaveEssentialPanel(for: board)

@@ -34,6 +34,7 @@ public struct WebBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, NSView>,
         context: Context
     ) {
+        guard webView.superview === nsView else { return }
         context.coordinator.onBeforeHide = onBeforeHide
         if isHidden {
             if !webView.isHidden, context.coordinator.hideTask == nil {
@@ -42,7 +43,7 @@ public struct WebBoardSurface: NSViewRepresentable {
                     @MainActor [weak coordinator = context.coordinator, weak webView] in
                     defer { coordinator?.hideTask = nil }
                     await beforeHide()
-                    guard !Task.isCancelled else { return }
+                    guard !Task.isCancelled, webView?.superview === nsView else { return }
                     webView?.isHidden = true
                 }
             }

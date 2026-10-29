@@ -12,6 +12,7 @@ public final class OpenBoardModel {
 
     @ObservationIgnored private let openInDrawer: (String) -> String?
 
+    public private(set) var opensInDrawer = false
     public var initialURL: URL?
     public var input = "" {
         didSet {
@@ -36,7 +37,8 @@ public final class OpenBoardModel {
         self.openInDrawer = openInDrawer
     }
 
-    public func preparePresentation(initialURL: URL? = nil, afterBoardID: BoardID? = nil) {
+    public func preparePresentation(initialURL: URL? = nil, afterBoardID: BoardID? = nil, inDrawer: Bool = false) {
+        opensInDrawer = inDrawer
         self.initialURL = initialURL
         self.afterBoardID = afterBoardID
         if let initialURL { input = initialURL.absoluteString }
@@ -46,6 +48,7 @@ public final class OpenBoardModel {
     public func endPresentation(preservingDraft: Bool) {
         initialURL = nil
         guard !preservingDraft else { return }
+        opensInDrawer = false
         afterBoardID = nil
         message = nil
     }
@@ -56,6 +59,7 @@ public final class OpenBoardModel {
     }
 
     public func resetPresentation() {
+        opensInDrawer = false
         initialURL = nil
         input = ""
         afterBoardID = nil
@@ -75,6 +79,10 @@ public final class OpenBoardModel {
         _ input: String? = nil,
         preferredWidth: Double? = nil
     ) {
+        if opensInDrawer {
+            submitToDrawer(input)
+            return
+        }
         message = nil
         switch creation.open(openingRequest(input ?? self.input, preferredWidth, afterBoardID), notify: notify) {
         case .accepted: break

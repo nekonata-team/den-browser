@@ -1120,7 +1120,7 @@ struct NativeBoardTests {
         #expect(session.navigation.focusedBoard?.firstSheetURL == fileURL)
         #expect(session.resources.recentItems.first == .url(fileURL))
 
-        session.drawer.keepFocusedSheetInDrawer()
+        session.drawer.keepInDrawer(fileURL)
         #expect(session.resources.state.drawerItems.first?.url == fileURL)
 
         #expect(session.presets.saveFocusedDeskAsPreset(label: "Local Files") == .created)

@@ -164,7 +164,7 @@ public struct KeyboardShortcutsView: View {
                     item(["Return"], "Toggle Drawer Peek"),
                     item(["f"], "Toggle Floating / Bottom presentation"),
                     item(["p"], "Place as Board"),
-                    item(["a"], "Den Mode: Keep Current Sheet in Drawer"),
+                    item(["a"], "Den Mode: Move Board to Drawer"),
                     item(["a", "then", "link hint"], "Den Mode: Keep link in Drawer with Sheet Navigation"),
                     item(["d", "or", "Delete"], "Discard Drawer Item and focus next"),
                     item(["x"], "Discard Drawer Item and focus previous"),
