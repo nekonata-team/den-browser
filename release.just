@@ -45,12 +45,12 @@ verify:
 
 # Set version and auto-increment build number.
 [group("step")]
-set-version version: (_validate-version version)
+set-version version: (_validate-version version) _install-gems
     {{fastlane}} bump_version version:{{version}}
 
 # Build, sign, notarize, and package a release candidate.
 [group("step")]
-candidate version: (_validate-version version)
+candidate version: (_validate-version version) _install-gems
     {{fastlane}} release_candidate tag:v{{version}}
 
 # Generate the Appcast for a release candidate archive.
@@ -139,6 +139,10 @@ generate-key:
     set -euo pipefail
     tools="$(just release _sparkle-tools)"
     "$tools/generate_keys"
+
+[private]
+_install-gems:
+    BUNDLE_FROZEN=true bundle check || BUNDLE_FROZEN=true bundle install
 
 [private]
 _validate-version $version:

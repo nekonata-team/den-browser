@@ -5,7 +5,7 @@ Releases are notarized Developer ID builds published through the
 
 ## One-time setup
 
-1. Run `mise install` and `bundle install`.
+1. Run `mise install` and activate the mise environment in your shell.
 2. Sign in with `gh auth login`.
 3. Make the Developer ID certificate available through the private
    `nekonata-team/certificates` match repository.
@@ -40,6 +40,10 @@ Prepare the version bump and release candidate together:
 ```sh
 just release prepare X.Y.Z
 ```
+
+Fastlane steps install missing gems from `Gemfile.lock` before running, using
+Bundler from the active Ruby environment. Dependency installation runs in frozen mode
+and fails if the lockfile needs updating.
 
 This requires a clean working tree, updates the marketing version and build
 number, runs the release checks, retrieves the Developer ID certificate from
