@@ -19,7 +19,7 @@ Use Den's bundled `den` CLI to inspect and control Den.
   - **Inspection Board**: A Side Board that inspects its target Web Board's Current Sheet.
   - **Terminal Board**: Presents one Sheet backed by a Terminal Session.
 - **Sheet**: A unit of content held and presented by a Board; Sheets are not limited to web content.
-- **Drawer**: Den-wide staging for web material before it is placed on a Desk.
+- **Drawer**: Den-wide staging for Web material and Terminal Sessions before placement on a Desk.
 
 ## CLI usage
 

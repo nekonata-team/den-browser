@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 3,
+  "profile": {
+    "id": "00000000-0000-0000-0000-000000000501",
+    "name": "Work",
+    "color": "gray",
+    "webProfileStore": {
+      "kind": "default"
+    }
+  },
+  "den": {
+    "desks": [
+      {
+        "id": "00000000-0000-0000-0000-000000000502",
+        "label": "Desk",
+        "boards": [
+          {
+            "id": "00000000-0000-0000-0000-000000000511",
+            "label": "Terminal",
+            "width": 520,
+            "role": {
+              "kind": "primary"
+            },
+            "content": {
+              "kind": "terminal",
+              "session": {
+                "kind": "shell",
+                "workingDirectory": "/tmp"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "focusedDeskID": "00000000-0000-0000-0000-000000000502",
+    "drawerItems": [
+      {
+        "id": "00000000-0000-0000-0000-000000000401",
+        "url": "https://example.com/article",
+        "title": "Article"
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000402",
+        "url": "file:///tmp/reference.html"
+      }
+    ]
+  },
+  "deskPresets": [],
+  "recentItems": [
+    {
+      "kind": "terminal",
+      "workingDirectory": "/tmp"
+    }
+  ]
+}

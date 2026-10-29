@@ -636,6 +636,56 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects Terminal responder handoff from Drawer creation through remounting and Board placement.
+    // Unit tests cannot observe keyboard delivery to the mounted Ghostty surface.
+    @MainActor
+    func testDrawerTerminalKeepsShellStateAndReceivesInputAfterPlacement() throws {
+        let app = launchApp(boardCount: .one)
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        let place = drawer.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@ AND label ENDSWITH %@", "Place ", " as Board")
+        ).firstMatch
+        let surfaces = app.scrollViews["board-strip"].firstMatch.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'board-surface.'"))
+
+        given("Drawer is open") {
+            app.buttons["drawer-button"].click()
+            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+        }
+
+        when("opening the Terminal in Drawer and setting Shell state") {
+            drawer.buttons["drawer-new-terminal"].click()
+            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            XCTAssertTrue(place.waitForExistence(timeout: 5))
+            paste("drawer_probe_value=retained", in: app)
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        when("closing Drawer, reopening it, and placing the Terminal as a Board") {
+            app.typeKey(.escape, modifierFlags: [.control])
+            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            enterDenMode(in: app)
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(place.waitForExistence(timeout: 5))
+            place.click()
+            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            assertEventually("The Terminal should be placed beside the original Board") {
+                surfaces.allElementsBoundByIndex.count == 2
+            }
+        }
+
+        when("typing a command that exits only if the original Shell state survived") {
+            paste("if [[ \"$drawer_probe_value\" == retained ]]; then exit; fi", in: app)
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        then("the same Terminal Session receives the command and exits") {
+            assertEventually("Only the original Board should remain after the Terminal exits", timeout: 10) {
+                surfaces.allElementsBoundByIndex.count == 1
+            }
+        }
+    }
+
     @MainActor
     func testTerminalBoardDenModeToggleAndExit() throws {
         let app = launchApp(boardCount: .two, terminalBoard: true)

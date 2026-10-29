@@ -1237,11 +1237,17 @@ final class DenIPCService {
         switch command {
         case .list:
             let items = window.resources.snapshot.den.drawerItems.map { item in
-                DenDrawerItemInfo(
-                    id: item.id.uuidString,
-                    url: item.url.absoluteString,
-                    title: item.title
-                )
+                let type: String =
+                    switch item.content {
+                    case .web: "web"
+                    case .terminal(.shell): "terminal"
+                    case .terminal(.zellij): "zellij"
+                    case .terminal(.zmx): "zmx"
+                    }
+                return DenDrawerItemInfo(
+                    id: item.id.uuidString, url: item.url?.absoluteString, title: item.title, type: type,
+                    workingDirectory: item.terminal?.workingDirectory,
+                    sessionName: item.terminal?.zellijSessionName ?? item.terminal?.zmxSessionName)
             }
             return .success(.drawerItems(items))
 
@@ -1289,7 +1295,11 @@ final class DenIPCService {
                 let board = window.resources.snapshot.den.board(for: boardID)
             {
                 window.drawer.didPlace()
-                _ = window.board.webRuntime(board)
+                if board.isTerminal {
+                    _ = window.board.terminalRuntime(board)
+                } else {
+                    _ = window.board.webRuntime(board)
+                }
                 return .success(
                     .createdBoard(
                         id: boardID.rawValue.uuidString,

@@ -92,7 +92,7 @@ public struct DrawerView<Peek: View>: View {
                     ContentUnavailableView(
                         "Drawer is empty",
                         systemSymbol: .tray,
-                        description: Text("Keep a Current Sheet here before its work context is settled.")
+                        description: Text("Keep a Current Sheet here, or start a new Terminal from the header.")
                     )
                 } else if drawer.filteredItems.isEmpty {
                     ContentUnavailableView.search(text: drawer.query)

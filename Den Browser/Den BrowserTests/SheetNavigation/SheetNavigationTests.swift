@@ -859,7 +859,7 @@ struct SheetNavigationTests {
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
-        await waiter.load("<html>Drawer Peek</html>", baseURL: item.url, in: runtime.webView)
+        await waiter.load("<html>Drawer Peek</html>", baseURL: try #require(item.url), in: runtime.webView)
         defer {
             session.runtimes.releaseDrawerPeek()
             manager.pasteboard.clearContents()

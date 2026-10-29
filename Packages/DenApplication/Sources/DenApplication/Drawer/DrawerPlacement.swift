@@ -32,12 +32,25 @@ public struct DrawerPlacement {
         _ request: Request,
         notifyBoard: (BoardCreation.Notice) -> Void, notifyDrawer: (DrawerItems.Notice) -> Void
     ) -> BoardID? {
-        guard let item = store.snapshot.den.drawerItems.first(where: { $0.id == request.itemID }),
-            let boardID = creation.createWeb(
-                urlString: item.url.absoluteString, width: request.width, searchEngine: request.searchEngine,
-                target: request.target,
-                recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)), notify: notifyBoard)
-        else { return nil }
+        guard let item = store.snapshot.den.drawerItems.first(where: { $0.id == request.itemID }) else { return nil }
+        let boardID: BoardID?
+        switch item.content {
+        case .web(let url):
+            boardID = creation.createWeb(
+                urlString: url.absoluteString, width: request.width, searchEngine: request.searchEngine,
+                target: request.target, recentItem: .url(WebURLPolicy.canonicalSheetURL(url)), notify: notifyBoard)
+        case .terminal(let session):
+            let recent: RecentItem =
+                switch session {
+                case .shell(let directory): .terminal(workingDirectory: directory)
+                case .zellij(let zellij): .zellij(sessionName: zellij.sessionName)
+                case .zmx(let zmx): .zmx(sessionName: zmx.sessionName)
+                }
+            boardID = creation.insert(
+                BoardState(id: BoardID(item.id), label: item.displayName, width: request.width, terminal: session),
+                target: request.target, recentItem: recent, notify: notifyBoard)
+        }
+        guard let boardID else { return nil }
         items.consume(request.itemID, notify: notifyDrawer)
         return boardID
     }

@@ -27,7 +27,7 @@ struct DrawerItemView<Peek: View>: View {
                     onToggle()
                 } label: {
                     HStack(spacing: 10) {
-                        Image(systemSymbol: .link)
+                        Image(systemSymbol: item.terminal == nil ? .link : .appleTerminal)
                             .foregroundStyle(.secondary)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -35,7 +35,7 @@ struct DrawerItemView<Peek: View>: View {
                                 .font(.callout)
                                 .lineLimit(1)
 
-                            Text(item.url.host(percentEncoded: false) ?? item.url.absoluteString)
+                            Text(item.url?.host(percentEncoded: false) ?? item.detail)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)

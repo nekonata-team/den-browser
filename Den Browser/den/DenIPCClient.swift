@@ -210,7 +210,8 @@ enum DenIPCClient {
         case .drawerItems(let items):
             for item in items {
                 let titleSuffix = item.title.map { " - \($0)" } ?? ""
-                print("\(item.id)\(titleSuffix) (\(item.url))")
+                let location = item.url ?? item.sessionName ?? item.workingDirectory ?? item.type
+                print("\(item.id)\(titleSuffix) (\(location))")
             }
         case .drawerItem(let id, _):
             print(id)

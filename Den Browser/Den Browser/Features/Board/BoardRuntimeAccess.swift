@@ -155,6 +155,12 @@ final class BoardRuntimeAccess {
         return runtime
     }
 
+    func attachTerminalRuntime(_ runtime: TerminalRuntime, to board: BoardState) {
+        runtime.updateOwner(
+            events: runtimeReceiver(for: board).terminalEvents(for: board, connection: runtimeConnection))
+        terminalRuntimes[board.id] = runtime
+    }
+
     func restoreFocusedFirstResponder() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -216,15 +222,19 @@ final class BoardRuntimeAccess {
     func releaseRuntimes() {
         storage.facingCache.removeAll()
         releaseWebRuntimes()
+        for window in storage.windowConnections.allObjects where window.windowResources?.drawerTerminalPeek != nil {
+            window.runtimes?.releaseDrawerPeek()
+        }
         storage.boardRuntimes.releaseTerminal()
+        storage.drawerRuntimes.releaseAll()
     }
 
     func releaseWebRuntimes() {
         storage.boardRuntimes.releaseWeb()
-        for window in storage.windowConnections.allObjects {
+        for window in storage.windowConnections.allObjects where window.windowResources?.drawerPeek != nil {
             window.runtimes?.releaseDrawerPeek()
         }
-        storage.drawerRuntimes.releaseAll()
+        storage.drawerRuntimes.releaseWeb()
     }
 
     func releaseWindowResources() {
@@ -300,14 +310,17 @@ final class BoardRuntimeAccess {
 
     /// Detach this window's selection; the Profile retains the Item's live runtime.
     func releaseDrawerPeek() {
-        guard let runtime = drawerPeekRuntime else { return }
-        if let window = runtime.webView.window,
+        let terminal = windowResources.drawerTerminalPeek?.runtime
+        guard let surface = drawerPeekRuntime?.webView as NSView? ?? terminal?.terminalView else { return }
+        if let window = surface.window,
             let responder = window.firstResponder as? NSView,
-            responder === runtime.webView || responder.isDescendant(of: runtime.webView)
+            responder === surface || responder.isDescendant(of: surface)
         {
             _ = window.makeFirstResponder(nil)
         }
+        terminal?.setSurfaceVisible(false)
         drawerPeekRuntime = nil
+        windowResources.drawerTerminalPeek = nil
         if let focusedBoardID = focusedBoard?.id, let focusedWebRuntime = webRuntimes[focusedBoardID] {
             webExtensionHost?.activate(webView: focusedWebRuntime.webView)
         }

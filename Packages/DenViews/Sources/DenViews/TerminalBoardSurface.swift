@@ -35,6 +35,7 @@ public struct TerminalBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, NSView>,
         context: Context
     ) {
+        guard terminalView.superview === nsView else { return }
         update(terminalView, coordinator: context.coordinator)
         nsView.update(request: focusRequest, onReady: onSurfaceReady)
     }
@@ -43,8 +44,12 @@ public struct TerminalBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, NSView>,
         coordinator: Coordinator
     ) {
-        if !nsView.content.isHidden { coordinator.onBeforeHide?() }
-        coordinator.onSurfaceVisibilityChange?(false)
+        if nsView.content.superview === nsView {
+            if !nsView.content.isHidden { coordinator.onBeforeHide?() }
+            nsView.content.isHidden = true
+            nsView.content.removeFromSuperview()
+            coordinator.onSurfaceVisibilityChange?(false)
+        }
         coordinator.onSurfaceVisibilityChange = nil
         coordinator.onBeforeHide = nil
     }

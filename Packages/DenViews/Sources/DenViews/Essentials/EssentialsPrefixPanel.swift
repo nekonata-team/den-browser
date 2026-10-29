@@ -88,7 +88,7 @@ public struct EssentialsPrefixPanel: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
                 .accessibilityHint(
-                    "Return starts this Essential. Option Return or Option click opens a URL or search in Drawer. Its shortcut starts it directly."
+                    "Return starts this Essential. Option Return or Option click opens a URL, search, or Terminal command in Drawer. Its shortcut starts it directly."
                 )
             }
         }

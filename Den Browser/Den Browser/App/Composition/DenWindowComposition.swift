@@ -62,7 +62,12 @@ final class DenWindowComposition {
                     itemID, focusNext: focusNext, notify: session.drawer.drawerItemNotifications())
             },
             toggleStyle: { session.configuration.preferences.toggleDrawerStyle() },
-            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() })
+            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() },
+            createTerminal: {
+                if let message = session.input.openInDrawer(input: ":terminal") {
+                    session.context.feedback.publish(message, severity: .warning)
+                }
+            })
         let zmxSessions = ZmxSessionsModel {
             let client = session.context.zmxClient
             return ZmxSessionsModel.Operations(

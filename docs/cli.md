@@ -21,7 +21,7 @@ The hierarchy follows the product model, with operations grouped by Board kind:
 ```text
 Den (Personal Environment for a Profile) ─── den
  ├── Profile (Isolated Browser Profile) ─── den profile <action>
- ├── Drawer (Unplaced Web Material) ─── den drawer <action>
+ ├── Drawer (Unplaced Web and Terminal Material) ─── den drawer <action>
  ├── Desk (Work Context) ─── den desk <action>
       └── Board (Work Surface) ─── den board <action>
            ├── Web Board ─── den board web <action>
@@ -36,9 +36,9 @@ Den (Personal Environment for a Profile) ─── den
 ## 2. Common Options & Ambient Targeting
 
 ### Ambient Targeting
-When `den` is executed from a shell inside a Terminal Board, Den Browser automatically injects:
-- `DEN_BOARD_ID`: The immutable UUID of the calling Terminal Board.
-- `DEN_PROFILE`: The UUID of the Profile owning the calling Terminal Board.
+When `den` is executed from a shell inside a Terminal Board or Terminal Drawer Item, Den Browser automatically injects:
+- `DEN_BOARD_ID`: The immutable UUID of the calling Terminal Board, or the reserved placement Board ID of a Terminal Drawer Item.
+- `DEN_PROFILE`: The UUID of the Profile owning the Terminal Session.
 - `DEN_SOCKET`: The actual IPC domain socket path selected by Den Browser. It is `~/.den/den.sock` unless the app was started with a custom `DEN_SOCKET`.
 
 These variables are attached when the Terminal Session is created and remain with that Session when its Board moves between Desks. A reattached zmx session keeps the shell environment from when the session was created. A Session is never given another Profile's context.
@@ -252,18 +252,20 @@ JSON creation returns `{"ok":true,"desk_id":"<uuid>"}`; removal returns
 `{"ok":true,"removed_desk_id":"<uuid>"}`. Use the created UUID with
 `board web new --end-of`, `board terminal new --end-of`, or `board list --desk`.
 
-### 3.7 `den drawer` (Drawer & Web Material)
+### 3.7 `den drawer` (Web and Terminal Items)
 
-Commands operating on the Den-wide Drawer for web material whose Desk context is not yet settled.
+Commands operating on the Den-wide Drawer for Web and Terminal material whose Desk context is not yet settled.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den drawer list` | None | List all Drawer Items in the Drawer with ID, title, and URL. | `den drawer list` |
+| `den drawer list` | None | List Drawer Items with ID, type, title, and URL or Terminal configuration. | `den drawer list` |
 | `den drawer keep` | `<url> [--title <text>]` | Keep a supported URL or bare hostname in the Drawer as a Drawer Item without changing Desk layout. Search queries and invalid or unsupported URL schemes fail. | `den drawer keep https://example.com` |
-| `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board, start its Web runtime immediately, and remove the item from the Drawer. | `den drawer place 4F72344C-...` |
+| `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web or Terminal Board, start or transfer its runtime, and remove the item from the Drawer. | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
 Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted. Local paths starting with `/` or `~/` are converted to `file://` URLs, preserving spaces and filename characters such as `#` and `%`; `~/` expands to the user's home directory. A bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `den board web navigate` and `den board web new` also accept search queries, using the configured Search Engine. `den drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
+
+A Terminal Drawer Item reserves its eventual Board ID, equal to its Item ID, and passes it as `DEN_BOARD_ID` to its Shell. Board-targeted commands become available after placement; before placement, Desk and Drawer commands still use the Profile context. Placement preserves the ID so existing Shell processes and their children keep valid caller context.
 
 ### 3.8 `den profile` (Profiles)
 
@@ -331,7 +333,7 @@ BOARD_ID=$(den board focused | jq -r .board_id)
 
 **Drawer Items (`drawer list`)**:
 ```json
-{"drawer_items":[{"id":"4F72344C-...","title":"Example Docs","url":"https://example.com"}],"ok":true}
+{"drawer_items":[{"id":"4F72344C-...","type":"web","title":"Example Docs","url":"https://example.com"},{"id":"8C92A17D-...","type":"terminal","working_directory":"/tmp"}],"ok":true}
 ```
 
 **Drawer Item Keep (`drawer keep`)**:

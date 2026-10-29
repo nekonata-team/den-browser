@@ -31,12 +31,25 @@ public struct InputOpening {
 
     public func open(_ input: String, context: Context, inDrawer: Bool, notify: (Notice) -> Void) -> BoardOpenResult {
         if inDrawer {
-            guard !input.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix(":"),
-                let resolved = BoardInputResolver.resolveOpenBoardInput(
-                    input, searchEngine: context.configuration.searchEngine)
-            else { return .rejected("Enter a URL or search to open in Drawer. Commands require a Board.") }
-            guard drawer.keep(resolved.url, notify: { notify(.drawer($0)) }) != nil else {
-                return .rejected("Could not open in Drawer.")
+            let request = BoardCreation.OpenRequest(
+                input: input, width: context.width, target: context.target, configuration: context.configuration)
+            switch creation.resolve(request) {
+            case .createBoard(let board, _):
+                switch board.kind {
+                case .web(let web):
+                    guard let url = web.currentSheetURL, drawer.keep(url, notify: { notify(.drawer($0)) }) != nil
+                    else { return .rejected("Could not open in Drawer.") }
+                case .terminal(let session):
+                    drawer.keep(terminal: session, notify: { notify(.drawer($0)) })
+                case .inspection, .tutorial:
+                    return .rejected("This content requires a Board.")
+                }
+            case .rejected(let failure):
+                return .rejected(failure.message ?? "Enter a URL, search, or Terminal command to open in Drawer.")
+            case .openTutorial:
+                return .rejected("Tutorials require a Board.")
+            case .selectZmxSession:
+                return .rejected("Enter a named zmx session to open in Drawer.")
             }
             notify(.keptInDrawer)
             return .accepted

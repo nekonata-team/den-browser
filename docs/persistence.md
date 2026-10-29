@@ -1,6 +1,6 @@
 # Local persistence
 
-Den Browser persists only state needed to restore user-owned work. Version 3 groups Board data by Board kind and stores terminal session configuration under Terminal Board state.
+Den Browser persists only state needed to restore user-owned work. Version 4 adds typed Web and Terminal Drawer Items; Board state retains its version 3 format.
 
 ## Ownership
 
@@ -35,9 +35,9 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
 - Ephemeral runtime state is not persisted.
   This includes Web and Terminal runtimes, WebView and shell processes, scrollback, Recently Removed Boards, and discarded Drawer history.
 
-## Version 3 JSON keys
+## Version 4 JSON keys
 
-`BoardState.kind` and `DeskPresetBoard.kind` retain the JSON key `content` for version 3 compatibility. This is a storage key, not a separate domain concept; the schema and migrations remain unchanged.
+`BoardState.kind` and `DeskPresetBoard.kind` retain the JSON key `content` for version 3 compatibility. This is a storage key, not a separate domain concept.
 
 `ProfileIndex`:
 
@@ -57,7 +57,9 @@ Nested objects use these keys:
 - `ProfileState`: `id`, `name`, `color` (a preset name or custom sRGB components), `webProfileStore`
 - `WebProfileStore`: `kind`, optional `identifier`
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
-- `DrawerItem`: `id`, `url`, optional `title`
+- `DrawerItem`: `id`, `content`, optional `title`
+- Web Drawer `content`: `kind: web`, `url`
+- Terminal Drawer `content`: `kind: terminal`, `session` using the same Shell, Zellij or zmx configuration as a Terminal Board
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
 - `BoardState`: `id`, `label`, `width`, `role`, `content`, optional `customLabel`
 - `BoardRole`: `kind: primary`, or `kind: sideBoard` with `targetBoardID`
@@ -83,10 +85,12 @@ Web Board URLs normalize HTTP(S) root paths to `/` before persistence.
 Local file URLs persist as standard Foundation `URL`s without saving contents, bookmarks, or verifying file existence.
 Consequently, a moved or missing local file fails to load upon restoration without invalidating saved models.
 
-`PersistedProfileDocumentDecoder` migrates version 1 and 2 documents before decoding:
+`PersistedProfileDocumentDecoder` migrates version 1, 2 and 3 documents before decoding:
 - Version 1 Boards decode as Web Boards.
-- Version 2 flat kinds (`terminal`, `zellij`, `zmx`) and legacy Desk Presets normalize to version 3 in memory.
+- Version 2 flat kinds (`terminal`, `zellij`, `zmx`) and legacy Desk Presets normalize to the current nested Terminal session format.
 - `sheetNavigationPaused` moves into Web Board content.
+- Version 1–3 Drawer Items move their required `url` into Web `content`, preserving ID, title and order.
+- Terminal Drawer Items persist session configuration, never a live process or scrollback; restoration is lazy until the Item is opened.
 - Terminal Boards restore a new Shell in the saved Working Directory.
 - Named Zellij attaches via `zellij attach --create <sessionName>`; unnamed Zellij runs `zellij -l welcome`.
 - zmx restoration attaches via `zmx attach <sessionName>`.
@@ -143,7 +147,7 @@ supports is not overwritten or downgraded.
   are not supported.
 - Schema versions are bumped only for breaking persistence changes.
 - Breaking changes require a new schema version and an explicit migration before writing the new format.
-- Version 1 and 2 fixtures in `Den Browser/Den BrowserTests/Fixtures` are the executable format contract.
+- Version 1, 2 and 3 fixtures in `Den Browser/Den BrowserTests/Fixtures` are the executable format contract.
 
 Confirmed-invalid Profile documents and indexes are preserved with a `.corrupt-<timestamp>` suffix before recovery continues.
 Read failures and unsupported schema versions are reported and kept in place; they are not treated as corruption or

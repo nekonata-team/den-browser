@@ -120,7 +120,8 @@ struct InputContext {
 
     private static func isDrawerPeekFirstResponder(_ event: NSEvent?, session: ProfileWindowSession) -> Bool {
         guard
-            let webView = session.windowResources.drawerPeek?.webView,
+            let webView = session.windowResources.drawerPeek?.webView as NSView?
+                ?? session.windowResources.drawerTerminalPeek?.runtime.terminalView,
             var view = event?.window?.firstResponder as? NSView
         else { return false }
 

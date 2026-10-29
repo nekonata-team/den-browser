@@ -18,9 +18,9 @@ Available globally or while focused in a Sheet.
 
 When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
 
-In Essentials, **Option + Return** or **Option-click** opens the selected Essential’s URL or search in Drawer. Board commands show a warning instead.
+In Essentials, **Option + Return** or **Option-click** opens the selected Essential’s URL, search or Terminal command in Drawer. Tutorials and the unnamed zmx session picker require a Board.
 
-In Open Board, **Option + Return** opens the typed URL or search, or the selected Recent Item, in a new Drawer Peek without adding a Board. Commands such as `:terminal` require a Board and show a validation message instead. Return continues to open a Board. Option-clicking a Recent Item also opens it in Drawer.
+In Open Board, **Option + Return** opens the typed URL, search, Terminal command, or selected Recent Item in a new Drawer Peek without adding a Board. `:terminal [path]`, `:zellij [session]` and `:zmx <session>` use the same validation as opening a Board. `:tutorial` and unnamed `:zmx` show a validation message instead. Return continues to open a Board. Option-clicking a Recent Item also opens it in Drawer.
 
 Universal Search behavior is documented in [universal-search.md](./universal-search.md).
 
@@ -76,7 +76,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `n` / `Space` | Open Board panel |
 | `:` | Universal Search |
 | `v` | Open Board from clipboard |
-| `Option` + `V` | Open clipboard URL or search in Drawer |
+| `Option` + `V` | Open clipboard URL, search or Terminal command in Drawer |
 | `Shift` + `N` | New Desk panel |
 | `p` | Save Desk as Preset |
 | `Shift` + `P` | Replace Desk from Preset |
@@ -156,6 +156,8 @@ Mouse clicks can focus or mark individual Sessions. Ending a Session closes its 
 
 Open with `Tab` in Den Mode.
 
+Click **New Terminal** in the Drawer header to start a Shell in the home directory and open its Peek.
+
 | Shortcut | Action |
 | --- | --- |
 | `Tab` | Close Drawer in Den Mode |
@@ -187,7 +189,8 @@ Links opening a new browsing context in a Peek become Drawer Items; Command-clic
 Discarding an expanded Item opens the next visible Item's Peek, or the previous one when it was last; discarding a collapsed Item leaves the current Peek unchanged.
 Restoration selects and expands the Item, preserving Den Mode when invoked there; its ten-Item history lasts only for the current app run.
 Placement focuses the new Board, removes the Item, and closes the Drawer; it transfers the Item's retained live state without reloading, including when the Item is collapsed or was last shown in another window.
-URLs and titles persist; expanded Peek identity and live web state do not.
+Web URLs, Terminal session configuration and titles persist; expanded Peek identity and live Web or Terminal state do not.
+A hidden Terminal Peek stops rendering while its process continues. Discard ends its runtime; restoring an ordinary Shell Item starts a new Shell in its saved Working Directory. Terminal desktop notifications appear as feedback linking to the Item; the Board notification list applies after placement.
 
 ### Overview Controls
 

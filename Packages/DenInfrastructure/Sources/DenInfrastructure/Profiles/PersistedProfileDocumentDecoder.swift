@@ -28,8 +28,19 @@ public enum PersistedProfileDocumentDecoder {
                     debugDescription: "Persisted Profile document must be a JSON object."))
         }
 
-        migrateBoards(in: &document, from: version)
-        migrateDeskPresets(in: &document, from: version)
+        if version < 3 {
+            migrateBoards(in: &document, from: version)
+            migrateDeskPresets(in: &document, from: version)
+        }
+        if var den = document["den"] as? [String: Any], var items = den["drawerItems"] as? [[String: Any]] {
+            for index in items.indices {
+                if let url = items[index].removeValue(forKey: "url") {
+                    items[index]["content"] = ["kind": "web", "url": url]
+                }
+            }
+            den["drawerItems"] = items
+            document["den"] = den
+        }
         document["schemaVersion"] = PersistedProfile.currentSchemaVersion
         return try JSONSerialization.data(withJSONObject: document)
     }

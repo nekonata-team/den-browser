@@ -68,8 +68,8 @@ See [CONTEXT.md](./CONTEXT.md) for product terms.
   useful.
 - Profile-isolated sign-ins and website data, with Den state restored after
   relaunch.
-- A Drawer shared across the Den for material whose Desk or Board context is not
-  settled.
+- A Drawer shared across the Den for Web material and Terminal Sessions whose Desk
+  or Board context is not settled.
 - Optional first-party Vim-style Sheet Navigation for content inside the
   Current Sheet.
 

@@ -26,8 +26,16 @@ public struct DrawerItems {
     @discardableResult
     public func keep(_ url: URL, title: String? = nil, notify: (Notice) -> Void) -> UUID? {
         guard WebURLPolicy.isSupported(url) else { return nil }
+        return keep(DrawerItem(url: url, title: title), notify: notify)
+    }
+
+    @discardableResult
+    public func keep(terminal: TerminalBoardState, title: String? = nil, notify: (Notice) -> Void) -> UUID {
+        keep(DrawerItem(terminal: terminal, title: title), notify: notify)
+    }
+
+    private func keep(_ item: DrawerItem, notify: (Notice) -> Void) -> UUID {
         notify(.willKeep)
-        let item = DrawerItem(url: url, title: title)
         writer.update { $0.den.drawerItems.insert(item, at: 0) }
         notify(.didKeep(item.id))
         save()
@@ -72,7 +80,27 @@ public struct DrawerItems {
     public func update(_ id: UUID, url: URL?, title: String?) {
         guard let index = store.snapshot.den.drawerItems.firstIndex(where: { $0.id == id }) else { return }
         var item = store.snapshot.den.drawerItems[index]
-        if let url, WebURLPolicy.isSupported(url) { item.url = url }
+        guard case .web = item.content else { return }
+        if let url, WebURLPolicy.isSupported(url) { item.content = .web(url) }
+        if let title, !title.isEmpty { item.title = title }
+        guard item != store.snapshot.den.drawerItems[index] else { return }
+        writer.update { $0.den.drawerItems[index] = item }
+        save()
+    }
+
+    public func updateTerminal(_ id: UUID, workingDirectory: String? = nil, title: String? = nil) {
+        guard let index = store.snapshot.den.drawerItems.firstIndex(where: { $0.id == id }) else { return }
+        var item = store.snapshot.den.drawerItems[index]
+        guard case .terminal(let session) = item.content else { return }
+        if let workingDirectory {
+            switch session {
+            case .shell: item.content = .terminal(.shell(workingDirectory: workingDirectory))
+            case .zmx(var zmx):
+                zmx.workingDirectory = workingDirectory
+                item.content = .terminal(.zmx(zmx))
+            case .zellij: break
+            }
+        }
         if let title, !title.isEmpty { item.title = title }
         guard item != store.snapshot.den.drawerItems[index] else { return }
         writer.update { $0.den.drawerItems[index] = item }

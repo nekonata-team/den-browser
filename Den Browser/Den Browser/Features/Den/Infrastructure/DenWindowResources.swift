@@ -4,6 +4,8 @@ import Foundation
 @MainActor
 final class DenWindowResources {
     var drawerPeek: WebRuntime?
+    var drawerTerminalPeek: (itemID: UUID, runtime: TerminalRuntime)?
+    var drawerItemID: UUID? { drawerPeek?.id ?? drawerTerminalPeek?.itemID }
     var zmxCommandTask: Task<Void, Never>?
     private var screenshotTask: Task<Void, Never>?
     private var screenshotTaskID: UUID?

@@ -31,7 +31,7 @@ public struct ProfileIndex: Codable, Equatable {
 }
 
 public struct PersistedProfile: Codable, Equatable {
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, profile, den, deskPresets, recentItems
     }

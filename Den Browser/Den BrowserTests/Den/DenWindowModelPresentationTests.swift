@@ -349,7 +349,7 @@ struct DenWindowModelPresentationTests {
             let item = try #require(session.resources.state.drawerItems.first)
             let expected = BoardInputResolver.normalizedURL(
                 from: input, searchEngine: session.configuration.preferences.searchEngine)
-            #expect(WebURLPolicy.canonicalSheetURL(item.url) == expected)
+            #expect(WebURLPolicy.canonicalSheetURL(try #require(item.url)) == expected)
             #expect(session.navigation.focusedDesk?.boards.map(\.id) == [first.id])
             #expect(windowModel.isDrawerOpen)
             #expect(windowModel.drawer.expandedItemID == item.id)
@@ -357,7 +357,7 @@ struct DenWindowModelPresentationTests {
         }
     }
 
-    @Test(arguments: [":terminal", ":zellij project", ":zmx", ":tutorial", "https://", ""])
+    @Test(arguments: [":zellij project", ":zmx", ":tutorial", "https://", ""])
     func openBoardPanelKeepsInvalidDrawerInput(input: String) {
         // Arrange
         let source = desk("Desk")

@@ -293,7 +293,9 @@ private struct DenMCPToolDefinition: Sendable {
             [
                 .boardID: uuid(), .profileID: uuid(),
             ], [.boardID], destructive: true),
-        .init(.listDrawerItems, "List Drawer Items by ID, title, and URL.", profileTarget, readOnly: true),
+        .init(
+            .listDrawerItems, "List Drawer Items by ID, type, title, and URL or Terminal session details.",
+            profileTarget, readOnly: true),
         .init(
             .saveURLToDrawer, "Keep a URL in the Den-wide Drawer.",
             merge(
@@ -302,7 +304,7 @@ private struct DenMCPToolDefinition: Sendable {
                     .url: string(), .title: string(),
                 ]), [.url], destructive: false),
         .init(
-            .placeDrawerItem, "Place a Drawer Item on the active Desk as a Web Board.",
+            .placeDrawerItem, "Place a Drawer Item on the active Desk as a Board.",
             merge(profileTarget, [.itemID: string()]), [.itemID], destructive: false),
         .init(
             .discardDrawerItem, "Discard a Drawer Item.", merge(profileTarget, [.itemID: string()]), [.itemID],

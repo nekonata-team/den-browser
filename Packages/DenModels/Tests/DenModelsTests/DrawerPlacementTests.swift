@@ -103,6 +103,38 @@ struct DrawerPlacementTests {
         #expect(state.den.desks[1].boards[1].currentSheetURL == item.url)
         #expect(state.den.desks[1].focusedBoardID == result)
         #expect(state.recentlyDiscardedDrawerItems == [other])
-        #expect(state.recentItems == (saveSucceeds ? [.url(item.url)] : []))
+        #expect(state.recentItems == (saveSucceeds ? [.url(try #require(item.url))] : []))
+    }
+    @Test func terminalPlacementKeepsItsIdentitySessionAndRecentInput() throws {
+        // Arrange
+        let session = TerminalBoardState.zmx(
+            ZmxBoardState(sessionName: "project-child", workingDirectory: "/work", rootSessionName: "project"))
+        let item = DrawerItem(terminal: session, title: "Project")
+        var initial = DenSharedState(den: .sample)
+        initial.den.drawerItems = [item]
+        let shared = DenStateStore.make(initialState: initial)
+        let items = DrawerItems(store: shared.reader, writer: shared.writer)
+        let creation = BoardCreation(
+            store: shared.reader, writer: shared.writer,
+            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+        let placement = DrawerPlacement(store: shared.reader, creation: creation, items: items)
+
+        // Act
+        let id = try #require(
+            placement.place(
+                .init(
+                    itemID: item.id, width: 720, searchEngine: .google,
+                    target: .init(presentedDeskID: initial.den.focusedDeskID)), notifyBoard: { _ in },
+                notifyDrawer: { _ in }))
+
+        // Assert
+        let board = try #require(shared.store.snapshot.den.desks[0].boards.first(where: { $0.id == id }))
+        #expect(id == BoardID(item.id))
+        #expect(board.kind == .terminal(session))
+        #expect(board.label == "Project")
+        #expect(board.width == 720)
+        #expect(shared.store.snapshot.den.drawerItems.isEmpty)
+        #expect(shared.store.snapshot.recentItems == [.zmx(sessionName: "project-child")])
+        #expect(shared.store.snapshot.recentlyDiscardedDrawerItems.isEmpty)
     }
 }

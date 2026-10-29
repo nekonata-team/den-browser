@@ -111,6 +111,8 @@ elsewhere collapses the previous window's Peek and rebinds native callbacks to t
 updates target Profile state independently of that window's lifetime.
 Unmounting a Drawer Peek hides and detaches its native View while retaining its Runtime; remounting restores
 visibility. A previous host must not hide or detach a View already transferred to another Drawer or Board.
+Terminal Peeks use the same visibility callbacks and detached ticks as Terminal Boards. Placement rebinds the
+existing Runtime to Board event receivers, preserving its Shell process, screen and scrollback.
 Drawer placement transfers the Item's retained Runtime only after Board creation has validated its destination,
 without reloading or replacing its WebView. Failure keeps the Runtime intact; success clears every window's
 reference to the consumed Item.

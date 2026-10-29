@@ -159,7 +159,7 @@ struct UniversalSearchActionsTests {
     }
 
     @Test(arguments: [
-        UniversalSearchItem.Target.createBoard(":terminal"), .desk(DeskID()), .profile(ProfileID()),
+        UniversalSearchItem.Target.createBoard(":tutorial"), .desk(DeskID()), .profile(ProfileID()),
         .board(BoardID()), .command(.toggleZenView),
     ])
     func drawerSubmissionRejectsCommandsAndNavigation(target: UniversalSearchItem.Target) {

@@ -156,9 +156,9 @@ public struct KeyboardShortcutsView: View {
                 title: "Drawer",
                 items: [
                     item(["Tab"], "Den Mode: Toggle Drawer"),
-                    item(["⌥", "Return"], "Open Board / Essentials / Search: Open URL or search in Drawer"),
+                    item(["⌥", "Return"], "Open Board / Essentials / Search: Open input in Drawer"),
                     item(["⌥", "Click"], "Recent / Essentials: Open in Drawer"),
-                    item(["⌥", "V"], "Den Mode: Open clipboard URL or search in Drawer"),
+                    item(["⌥", "V"], "Den Mode: Open clipboard input in Drawer"),
                     item(["/"], "Search Drawer Items in Den Mode"),
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
                     item(["Return"], "Toggle Drawer Peek"),

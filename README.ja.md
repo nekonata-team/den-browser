@@ -65,7 +65,7 @@ Denはテーマ名を同梱カタログから解決します。
 - 一つのDeskに並べられるWeb Board、Terminal Board、Zellij Board、zmx Board。
 - キーボード中心の移動とBoard操作。必要な操作はポインターにも対応。
 - Profileごとに分離されたログイン状態とサイトデータ。再起動後のDen状態復元。
-- DeskやBoardの文脈がまだ決まっていないWeb上の素材を置く、Den全体のDrawer。
+- DeskやBoardの文脈がまだ決まっていないWeb上の素材やTerminal Sessionを置く、Den全体のDrawer。
 - Current Sheet内のコンテンツを操作する、任意のファーストパーティ製
   Vim-style Sheet Navigation。
 

@@ -72,11 +72,14 @@ public final class BoardCreation {
         self.directoryExists = directoryExists
     }
 
-    public func open(_ request: OpenRequest, notify: (Notice) -> Void) -> BoardOpenResult {
-        let decision = BoardOpening.resolve(
+    public func resolve(_ request: OpenRequest) -> BoardOpening.Decision {
+        BoardOpening.resolve(
             input: request.input, width: request.width, zmxRootSessionName: request.zmxRootSessionName,
             configuration: request.configuration, directoryExists: directoryExists)
-        switch decision {
+    }
+
+    public func open(_ request: OpenRequest, notify: (Notice) -> Void) -> BoardOpenResult {
+        switch resolve(request) {
         case .createBoard(let board, let recentItem):
             guard insert(board, target: request.target, recentItem: recentItem, notify: notify) != nil else {
                 return .rejected(nil)
@@ -90,16 +93,7 @@ public final class BoardCreation {
             notify(.selectZmxSession)
             return .accepted
         case .rejected(let failure):
-            switch failure {
-            case .zmxNotConfigured:
-                return .rejected("Set an absolute zmx executable path in Settings > Terminal.")
-            case .zellijNotConfigured:
-                return .rejected("Set an absolute Zellij executable path in Settings > Terminal.")
-            case .terminalDirectoryMissing(let path):
-                return .rejected(TerminalInputError.missingDirectory(path).message)
-            case .invalidInput:
-                return .rejected(nil)
-            }
+            return .rejected(failure.message)
         }
     }
 

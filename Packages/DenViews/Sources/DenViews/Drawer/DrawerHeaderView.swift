@@ -24,6 +24,16 @@ struct DrawerHeaderView: View {
 
                 HStack(spacing: 8) {
                     Spacer()
+                    Button(action: drawer.createTerminal) {
+                        Image(systemSymbol: .appleTerminal)
+                            .font(.system(size: 12, weight: .semibold))
+                            .frame(width: 30, height: 30)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("New Terminal")
+                    .accessibilityIdentifier("drawer-new-terminal")
+                    .help("New Terminal in Drawer")
+
                     Button(role: .destructive) {
                         drawer.requestClearConfirmation()
                     } label: {

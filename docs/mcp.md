@@ -127,9 +127,9 @@ Sheet references such as `@e1` are document-scoped. They remain usable across op
 
 | Tool | Arguments | Description | CLI equivalent |
 |---|---|---|---|
-| `list_drawer_items` | `[profile_id]` | List Drawer Items by ID, title, and URL. | `drawer list` |
+| `list_drawer_items` | `[profile_id]` | List Drawer Items by ID, type, title, and URL or Terminal configuration. | `drawer list` |
 | `save_url_to_drawer` | `url`, `[title]`, `[profile_id]` | Keep a supported URL in the Den-wide Drawer without changing Desk layout. Search queries are not accepted. | `drawer keep` |
-| `place_drawer_item` | `item_id`, `[profile_id]` | Place a Drawer Item onto the active Desk as a Web Board and return its Board ID. | `drawer place` |
+| `place_drawer_item` | `item_id`, `[profile_id]` | Place a Drawer Item onto the active Desk as a Web or Terminal Board and return its Board ID. | `drawer place` |
 | `discard_drawer_item` | `item_id`, `[profile_id]` | Discard a Drawer Item without placing it. It remains available through Den's current-run Drawer restoration history. | `drawer discard` |
 
 ### 4.4 Terminal Boards

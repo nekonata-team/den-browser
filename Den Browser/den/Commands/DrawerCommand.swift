@@ -48,7 +48,7 @@ struct DrawerKeepCommand: ParsableCommand {
 struct DrawerPlaceCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "place",
-        abstract: "Place a Drawer Item into the active Desk as a Web Board")
+        abstract: "Place a Drawer Item into the active Desk as a Board")
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "ID of the Drawer Item to place") var itemID: String

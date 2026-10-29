@@ -194,10 +194,19 @@ public struct BoardState: Codable, Equatable, Identifiable {
         workingDirectory: String,
         customLabel: String? = nil
     ) {
+        self.init(
+            id: id, label: label, width: width, terminal: .shell(workingDirectory: workingDirectory),
+            customLabel: customLabel)
+    }
+
+    public init(
+        id: BoardID = BoardID(), label: String, width: Double, terminal: TerminalBoardState,
+        customLabel: String? = nil
+    ) {
         self.id = id
         self.label = label
         self.width = width
-        kind = .terminal(.shell(workingDirectory: workingDirectory))
+        kind = .terminal(terminal)
         role = .primary
         self.customLabel = customLabel
     }

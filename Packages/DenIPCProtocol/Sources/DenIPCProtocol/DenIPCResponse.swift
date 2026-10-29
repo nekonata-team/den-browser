@@ -65,17 +65,38 @@ public nonisolated struct DenDeskInfo: Codable, Sendable {
 
 public nonisolated struct DenDrawerItemInfo: Codable, Sendable {
     public var id: String
-    public var url: String
+    public var type: String
+    public var url: String?
     public var title: String?
+    public var workingDirectory: String?
+    public var sessionName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, url, title
+        case workingDirectory = "working_directory"
+        case sessionName = "session_name"
+    }
 
     public init(
-        id: String,
-        url: String,
-        title: String? = nil
+        id: String, url: String? = nil, title: String? = nil, type: String = "web",
+        workingDirectory: String? = nil, sessionName: String? = nil
     ) {
         self.id = id
+        self.type = type
         self.url = url
         self.title = title
+        self.workingDirectory = workingDirectory
+        self.sessionName = sessionName
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        type = try container.decodeIfPresent(String.self, forKey: .type) ?? "web"
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        workingDirectory = try container.decodeIfPresent(String.self, forKey: .workingDirectory)
+        sessionName = try container.decodeIfPresent(String.self, forKey: .sessionName)
     }
 }
 

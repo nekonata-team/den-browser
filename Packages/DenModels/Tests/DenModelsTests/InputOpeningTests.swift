@@ -46,7 +46,7 @@ struct InputOpeningTests {
         #expect(shared.store.snapshot.den.desks[0].boards.first?.width == (inDrawer ? nil : 640))
     }
 
-    @Test func drawerRejectsCommandsBeforeStateOrPresentationChanges() {
+    @Test func drawerRejectsTutorialBeforeStateOrPresentationChanges() {
         // Arrange
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let initial = shared.store.snapshot
@@ -61,11 +61,67 @@ struct InputOpeningTests {
                 homeDirectory: URL(fileURLWithPath: "/tmp")))
         // Act
         let result = opening.open(
-            ":terminal", context: context, inDrawer: true,
+            ":tutorial", context: context, inDrawer: true,
             notify: { _ in Issue.record("Rejected command must not notify") })
         // Assert
         guard case .rejected = result else {
             Issue.record("Drawer cannot open commands")
+            return
+        }
+        #expect(shared.store.snapshot == initial)
+    }
+    @Test(arguments: [":terminal /work", ":zellij project", ":zmx project"])
+    func terminalCommandsOpenInDrawerWithoutCreatingBoardsOrRecents(input: String) throws {
+        // Arrange
+        let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
+        let originalDesks = shared.store.snapshot.den.desks
+        let creation = BoardCreation(
+            store: shared.reader, writer: shared.writer,
+            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+        let opening = InputOpening(creation: creation, drawer: DrawerItems(store: shared.reader, writer: shared.writer))
+        let context = InputOpening.Context(
+            width: 520, target: .init(presentedDeskID: shared.store.snapshot.den.focusedDeskID),
+            configuration: .init(
+                searchEngine: .google, zmxConfigured: true, zellijConfigured: true,
+                homeDirectory: URL(fileURLWithPath: "/tmp")))
+
+        // Act
+        let result = opening.open(input, context: context, inDrawer: true, notify: { _ in })
+
+        // Assert
+        guard case .accepted = result else {
+            Issue.record("Terminal command should open in Drawer")
+            return
+        }
+        let item = try #require(shared.store.snapshot.den.drawerItems.first)
+        #expect(item.terminal != nil)
+        #expect(item.url == nil)
+        #expect(shared.store.snapshot.den.desks == originalDesks)
+        #expect(shared.store.snapshot.recentItems.isEmpty)
+    }
+
+    @Test func missingTerminalDirectoryDoesNotKeepAnItem() {
+        // Arrange
+        let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
+        let initial = shared.store.snapshot
+        let creation = BoardCreation(
+            store: shared.reader, writer: shared.writer,
+            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in false })
+        let opening = InputOpening(creation: creation, drawer: DrawerItems(store: shared.reader, writer: shared.writer))
+        let context = InputOpening.Context(
+            width: 520, target: .init(presentedDeskID: initial.den.focusedDeskID),
+            configuration: .init(
+                searchEngine: .google, zmxConfigured: false, zellijConfigured: false,
+                homeDirectory: URL(fileURLWithPath: "/tmp")))
+
+        // Act
+        let result = opening.open(
+            ":terminal /missing", context: context, inDrawer: true,
+            notify: { _ in Issue.record("Invalid Terminal command must not notify") })
+
+        // Assert
+        guard case .rejected = result else {
+            Issue.record("Missing directory should be rejected")
             return
         }
         #expect(shared.store.snapshot == initial)

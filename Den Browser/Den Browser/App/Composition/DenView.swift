@@ -71,7 +71,26 @@ private struct DenDrawerOverlay: View {
             size: size, profileColor: profileColor, shouldShowHeader: shouldShowHeader,
             drawerStyle: preferences.drawerStyle, motionPreference: preferences.motionPreference,
             peek: { item, isFocused in
-                DrawerWebSurface(webView: session.drawer.drawerRuntime(for: item).webView, isFocused: isFocused)
+                if item.terminal != nil {
+                    let runtime = session.drawer.drawerTerminalRuntime(for: item)
+                    TerminalBoardSurface(
+                        terminalView: runtime.terminalView,
+                        onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) }, onBeforeHide: {},
+                        isHidden: false,
+                        focusRequest: isFocused
+                            ? BoardFocusRequest(deskID: session.navigation.presentedDeskID, boardID: BoardID(item.id))
+                            : nil,
+                        onSurfaceReady: { window in
+                            guard session.windowResources.drawerTerminalPeek?.runtime === runtime,
+                                runtime.terminalView.window === window
+                            else { return false }
+                            guard needsFirstResponderActivation(window.firstResponder, target: runtime.terminalView)
+                            else { return true }
+                            return window.makeFirstResponder(runtime.terminalView)
+                        })
+                } else {
+                    DrawerWebSurface(webView: session.drawer.drawerRuntime(for: item).webView, isFocused: isFocused)
+                }
             }, placeFromContextMenu: { _ = session.drawer.placeDrawerItemAsBoard($0) })
     }
 }

@@ -92,12 +92,9 @@ final class DrawerActions {
     }
 
     func drawerRuntime(for item: DrawerItem) -> WebRuntime {
+        precondition(item.url != nil, "Only Web Items can create a Web runtime")
         runtimes.ensureWebExtensionContext()
-        for window in storage.windowConnections.allObjects
-        where window !== context.connection && window.windowResources?.drawerPeek?.id == item.id {
-            window.runtimes?.releaseDrawerPeek()
-            window.onWindowEffect?(.drawerPeekMoved(item.id))
-        }
+        selectRuntime(for: item.id)
         if let runtime = storage.drawerRuntimes.web[item.id] {
             if drawerPeekRuntime !== runtime { runtimes.releaseDrawerPeek() }
             runtime.updateDrawerOwner(itemID: item.id, storage: storage, connection: context.connection)
@@ -126,20 +123,56 @@ final class DrawerActions {
         return runtime
     }
 
+    func drawerTerminalRuntime(for item: DrawerItem) -> TerminalRuntime {
+        guard let session = item.terminal else {
+            preconditionFailure("Only Terminal Items can create a Terminal runtime")
+        }
+        selectRuntime(for: item.id)
+        let events = TerminalRuntime.drawerEvents(itemID: item.id, storage: storage, connection: context.connection)
+        let runtime: TerminalRuntime
+        if let existing = storage.drawerRuntimes.terminal[item.id] {
+            runtime = existing
+            runtime.updateOwner(events: events)
+        } else {
+            runtime = TerminalRuntime(
+                workingDirectory: session.workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
+                command: TerminalLaunchCommand.make(
+                    for: .terminal(session), zellijClient: context.zellijClient, zmxClient: context.zmxClient),
+                boardID: BoardID(item.id), profileID: context.configuration.profileID,
+                socketPath: context.configuration.ipcSocketPath, events: events)
+            runtime.setSurfaceVisible(false)
+            storage.drawerRuntimes.terminal[item.id] = runtime
+        }
+        context.windowResources.drawerTerminalPeek = (item.id, runtime)
+        return runtime
+    }
+
+    private func selectRuntime(for itemID: UUID) {
+        for window in storage.windowConnections.allObjects
+        where window !== context.connection && window.windowResources?.drawerItemID == itemID {
+            window.runtimes?.releaseDrawerPeek()
+            window.onWindowEffect?(.drawerPeekMoved(itemID))
+        }
+        if context.windowResources.drawerItemID != itemID { runtimes.releaseDrawerPeek() }
+    }
+
     func clearDrawer() {
         storage.drawerItems.clear(notify: drawerItemNotifications())
     }
 
     func drawerBoardCreationNotifications(_ itemID: UUID) -> (BoardCreation.Notice) -> Void {
-        let runtime = storage.drawerRuntimes.web[itemID]
-        let notify = boardOpening.boardCreationNotifications(existingRuntime: runtime)
+        let web = storage.drawerRuntimes.web[itemID]
+        let terminal = storage.drawerRuntimes.terminal[itemID]
+        let notify = boardOpening.boardCreationNotifications(existingRuntime: web)
         return { [self] notice in
-            if case .willInsert = notice, let runtime {
+            if case .willInsert(let board) = notice {
                 storage.drawerRuntimes.web.removeValue(forKey: itemID)
+                storage.drawerRuntimes.terminal.removeValue(forKey: itemID)
                 for window in storage.windowConnections.allObjects
-                where window.windowResources?.drawerPeek === runtime {
+                where window.windowResources?.drawerItemID == itemID {
                     window.runtimes?.releaseDrawerPeek()
                 }
+                if let terminal { runtimes.attachTerminalRuntime(terminal, to: board) }
             }
             notify(notice)
         }
@@ -159,7 +192,7 @@ final class DrawerActions {
             case .didDiscard(let id, let previousItems, let advancesPeek, let focusNext):
                 storage.drawerRuntimes.dispose(id)
                 for presentation in storage.windowConnections.allObjects {
-                    if presentation.windowResources?.drawerPeek?.id == id { presentation.runtimes?.releaseDrawerPeek() }
+                    if presentation.windowResources?.drawerItemID == id { presentation.runtimes?.releaseDrawerPeek() }
                     presentation.onWindowEffect?(
                         .drawerItemRemoved(
                             id, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))

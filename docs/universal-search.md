@@ -3,7 +3,7 @@
 Universal Search is a window-local palette shared by the toolbar Search button, `Command-P`, and Den Mode's `:`.
 `Command-Shift-P` prefills `> `. A leading `>` limits results to commands; removing it returns
 to all results. Escape dismisses the palette without changing Den Mode. Up/Down select a result and Return runs
-its displayed action. Option-Return or Option-click opens a URL, search, or Essential in Drawer; navigation results and commands
+its displayed action. Option-Return or Option-click opens a URL, search, supported Terminal command, or Essential in Drawer; navigation results and application commands
 show a validation message instead. The palette stays open when the input cannot be opened in Drawer. IME composition retains native editing keys instead of executing a result.
 
 ## Foundation scope

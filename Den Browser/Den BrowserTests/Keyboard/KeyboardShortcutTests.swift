@@ -1685,7 +1685,7 @@ struct KeyboardShortcutTests {
         #expect(handled)
         let item = try #require(session.resources.state.drawerItems.first)
         #expect(
-            WebURLPolicy.canonicalSheetURL(item.url)
+            WebURLPolicy.canonicalSheetURL(try #require(item.url))
                 == BoardInputResolver.normalizedURL(
                     from: input, searchEngine: session.configuration.preferences.searchEngine))
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [original.id])
@@ -1701,7 +1701,7 @@ struct KeyboardShortcutTests {
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let essential = Essential(name: "Terminal", key: "t", input: ":terminal")
+        let essential = Essential(name: "Tutorial", key: "t", input: ":tutorial")
         #expect(session.configuration.preferences.setEssentials([essential]))
         windowModel.showEssentialsPrefix()
 

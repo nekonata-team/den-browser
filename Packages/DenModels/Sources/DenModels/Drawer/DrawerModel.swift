@@ -11,6 +11,7 @@ public final class DrawerModel {
     @ObservationIgnored private let discardItemAction: (UUID, Bool) -> Void
     @ObservationIgnored private let toggleStyleAction: () -> Void
     @ObservationIgnored private let requestClearConfirmationAction: () -> Void
+    @ObservationIgnored private let createTerminalAction: () -> Void
     public var query = ""
     public var filterPhase: FilterPhase = .inactive
     public var selectedItemID: UUID?
@@ -25,7 +26,8 @@ public final class DrawerModel {
         releasePeek: @escaping () -> Void,
         discardItem: @escaping (UUID, Bool) -> Void,
         toggleStyle: @escaping () -> Void,
-        requestClearConfirmation: @escaping () -> Void
+        requestClearConfirmation: @escaping () -> Void,
+        createTerminal: @escaping () -> Void
     ) {
         itemProvider = items
         isBottomStyleProvider = isBottomStyle
@@ -33,6 +35,7 @@ public final class DrawerModel {
         discardItemAction = discardItem
         toggleStyleAction = toggleStyle
         requestClearConfirmationAction = requestClearConfirmation
+        createTerminalAction = createTerminal
     }
 
     public var items: [DrawerItem] { itemProvider() }
@@ -94,7 +97,9 @@ public final class DrawerModel {
     public func matchesFilter(_ item: DrawerItem) -> Bool {
         guard !query.isEmpty else { return true }
         return item.displayName.localizedCaseInsensitiveContains(query)
-            || item.url.absoluteString.localizedCaseInsensitiveContains(query)
+            || item.detail.localizedCaseInsensitiveContains(query)
+            || item.terminal?.zellijSessionName?.localizedCaseInsensitiveContains(query) == true
+            || item.terminal?.zmxSessionName?.localizedCaseInsensitiveContains(query) == true
     }
 
     public func toggleItem(_ itemID: UUID) {
@@ -142,6 +147,10 @@ public final class DrawerModel {
 
     public func toggleStyle() {
         toggleStyleAction()
+    }
+
+    public func createTerminal() {
+        createTerminalAction()
     }
 
     public func requestClearConfirmation() {
