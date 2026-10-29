@@ -207,7 +207,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let peekContent = drawer.staticTexts["result:pending"].firstMatch
-        let sheetInput = app.textFields["Sheet input"].firstMatch
+        let sheetInput = drawer.textFields["Sheet input"].firstMatch
         let nextDrawerItem = app.buttons
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Next Drawer Fixture"))
             .firstMatch

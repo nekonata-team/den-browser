@@ -64,6 +64,7 @@ private struct DenDrawerOverlay: View {
     let profileColor: Color
     let shouldShowHeader: Bool
     @Environment(ProfileWindowSession.self) private var session
+    @Environment(DenWindowModel.self) private var windowModel
     @Environment(AppPreferences.self) private var preferences
 
     var body: some View {
@@ -71,7 +72,10 @@ private struct DenDrawerOverlay: View {
             size: size, profileColor: profileColor, shouldShowHeader: shouldShowHeader,
             drawerStyle: preferences.drawerStyle, motionPreference: preferences.motionPreference,
             peek: { item, isFocused in
-                if item.terminal != nil {
+                // Outgoing animated rows must not reclaim the current Peek's runtime.
+                if windowModel.drawer.expandedItemID != item.id {
+                    EmptyView()
+                } else if item.terminal != nil {
                     let runtime = session.drawer.drawerTerminalRuntime(for: item)
                     TerminalBoardSurface(
                         terminalView: runtime.terminalView,
