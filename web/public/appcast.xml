@@ -3,6 +3,16 @@
     <channel>
         <title>Den Browser</title>
         <item>
+            <title>0.55.0</title>
+            <pubDate>Fri, 30 Oct 2026 01:08:26 +0900</pubDate>
+            <link>https://den.nekonata.dev/</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/nekonata-team/den-browser/releases/tag/v0.55.0</sparkle:fullReleaseNotesLink>
+            <sparkle:version>63</sparkle:version>
+            <sparkle:shortVersionString>0.55.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/nekonata-team/den-browser/releases/download/v0.55.0/Den-Browser-0.55.0-macOS.zip" length="23847189" type="application/octet-stream" sparkle:edSignature="ueNfrGCQJh9k/TKIpGpTKljZFCMbFFwHibF2lb4vj1NCDZlNWPUfZ8RhNPViwKbWqF+jKIkq9P61/d0bhkcIBQ=="/>
+        </item>
+        <item>
             <title>0.54.0</title>
             <pubDate>Thu, 29 Oct 2026 21:18:14 +0900</pubDate>
             <link>https://den.nekonata.dev/</link>
@@ -21,16 +31,6 @@
             <sparkle:shortVersionString>0.53.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/nekonata-team/den-browser/releases/download/v0.53.1/Den-Browser-0.53.1-macOS.zip" length="23678647" type="application/octet-stream" sparkle:edSignature="76F3bHp0Xb+U//BoYCvEerFVO6jnEgAeHLckv+wqE/VA5rh0/F5aPwiuvFwKNXlaP8UhvHaZF4bVprees6riCw=="/>
-        </item>
-        <item>
-            <title>0.53.0</title>
-            <pubDate>Tue, 27 Oct 2026 15:49:35 +0900</pubDate>
-            <link>https://den.nekonata.dev/</link>
-            <sparkle:fullReleaseNotesLink>https://github.com/nekonata-team/den-browser/releases/tag/v0.53.0</sparkle:fullReleaseNotesLink>
-            <sparkle:version>60</sparkle:version>
-            <sparkle:shortVersionString>0.53.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/nekonata-team/den-browser/releases/download/v0.53.0/Den-Browser-0.53.0-macOS.zip" length="23672075" type="application/octet-stream" sparkle:edSignature="xoS7gYr3GxYdUqwI/Rj25iwcsNETNkX3F9OPWOsWN1f+g+dbEh6rm2KWfj7UEA+ZMBmF1vpa/vKZ//4aGQ6DAw=="/>
         </item>
     </channel>
 </rss>
