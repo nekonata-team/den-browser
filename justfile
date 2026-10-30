@@ -78,7 +78,7 @@ build:
 # Type-check embedded JavaScript sources.
 [group("quality")]
 embedded-js-typecheck:
-    @pnpm --dir scripts/embedded-js typecheck
+    @bun run --cwd scripts/embedded-js typecheck
 
 # Bind SourceKit-LSP to this Xcode project.
 [group("development")]

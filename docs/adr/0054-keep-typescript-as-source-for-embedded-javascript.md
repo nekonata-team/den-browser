@@ -11,9 +11,12 @@ Den Browser embeds JavaScript resources in the Xcode application bundle, but edi
 - Continue editing the JavaScript resources directly and rely on syntax checks.
 - Keep TypeScript as the source and use a separate bundler with native build dependencies.
 - Keep TypeScript as the source and use the locked TypeScript compiler CLI to transpile the standalone scripts in an Xcode build phase.
+- Keep TypeScript as the source, use Bun for dependency management and all resource bundles, and retain the locked TypeScript compiler for type checking.
 
-The third option keeps the existing resource boundaries and avoids a native bundler dependency. Node and pnpm versions remain managed by mise, while TypeScript remains a project dependency because the build phase invokes its compiler CLI. Dependency installation remains outside the build phase and does not use the network.
+The fourth option keeps the existing resource boundaries while using a Bun version pinned by mise for dependency management and bundling. TypeScript remains a project dependency for type checking before generation. Dependency installation remains outside the build phase; generation uses installed dependencies without network access.
 
 ## Consequences
 
-Developers edit only `scripts/embedded-js/src/**/*.ts`. Xcode generates the JavaScript resources into the application bundle for every build, so generated JavaScript is not committed and cannot become stale independently of its TypeScript source.
+Developers edit only `scripts/embedded-js/src/**/*.ts`. Xcode regenerates the JavaScript resources in the application bundle when the declared inputs change; generated JavaScript is not committed.
+
+All resources use IIFE bundles to isolate their internal variables. Native callers use explicitly published functions and await asynchronous results, so those results do not depend on the generated script layout.

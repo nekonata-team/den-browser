@@ -1,22 +1,22 @@
-import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { promisify } from 'node:util';
-import { build } from 'esbuild';
-
-const execFileAsync = promisify(execFile);
 
 const packageRoot = resolve(import.meta.dirname);
 const outputFlagIndex = process.argv.indexOf('--output-dir');
 const outputDir = outputFlagIndex === -1 ? null : process.argv[outputFlagIndex + 1];
 
 if (!outputDir) {
-  throw new Error('Usage: node build.mjs --output-dir <directory>');
+  throw new Error('Usage: bun build.mjs --output-dir <directory>');
 }
 
-const tempRoot = await mkdtemp(resolve(tmpdir(), 'den-embedded-js-'));
+// Bun transpilation does not check types. Keep the pinned compiler as the gate.
+const check = Bun.spawnSync([
+  process.execPath, resolve(packageRoot, 'node_modules/typescript/bin/tsc'),
+  '--project', resolve(packageRoot, 'tsconfig.json'), '--pretty', 'false',
+], { stdout: 'inherit', stderr: 'inherit' });
+if (check.exitCode !== 0) process.exit(check.exitCode || 1);
 
+const license = `/* Turndown and turndown-plugin-gfm; includes collapse-whitespace\nCopyright (c) 2014 Luc Thevenard <lucthevenard@gmail.com>\n${await readFile(resolve(packageRoot, 'node_modules/turndown/LICENSE'), 'utf8')}*/`;
 const entries = [
   {
     entry: 'src/sheet-dom/entry.ts',
@@ -27,65 +27,30 @@ const entries = [
     output: 'SheetNavigation.js',
   },
   {
-    entry: 'src/picture-in-picture/entry.ts',
+    entry: 'src/picture-in-picture/browser.ts',
     output: 'PictureInPicture.js',
   },
   {
     entry: 'src/inspection/entry.ts',
     output: 'InspectionAgent.js',
   },
+  {
+    entry: 'src/sheet-read/browser.ts',
+    output: 'SheetRead.js',
+    banner: license,
+  },
 ];
 
-try {
-  await mkdir(resolve(outputDir), { recursive: true });
-
-  await build({
-    entryPoints: [resolve(packageRoot, 'src/sheet-read/entry.ts')],
-    outfile: resolve(outputDir, 'SheetRead.js'),
-    bundle: true,
+await mkdir(resolve(outputDir), { recursive: true });
+for (const { entry, output, ...options } of entries) {
+  const result = await Bun.build({
+    entrypoints: [resolve(packageRoot, entry)],
+    target: 'browser',
     format: 'iife',
-    globalName: 'denSheetRead',
-    target: 'es2022',
-    banner: {
-      js: `/* Turndown and turndown-plugin-gfm; includes collapse-whitespace\nCopyright (c) 2014 Luc Thevenard <lucthevenard@gmail.com>\n${await readFile(resolve(packageRoot, 'node_modules/turndown/LICENSE'), 'utf8')}*/`,
-    },
+    ...options,
   });
-
-  for (const { entry, output } of entries) {
-    let result;
-    try {
-      result = await execFileAsync('tsc', [
-        '--ignoreConfig',
-        '--target',
-        'ES2022',
-        '--lib',
-        'DOM,ES2022',
-        '--skipLibCheck',
-        '--strict',
-        '--removeComments',
-        'false',
-        '--outDir',
-        tempRoot,
-        '--rootDir',
-        packageRoot,
-        resolve(packageRoot, 'globals.d.ts'),
-        resolve(packageRoot, entry),
-      ]);
-    } catch (error) {
-      process.stderr.write(error.stdout || error.stderr || `${error.message}\n`);
-      throw error;
-    }
-    const { stderr } = result;
-    if (stderr) process.stderr.write(stderr);
-
-    const generatedPath = resolve(tempRoot, entry).replace(/\.ts$/, '.js');
-    await writeFile(
-      resolve(outputDir, output),
-      await readFile(generatedPath),
-    );
-  }
-} finally {
-  await rm(tempRoot, { force: true, recursive: true });
+  if (!result.success) throw new AggregateError(result.logs, `${output} bundle failed`);
+  await writeFile(resolve(outputDir, output), await result.outputs[0].text());
 }
 
-console.log(`Embedded JavaScript built (${entries.length + 1} resources)`);
+console.log(`Embedded JavaScript built (${entries.length} resources)`);

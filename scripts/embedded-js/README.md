@@ -8,12 +8,21 @@ Edit these files:
 scripts/embedded-js/src/**/*.ts
 ```
 
-Xcode's `Generate embedded JavaScript` build phase compiles the TypeScript sources and writes the generated files directly into the app bundle's Resources directory. `SheetRead.js` bundles Turndown and its GFM plugin with esbuild; other resources use the TypeScript compiler. The generated JavaScript is a build artifact and is not stored in Git.
+Xcode's `Generate embedded JavaScript` build phase compiles the TypeScript sources and writes the generated files directly into the app bundle's Resources directory. All five resources are bundled as IIFEs with Bun. `SheetRead.js` includes Turndown and its GFM plugin and exposes `denSheetRead.read`. `PictureInPicture.js` exposes `denPictureInPicture.run(mode)`, whose result is explicitly awaited by the native caller. The pinned TypeScript compiler checks all sources before generation. The generated JavaScript is a build artifact and is not stored in Git.
 
-The build phase requires the locked Node and pnpm toolchain from `mise.toml` and an installed `scripts/embedded-js/node_modules` directory. Install dependencies during project setup; the build phase does not access the network.
+The build phase requires mise, the pinned Bun version from `mise.toml`, and an installed `scripts/embedded-js/node_modules` directory. Run `bun install --cwd scripts/embedded-js --frozen-lockfile` during project setup; the build phase does not install dependencies or access the network. Node and pnpm remain required for `web/`.
 
 Build the app with `just build` or Xcode. Do not edit generated JavaScript directly.
 
-Run `pnpm --dir scripts/embedded-js typecheck` for a standalone TypeScript check.
+Run `just embedded-js-typecheck` for a standalone TypeScript check.
 
-The decision is recorded in [ADR 0054](../../docs/adr/0054-keep-typescript-as-source-for-embedded-javascript.md).
+To check generated resource contracts independently of Xcode:
+
+```sh
+bun run --cwd scripts/embedded-js build --output-dir /tmp/den-embedded-js
+DEN_EMBEDDED_JS_OUTPUT_DIR=/tmp/den-embedded-js bun run --cwd scripts/embedded-js verify
+```
+
+The verification command reports resource syntax, public API, license, and PictureInPicture completion tests separately. Set `DEN_EMBEDDED_JS_OUTPUT_DIR` to another output directory to check a different build.
+
+The TypeScript source-of-truth decision is recorded in [ADR 0054](../../docs/adr/0054-keep-typescript-as-source-for-embedded-javascript.md).

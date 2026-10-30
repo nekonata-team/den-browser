@@ -365,6 +365,46 @@ struct SheetReadingTests {
         #expect(markdown == repeatedMarkdown)
     }
 
+    @Test func bundledGFMReadingWorksWithoutNetworkAccess() async throws {
+        // Arrange
+        let webView = await makeWebView(
+            html: """
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
+                <h1>Offline</h1><p><del>Removed</del></p>
+                <ul><li><input type="checkbox" checked>Done</li></ul>
+                <table><tr><th>Name</th></tr><tr><td>Value</td></tr></table>
+                """)
+        _ = try await webView.evaluateJavaScript(
+            """
+            globalThis.__denNetworkAttempts = 0;
+            for (const name of ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource']) {
+                globalThis[name] = function () {
+                    globalThis.__denNetworkAttempts++;
+                    throw new Error('Network access forbidden');
+                };
+            }
+            null;
+            """, in: nil, contentWorld: SheetDOMRuntime.contentWorld)
+
+        // Act
+        let result = try await SheetReading.read(in: webView)
+
+        // Assert
+        guard case .reading(_, _, let markdown) = result else {
+            Issue.record("Expected offline Markdown reading payload")
+            return
+        }
+        #expect(markdown.contains("# Offline"))
+        #expect(markdown.contains("~Removed~"))
+        #expect(markdown.contains("[x] Done"))
+        #expect(markdown.contains("| Name |"))
+        #expect(markdown.contains("| Value |"))
+        let attempts =
+            try await webView.evaluateJavaScript(
+                "globalThis.__denNetworkAttempts", in: nil, contentWorld: SheetDOMRuntime.contentWorld) as? Int
+        #expect(attempts == 0)
+    }
+
     @Test func documentWithoutHTMLBodyReportsUnsupportedReading() async throws {
         // Arrange
         let configuration = WKWebViewConfiguration()

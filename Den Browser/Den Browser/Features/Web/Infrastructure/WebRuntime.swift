@@ -711,11 +711,12 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     }
 
     private func evaluatePictureInPicture(mode: String) {
-        let pictureInPictureScript = Self.pictureInPictureJavaScript(mode: mode)
+        let pictureInPictureScript = Self.pictureInPictureSource
         guard !pictureInPictureScript.isEmpty else { return }
 
         webView.callAsyncJavaScript(
-            "return \(pictureInPictureScript)", arguments: [:], in: nil, in: .page
+            "\(pictureInPictureScript)\nreturn await denPictureInPicture.run(mode);", arguments: ["mode": mode],
+            in: nil, in: .page
         ) { result in
             #if DEBUG
                 switch result {
@@ -726,12 +727,6 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
                 }
             #endif
         }
-    }
-
-    private static func pictureInPictureJavaScript(mode: String) -> String {
-        pictureInPictureSource.replacingOccurrences(
-            of: "__DEN_PICTURE_IN_PICTURE_MODE__",
-            with: mode)
     }
 
     private static let pictureInPictureSource: String = {

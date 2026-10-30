@@ -1,6 +1,6 @@
-(async () => {
-    type PictureInPictureMode = "enter" | "exit" | "toggle";
-    const mode = "__DEN_PICTURE_IN_PICTURE_MODE__" as PictureInPictureMode;
+type PictureInPictureMode = "enter" | "exit" | "toggle";
+
+export async function run(mode: PictureInPictureMode): Promise<string> {
     const videos = Array.from(document.querySelectorAll("video"));
     const activeVideo = videos.find(video =>
         !video.paused &&
@@ -50,4 +50,4 @@
     }
 
     throw new Error("PIP_UNSUPPORTED");
-})();
+}
