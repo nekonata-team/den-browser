@@ -253,7 +253,7 @@ public struct DeskPresetBoardFacing: View {
         BoardFacing(
             displayName: board.customLabel ?? board.label,
             width: board.width,
-            symbol: Self.symbol(for: board),
+            symbol: boardSymbol(for: board.kind),
             kindLabel: Self.kindLabel(for: board),
             typeColor: Self.typeColor(for: board.kind),
             detailText: Self.detailText(for: board),
@@ -283,17 +283,6 @@ public struct DeskPresetBoardFacing: View {
         case .web: return BoardFacingColors.web
         case .inspection: return BoardFacingColors.inspection
         case .terminal: return BoardFacingColors.terminal
-        }
-    }
-
-    private static func symbol(for board: DeskPresetBoard) -> SFSymbol {
-        switch board.kind {
-        case .web: return .globe
-        case .inspection: return .magnifyingglass
-        case .terminal:
-            if board.zmxSessionName != nil { return .appleTerminalOnRectangle }
-            if board.zellijSessionName != nil { return .rectangle3Group }
-            return .appleTerminal
         }
     }
 

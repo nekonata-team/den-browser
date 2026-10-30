@@ -46,6 +46,10 @@ Package responsibilities are defined in [Architecture](docs/architecture.md).
   Show a trailing arrow for switching, `plus.app` for creation, and chevron for command execution.
   Hide the toolbar entrance in Overview and Zen View; keyboard entrances remain available in Zen View.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
+- Keep Board-kind icon mappings in [BoardSymbol.swift](Packages/DenViews/Sources/DenViews/Board/BoardSymbol.swift)
+  in DenViews as the single source of truth. Boards, Presets, Recent Items, Essentials, and related controls must
+  use that shared mapping rather than select SF Symbols independently. Keep URL-item and action icons distinct
+  when they express a different meaning.
 - Use `.xmark` to dismiss UI or close an active work surface, including removing a Board from its Desk.
   Use `.trash` to discard a collection item, such as a Drawer or Recent Item; restoration availability does not change the symbol.
 - Use SwiftUI semantic text styles such as `title`, `headline`, `body`, `caption`, and `caption2` for app-owned

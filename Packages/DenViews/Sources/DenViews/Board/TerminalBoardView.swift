@@ -236,7 +236,7 @@ public struct TerminalBoardView: View {
                 Label {
                     Text("zmx Sessions…")
                 } icon: {
-                    Image(systemSymbol: .appleTerminalOnRectangle)
+                    Image(systemSymbol: BoardSymbol.zmx.symbol)
                 }
             }
         }

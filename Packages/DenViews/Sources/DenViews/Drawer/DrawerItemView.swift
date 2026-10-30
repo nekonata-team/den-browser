@@ -27,7 +27,7 @@ struct DrawerItemView<Peek: View>: View {
                     onToggle()
                 } label: {
                     HStack(spacing: 10) {
-                        Image(systemSymbol: item.terminal == nil ? .link : .appleTerminal)
+                        Image(systemSymbol: item.terminal == nil ? .link : BoardSymbol.terminal.symbol)
                             .foregroundStyle(.secondary)
 
                         VStack(alignment: .leading, spacing: 2) {

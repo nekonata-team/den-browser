@@ -76,9 +76,9 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .essentials:
             .sparkles
         case .terminal:
-            .appleTerminal
+            BoardSymbol.terminal.symbol
         case .web:
-            .globe
+            BoardSymbol.web.symbol
         case .features:
             .puzzlepiece
         }

@@ -207,7 +207,7 @@ public struct WebBoardView: View {
                     AsyncImage(url: faviconURL) { image in
                         image.resizable().scaledToFit()
                     } placeholder: {
-                        Image(systemSymbol: .globe)
+                        Image(systemSymbol: BoardSymbol.web.symbol)
                             .foregroundStyle(.secondary)
                     }
                 }

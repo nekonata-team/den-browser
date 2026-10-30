@@ -28,7 +28,7 @@ public struct ZmxSessionsPanel: View {
                     .font(.caption)
                     .foregroundStyle(.red)
             } else if model.groups.isEmpty {
-                ContentUnavailableView("No zmx Sessions", systemSymbol: .appleTerminal)
+                ContentUnavailableView("No zmx Sessions", systemSymbol: BoardSymbol.zmx.symbol)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, DenPanelLayout.contentSpacing)
             } else if model.filteredGroups.isEmpty {
@@ -69,7 +69,7 @@ public struct ZmxSessionsPanel: View {
 
     private var header: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
-            DenPanelHeader(icon: Image(systemSymbol: .appleTerminalOnRectangle)) {
+            DenPanelHeader(icon: Image(systemSymbol: BoardSymbol.zmx.symbol)) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("zmx Sessions")
                         .font(.headline)

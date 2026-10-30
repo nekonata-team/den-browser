@@ -149,7 +149,7 @@ public struct InspectionBoardView: View {
         if let targetBoard, targetBoard.isWeb {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Label("Target: \(targetBoard.displayName)", systemSymbol: .globe)
+                    Label("Target: \(targetBoard.displayName)", systemSymbol: BoardSymbol.web.symbol)
                         .lineLimit(1)
                     Spacer()
                     Button("Focus") { focusTarget() }
@@ -191,7 +191,7 @@ public struct InspectionBoardView: View {
         } else {
             ContentUnavailableView(
                 "Target Web Board Unavailable",
-                systemSymbol: .globe,
+                systemSymbol: BoardSymbol.web.symbol,
                 description: Text("The linked Web Board or its Current Sheet is not available.")
             )
         }

@@ -316,7 +316,7 @@ public struct BoardRailFavicon: View {
         AsyncImage(url: url) { image in
             image.resizable().scaledToFit()
         } placeholder: {
-            Image(systemSymbol: .globe)
+            Image(systemSymbol: BoardSymbol.web.symbol)
                 .foregroundStyle(.secondary)
         }
         .frame(width: 16, height: 16)

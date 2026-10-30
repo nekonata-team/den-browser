@@ -128,9 +128,9 @@ public struct EssentialsPrefixPanel: View {
 
     private func inputSymbol(for essential: Essential) -> SFSymbol {
         switch essential.input.split(maxSplits: 1, whereSeparator: \.isWhitespace).first {
-        case ":terminal": .appleTerminal
-        case ":zellij": .rectangleSplit3x1
-        case ":zmx": .appleTerminalOnRectangle
+        case ":terminal": BoardSymbol.terminal.symbol
+        case ":zellij": BoardSymbol.zellij.symbol
+        case ":zmx": BoardSymbol.zmx.symbol
         default: .link
         }
     }
