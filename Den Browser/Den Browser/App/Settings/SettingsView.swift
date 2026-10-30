@@ -4,6 +4,8 @@ import DenViews
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(ProfileManager.self) private var profileManager
+
     var body: some View {
         DenViews.SettingsView(
             onClose: { NSColorPanel.shared.close() },
@@ -20,6 +22,12 @@ struct SettingsView: View {
                 case .terminal: TerminalSettingsView()
                 case .web: WebSettingsView()
                 case .features: FeaturesSettingsView()
+                case .skills:
+                    SkillsSettingsView(
+                        installCommand: SkillMaintenanceAction.install.command,
+                        updateCommand: SkillMaintenanceAction.update.command,
+                        install: { profileManager.runSkillMaintenance(.install) },
+                        update: { profileManager.runSkillMaintenance(.update) })
                 }
             })
     }

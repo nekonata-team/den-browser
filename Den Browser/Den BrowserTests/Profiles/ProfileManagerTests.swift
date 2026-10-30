@@ -13,6 +13,22 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct ProfileManagerTests {
+    @Test func skillMaintenanceRequiresAVisibleProfileWindow() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let state = session.resources.state
+
+        // Act
+        let error = manager.runSkillMaintenance(.install)
+
+        // Assert
+        #expect(error != nil)
+        #expect(session.resources.state == state)
+    }
+
     @Test func resetClosesOtherWindowsInSameProfileAndPreservesOtherProfiles() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

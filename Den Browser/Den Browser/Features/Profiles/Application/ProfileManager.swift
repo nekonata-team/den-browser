@@ -477,6 +477,21 @@ final class ProfileManager {
         windowRegistry.activeSession(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
+    func runSkillMaintenance(_ action: SkillMaintenanceAction) -> String? {
+        guard let target = windowRegistry.presentationTarget(),
+            let window = target.registration.window,
+            let session = windowRegistry.session(for: target.windowID)
+        else { return "Open a Profile window to install or update the Den skill." }
+
+        guard let boardID = session.boardOpening.createTerminalBoard(),
+            let board = session.resources.state.board(for: boardID)
+        else { return "Could not open a Terminal Board for the Den skill." }
+
+        session.runtimes.terminalRuntime(for: board).runCommand(action.command)
+        window.makeKeyAndOrderFront(nil)
+        return nil
+    }
+
     func activeProfileID() -> ProfileID? {
         windowRegistry.activeProfileID(preferredWindowID: extensionPresentationTarget()?.windowID)
     }

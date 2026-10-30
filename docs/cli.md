@@ -397,6 +397,12 @@ An invalid `DEN_BOARD_ID` is reported as an environment error; pass `--board <uu
 
 ## 5. Agent Skill Integration (`skills.sh`)
 
+In the app, **Settings → Skills** shows commands to install the official `den` skill
+globally for selected agents or update only the global `den` skill. Copy a command or run
+it in a new Terminal Board with the adjacent button. Node.js and `npx` must
+be available in the terminal's shell. Follow the installer prompts and review the result
+in that Board. Project-local installations remain available through the commands below.
+
 Autonomous coding agents (such as Claude Code, Cursor, Antigravity, Windsurf) can install the official Den Browser agent skill directly from GitHub via `npx skills`:
 
 ```bash

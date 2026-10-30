@@ -43,6 +43,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     case terminal
     case web
     case features
+    case skills
 
     public var id: Self { self }
 
@@ -62,6 +63,8 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
             "Web"
         case .features:
             "Features"
+        case .skills:
+            "Skills"
         }
     }
 
@@ -81,6 +84,8 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
             BoardSymbol.web.symbol
         case .features:
             .puzzlepiece
+        case .skills:
+            .book
         }
     }
 }
