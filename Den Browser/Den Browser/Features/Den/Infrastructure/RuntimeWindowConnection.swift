@@ -12,6 +12,7 @@ final class RuntimeWindowConnection {
     weak var boardRemoval: BoardRemovalPresentation?
     weak var drawer: DrawerActions?
     weak var feedback: WindowFeedbackOutput?
+    var availableBoardWidth: () -> Double? = { nil }
     var onWindowEffect: ((DenWindowEffect) -> Void)?
     var onDownloadActivity: ((DownloadActivityEvent) -> Void)?
     var invalidateBoards: ((Set<BoardID>) -> Void)?
@@ -23,6 +24,7 @@ final class RuntimeWindowConnection {
 
     func disconnect() {
         onDisconnect()
+        availableBoardWidth = { nil }
         presentedDeskID = { nil }
         focusedBoardID = { nil }
         runtimes = nil

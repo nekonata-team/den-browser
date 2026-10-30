@@ -83,6 +83,14 @@ final class DenIPCService {
             return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
                 self.handleBoardFocus(target: $0)
             }
+        case .resizeBoard(let boardID, let width):
+            guard width.isFinite, width > 0 else {
+                return DenIPCResponse(
+                    result: .failure("Board width must be a finite positive number of points"), target: .none)
+            }
+            return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
+                self.handleBoardResize(width: width, target: $0)
+            }
         case .moveBoard(let boardID, let destination):
             return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
                 self.handleBoardMove(destination: destination, target: $0)
@@ -1018,6 +1026,23 @@ final class DenIPCService {
         }
         let info = boardInfo(focusedBoard, focusedBoardID: focusedBoard.id)
         return .success(.board(info))
+    }
+
+    private func handleBoardResize(width: Double, target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
+        guard let maximumWidth = resolved.window.availableBoardWidth(), maximumWidth.isFinite,
+            maximumWidth >= BoardState.minimumWidth
+        else {
+            return .failure("Board layout is unavailable or too narrow in the target window; show the window and retry")
+        }
+        guard resolved.window.resources.snapshot.activeDrag == nil else {
+            return .failure("Cannot resize a Board during a drag; finish the drag and retry")
+        }
+        guard
+            let appliedWidth = resolved.window.resources.boardSizing.setBoardWidth(
+                resolved.board.id, to: width, maximumWidth: maximumWidth)
+        else { return .failure("Could not save Board width") }
+        resolved.window.board.didResize()
+        return .success(.resizedBoard(id: resolved.board.id.rawValue.uuidString, width: appliedWidth))
     }
 
     private func handleBoardFocus(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {

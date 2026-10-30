@@ -5,6 +5,48 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test func boardResizeSendsRequestedWidthAndReturnsAppliedWidth() async throws {
+        // Arrange
+        let boardID = UUID()
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(
+                request?.operation == .resizeBoard(boardID: boardID, width: 2_000)
+                    ? .success(.resizedBoard(id: boardID.uuidString, width: 960)) : .failure("Unexpected request"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["board", "resize", "--board", boardID.uuidString, "--width", "2000"], socketPath: socketPath)
+        let object = try jsonResult(result.output)
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(object["board_id"] as? String == boardID.uuidString)
+        #expect(object["width"] as? Double == 960)
+    }
+
+    @Test(arguments: [
+        ["--width", "900"], ["--board", "invalid", "--width", "900"],
+        ["--board", UUID().uuidString], ["--board", UUID().uuidString, "--width", "0"],
+        ["--board", UUID().uuidString, "--width", "-1"],
+        ["--board", UUID().uuidString, "--width", "nan"],
+        ["--board", UUID().uuidString, "--width", "inf"],
+    ])
+    func boardResizeRejectsInvalidArguments(arguments: [String]) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+
+        // Act
+        let result = try await runCLI(["board", "resize"] + arguments, socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 64)
+    }
+
     @Test(arguments: [false, true], ["invalid", UUID().uuidString])
     func boardExistsUsesOnlyExplicitProfileScope(explicit: Bool, ambientProfile: String) async throws {
         // Arrange

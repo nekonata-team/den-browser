@@ -2,6 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenIPCProtocol
+import DenInfrastructure
 import DenModels
 import Foundation
 import Testing
@@ -11,6 +12,100 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct DenIPCServiceTests {
+    @Test(arguments: ["web", "terminal", "inspection", "tutorial"])
+    func boardResizeUsesLiveWindowWidthAndPreservesSelection(kind: String) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let displayedDeskID = session.navigation.presentedDeskID
+        session.desks.createDesk(label: "Target", preset: .empty)
+        let primary = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
+        let target: BoardID
+        switch kind {
+        case "terminal":
+            target = try #require(session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: false))
+        case "inspection":
+            target = try #require(session.sideBoards.createInspectionBoard(targetBoardID: primary, focus: false))
+        case "tutorial":
+            #expect(session.boardOpening.openTutorialBoard())
+            target = try #require(session.resources.state.desks.flatMap(\.boards).first(where: \.isTutorial)?.id)
+        default:
+            target = primary
+        }
+        let targetDeskID = session.navigation.presentedDeskID
+        session.boardNavigation.focusDesk(displayedDeskID)
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        composition.model.updateBoardLayout(availableWidth: 960, spacing: 12)
+        composition.model.maximizedBoardID = target
+        let service = DenIPCService(profileManager: manager)
+        let selection = session.resources.state.desks.first(where: { $0.id == targetDeskID })?.focusedBoardID
+        let neighbors = session.resources.state.desks.flatMap(\.boards).filter { $0.id != target }
+
+        // Act / Assert
+        for (requested, expected) in [(2_000.0, 960.0), (1.0, 280.0), (640.0, 640.0), (2_000.0, 1_800.0)] {
+            if expected == 1_800 {
+                composition.model.updateBoardLayout(availableWidth: 1_800, spacing: 12)
+            }
+            let result = await service.handleResult(
+                ipcRequest(.resizeBoard(boardID: target.rawValue, width: requested)))
+            guard case .resizedBoard(let id, let width) = result.payload else {
+                Issue.record("Expected applied width: \(result.error ?? "missing result")")
+                return
+            }
+            #expect(result.isOk)
+            #expect(id == target.rawValue.uuidString)
+            #expect(width == expected)
+            #expect(session.resources.state.board(for: target)?.width == expected)
+        }
+        #expect(composition.model.maximizedBoardID == nil)
+        #expect(session.navigation.presentedDeskID == displayedDeskID)
+        #expect(session.resources.state.desks.first(where: { $0.id == targetDeskID })?.focusedBoardID == selection)
+        #expect(session.resources.state.desks.flatMap(\.boards).filter { $0.id != target } == neighbors)
+        let persisted = ProfilePersistence(
+            directoryURL: directory, isEphemeral: false,
+            quarantineFile: { try FileManager.default.moveItem(at: $0, to: $1) }
+        ).load()
+        let restored = persisted.profiles.first(where: { $0.profile.id == manager.personalProfileID })?.den.board(
+            for: target)
+        #expect(kind == "tutorial" ? restored == nil : restored?.width == 1_800)
+    }
+
+    @Test(arguments: ["missing", "layout", "narrow", "invalid"])
+    func boardResizeFailurePreservesState(reason: String) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let board = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
+        session.connection.availableBoardWidth = { reason == "layout" ? nil : (reason == "narrow" ? 200 : 960) }
+        let before = session.resources.state
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let result = await service.handleResult(
+            ipcRequest(
+                .resizeBoard(
+                    boardID: reason == "missing" ? UUID() : board.rawValue, width: reason == "invalid" ? 0 : 800)))
+
+        // Assert
+        #expect(!result.isOk)
+        #expect(session.resources.state == before)
+    }
     @Test(
         arguments: [("web", false), ("web", true), ("terminal", false), ("terminal", true)], ["left", "right", "end"])
     func boardCreationRespectsPlacementOnAnotherDesk(creation: (String, Bool), position: String) async throws {

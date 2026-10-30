@@ -270,6 +270,7 @@ public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case message(String)
     case createdBoard(id: String, message: String?, url: String?)
     case navigation(message: String, url: String)
+    case resizedBoard(id: String, width: Double)
     case closedBoard(id: String, message: String)
     case board(DenBoardInfo)
     case boards([DenBoardInfo])
@@ -408,6 +409,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case error
         case message
         case boardId = "board_id"
+        case width
         case closedBoardId = "closed_board_id"
         case board
         case exists
@@ -463,6 +465,9 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case .navigation(let message, let url):
             try container.encode(message, forKey: .message)
             try container.encode(url, forKey: .url)
+        case .resizedBoard(let id, let width):
+            try container.encode(id, forKey: .boardId)
+            try container.encode(width, forKey: .width)
         case .closedBoard(let id, let message):
             try container.encode(id, forKey: .closedBoardId)
             try container.encode(message, forKey: .message)

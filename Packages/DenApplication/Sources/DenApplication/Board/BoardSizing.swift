@@ -56,6 +56,16 @@ public struct BoardSizing {
         writer.update { $0.den.desks[indices.desk].boards[indices.board].width = BoardState.constrainedWidth(width) }
     }
 
+    public func setBoardWidth(_ id: BoardID, to width: Double, maximumWidth: Double) -> Double? {
+        guard width.isFinite, width > 0, maximumWidth.isFinite, maximumWidth >= BoardState.minimumWidth,
+            store.snapshot.activeDrag == nil, let indices = indices(id)
+        else { return nil }
+        let appliedWidth = min(max(width, BoardState.minimumWidth), maximumWidth)
+        writer.update { $0.den.desks[indices.desk].boards[indices.board].width = appliedWidth }
+        guard persist?(store.snapshot.den) ?? true else { return nil }
+        return appliedWidth
+    }
+
     public func resizePair(_ id: BoardID, to width: Double) {
         guard let indices = indices(id) else { return }
         let next = indices.board + 1

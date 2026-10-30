@@ -41,6 +41,7 @@ struct BoardCommand: ParsableCommand {
             BoardExistsCommand.self,
             BoardFocusCommand.self,
             BoardMoveCommand.self,
+            BoardResizeCommand.self,
             BoardWebCommand.self,
             BoardTerminalCommand.self,
             BoardInspectionCommand.self,
@@ -333,6 +334,25 @@ struct BoardMoveCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .moveBoard(boardID: try DenIPCClient.requiredBoardID(boardID), destination: try destination()),
+            options: common)
+    }
+}
+
+struct BoardResizeCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "resize", abstract: "Set Board width, constrained to the target window's available width")
+
+    @OptionGroup var common: CLIOptions
+    @Option(name: .customLong("board"), help: "Board ID to resize") var boardID: String
+    @Option(name: .long, help: "Requested Board width in points") var width: Double
+
+    func validate() throws {
+        try validateBoardWidth(width)
+    }
+
+    func run() throws {
+        try DenIPCClient.execute(
+            operation: .resizeBoard(boardID: try DenIPCClient.requiredBoardID(boardID), width: width),
             options: common)
     }
 }

@@ -8,6 +8,7 @@ struct IPCWindowBindings {
         let webRuntime: (BoardState) -> WebRuntime
         let terminalRuntime: (BoardState) -> TerminalRuntime
         let focus: (BoardID) -> Void
+        let didResize: () -> Void
         let createInspection: (BoardID, Bool) -> BoardID?
         let sendSignal: (Int32, BoardState) async throws -> Int32
         let creationNotice: (BoardCreation.Notice) -> Void
@@ -32,6 +33,7 @@ struct IPCWindowBindings {
     let resources: DenProfileResources
     let presentedDeskID: () -> DeskID
     let searchEngine: () -> SearchEngine
+    let availableBoardWidth: () -> Double?
     let inheritedBoardWidth: () -> Double
     let board: Board
     let desk: Desk

@@ -207,6 +207,7 @@ final class DenWindowComposition {
     }
 
     func connect() {
+        session.connection.availableBoardWidth = { [weak model] in model?.boardLayoutMetrics?.availableWidth }
         session.connection.onWindowEffect = { [weak model] effect in
             model?.receive(effect)
         }
@@ -214,6 +215,7 @@ final class DenWindowComposition {
     }
 
     func disconnect() {
+        session.connection.availableBoardWidth = { nil }
         session.connection.onWindowEffect = nil
         model.endWindowPresentation()
     }

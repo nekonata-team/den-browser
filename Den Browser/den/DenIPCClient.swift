@@ -206,6 +206,8 @@ enum DenIPCClient {
             print(message)
         case .createdBoard(let id, _, _), .sheet(let id, _), .createdDesk(let id):
             print(id)
+        case .resizedBoard(_, let width):
+            print(width)
         case .removedDesk(let id):
             print("Removed Desk \(id)")
         case .board(let board):

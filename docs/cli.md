@@ -86,7 +86,7 @@ For `den board terminal` operations on an existing Board, the caller's Terminal 
 `--focus` focuses the created Board or Desk (or reused Inspection Board), switching Desks when needed. It is available on `new` commands and `board web click --new-board`. Without it, the current Desk and Board remain focused.
 
 ### Board Targeting
-- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close`, `den board focus`, and `den board move`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
+- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close`, `den board focus`, `den board move`, and `den board resize`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
 - `den board close --board <id>` accepts any Board kind, including Inspection and Tutorial Boards. Web and Terminal Board commands require their corresponding Board kind.
 - Inspection commands require an explicit Board ID. `den board inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
@@ -126,7 +126,13 @@ Commands for listing, focusing, creating, and managing Boards. Listing uses `--d
 | `den board exists` | `--board <uuid> [--profile <uuid>]` | Check whether a Board exists. | `den board exists --board <uuid> --json` |
 | `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
 | `den board move` | `--board <id> (--left-of <board-id> \| --right-of <board-id> \| --end-of <desk-id>)` | Move the entire Board Group left/right of another Board Group, including across Desks, or to the end of a Desk. The placement options are mutually exclusive; exactly one is required. | `den board move --board <id> --right-of <board-id>` |
+| `den board resize` | `--board <id> --width <points>` | Set one Board's width in points, clamped by the app to 280pt through the target window's available Board area. Returns the applied width. | `den board resize --board <id> --width 900` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Invalid UUIDs fail with `exit 64`; Boards not found fail with `exit 1`. | `den board close --board 4F72344C-...` |
+
+`board resize` supports every Board kind, including Side Boards, and preserves focus and the displayed Desk.
+The requested width must be finite and positive; the applied width is saved.
+Unavailable layout, an area narrower than 280pt, or an active drag cause an error.
+JSON returns `{"ok":true,"board_id":"<uuid>","width":900}`; TTY prints the applied width.
 
 `board exists` searches all Desks in open Profiles, restricted only by explicit `--profile`;
 it ignores `DEN_PROFILE` and `DEN_BOARD_ID`. Closed Profiles do not match.

@@ -51,6 +51,7 @@ public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case boardFocused(target: DeskTarget)
     case boardExists(boardID: UUID)
     case focusBoard(boardID: UUID)
+    case resizeBoard(boardID: UUID, width: Double)
     case moveBoard(boardID: UUID, destination: DenBoardMoveDestination)
     case boardClose(target: BoardTarget)
     case createWebBoard(payload: DenBoardWebNewPayload, destination: DenBoardCreationDestination)

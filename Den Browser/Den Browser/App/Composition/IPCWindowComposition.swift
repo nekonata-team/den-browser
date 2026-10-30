@@ -9,6 +9,7 @@ extension IPCWindowBindings {
             id: id, profileID: profileID, resources: session.resources,
             presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
             searchEngine: { [preferences = session.configuration.preferences] in preferences.searchEngine },
+            availableBoardWidth: { session.connection.availableBoardWidth() },
             inheritedBoardWidth: { [navigation = session.navigation] in
                 navigation.focusedBoard?.width ?? BuiltInDeskPreset.boardWidth
             },
@@ -20,6 +21,7 @@ extension IPCWindowBindings {
                     session.boardNavigation.focusBoard($0, exitsDenMode: true)
                     session.boardNavigation.centerFocusedBoard()
                 },
+                didResize: { session.connection.onWindowEffect?(.clearMaximizedBoard) },
                 createInspection: { session.sideBoards.createInspectionBoard(targetBoardID: $0, focus: $1) },
                 sendSignal: { try await session.runtimes.sendSignal($0, to: $1) },
                 creationNotice: session.boardOpening.boardCreationNotifications(),
