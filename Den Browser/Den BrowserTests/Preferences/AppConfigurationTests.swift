@@ -7,6 +7,32 @@ import Testing
 
 @MainActor
 struct AppConfigurationTests {
+    @Test func privateDenSocketsAreIsolatedFromParentAndEachOther() {
+        // Arrange
+        let parentSocket = "/tmp/den-parent.sock"
+        let environment = ["DEN_SOCKET": parentSocket]
+
+        // Act
+        let first = AppConfiguration.resolveSocketPath(isPrivateDen: true, environment: environment)
+        let second = AppConfiguration.resolveSocketPath(isPrivateDen: true, environment: environment)
+
+        // Assert
+        #expect(first != parentSocket)
+        #expect(second != parentSocket)
+        #expect(first != second)
+    }
+
+    @Test func regularDenPreservesEnvironmentSocket() {
+        // Arrange
+        let socket = "/tmp/den-custom.sock"
+
+        // Act
+        let resolved = AppConfiguration.resolveSocketPath(isPrivateDen: false, environment: ["DEN_SOCKET": socket])
+
+        // Assert
+        #expect(resolved == socket)
+    }
+
     @Test func unitTestResourcesAreIsolatedByRun() {
         let firstRunID = UUID().uuidString
         let secondRunID = UUID().uuidString

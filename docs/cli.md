@@ -39,7 +39,7 @@ Den (Personal Environment for a Profile) ─── den
 When `den` is executed from a shell inside a Terminal Board or Terminal Drawer Item, Den Browser automatically injects:
 - `DEN_BOARD_ID`: The immutable UUID of the calling Terminal Board, or the reserved placement Board ID of a Terminal Drawer Item.
 - `DEN_PROFILE`: The UUID of the Profile owning the Terminal Session.
-- `DEN_SOCKET`: The actual IPC domain socket path selected by Den Browser. It is `~/.den/den.sock` unless the app was started with a custom `DEN_SOCKET`.
+- `DEN_SOCKET`: The actual IPC domain socket path selected by Den Browser. It is `~/.den/den.sock` unless the app was started with a custom `DEN_SOCKET`. Private Den always uses its own temporary socket, ignoring any inherited `DEN_SOCKET`.
 
 These variables are attached when the Terminal Session is created and remain with that Session when its Board moves between Desks. A reattached zmx session keeps the shell environment from when the session was created. A Session is never given another Profile's context.
 

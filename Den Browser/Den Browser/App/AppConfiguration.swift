@@ -61,9 +61,7 @@ struct AppConfiguration {
                     ipcSocketPath: socket,
                     websiteDataStore: { _ in .nonPersistent() })
             }
-            let ipcSocketPath = DenSocketPath.resolve(
-                environment: processInfo.environment,
-                defaultPath: isPrivateDen ? DenSocketPath.temporary(prefix: "den-private") : nil)
+            let ipcSocketPath = resolveSocketPath(isPrivateDen: isPrivateDen, environment: processInfo.environment)
             return AppConfiguration(
                 profileDirectoryURL: ProfileManager.defaultDirectoryURL(),
                 defaults: .standard,
@@ -100,6 +98,13 @@ struct AppConfiguration {
             isEphemeral: false,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
             websiteDataStore: { _ in .nonPersistent() })
+    }
+
+    static func resolveSocketPath(isPrivateDen: Bool, environment: [String: String]) -> String {
+        if isPrivateDen {
+            return DenSocketPath.temporary(prefix: "den-private")
+        }
+        return DenSocketPath.resolve(environment: environment)
     }
 
     static func unitTest(runID: String) -> AppConfiguration {
