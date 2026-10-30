@@ -10,10 +10,6 @@ Den Browser persists only state needed to restore user-owned work. Version 4 add
 - Ordinary Profile windows use the SwiftUI scene identifier `profile-window`.
   Private Den uses `private-den-window` and disables scene restoration to isolate its routes from persistent Profile windows.
   Ordinary Profile windows retain automatic scene restoration.
-  At startup, legacy SwiftUI window frame and split-view keys are removed individually from defaults.
-  These keys contained reflected view types and addresses that caused unbounded growth, while bulk deletion could exceed CFPreferences request limits.
-  Old positions and split widths are discarded, but preferences and Profile documents are preserved.
-  Tests and benchmark launches skip this cleanup.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
 - uBlock Origin Lite resources and enabled preferences persist app-wide.
   Ordinary Profiles use a persistent WebKit extension controller, while Private Den uses a non-persistent one that discards session state.

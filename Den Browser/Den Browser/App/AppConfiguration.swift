@@ -61,9 +61,6 @@ struct AppConfiguration {
                     ipcSocketPath: socket,
                     websiteDataStore: { _ in .nonPersistent() })
             }
-            if let domainName = Bundle.main.bundleIdentifier {
-                WindowStatePreferences.removeLegacyProfileState(defaults: .standard, domainName: domainName)
-            }
             let ipcSocketPath = DenSocketPath.resolve(
                 environment: processInfo.environment,
                 defaultPath: isPrivateDen ? DenSocketPath.temporary(prefix: "den-private") : nil)
