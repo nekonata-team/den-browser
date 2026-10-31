@@ -63,7 +63,7 @@ struct Den_BrowserApp: App {
             for: ProfileWindowRoute.self
         ) { $route in
             ProfileWindowView(
-                route: route,
+                route: $route,
                 startUpdater: { updaterController.start() },
                 registerKeyboardWindow: { window, windowModel in
                     keyboardController.register(windowModel: windowModel, for: window)

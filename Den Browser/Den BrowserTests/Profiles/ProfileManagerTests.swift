@@ -324,6 +324,27 @@ struct ProfileManagerTests {
         #expect(restored.session(for: work.id)?.navigation.focusedDesk?.label == "Restored")
     }
 
+    @Test func restoredWindowRoutesSelectTheirOwnDesks() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let session = try #require(manager.session(for: profileID))
+        let firstDeskID = session.navigation.presentedDeskID
+        session.desks.createDesk(label: "Second", preset: .empty)
+        let secondDeskID = session.navigation.presentedDeskID
+        let routes = [
+            ProfileWindowRoute(profileID: profileID, deskID: firstDeskID),
+            ProfileWindowRoute(profileID: profileID, deskID: secondDeskID),
+        ]
+
+        let decoded = try JSONDecoder().decode([ProfileWindowRoute].self, from: JSONEncoder().encode(routes))
+        let restored = makeProfileManager(directory: directory)
+
+        #expect(restored.session(for: decoded[0])?.navigation.presentedDeskID == firstDeskID)
+        #expect(restored.session(for: decoded[1])?.navigation.presentedDeskID == secondDeskID)
+    }
+
     @Test func profileWindowsShareDenAndPresentDistinctDesks() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

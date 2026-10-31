@@ -64,8 +64,9 @@ values. Shared data is read from the source rather than copied into per-Feature 
 | Live Sheet Stack, WebKit and Terminal execution | Profile-owned runtimes | Never serialized |
 | Profile metadata and app preferences | ProfileManager and AppPreferences | Profile/preferences storage |
 
-The shared `DenState.focusedDeskID` supplies the restore selection. Each window's `WindowNavigationModel`
-owns its distinct `presentedDeskID`, return history and Anchor return references; Desk-level Board focus remains shared.
+Each window's `WindowNavigationModel` owns its distinct `presentedDeskID`, return history and Anchor return references;
+the window's scene restoration value records its presented Desk. The shared `DenState.focusedDeskID` supplies the
+initial selection when the restoration value has no Desk. Desk-level Board focus remains shared.
 An active Web runtime owns its Sheet Stack, while saved Board URL/title fields are projections used to restore it.
 
 UI and IPC use the same Application operations. Each call supplies its resolved target and synchronous notices;

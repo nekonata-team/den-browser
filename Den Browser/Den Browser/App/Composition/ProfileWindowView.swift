@@ -8,7 +8,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct ProfileWindowView: View {
-    let route: ProfileWindowRoute
+    @Binding var route: ProfileWindowRoute
     let startUpdater: @MainActor @Sendable () -> Void
     let registerKeyboardWindow: @MainActor (NSWindow, DenWindowModel) -> Void
     let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
@@ -51,6 +51,10 @@ struct ProfileWindowView: View {
                 unregisterKeyboardWindow: unregisterKeyboardWindow
             )
             .id(ObjectIdentifier(session))
+            .onChange(of: session.navigation.presentedDeskID, initial: true) { _, deskID in
+                guard route.deskID != deskID else { return }
+                route = ProfileWindowRoute(windowID: route.windowID, profileID: route.profileID, deskID: deskID)
+            }
             .sheet(
                 isPresented: Binding(
                     get: {
