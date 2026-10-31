@@ -480,6 +480,17 @@ public struct WebBoardView: View {
             )
 
             withBoardContextMenu(
+                Button(action: onReload) {
+                    Image(systemSymbol: .arrowClockwise)
+                        .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .help("Reload Current Sheet")
+                .accessibilityLabel("Reload Current Sheet")
+            )
+
+            withBoardContextMenu(
                 Button(action: onRemove) {
                     Image(systemSymbol: .xmark)
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
