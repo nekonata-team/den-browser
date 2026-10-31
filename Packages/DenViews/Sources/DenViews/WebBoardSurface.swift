@@ -41,7 +41,10 @@ public struct WebBoardSurface: NSViewRepresentable {
                 let beforeHide = onBeforeHide
                 context.coordinator.hideTask = Task {
                     @MainActor [weak coordinator = context.coordinator, weak webView] in
-                    defer { coordinator?.hideTask = nil }
+                    defer {
+                        // A cancelled task must not clear its replacement.
+                        if !Task.isCancelled { coordinator?.hideTask = nil }
+                    }
                     await beforeHide()
                     guard !Task.isCancelled, webView?.superview === nsView else { return }
                     webView?.isHidden = true

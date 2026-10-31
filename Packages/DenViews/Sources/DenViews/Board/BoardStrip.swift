@@ -92,7 +92,11 @@ public struct BoardStrip<Activated: View>: View {
     @State private var lastAutoScrollTime = 0.0
     @State private var revealBoardID: BoardID?
     @State private var activatedBoardIDs: Set<BoardID> = []
-    @State private var visibleBoardIDs: Set<BoardID> = []
+
+    private var visibleBoardIDs: Set<BoardID> {
+        guard alignedBoardDeskID == model.presentedDeskID else { return [] }
+        return visibleBoardIDs(in: scrollGeometry)
+    }
 
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
@@ -167,6 +171,7 @@ public struct BoardStrip<Activated: View>: View {
             deskFilter.isPresented
             ? deskFilter.filteredBoards
             : model.focusedDesk?.boards ?? []
+        let visibleIDs = visibleBoardIDs
         let draggedBoardIDs = draggedGroupBoardIDs
         let shouldShowIndicator = !windowModel.isZenViewPresented && boards.count > 1
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
@@ -193,6 +198,12 @@ public struct BoardStrip<Activated: View>: View {
             boardWidthPreviewTargetX.map {
                 BoardLayout.visibleBoardIDs(in: layoutParams, offsetX: $0, containerWidth: size.width)
             } ?? []
+        let focusedBoardID = model.focusedDesk?.focusedBoardID
+        let activatedIDs = activatedBoardIDs.union(visibleIDs).union(previewVisibleBoardIDs)
+        let webBoardsNeedingRuntime = boards.filter {
+            $0.isWeb && (activatedIDs.contains($0.id) || $0.id == focusedBoardID)
+                && !model.hasWebRuntime($0.id)
+        }
         let alignmentTarget = BoardStripAlignmentTarget(
             deskID: model.presentedDeskID,
             boardID: deskFilter.isPresented
@@ -225,11 +236,10 @@ public struct BoardStrip<Activated: View>: View {
                         }
                     let trailingGap =
                         boardIndex.map { layoutParams.spacingAfterBoard(at: $0) } ?? boardSpacing
-                    let isFocused = model.focusedDesk?.focusedBoardID == board.id
+                    let isFocused = focusedBoardID == board.id
                     let isVisible =
-                        visibleBoardIDs.contains(board.id) || previewVisibleBoardIDs.contains(board.id) || isFocused
-                    let isActivated = activatedBoardIDs.contains(board.id) || isVisible
-                    let needsRuntime = isActivated && board.isWeb && !model.hasWebRuntime(board.id)
+                        visibleIDs.contains(board.id) || previewVisibleBoardIDs.contains(board.id) || isFocused
+                    let isActivated = activatedIDs.contains(board.id) || isFocused
                     let isDragging = draggedBoardIDs.contains(board.id)
 
                     boardView(
@@ -242,19 +252,6 @@ public struct BoardStrip<Activated: View>: View {
                         isActivated: isActivated,
                         isVisible: isVisible
                     )
-                    .task(id: needsRuntime) {
-                        guard needsRuntime else { return }
-                        model.activateWebRuntime(board)
-                    }
-                    .onScrollVisibilityChange(threshold: 0.05) { visible in
-                        if visible {
-                            guard alignedBoardDeskID == model.presentedDeskID else { return }
-                            visibleBoardIDs.insert(board.id)
-                            activatedBoardIDs.insert(board.id)
-                        } else {
-                            visibleBoardIDs.remove(board.id)
-                        }
-                    }
                     .disabled(deskFilter.isPresented)
                     .overlay {
                         if deskFilter.isPresented {
@@ -375,6 +372,9 @@ public struct BoardStrip<Activated: View>: View {
             settlePendingBoardAlignment()
             updateDraggedBoardOnScroll(using: geometry)
         }
+        .onChange(of: visibleIDs) { _, visibleIDs in
+            activatedBoardIDs.formUnion(visibleIDs)
+        }
         .onScrollPhaseChange { oldPhase, newPhase in
             guard !deskFilter.isPresented else { return }
             let wasUserScrolling = oldPhase == .interacting || oldPhase == .decelerating || oldPhase == .tracking
@@ -392,13 +392,16 @@ public struct BoardStrip<Activated: View>: View {
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
+        .task(id: webBoardsNeedingRuntime.map(\.id)) {
+            guard !Task.isCancelled else { return }
+            for board in webBoardsNeedingRuntime { model.activateWebRuntime(board) }
+        }
         .environment(\.boardHeaderDoubleClickHandler, handleHeaderDoubleClick)
         .onChange(of: model.presentedDeskID) { _, deskID in
             boardWidthPreview = nil
             alignedBoardDeskID = nil
             pendingBoardActivationAlignment = nil
             activatedBoardIDs.removeAll()
-            visibleBoardIDs.removeAll()
             if pendingBoardAlignment?.deskID != deskID {
                 cancelPendingBoardAlignment()
             }
@@ -672,7 +675,6 @@ public struct BoardStrip<Activated: View>: View {
                     let visibleIDs = BoardLayout.visibleBoardIDs(
                         in: boardLayoutParameters(for: alignmentBoards),
                         offsetX: targetOffsetX, containerWidth: size.width)
-                    visibleBoardIDs = visibleIDs
                     activatedBoardIDs.formUnion(visibleIDs)
                     resetBoardStripPosition(to: targetOffsetX, animated: false)
                 }
@@ -959,6 +961,7 @@ public struct BoardStrip<Activated: View>: View {
         guard resizingBoardID == nil, !windowModel.isBoardDragging, let boardID else { return }
         let boardIDs = Set(alignmentBoards.map(\.id))
         guard
+            alignedBoardDeskID == model.presentedDeskID,
             boardIDs.contains(boardID),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0,
@@ -984,6 +987,7 @@ public struct BoardStrip<Activated: View>: View {
         guard resizingBoardID == nil, !windowModel.isBoardDragging, let boardID else { return }
         let boardIDs = Set(alignmentBoards.map(\.id))
         guard
+            alignedBoardDeskID == model.presentedDeskID,
             boardIDs.contains(boardID),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0,
@@ -1140,7 +1144,6 @@ public struct BoardStrip<Activated: View>: View {
         alignedBoardDeskID = pending.deskID
         pendingBoardActivationAlignment = nil
         let visibleIDs = visibleBoardIDs(in: geometry)
-        visibleBoardIDs = visibleIDs
         activatedBoardIDs.formUnion(visibleIDs)
     }
 
