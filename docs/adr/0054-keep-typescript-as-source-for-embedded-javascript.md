@@ -13,7 +13,7 @@ Den Browser embeds JavaScript resources in the Xcode application bundle, but edi
 - Keep TypeScript as the source and use the locked TypeScript compiler CLI to transpile the standalone scripts in an Xcode build phase.
 - Keep TypeScript as the source, use Bun for dependency management and all resource bundles, and retain the locked TypeScript compiler for type checking.
 
-The fourth option keeps the existing resource boundaries while using a Bun version pinned by mise for dependency management and bundling. TypeScript remains a project dependency for type checking before generation. Dependency installation remains outside the build phase; generation uses installed dependencies without network access.
+The fourth option keeps the existing resource boundaries while using a Bun version pinned by mise for dependency management and bundling. TypeScript remains a project dependency for type checking before generation. The build phase installs locked dependencies before generation, so a fresh worktree may require network access.
 
 ## Consequences
 

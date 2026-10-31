@@ -78,6 +78,7 @@ build:
 # Type-check embedded JavaScript sources.
 [group("quality")]
 embedded-js-typecheck:
+    @bun install --cwd scripts/embedded-js --frozen-lockfile
     @bun run --cwd scripts/embedded-js typecheck
 
 # Bind SourceKit-LSP to this Xcode project.

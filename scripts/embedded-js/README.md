@@ -10,7 +10,7 @@ scripts/embedded-js/src/**/*.ts
 
 Xcode's `Generate embedded JavaScript` build phase compiles the TypeScript sources and writes the generated files directly into the app bundle's Resources directory. All five resources are bundled as IIFEs with Bun. `SheetRead.js` includes Turndown and its GFM plugin and exposes `denSheetRead.read`. `PictureInPicture.js` exposes `denPictureInPicture.run(mode)`, whose result is explicitly awaited by the native caller. The pinned TypeScript compiler checks all sources before generation. The generated JavaScript is a build artifact and is not stored in Git.
 
-The build phase requires mise, the pinned Bun version from `mise.toml`, and an installed `scripts/embedded-js/node_modules` directory. Run `bun install --cwd scripts/embedded-js --frozen-lockfile` during project setup; the build phase does not install dependencies or access the network. Node and pnpm remain required for `web/`.
+The build phase requires mise and the pinned Bun version from `mise.toml`. It installs the locked dependencies before generation; the first build may need network access. Node and pnpm remain required for `web/`.
 
 Build the app with `just build` or Xcode. Do not edit generated JavaScript directly.
 
