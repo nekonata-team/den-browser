@@ -43,7 +43,7 @@ public extension DenWindowModel {
 
     @discardableResult
     func placeDrawerItemAsBoard(_ itemID: UUID) -> BoardID? {
-        boardActions.placeDrawerItem(itemID, navigation.focusedBoard?.width ?? boardWidth(toFit: 2), nil)
+        boardActions.placeDrawerItem(itemID, navigation.inheritedBoardWidth ?? boardWidth(toFit: 2), nil)
     }
 
     func placeSelectedDrawerItemAsBoard() {
@@ -71,7 +71,7 @@ public extension DenWindowModel {
             windowActions.reportWarning("Desk is no longer available.")
             return
         }
-        _ = boardActions.placeDrawerItem(itemID, navigation.focusedBoard?.width ?? boardWidth(toFit: 2), deskID)
+        _ = boardActions.placeDrawerItem(itemID, navigation.inheritedBoardWidth ?? boardWidth(toFit: 2), deskID)
     }
 
     func placeDrawerItem(inDeskNumber number: Int) {

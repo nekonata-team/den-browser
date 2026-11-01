@@ -242,7 +242,7 @@ final class BoardOpeningActions {
     }
 
     var inheritedBoardWidth: Double {
-        focusedBoard?.width ?? BuiltInDeskPreset.boardWidth
+        focusedDesk?.inheritedBoardWidth(for: focusedBoard?.id) ?? BuiltInDeskPreset.boardWidth
     }
 
     @discardableResult
@@ -330,6 +330,7 @@ final class BoardOpeningActions {
 
     func handleTerminalURL(_ rawURL: String, boardID: BoardID) {
         guard
+            let indices = context.boardIndices(for: boardID),
             let board = context.board(for: boardID),
             let link = TerminalLinkResolver.resolve(
                 rawURL,
@@ -343,7 +344,7 @@ final class BoardOpeningActions {
         case .web(let resolvedURL):
             _ = createBoard(
                 urlString: resolvedURL.absoluteString,
-                preferredWidth: board.width,
+                preferredWidth: state.desks[indices.deskOffset].inheritedBoardWidth(for: board.id),
                 afterBoardID: board.id,
                 focus: true,
                 recentItem: .url(resolvedURL))

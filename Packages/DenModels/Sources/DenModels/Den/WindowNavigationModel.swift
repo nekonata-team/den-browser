@@ -25,6 +25,10 @@ public final class WindowNavigationModel {
         return desk.boards.first { $0.id == desk.focusedBoardID }
     }
 
+    public var inheritedBoardWidth: Double? {
+        focusedDesk?.inheritedBoardWidth(for: focusedDesk?.focusedBoardID)
+    }
+
     public func board(for id: BoardID) -> BoardState? {
         state.snapshot.den.board(for: id)
     }

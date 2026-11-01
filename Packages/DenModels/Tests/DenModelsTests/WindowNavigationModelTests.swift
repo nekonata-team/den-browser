@@ -5,6 +5,27 @@ import Testing
 
 @MainActor
 struct WindowNavigationModelTests {
+    @Test(arguments: [false, true])
+    func newBoardsInheritPrimaryWidth(focusSide: Bool) {
+        // Arrange
+        let primary = BoardState(label: "Primary", width: 800, workingDirectory: "/tmp")
+        var side = BoardState(label: "Side", width: 360, workingDirectory: "/tmp")
+        side.role = .sideBoard(targetBoardID: primary.id)
+        let desk = DeskState(
+            label: "Desk", boards: [primary, side], focusedBoardID: focusSide ? side.id : primary.id)
+        let shared = DenStateStore.make(
+            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
+        let model = WindowNavigationModel(state: shared.store, presentedDeskID: desk.id)
+        let sizing = BoardSizing(store: shared.reader, writer: shared.writer)
+
+        // Act
+        sizing.adjustBoard(primary.id, by: 80)
+
+        // Assert
+        #expect(model.inheritedBoardWidth == 880)
+        #expect(model.board(for: side.id)?.width == 360)
+    }
+
     @Test func switchingRemembersThePreviousDeskWithoutChangingAnotherWindow() {
         // Arrange
         let firstDesk = DeskID()

@@ -4,7 +4,7 @@ import Foundation
 
 public extension DenWindowModel {
     var defaultBoardWidth: Double {
-        navigation.focusedBoard?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
+        navigation.inheritedBoardWidth ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
     }
 
     func adjustFocusedBoardWidth(by delta: Double) {

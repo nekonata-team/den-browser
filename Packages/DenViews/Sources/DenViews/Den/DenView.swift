@@ -221,7 +221,7 @@ public struct DenView<Header: View, Rail: View, Strip: View, Panels: View, Drawe
     }
 
     private func newBoardWidth(in size: CGSize) -> Double {
-        DenLayout.newBoardWidth(in: size, focusedBoardWidth: windowModel.boardEditing.focusedBoard?.width)
+        DenLayout.newBoardWidth(in: size, focusedBoardWidth: windowModel.navigation.inheritedBoardWidth)
     }
 
     private var shouldReduceMotion: Bool {

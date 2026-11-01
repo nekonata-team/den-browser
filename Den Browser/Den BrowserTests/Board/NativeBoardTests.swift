@@ -1202,6 +1202,27 @@ struct NativeBoardTests {
         #expect(focusedSession.navigation.focusedBoard?.width == 760)
     }
 
+    @Test func newBoardFromTerminalSideBoardUsesPrimaryWidth() {
+        // Arrange
+        let primary = BoardState(label: "Primary", width: 800, workingDirectory: "/tmp")
+        var side = BoardState(label: "Side", width: 360, workingDirectory: "/tmp")
+        side.role = .sideBoard(targetBoardID: primary.id)
+        let source = desk("Desk", boards: [primary, side], focusedBoardID: side.id)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+
+        // Act
+        let inheritedWidth = session.boardOpening.inheritedBoardWidth
+        session.boardOpening.handleTerminalURL("https://example.com", boardID: side.id)
+
+        // Assert
+        #expect(inheritedWidth == primary.width)
+        #expect(session.navigation.focusedBoard?.isWeb == true)
+        #expect(session.navigation.focusedBoard?.width == primary.width)
+    }
+
     @Test func emptyDeskUsesTwoBoardFitWidthAsDefault() {
         let emptyDesk = desk("Empty")
         do {

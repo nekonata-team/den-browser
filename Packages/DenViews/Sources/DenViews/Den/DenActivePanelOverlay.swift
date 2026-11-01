@@ -41,7 +41,7 @@ public struct DenActivePanelOverlay<Content: View>: View {
     @ViewBuilder
     private func panel(_ context: TemporaryContext) -> some View {
         let content = content(
-            context, DenLayout.newBoardWidth(in: size, focusedBoardWidth: windowModel.navigation.focusedBoard?.width),
+            context, DenLayout.newBoardWidth(in: size, focusedBoardWidth: windowModel.navigation.inheritedBoardWidth),
             DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader))
         switch context {
         case .overview, .boardActivity:

@@ -11,7 +11,7 @@ extension IPCWindowBindings {
             searchEngine: { [preferences = session.configuration.preferences] in preferences.searchEngine },
             availableBoardWidth: { session.connection.availableBoardWidth() },
             inheritedBoardWidth: { [navigation = session.navigation] in
-                navigation.focusedBoard?.width ?? BuiltInDeskPreset.boardWidth
+                navigation.inheritedBoardWidth ?? BuiltInDeskPreset.boardWidth
             },
             board: Board(
                 webRuntime: { session.runtimes.webRuntime(for: $0) },

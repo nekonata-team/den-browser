@@ -14,6 +14,12 @@ public struct DeskState: Codable, Equatable, Identifiable {
     public var scrollOffsetX: Double?
     public var anchorBoardID: BoardID?
 
+    public func inheritedBoardWidth(for boardID: BoardID?) -> Double? {
+        guard let board = boards.first(where: { $0.id == boardID }) else { return nil }
+        let primaryID = board.sideBoardTargetBoardID ?? board.id
+        return boards.first(where: { $0.id == primaryID })?.width
+    }
+
     public init(
         id: DeskID = DeskID(),
         label: String,
