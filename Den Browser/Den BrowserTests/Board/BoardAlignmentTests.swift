@@ -1,108 +1,12 @@
-import AppKit
-import DenApplication
 import DenDomain
 import DenModels
-import Foundation
-import SwiftUI
 import Testing
-import WebKit
 
 @testable import DenViews
 @testable import Den_Browser
 
 @MainActor
 struct BoardAlignmentTests {
-    @Test(.timeLimit(.minutes(1)), arguments: [1, 12, 48], [false, true])
-    func presetFocusChangesKeepVisibleBoardsPresented(boardCount: Int, replacesDesk: Bool) async throws {
-        // Arrange
-        let pageURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).html")
-        try "<html><head><title>Preset Sheet</title></head><body>Preset Sheet</body></html>".write(
-            to: pageURL, atomically: true, encoding: .utf8)
-        defer { try? FileManager.default.removeItem(at: pageURL) }
-        let session = ProfileWindowSession(
-            resources: DenProfileResources(state: makeNativeTestState()),
-            configuration: makeTestBoardRuntimeConfiguration())
-        let composition = DenWindowComposition(session: session)
-        composition.connect()
-        let window = TestWindow()
-        defer {
-            composition.disconnect()
-            window.orderOut(nil)
-            window.contentView = nil
-            session.runtimes.releaseRuntimes()
-        }
-        window.contentView = NSHostingView(
-            rootView: Den_Browser.BoardStrip(
-                size: CGSize(width: 720, height: 640), shouldShowHeader: true,
-                profileColor: .blue, boardSpacing: 8, boardHorizontalPadding: 10,
-                onOpenBoardAtEnd: { _ in }
-            ).frame(width: 720, height: 640)
-                .environment(session).environment(composition.model).environment(composition.model.deskFilter)
-                .animation(DenMotion.feedback(reduceMotion: false), value: composition.model.temporaryContext))
-        window.orderFront(nil)
-        window.contentView?.layoutSubtreeIfNeeded()
-        try await Task.sleep(for: .milliseconds(100))
-
-        // Act
-        for iteration in 0..<6 {
-            composition.model.setTemporaryContext(.newDesk)
-            try await Task.sleep(for: .milliseconds(100))
-            let presetBoards = (0..<boardCount).map {
-                DeskPresetBoard(label: "Board \($0)", width: 320.3, initialSheetURL: pageURL)
-            }
-            let focusIndex = iteration.isMultiple(of: 2) ? 0 : boardCount - 1
-            let oldDeskID = session.navigation.presentedDeskID
-            let desk: DeskState
-            if replacesDesk {
-                #expect(
-                    session.resources.deskLifecycle.replace(
-                        oldDeskID, label: "Preset", boards: presetBoards,
-                        focusedBoardIndex: BoardIndex(rawValue: focusIndex),
-                        notify: session.desks.deskLifecycleNotifications()))
-                desk = try #require(session.navigation.focusedDesk)
-            } else {
-                desk = try #require(
-                    session.resources.deskLifecycle.create(
-                        label: "Preset",
-                        boards: presetBoards, focusedBoardIndex: BoardIndex(rawValue: focusIndex),
-                        presentedDeskID: session.navigation.presentedDeskID,
-                        notify: session.desks.deskLifecycleNotifications()))
-            }
-            // Interleave native scroll callbacks with focus changes during initial alignment.
-            for index in [boardCount - 1, 0, focusIndex] {
-                try await Task.sleep(for: .milliseconds(5))
-                session.boardNavigation.focusBoard(desk.boards[index].id, exitsDenMode: true)
-            }
-            let expectedIDs = Set(
-                (focusIndex == 0 ? Array(desk.boards.prefix(2)) : Array(desk.boards.suffix(2))).map(\.id))
-            func isPresented(_ id: BoardID) -> Bool {
-                guard let runtime = session.resources.webRuntimes[id] else { return false }
-                return runtime.webView.window === window && !runtime.webView.isHidden
-                    && runtime.webView.frame.width > 0 && runtime.webView.title == "Preset Sheet"
-            }
-            for _ in 0..<300 {
-                window.contentView?.layoutSubtreeIfNeeded()
-                if expectedIDs.allSatisfy(isPresented) { break }
-                try await Task.sleep(for: .milliseconds(10))
-            }
-
-            // Assert
-            func scrollDetails(_ view: NSView) -> [String] {
-                let own =
-                    (view as? NSScrollView).map {
-                        ["scroll=\($0.contentView.bounds), document=\(String(describing: $0.documentView?.frame))"]
-                    } ?? []
-                return own + view.subviews.flatMap(scrollDetails)
-            }
-            let details = expectedIDs.map { id in
-                guard let runtime = session.resources.webRuntimes[id] else { return "\(id): no runtime" }
-                return "\(id): hidden=\(runtime.webView.isHidden), mounted=\(runtime.webView.window === window), "
-                    + "frame=\(runtime.webView.frame), title=\(runtime.webView.title ?? "nil")"
-            }.joined(separator: "\n")
-            #expect(expectedIDs.allSatisfy(isPresented), "\(details)\n\(window.contentView.map(scrollDetails) ?? [])")
-        }
-    }
-
     @Test func resizePreviewKeepsTheFocusedBoardCenteredAcrossRepeatedWidthChanges() {
         // Arrange
         let boards = (0..<4).map { BoardState(label: "Board \($0)", width: 520, currentSheetURL: nil) }

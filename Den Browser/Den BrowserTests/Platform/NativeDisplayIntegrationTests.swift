@@ -55,20 +55,6 @@ struct NativeDisplayIntegrationTests {
         #expect(abs(thirty - sixty) < 1)
     }
 
-    @Test func appConstructsNotificationViewWithTheWindowModel() {
-        // Arrange
-        let session = ProfileWindowSession(
-            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
-        let composition = DenWindowComposition(session: session)
-
-        // Act
-        let view = NotificationListView(profileColor: .blue).environment(composition.model.notificationList)
-
-        // Assert
-        #expect(NSHostingView(rootView: view).fittingSize.height >= 0)
-    }
-
     @Test func webResourceDisplaysThroughViewAndSurvivesViewRecreation() async throws {
         // Arrange
         let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)

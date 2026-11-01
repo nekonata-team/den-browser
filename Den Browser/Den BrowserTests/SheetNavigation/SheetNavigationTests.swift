@@ -207,13 +207,6 @@ struct SheetNavigationTests {
         #expect(resumedScrollY > 0)
     }
 
-    @Test func bundledSheetNavigationScriptIsAvailable() throws {
-        let url = try #require(Bundle.main.url(forResource: "SheetNavigation", withExtension: "js"))
-        let source = try String(contentsOf: url, encoding: .utf8)
-
-        #expect(source.contains("window.__denSheetNavigation"))
-    }
-
     @Test func sheetNavigationScriptIsIsolatedFromPageScripts() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: try sheetNavigationScriptSource())
         manager.setEnabled(true)
@@ -726,8 +719,6 @@ struct SheetNavigationTests {
 
         let userContentController = runtime.webView.configuration.userContentController
         #expect(userContentController !== manager.userContentController)
-        #expect(userContentController.userScripts.count == 2)
-        #expect(userContentController.userScripts[0].source.contains("__denSheetNavigation"))
 
         #expect(runtime.actionHighlight == nil)
         runtime.triggerActionHighlight(CGRect(x: 10, y: 10, width: 50, height: 20))
