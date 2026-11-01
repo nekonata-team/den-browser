@@ -1302,63 +1302,6 @@ struct KeyboardShortcutTests {
                 == .perform(.board(.duplicateFirstSheet)))
     }
 
-    @Test func denModeShiftEnterDuplicatesTerminalInItsWorkingDirectory() throws {
-        let source = BoardState(
-            label: "Terminal",
-            width: 520,
-            workingDirectory: "/tmp/project",
-            customLabel: "Build")
-        let session = try makeSession(boards: [source])
-        let composition = DenWindowComposition(session: session)
-        let windowModel = composition.model
-        composition.connect()
-        defer { composition.disconnect() }
-        windowModel.isDenMode = true
-        let shiftReturn = try keyEvent(
-            characters: "\r",
-            charactersIgnoringModifiers: "\r",
-            modifiers: [.shift],
-            keyCode: 36)
-
-        #expect(KeyboardController.handle(shiftReturn, session: session, windowModel: windowModel))
-        #expect(session.navigation.focusedDesk?.boards.count == 2)
-        #expect(session.navigation.focusedBoard?.id != source.id)
-        #expect(session.navigation.focusedBoard?.isTerminal == true)
-        #expect(session.navigation.focusedBoard?.terminalWorkingDirectory == "/tmp/project")
-        #expect(session.navigation.focusedBoard?.label == "Terminal")
-        #expect(session.navigation.focusedBoard?.width == 520)
-        #expect(session.navigation.focusedBoard?.customLabel == "Build")
-    }
-
-    @Test func denModeShiftEnterDuplicatesZellijSession() throws {
-        let source = BoardState(
-            label: "Zellij",
-            width: 520,
-            zellijSessionName: "dev",
-            customLabel: "Build")
-        let session = try makeSession(boards: [source])
-        let composition = DenWindowComposition(session: session)
-        let windowModel = composition.model
-        composition.connect()
-        defer { composition.disconnect() }
-        windowModel.isDenMode = true
-        let shiftReturn = try keyEvent(
-            characters: "\r",
-            charactersIgnoringModifiers: "\r",
-            modifiers: [.shift],
-            keyCode: 36)
-
-        #expect(KeyboardController.handle(shiftReturn, session: session, windowModel: windowModel))
-        #expect(session.navigation.focusedDesk?.boards.count == 2)
-        let duplicate = try #require(session.navigation.focusedBoard)
-        #expect(duplicate.id != source.id)
-        #expect(duplicate.isZellij)
-        #expect(duplicate.zellijSessionName == "dev")
-        #expect(duplicate.label == "Zellij")
-        #expect(duplicate.width == 520)
-        #expect(duplicate.customLabel == "Build")
-    }
-
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
         let session = try makeSession(boards: [board("First")])
         let composition = DenWindowComposition(session: session)
@@ -1533,40 +1476,22 @@ struct KeyboardShortcutTests {
         #expect(windowModel.isOverviewPresented)
     }
 
-    @Test func denModeRemoveShortcutsChooseTheirFocusDirection() throws {
-        let dBoards = [board("First"), board("Focused"), board("Last")]
-        let dSession = try makeSession(boards: dBoards)
-        let dComposition = DenWindowComposition(session: dSession)
-        let dWindowModel = dComposition.model
-        dComposition.connect()
-        defer { dComposition.disconnect() }
-        dSession.boardNavigation.focusBoard(dBoards[1].id)
-        dWindowModel.isDenMode = true
-        let dEvent = try keyEvent(characters: "d", charactersIgnoringModifiers: "d", keyCode: 2)
+    @Test(arguments: ["d", "x"])
+    func denModeRemoveShortcutsChooseTheirFocusDirection(key: String) throws {
+        // Arrange
+        let session = try makeSession(boards: [board("Focused")])
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        composition.model.isDenMode = true
+        let event = try keyEvent(
+            characters: key, charactersIgnoringModifiers: key, keyCode: key == "d" ? 2 : 7)
 
-        #expect(
-            KeyboardController.decision(for: dEvent, session: dSession, windowModel: dWindowModel)
-                == .perform(.board(.removeAndFocusNext)))
-        #expect(KeyboardController.handle(dEvent, session: dSession, windowModel: dWindowModel))
-        #expect(dSession.navigation.focusedDesk?.boards.map(\.id) == [dBoards[0].id, dBoards[2].id])
-        #expect(dSession.navigation.focusedDesk?.focusedBoardID == dBoards[2].id)
+        // Act
+        let decision = KeyboardController.decision(for: event, session: session, windowModel: composition.model)
 
-        let xBoards = [board("First"), board("Focused"), board("Last")]
-        let xSession = try makeSession(boards: xBoards)
-        let xComposition = DenWindowComposition(session: xSession)
-        let xWindowModel = xComposition.model
-        xComposition.connect()
-        defer { xComposition.disconnect() }
-        xSession.boardNavigation.focusBoard(xBoards[1].id)
-        xWindowModel.isDenMode = true
-        let xEvent = try keyEvent(characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
-
-        #expect(
-            KeyboardController.decision(for: xEvent, session: xSession, windowModel: xWindowModel)
-                == .perform(.board(.remove)))
-        #expect(KeyboardController.handle(xEvent, session: xSession, windowModel: xWindowModel))
-        #expect(xSession.navigation.focusedDesk?.boards.map(\.id) == [xBoards[0].id, xBoards[2].id])
-        #expect(xSession.navigation.focusedDesk?.focusedBoardID == xBoards[0].id)
+        // Assert
+        #expect(decision == .perform(.board(key == "d" ? .removeAndFocusNext : .remove)))
     }
 
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
@@ -2270,8 +2195,7 @@ struct KeyboardShortcutTests {
             label: "First",
             width: 520,
             currentSheetURL: currentSheetURL,
-            firstSheetURL: firstSheetURL,
-            customLabel: "Pinned")
+            firstSheetURL: firstSheetURL)
         let session = try makeSession(boards: [source])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
@@ -2287,8 +2211,6 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(shiftReturn, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedDesk?.boards.count == 2)
         #expect(session.navigation.focusedBoard?.currentSheetURL == firstSheetURL)
-        #expect(session.navigation.focusedBoard?.firstSheetURL == firstSheetURL)
-        #expect(session.navigation.focusedBoard?.customLabel == "Pinned")
         #expect(!windowModel.isDenMode)
     }
 

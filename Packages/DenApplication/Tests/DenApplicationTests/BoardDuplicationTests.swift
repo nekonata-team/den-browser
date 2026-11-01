@@ -48,6 +48,7 @@ nonisolated struct BoardDuplicationTests {
         }
         #expect(copy.id != source.id)
         #expect(copy.kind == source.kind)
+        #expect(copy.label == source.label)
         #expect(copy.width == source.width)
         #expect(copy.customLabel == source.customLabel)
     }

@@ -13,32 +13,6 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct NativeBoardTests {
-    @Test func terminalInputResolvesHomeRelativeAndAbsoluteDirectories() throws {
-        let home = FileManager.default.temporaryDirectory
-
-        #expect(
-            try BoardInputResolver.resolveTerminalInput(
-                ":terminal", homeDirectory: home, directoryExists: TerminalWorkingDirectory.exists)?.get()
-                == home.standardizedFileURL.path)
-        #expect(
-            try BoardInputResolver.resolveTerminalInput(
-                ":terminal .", homeDirectory: home, directoryExists: TerminalWorkingDirectory.exists)?.get()
-                == home.standardizedFileURL.path)
-        #expect(
-            try BoardInputResolver.resolveTerminalInput(
-                ":terminal \(home.path)", homeDirectory: URL(fileURLWithPath: "/"),
-                directoryExists: TerminalWorkingDirectory.exists)?.get()
-                == home.standardizedFileURL.path)
-        #expect(
-            BoardInputResolver.resolveTerminalInput(
-                ":terminally", homeDirectory: home, directoryExists: TerminalWorkingDirectory.exists) == nil)
-
-        let missing = BoardInputResolver.resolveTerminalInput(
-            ":terminal missing-\(UUID().uuidString)", homeDirectory: home,
-            directoryExists: TerminalWorkingDirectory.exists)
-        #expect(throws: TerminalInputError.self) { try missing?.get() }
-    }
-
     @Test func zellijBoardsOpenOptionalSessions() throws {
         let source = desk("Desk")
         do {
@@ -1976,25 +1950,26 @@ struct NativeBoardTests {
         }
     }
 
-    @Test func removingBoardFocusesPreviousBoard() {
-        let boards = [board("A"), board("B"), board("C")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
+    @Test(arguments: [false, true])
+    func removalActionsDelegateNeighborPreference(focusNext: Bool) {
+        // Arrange
+        let boards = [board("Before"), board("Selected"), board("After")]
+        let source = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: makeNativeTestState(desks: [source])),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
 
-            session.boardRemoval.removeFocusedBoard()
+        // Act
+        AppActionHandler.perform(
+            .board(focusNext ? .removeAndFocusNext : .remove), session: session, windowModel: composition.model)
 
-            #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
-            #expect(session.navigation.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(session.resources.recentlyRemovedBoards.first?.board.id == boards[1].id)
-        }
+        // Assert
+        #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
+        #expect(session.navigation.focusedBoard?.id == boards[focusNext ? 2 : 0].id)
+        #expect(session.resources.recentlyRemovedBoards.first?.board.id == boards[1].id)
     }
 
     @Test func removingAndRestoringBoardRestoresSheetNavigationPause() {
@@ -2016,102 +1991,6 @@ struct NativeBoardTests {
         session.boardRemoval.restoreRecentlyRemovedBoard()
 
         #expect(session.navigation.focusedBoard?.sheetNavigationPaused == true)
-    }
-
-    @Test func removingFirstBoardFocusesNextBoard() {
-        let boards = [board("A"), board("B"), board("C")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
-            session.boardRemoval.removeFocusedBoard()
-
-            #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
-            #expect(session.navigation.focusedDesk?.focusedBoardID == boards[1].id)
-        }
-    }
-
-    @Test func removingLastBoardFocusesPreviousBoard() {
-        let boards = [board("A"), board("B")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
-            session.boardRemoval.removeFocusedBoard()
-
-            #expect(session.navigation.focusedDesk?.focusedBoardID == boards[0].id)
-        }
-    }
-
-    @Test func removingBoardCanPreferNextBoard() {
-        let boards = [board("A"), board("B"), board("C")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
-            session.boardRemoval.removeBoard(boards[1].id, focusNext: true)
-
-            #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
-            #expect(session.navigation.focusedDesk?.focusedBoardID == boards[2].id)
-        }
-
-        let lastBoards = [board("A"), board("B")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: lastBoards, focusedBoardID: lastBoards[1].id)])
-                    )), configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
-            session.boardRemoval.removeBoard(lastBoards[1].id, focusNext: true)
-
-            #expect(session.navigation.focusedDesk?.focusedBoardID == lastBoards[0].id)
-        }
-    }
-
-    @Test func removingUnfocusedBoardKeepsFocus() {
-        let boards = [board("A"), board("B"), board("C")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
-            session.boardRemoval.removeBoard(boards[0].id)
-
-            #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
-            #expect(session.navigation.focusedDesk?.focusedBoardID == boards[1].id)
-        }
     }
 
     @Test func removingLastBoardClearsScrollOffsetX() {

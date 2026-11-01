@@ -31,19 +31,23 @@ nonisolated struct BoardRemovalPlanTests {
         #expect(removal.historyEntry.sourceBoardIndex.rawValue == (removesSide ? 2 : 1))
     }
 
-    @Test(arguments: [false, true])
-    func focusedRemovalHonorsPreferredNeighbor(_ focusNext: Bool) throws {
+    @Test(arguments: [0, 1, 2], [false, true])
+    func focusedRemovalHonorsPreferredNeighborAndFallsBackAtEdges(removedIndex: Int, focusNext: Bool) throws {
         // Arrange
-        let before = BoardState(label: "Before", width: 520, currentSheetURL: nil)
-        let selected = BoardState(label: "Selected", width: 520, currentSheetURL: nil)
-        let after = BoardState(label: "After", width: 520, currentSheetURL: nil)
-        let desk = DeskState(label: "Desk", boards: [before, selected, after], focusedBoardID: selected.id)
+        let boards = ["First", "Middle", "Last"].map {
+            BoardState(label: $0, width: 520, currentSheetURL: nil)
+        }
+        let selected = boards[removedIndex]
+        let desk = DeskState(label: "Desk", boards: boards, focusedBoardID: selected.id)
+        let expectedIndex = (focusNext ? [1, 2, 1] : [1, 0, 1])[removedIndex]
 
         // Act
         let removal = try #require(BoardRemovalPlan.make(selected.id, from: desk, focusNext: focusNext))
 
         // Assert
-        #expect(removal.desk.focusedBoardID == (focusNext ? after.id : before.id))
+        #expect(removal.desk.focusedBoardID == boards[expectedIndex].id)
+        #expect(removal.desk.boards == boards.filter { $0.id != selected.id })
+        #expect(removal.historyEntry.board == selected)
     }
 
     @Test func unfocusedRemovalPreservesFocusScrollAndAnchor() throws {

@@ -33,8 +33,25 @@ struct BoardInputResolverTests {
                 ":terminal .", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
                 == temp.standardizedFileURL.path)
         #expect(
+            try BoardInputResolver.resolveTerminalInput(
+                ":terminal \(temp.path)", homeDirectory: URL(fileURLWithPath: "/"),
+                directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
+                == temp.standardizedFileURL.path)
+        #expect(
             BoardInputResolver.resolveTerminalInput(
                 ":terminalnot", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path }) == nil)
+    }
+
+    @Test func rejectsMissingTerminalDirectory() {
+        // Arrange
+        let home = URL(fileURLWithPath: "/work")
+
+        // Act
+        let resolved = BoardInputResolver.resolveTerminalInput(
+            ":terminal missing", homeDirectory: home, directoryExists: { _ in false })
+
+        // Assert
+        #expect(throws: TerminalInputError.self) { try resolved?.get() }
     }
 
     @Test func resolvesURLsAndSearch() {
