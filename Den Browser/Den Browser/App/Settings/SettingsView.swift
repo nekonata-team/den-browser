@@ -5,6 +5,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(ProfileManager.self) private var profileManager
+    @Environment(AppPreferences.self) private var preferences
 
     var body: some View {
         DenViews.SettingsView(
@@ -21,7 +22,13 @@ struct SettingsView: View {
                 case .essentials: EssentialsSettingsView()
                 case .terminal: TerminalSettingsView()
                 case .web: WebSettingsView()
-                case .features: FeaturesSettingsView()
+                case .features:
+                    FeaturesSettingsView(
+                        drawerAutoCleanup: Binding {
+                            preferences.drawerAutoCleanup
+                        } set: {
+                            preferences.setDrawerAutoCleanup($0)
+                        })
                 case .skills:
                     SkillsSettingsView(
                         installCommand: SkillMaintenanceAction.install.command,

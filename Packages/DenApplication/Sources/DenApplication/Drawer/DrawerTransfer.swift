@@ -37,7 +37,7 @@ public struct DrawerTransfer {
             !store.snapshot.den.drawerItems.contains(where: { $0.id == boardID.rawValue }),
             let removal = BoardRemovalPlan.make(boardID, from: source)
         else { return nil }
-        let item: DrawerItem
+        var item: DrawerItem
         switch board.kind {
         case .web(let web):
             guard let url = web.currentSheetURL else { return nil }
@@ -46,6 +46,7 @@ public struct DrawerTransfer {
             item = DrawerItem(id: boardID.rawValue, terminal: session, title: board.displayName)
         case .inspection, .tutorial: return nil
         }
+        item.touchedAt = Date()
         notify(.willMove(board, item))
         writer.update {
             $0.den.desks[deskIndex] = removal.desk

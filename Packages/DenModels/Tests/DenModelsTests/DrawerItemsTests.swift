@@ -55,7 +55,7 @@ struct DrawerItemsTests {
         #expect(events.isEmpty)
 
         let discarded = items.discard(item.id, focusNext: false) { notice in
-            guard case .didDiscard(let id, let previous, let advancesPeek, let focusNext) = notice else {
+            guard case .didRemove(let id, let previous, let advancesPeek, let focusNext) = notice else {
                 Issue.record("Unexpected discard notice")
                 return
             }
@@ -109,7 +109,8 @@ struct DrawerItemsTests {
                 events.append("prepare")
             case .didRestore(let id):
                 #expect(id == originals[0].id)
-                #expect(shared.store.snapshot.den.drawerItems == [originals[0]])
+                #expect(shared.store.snapshot.den.drawerItems.first?.id == originals[0].id)
+                #expect(shared.store.snapshot.den.drawerItems.first?.touchedAt != nil)
                 #expect(shared.store.snapshot.recentlyDiscardedDrawerItems.first == originals[1])
                 events.append("present")
             default: Issue.record("Unexpected restore notice")
@@ -117,6 +118,53 @@ struct DrawerItemsTests {
         }
         #expect(restored == originals[0].id)
         #expect(events == ["clear", "save", "prepare", "present", "save"])
+    }
+
+    @Test func cleanupDiscardsExpiredItemsButProtectsVisibleAndInitializesLegacyItems() throws {
+        // Arrange
+        let now = Date(timeIntervalSince1970: 100_000)
+        let url = try #require(URL(string: "https://example.com/"))
+        var expired = DrawerItem(url: url)
+        expired.touchedAt = now.addingTimeInterval(-12 * 60 * 60)
+        var visible = DrawerItem(terminal: .shell(workingDirectory: "/tmp"))
+        visible.touchedAt = expired.touchedAt
+        let legacy = DrawerItem(url: url)
+        var initial = DenSharedState(den: .sample)
+        initial.den.drawerItems = [expired, visible, legacy]
+        let shared = DenStateStore.make(initialState: initial)
+        let items = DrawerItems(store: shared.reader, writer: shared.writer)
+        var discarded: [UUID] = []
+
+        // Act
+        let count = items.cleanup(at: now, protected: [visible.id]) { notice in
+            if case .didRemove(let id, _, _, _) = notice { discarded.append(id) }
+        }
+
+        // Assert
+        #expect(count == 1)
+        #expect(discarded == [expired.id])
+        #expect(shared.store.snapshot.den.drawerItems.map(\.id) == [visible.id, legacy.id])
+        #expect(shared.store.snapshot.den.drawerItems.last?.touchedAt == now)
+        #expect(shared.store.snapshot.recentlyDiscardedDrawerItems.isEmpty)
+    }
+
+    @Test func touchingAnItemExtendsItsCleanupDeadline() throws {
+        // Arrange
+        let now = Date(timeIntervalSince1970: 100_000)
+        var item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        item.touchedAt = now.addingTimeInterval(-12 * 60 * 60)
+        var initial = DenSharedState(den: .sample)
+        initial.den.drawerItems = [item]
+        let shared = DenStateStore.make(initialState: initial)
+        let items = DrawerItems(store: shared.reader, writer: shared.writer)
+
+        // Act
+        items.touch(item.id, at: now)
+        let count = items.cleanup(at: now.addingTimeInterval(12 * 60 * 60 - 1), protected: []) { _ in }
+
+        // Assert
+        #expect(count == 0)
+        #expect(shared.store.snapshot.den.drawerItems.first?.touchedAt == now)
     }
 
     @Test func metadataSavesOnlySupportedChangesAndDragDefersPersistence() throws {

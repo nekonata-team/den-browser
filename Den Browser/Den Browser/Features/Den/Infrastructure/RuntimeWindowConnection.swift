@@ -19,6 +19,7 @@ final class RuntimeWindowConnection {
     var invalidateDesk: ((DeskID) -> Void)?
     var presentedDeskID: () -> DeskID? = { nil }
     var focusedBoardID: () -> BoardID? = { nil }
+    var visibleDrawerItemID: () -> UUID? = { nil }
 
     var onDisconnect: () -> Void = {}
 
@@ -27,6 +28,7 @@ final class RuntimeWindowConnection {
         availableBoardWidth = { nil }
         presentedDeskID = { nil }
         focusedBoardID = { nil }
+        visibleDrawerItemID = { nil }
         runtimes = nil
         windowResources = nil
         boardNavigation = nil

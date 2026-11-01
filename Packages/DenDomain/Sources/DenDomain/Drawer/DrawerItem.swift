@@ -4,6 +4,8 @@ public struct DrawerItem: Codable, Equatable, Identifiable {
     public var id: UUID
     public var content: DrawerItemContent
     public var title: String?
+    /// Time the Item was kept, restored, or its Peek was opened or closed; legacy Items start at their first cleanup.
+    public var touchedAt: Date?
 
     public init(id: UUID = UUID(), url: URL, title: String? = nil) {
         self.id = id

@@ -50,6 +50,10 @@ struct DenView<Header: View>: View {
             }
         )
         .modifier(DenDialogs())
+        .onChange(of: windowModel.isDrawerPresented ? windowModel.drawer.expandedItemID : nil) { oldID, newID in
+            if let oldID { session.resources.drawerItems.touch(oldID) }
+            if let newID { session.resources.drawerItems.touch(newID) }
+        }
     }
 }
 

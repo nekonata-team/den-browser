@@ -213,6 +213,7 @@ Toggling Den Mode while the Drawer is open moves keyboard focus between its Item
 Links opening a new browsing context in a Peek become Drawer Items; Command-click or middle-click keeps the current Peek, while adding Shift opens the new Item.
 Discarding an expanded Item opens the next visible Item's Peek, or the previous one when it was last; discarding a collapsed Item leaves the current Peek unchanged.
 Restoration selects and expands the Item, preserving Den Mode when invoked there; its ten-Item history lasts only for the current app run.
+Optional automatic cleanup checks Items when the Drawer opens and discards those without a Peek for 12 hours. A visible Peek is protected, and closing it restarts the interval. Automatic cleanup does not add Items to restoration history and can end Terminal processes or discard unsaved Web state. Existing Items without a recorded touch time receive one when cleanup first runs.
 Placement focuses the new Board, removes the Item, and closes the Drawer; it transfers the Item's retained live state without reloading, including when the Item is collapsed or was last shown in another window.
 Web URLs, Terminal session configuration and titles persist; expanded Peek identity and live Web or Terminal state do not.
 A hidden Terminal Peek stops rendering while its process continues. Discard ends its runtime; restoring an ordinary Shell Item starts a new Shell in its saved Working Directory. Terminal desktop notifications appear as feedback linking to the Item; the Board notification list applies after placement.

@@ -83,7 +83,7 @@ struct DrawerPlacementTests {
                     }
                 },
                 notifyDrawer: { notice in
-                    guard case .didDiscard(let id, let previous, let advancesPeek, let focusNext) = notice else {
+                    guard case .didRemove(let id, let previous, let advancesPeek, let focusNext) = notice else {
                         Issue.record("Unexpected placement notice")
                         return
                     }

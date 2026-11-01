@@ -143,7 +143,7 @@ public struct DenDialogs: ViewModifier {
             .confirmationDialog(
                 "Discard all Drawer items?",
                 isPresented: Binding(
-                    get: { windowModel.drawerPendingDeletionCount != nil },
+                    get: { windowModel.drawerPendingDiscardCount != nil },
                     set: { if !$0 { windowModel.cancelDrawerClear() } })
             ) {
                 Button("Discard All", role: .destructive) {
@@ -154,7 +154,7 @@ public struct DenDialogs: ViewModifier {
                     windowModel.cancelDrawerClear()
                 }
             } message: {
-                let count = windowModel.drawerPendingDeletionCount ?? 0
+                let count = windowModel.drawerPendingDiscardCount ?? 0
                 Text("All \(count) Drawer items will be discarded.")
             }
             .confirmationDialog(

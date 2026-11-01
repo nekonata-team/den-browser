@@ -9,7 +9,7 @@ public struct DrawerItems {
         case didKeep(UUID)
         case willRestore
         case didRestore(UUID)
-        case didDiscard(UUID, previousItems: [DrawerItem], advancesPeek: Bool, focusNext: Bool)
+        case didRemove(UUID, previousItems: [DrawerItem], advancesPeek: Bool, focusNext: Bool)
         case didClear
     }
 
@@ -35,6 +35,8 @@ public struct DrawerItems {
     }
 
     private func keep(_ item: DrawerItem, notify: (Notice) -> Void) -> UUID {
+        var item = item
+        item.touchedAt = Date()
         notify(.willKeep)
         writer.update { $0.den.drawerItems.insert(item, at: 0) }
         notify(.didKeep(item.id))
@@ -59,7 +61,7 @@ public struct DrawerItems {
         let previousItems = store.snapshot.den.drawerItems
         if recordsHistory { remember([previousItems[index]]) }
         writer.update { $0.den.drawerItems.remove(at: index) }
-        notify(.didDiscard(id, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
+        notify(.didRemove(id, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
         save()
         return true
     }
@@ -69,6 +71,8 @@ public struct DrawerItems {
         guard let item = store.snapshot.recentlyDiscardedDrawerItems.first else { return nil }
         notify(.willRestore)
         writer.update {
+            var item = item
+            item.touchedAt = Date()
             $0.den.drawerItems.insert(item, at: 0)
             $0.recentlyDiscardedDrawerItems.removeFirst()
         }
@@ -114,6 +118,35 @@ public struct DrawerItems {
         save()
     }
 
+    public func touch(_ id: UUID, at date: Date = Date()) {
+        guard let index = store.snapshot.den.drawerItems.firstIndex(where: { $0.id == id }) else { return }
+        writer.update { $0.den.drawerItems[index].touchedAt = date }
+        save()
+    }
+
+    public func cleanup(at now: Date = Date(), protected: Set<UUID>, notify: (Notice) -> Void) -> Int {
+        guard store.snapshot.activeDrag == nil else { return 0 }
+        let missing = store.snapshot.den.drawerItems.contains { $0.touchedAt == nil }
+        if missing {
+            writer.update {
+                for index in $0.den.drawerItems.indices where $0.den.drawerItems[index].touchedAt == nil {
+                    $0.den.drawerItems[index].touchedAt = now
+                }
+            }
+        }
+        let expired = store.snapshot.den.drawerItems.filter {
+            !protected.contains($0.id)
+                && ($0.touchedAt.map { now.timeIntervalSince($0) >= 12 * 60 * 60 } ?? false)
+        }
+        for item in expired {
+            let previous = store.snapshot.den.drawerItems
+            writer.update { $0.den.drawerItems.removeAll { $0.id == item.id } }
+            notify(.didRemove(item.id, previousItems: previous, advancesPeek: false, focusNext: true))
+        }
+        guard missing || !expired.isEmpty else { return 0 }
+        return save() ? expired.count : 0
+    }
+
     private func remember(_ items: [DrawerItem]) {
         writer.update {
             $0.recentlyDiscardedDrawerItems.insert(contentsOf: items, at: 0)
@@ -122,8 +155,9 @@ public struct DrawerItems {
         }
     }
 
-    private func save() {
-        guard store.snapshot.activeDrag == nil else { return }
-        _ = persist?(store.snapshot.den)
+    @discardableResult
+    private func save() -> Bool {
+        guard store.snapshot.activeDrag == nil else { return false }
+        return persist?(store.snapshot.den) ?? true
     }
 }

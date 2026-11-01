@@ -197,6 +197,7 @@ final class DenWindowComposition {
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }
         drawer.onPeekExpanded = { [weak model] in model?.isDenMode = false }
+        drawer.onWillPresent = { session.drawer.cleanupExpiredItems() }
         drawer.onAddItem = { [weak model] in model?.showOpenBoardPanel(inDrawer: true) }
         drawer.onClose = { [weak model] in model?.closeDrawer() }
         deskFilter.onCenterFocusedBoard = { [weak model] in model?.centerFocusedBoardRequest &+= 1 }
@@ -207,6 +208,10 @@ final class DenWindowComposition {
     }
 
     func connect() {
+        session.connection.visibleDrawerItemID = { [weak model] in
+            guard let model, model.isDrawerPresented else { return nil }
+            return model.drawer.expandedItemID
+        }
         session.connection.availableBoardWidth = { [weak model] in model?.boardLayoutMetrics?.availableWidth }
         session.connection.onWindowEffect = { [weak model] effect in
             model?.receive(effect)
@@ -215,6 +220,10 @@ final class DenWindowComposition {
     }
 
     func disconnect() {
+        if let id = session.connection.visibleDrawerItemID() {
+            session.resources.drawerItems.touch(id)
+        }
+        session.connection.visibleDrawerItemID = { nil }
         session.connection.availableBoardWidth = { nil }
         session.connection.onWindowEffect = nil
         model.endWindowPresentation()

@@ -45,6 +45,9 @@ public extension DenWindowModel {
     }
 
     func setTemporaryContext(_ context: TemporaryContext?) {
+        if !isDrawerPresented && context == .drawer {
+            drawer.onWillPresent?()
+        }
         if context != nil {
             deskFilter.dismiss()
             closeNotificationList()
@@ -179,6 +182,7 @@ public extension DenWindowModel {
     }
 
     func showOpenBoardPanel(initialURL: URL? = nil, afterBoardID: BoardID? = nil, inDrawer: Bool = false) {
+        if inDrawer && !isDrawerPresented { drawer.onWillPresent?() }
         openBoard.preparePresentation(initialURL: initialURL, afterBoardID: afterBoardID, inDrawer: inDrawer)
         setTemporaryContext(.openBoard)
     }

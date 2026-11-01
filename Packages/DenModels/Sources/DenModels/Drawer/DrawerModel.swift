@@ -17,6 +17,7 @@ public final class DrawerModel {
     public var expandedItemID: UUID?
 
     @ObservationIgnored public var onPeekExpanded: (() -> Void)?
+    @ObservationIgnored public var onWillPresent: (() -> Void)?
     @ObservationIgnored public var onClose: (() -> Void)?
     @ObservationIgnored public var onAddItem: (() -> Void)?
 

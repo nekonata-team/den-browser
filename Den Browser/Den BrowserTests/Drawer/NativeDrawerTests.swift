@@ -13,6 +13,90 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct NativeDrawerTests {
+    @Test func openingDrawerCleansExpiredItemsAndProtectsVisiblePeeks() async throws {
+        // Arrange
+        let url = try #require(URL(string: "https://example.com/"))
+        var visible = DrawerItem(url: url)
+        visible.touchedAt = Date().addingTimeInterval(-13 * 60 * 60)
+        var expired = DrawerItem(terminal: .shell(workingDirectory: "/tmp"))
+        expired.touchedAt = visible.touchedAt
+        let source = desk("Desk")
+        let resources = DenProfileResources(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [visible, expired]))
+        let configuration = makeTestBoardRuntimeConfiguration()
+        let session = ProfileWindowSession(resources: resources, configuration: configuration)
+        let other = ProfileWindowSession(resources: resources, configuration: configuration)
+        let composition = DenWindowComposition(session: session)
+        let otherComposition = DenWindowComposition(session: other)
+        composition.connect()
+        otherComposition.connect()
+        defer {
+            otherComposition.disconnect()
+            composition.disconnect()
+        }
+        otherComposition.model.focusDrawerItem(visible.id)
+        composition.model.drawer.expandedItemID = expired.id
+
+        // Act
+        session.configuration.preferences.setDrawerAutoCleanup(true)
+        #expect(session.resources.state.drawerItems.count == 2)
+        composition.model.openDrawer()
+        await Task.yield()
+
+        // Assert
+        #expect(session.resources.state.drawerItems.map(\.id) == [visible.id])
+        #expect(composition.model.drawer.expandedItemID == nil)
+        #expect(session.feedback.latest?.message == "Automatically discarded 1 Drawer Item.")
+    }
+
+    @Test func openingTheDrawerAddPanelAlsoRunsCleanup() async throws {
+        // Arrange
+        var expired = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        expired.touchedAt = Date().addingTimeInterval(-13 * 60 * 60)
+        let source = desk("Desk")
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [expired])),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        session.configuration.preferences.setDrawerAutoCleanup(true)
+        composition.model.showOpenBoardPanel()
+
+        // Act
+        composition.model.showOpenBoardPanel(inDrawer: true)
+        await Task.yield()
+
+        // Assert
+        #expect(session.resources.state.drawerItems.isEmpty)
+        #expect(composition.model.isAddingToDrawer)
+        #expect(session.feedback.latest?.message == "Automatically discarded 1 Drawer Item.")
+    }
+
+    @Test func cleanupToastSurvivesFeedbackFromKeepingAnItem() async throws {
+        // Arrange
+        var expired = DrawerItem(url: try #require(URL(string: "https://example.com/old")))
+        expired.touchedAt = Date().addingTimeInterval(-13 * 60 * 60)
+        let source = desk("Desk")
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [expired])),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        session.configuration.preferences.setDrawerAutoCleanup(true)
+
+        // Act
+        session.drawer.keepInDrawer(try #require(URL(string: "https://example.com/new")))
+        await Task.yield()
+
+        // Assert
+        #expect(session.resources.state.drawerItems.map(\.url) == [URL(string: "https://example.com/new")])
+        #expect(session.feedback.latest?.message == "Automatically discarded 1 Drawer Item.")
+    }
+
     @Test func drawerModelKeepsLiveInputsObservable() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let source = desk("Desk")
@@ -249,7 +333,7 @@ struct NativeDrawerTests {
             _ = second.drawer.drawerRuntime(for: secondItem)
             first.drawer.requestDrawerClearConfirmation()
 
-            #expect(firstWindowModel.drawerPendingDeletionCount == 2)
+            #expect(firstWindowModel.drawerPendingDiscardCount == 2)
             firstWindowModel.confirmDrawerClear()
 
             #expect(first.resources.state.drawerItems.isEmpty)
@@ -874,12 +958,12 @@ struct NativeDrawerTests {
         session.drawer.requestDrawerClearConfirmation()
 
         #expect(session.resources.state.drawerItems.count == 2)
-        #expect(windowModel.drawerPendingDeletionCount == 2)
+        #expect(windowModel.drawerPendingDiscardCount == 2)
 
         windowModel.confirmDrawerClear()
 
         #expect(session.resources.state.drawerItems.isEmpty)
-        #expect(windowModel.drawerPendingDeletionCount == nil)
+        #expect(windowModel.drawerPendingDiscardCount == nil)
         #expect(windowModel.drawer.selectedItemID == nil)
         #expect(windowModel.drawer.expandedItemID == nil)
         #expect(session.windowResources.drawerPeek == nil)

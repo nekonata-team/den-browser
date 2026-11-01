@@ -32,4 +32,17 @@ struct PreferencesPresentationTests {
         preferences.resetShortcut(for: .focusNextBoard)
         #expect(shortcuts.shortcut(for: .focusNextBoard) == ConfigurableShortcut.focusNextBoard.defaultBinding)
     }
+
+    @Test func drawerCleanupIsOptInAndPersists() {
+        // Arrange
+        let defaults = makeTestDefaults()
+        let preferences = AppPreferences(defaults: defaults)
+
+        // Act
+        #expect(!preferences.drawerAutoCleanup)
+        preferences.setDrawerAutoCleanup(true)
+
+        // Assert
+        #expect(AppPreferences(defaults: defaults).drawerAutoCleanup)
+    }
 }

@@ -2,7 +2,7 @@ import DenDomain
 import Foundation
 
 public extension DenWindowModel {
-    var drawerPendingDeletionCount: Int? {
+    var drawerPendingDiscardCount: Int? {
         guard case .clearDrawer(let count)? = pendingConfirmation else { return nil }
         return count
     }
@@ -38,7 +38,7 @@ public extension DenWindowModel {
     }
 
     func cancelDrawerClear() {
-        if drawerPendingDeletionCount != nil { pendingConfirmation = nil }
+        if drawerPendingDiscardCount != nil { pendingConfirmation = nil }
     }
 
     @discardableResult

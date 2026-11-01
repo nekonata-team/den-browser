@@ -24,6 +24,7 @@ final class AppPreferences {
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var externalLinkDestination: ExternalLinkDestination
     private(set) var drawerStyle: DrawerStyle
+    private(set) var drawerAutoCleanup: Bool
     private(set) var automaticPIPOnDeskSwitch: Bool
     private(set) var isBoardRailPresented: Bool
     private(set) var sheetScale: Int
@@ -46,6 +47,7 @@ final class AppPreferences {
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let externalLinkDestinationKey = "preferences.external-links.destination"
     private static let drawerStyleKey = "preferences.drawer.style"
+    private static let drawerAutoCleanupKey = "preferences.drawer.auto-cleanup"
     private static let automaticPictureInPictureOnDeskSwitchKey =
         "preferences.picture-in-picture.auto-on-desk-switch"
     private static let boardRailPresentedKey = "preferences.appearance.board-rail-presented"
@@ -77,6 +79,7 @@ final class AppPreferences {
         drawerStyle =
             defaults.string(forKey: Self.drawerStyleKey).flatMap(DrawerStyle.init(rawValue:))
             ?? Self.defaultDrawerStyle
+        drawerAutoCleanup = defaults.bool(forKey: Self.drawerAutoCleanupKey)
         automaticPIPOnDeskSwitch =
             defaults.object(forKey: Self.automaticPictureInPictureOnDeskSwitchKey) as? Bool
             ?? Self.defaultAutomaticPIPOnDeskSwitch
@@ -152,6 +155,11 @@ final class AppPreferences {
     func setDrawerStyle(_ style: DrawerStyle) {
         drawerStyle = style
         defaults.set(style.rawValue, forKey: Self.drawerStyleKey)
+    }
+
+    func setDrawerAutoCleanup(_ enabled: Bool) {
+        drawerAutoCleanup = enabled
+        defaults.set(enabled, forKey: Self.drawerAutoCleanupKey)
     }
 
     func setAutomaticPIPOnDeskSwitch(_ enabled: Bool) {

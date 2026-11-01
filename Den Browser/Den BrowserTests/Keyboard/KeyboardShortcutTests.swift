@@ -1168,7 +1168,7 @@ struct KeyboardShortcutTests {
             keyCode: 2)
 
         #expect(KeyboardController.handle(clear, session: session, windowModel: windowModel))
-        #expect(windowModel.drawerPendingDeletionCount == 2)
+        #expect(windowModel.drawerPendingDiscardCount == 2)
         #expect(session.resources.state.drawerItems.count == 2)
     }
 

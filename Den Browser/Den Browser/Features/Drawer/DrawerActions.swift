@@ -195,6 +195,18 @@ final class DrawerActions {
         storage.drawerItems.clear(notify: drawerItemNotifications())
     }
 
+    func cleanupExpiredItems() {
+        guard preferences.drawerAutoCleanup else { return }
+        let protected = Set(storage.windowConnections.allObjects.compactMap { $0.visibleDrawerItemID() })
+        let count = storage.drawerItems.cleanup(protected: protected, notify: drawerItemNotifications())
+        if count > 0 {
+            // Keep the cleanup notice visible after feedback from the action that opened the Drawer.
+            Task { @MainActor [weak context] in
+                context?.feedback.publish("Automatically discarded \(count) Drawer \(count == 1 ? "Item" : "Items").")
+            }
+        }
+    }
+
     func drawerBoardCreationNotifications(_ itemID: UUID) -> (BoardCreation.Notice) -> Void {
         let web = storage.drawerRuntimes.web[itemID]
         let terminal = storage.drawerRuntimes.terminal[itemID]
@@ -224,7 +236,7 @@ final class DrawerActions {
                 runtimes.releaseDrawerPeek()
             case .didRestore(let id):
                 onWindowEffect?(.drawerItemRestored(id))
-            case .didDiscard(let id, let previousItems, let advancesPeek, let focusNext):
+            case .didRemove(let id, let previousItems, let advancesPeek, let focusNext):
                 storage.drawerRuntimes.dispose(id)
                 for presentation in storage.windowConnections.allObjects {
                     if presentation.windowResources?.drawerItemID == id { presentation.runtimes?.releaseDrawerPeek() }

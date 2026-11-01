@@ -53,7 +53,7 @@ Nested objects use these keys:
 - `ProfileState`: `id`, `name`, `color` (a preset name or custom sRGB components), `webProfileStore`
 - `WebProfileStore`: `kind`, optional `identifier`
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
-- `DrawerItem`: `id`, `content`, optional `title`
+- `DrawerItem`: `id`, `content`, optional `title`, optional `touchedAt`
 - Web Drawer `content`: `kind: web`, `url`
 - Terminal Drawer `content`: `kind: terminal`, `session` using the same Shell, Zellij or zmx configuration as a Terminal Board
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
@@ -117,6 +117,7 @@ When `BoardState.role` is absent, it decodes as `primary`.
 | `appearance` | Board Rail visibility | `preferences.appearance.board-rail-presented` | `Bool` | `false`; shared across windows and restored at launch | Board Rail |
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
 | `drawer` | Style | `preferences.drawer.style` | `DrawerStyle.rawValue` | `floating` | Appearance > Drawer |
+| `drawer` | Automatic cleanup | `preferences.drawer.auto-cleanup` | `Bool` | `false` | Features > Drawer |
 | `content-blocking` | uBlock Origin Lite enabled | `preferences.content-blocking.ubolite.enabled` | `Bool` | `false` | Web > Content Blocking |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
 | `terminal` | zmx executable path | `preferences.terminal.zmx.executable-path` | `String` | Empty | Terminal > zmx |

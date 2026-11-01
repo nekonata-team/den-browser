@@ -142,8 +142,9 @@ A Den-wide place for material whose Desk or Board context is not yet settled. It
 _Avoid_: Inbox, Temporary Desk, scratch workspace, clipboard
 
 **Drawer Item**:
-Web material or a Terminal Session held in the Drawer before it is placed into an established context or discarded. A Drawer Item is not implicitly unread, actionable, or temporary in storage.
+Web material or a Terminal Session held in the Drawer before it is placed into an established context or discarded. A Drawer Item is not implicitly unread or actionable; optional automatic cleanup discards inactive Items.
 Web material enters the Drawer when it is kept there; Terminal commands can also start an Item there. Keeping a URL does not change the Current Sheet or Desk layout. Moving a Web or Terminal Primary Board without a Side Board into Drawer removes it from its Desk while retaining its live content and identity.
+An Item is touched when it enters or returns to the Drawer, or when its Peek is opened or closed. Selection and background execution do not touch it.
 _Avoid_: Inbox item, task, bookmark, history entry
 
 **Drawer Peek**:
@@ -155,11 +156,11 @@ Creating a Board from a Drawer Item in the Focused Desk. Placement continues the
 _Avoid_: Restore, open tab, move to workspace
 
 **Drawer Discard**:
-Releasing a Drawer Item without placing it into a Desk or Board context. A discarded Drawer Item remains available in the current app run's transient restoration history, which retains up to ten items.
+Releasing a Drawer Item without placing it into a Desk or Board context. A manually discarded Drawer Item remains available in the current app run's transient restoration history, which retains up to ten items. Automatic cleanup does not add Items to this history.
 _Avoid_: Complete, archive, close tab
 
 **Drawer Restoration**:
-Returning the newest discarded Drawer Item to the Drawer. Repeated restoration returns older discarded items from the current app run; the history is not persisted across relaunches. Restoration preserves Den Mode when invoked there.
+Returning the newest manually discarded Drawer Item to the Drawer. Repeated restoration returns older discarded items from the current app run; the history is not persisted across relaunches. Restoration preserves Den Mode when invoked there.
 _Avoid_: Undo, reopen tab, restore Board
 
 **Focused Board**:
