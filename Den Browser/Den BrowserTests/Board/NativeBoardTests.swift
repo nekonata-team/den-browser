@@ -274,12 +274,16 @@ struct NativeBoardTests {
         #expect(session.resources.terminalRuntimes[terminal.id] === runtime)
     }
 
-    @Test func zmxBoardDuplicationCreatesRootedIndependentSessions() async throws {
+    @Test(arguments: [false, true])
+    func zmxBoardDuplicationCreatesRootedIndependentSessions(focusSide: Bool) async throws {
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den",
             workingDirectory: "/tmp/project")
-        let source = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
+        var side = BoardState(width: 360, zmxSessionName: "other", workingDirectory: "/tmp/side")
+        side.role = .sideBoard(targetBoardID: sourceBoard.id)
+        let boards = focusSide ? [sourceBoard, side] : [sourceBoard]
+        let source = desk("Desk", boards: boards, focusedBoardID: focusSide ? side.id : sourceBoard.id)
         let runner = StubTerminalCommandRunner(
             responses: [
                 ["list", "--short"]: TerminalCommandResult(
@@ -306,22 +310,26 @@ struct NativeBoardTests {
             session.zmx.duplicateFocusedBoardFromFirstSheet()
             await session.zmx.waitForZmxCommand()
             let automaticChild = try #require(session.navigation.focusedBoard)
-            #expect(session.navigation.focusedDesk?.boards.count == 2)
+            #expect(session.navigation.focusedDesk?.boards.count == boards.count + 1)
+            #expect(!automaticChild.isSideBoard)
+            #expect(automaticChild.width == sourceBoard.width)
             #expect(automaticChild.zmxSessionName == "den-2")
             #expect(automaticChild.zmxRootSessionName == "den")
             #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
             #expect(windowModel.temporaryContext == nil)
             #expect(session.resources.recentItems.isEmpty)
 
-            session.boardNavigation.focusBoard(sourceBoard.id)
+            session.boardNavigation.focusBoard(focusSide ? side.id : sourceBoard.id)
             session.zmx.duplicateFocusedBoard()
             await session.zmx.waitForZmxCommand()
             #expect(windowModel.temporaryContext == .zmxDuplication)
-            #expect(session.navigation.focusedDesk?.boards.count == 2)
+            #expect(session.navigation.focusedDesk?.boards.count == boards.count + 1)
 
             session.zmx.duplicateFocusedZmxBoard(suffix: "vi")
             await session.zmx.waitForZmxCommand()
             let firstChild = try #require(session.navigation.focusedBoard)
+            #expect(!firstChild.isSideBoard)
+            #expect(firstChild.width == sourceBoard.width)
             #expect(firstChild.zmxSessionName == "den-vi")
             #expect(firstChild.zmxRootSessionName == "den")
             #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
@@ -813,13 +821,17 @@ struct NativeBoardTests {
     }
 
     @Test(arguments: [false, true], [false, true])
-    func sideBoardCannotBeDuplicated(isInspection: Bool, fromFirstSheet: Bool) {
+    func sideBoardDuplicatesItsPrimaryBoard(isInspection: Bool, fromFirstSheet: Bool) throws {
         // Arrange
-        let target = board("Target")
+        var target =
+            isInspection
+            ? board("Target", width: 800)
+            : BoardState(label: "Target", width: 800, workingDirectory: "/tmp/primary")
+        target.firstSheetURL = URL(string: "https://example.com/first")
         var side =
             isInspection
             ? BoardState(width: 360, targetBoardID: target.id)
-            : board("Side")
+            : BoardState(label: "Side", width: 360, workingDirectory: "/tmp/side")
         if !isInspection {
             side.firstSheetURL = URL(string: "https://example.com/first")
             side.role = .sideBoard(targetBoardID: target.id)
@@ -838,8 +850,15 @@ struct NativeBoardTests {
         }
 
         // Assert
-        #expect(session.resources.state.desks[0].boards.map(\.id) == [target.id, side.id])
-        #expect(session.navigation.focusedBoard?.id == side.id)
+        let copy = try #require(session.navigation.focusedBoard)
+        #expect(session.resources.state.desks[0].boards.map(\.id) == [target.id, side.id, copy.id])
+        #expect(copy.id != target.id && copy.id != side.id)
+        #expect(!copy.isSideBoard)
+        #expect(copy.width == target.width)
+        #expect(copy.label == target.label)
+        #expect(copy.terminalWorkingDirectory == target.terminalWorkingDirectory)
+        #expect(
+            copy.currentSheetURL == (fromFirstSheet && target.isWeb ? target.firstSheetURL : target.currentSheetURL))
     }
 
     @Test(arguments: [0, 1])

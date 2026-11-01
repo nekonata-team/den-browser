@@ -60,6 +60,11 @@ struct ZmxBoards {
         }
     }
 
+    private func focusedPrimaryBoardID(_ window: Window?) -> BoardID? {
+        guard let id = window?.focusedBoardID, let board = state.snapshot.den.board(for: id) else { return nil }
+        return board.sideBoardTargetBoardID ?? board.id
+    }
+
     func prepareDuplication(
         _ source: BoardState, client: ZmxClient, window: () -> Window?, notify: (Notice) -> Void
     ) async {
@@ -67,7 +72,7 @@ struct ZmxBoards {
         do {
             let root = try await client.resolvedRootSessionName(
                 for: name, savedRootSessionName: source.zmxRootSessionName)
-            guard !Task.isCancelled, window()?.focusedBoardID == source.id else { return }
+            guard !Task.isCancelled, focusedPrimaryBoardID(window()) == source.id else { return }
             notify(.duplicationPanel(root))
         } catch { return }
     }
@@ -89,7 +94,7 @@ struct ZmxBoards {
                     !desk.boards.contains(where: { $0.sideBoardTargetBoardID == source.id })
                 else { return }
             } else {
-                guard current.focusedBoardID == source.id else { return }
+                guard focusedPrimaryBoardID(current) == source.id else { return }
             }
             let names = state.snapshot.den.desks.flatMap { $0.boards.compactMap(\.zmxSessionName) }
             let session = ZmxSessionNameGenerator.nextName(
@@ -112,7 +117,7 @@ struct ZmxBoards {
             guard !Task.isCancelled, let current = window(),
                 request.asSideBoard
                     ? state.snapshot.den.desks.contains(where: { $0.boards.contains(where: { $0.id == source.id }) })
-                    : current.focusedBoardID == source.id
+                    : focusedPrimaryBoardID(current) == source.id
             else { return }
             notify(.warning("Could not inspect active zmx sessions: \(error.localizedDescription)"))
         }

@@ -100,8 +100,13 @@ final class ZmxBoardActions {
             notify: zmxBoardNotifications(returnsToOpenBoard: opensFromOpenBoardPanel))
     }
 
+    private var duplicationSource: BoardState? {
+        guard let board = focusedBoard else { return nil }
+        return context.board(for: board.sideBoardTargetBoardID ?? board.id)
+    }
+
     func duplicateFocusedBoard() {
-        guard let source = focusedBoard else { return }
+        guard let source = duplicationSource else { return }
         switch BoardDuplication.resolve(source) {
         case .create(let board):
             boardOpening.insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
@@ -124,7 +129,7 @@ final class ZmxBoardActions {
     }
 
     func duplicateFocusedZmxBoard(suffix: String) {
-        guard let source = focusedBoard else { return }
+        guard let source = duplicationSource else { return }
         createZmxBoard(from: source, suffix: suffix, asSideBoard: false, focus: true)
     }
 
@@ -154,7 +159,7 @@ final class ZmxBoardActions {
     }
 
     func duplicateFocusedBoardFromFirstSheet() {
-        guard let source = focusedBoard else { return }
+        guard let source = duplicationSource else { return }
         switch BoardDuplication.resolve(source, fromFirstSheet: true) {
         case .create(let board):
             boardOpening.insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)

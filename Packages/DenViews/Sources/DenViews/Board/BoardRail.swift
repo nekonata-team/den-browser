@@ -237,7 +237,6 @@ public struct BoardRail<Favicon: View>: View {
         } label: {
             Label("Duplicate Board", systemSymbol: .plusSquareOnSquare)
         }
-        .disabled(board.isSideBoard)
 
         if windowModel.desks.desks.count > 1 {
             Menu {

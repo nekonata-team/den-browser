@@ -124,6 +124,8 @@ Reordering a Desk preserves the focused Desk and Board and keeps Den Mode active
 | `Shift` + `Y` | Copy Focused Board ID |
 | `t` | Pause / resume Sheet Navigation for Focused Board |
 
+When a Side Board is focused, duplication commands and **Duplicate Board** target its Primary Board. The copy inherits the Primary Board’s width and content, has no Side Board, and receives focus immediately after the original Board Group.
+
 When saving a Board or Recent Item as an Essential, an assigned key asks for confirmation before replacing its Essential's name and input. Cancel keeps the save panel open with its input intact. Replacement preserves the Essential's position and leaves existing Boards unchanged.
 
 - Sheet navigation, reload, and screenshot commands do not apply to Terminal Boards.
