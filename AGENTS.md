@@ -63,5 +63,3 @@ Reuse successful checks when the final diff does not affect what they cover.
   Write natural copy in each language.
 - Before handoff, check changed documentation links and inspect the final diff
   for duplicated or stale product claims.
-
-@RTK.md

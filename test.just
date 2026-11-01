@@ -16,13 +16,13 @@ ast_grep := 'COLORFGBG="15;0" ast-grep'
 [default]
 unit: packages
     @rm -rf "{{unit_test_result}}"
-    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{unit_test_scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
+    @rtk test xcodebuild test -project "{{project}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run deterministic macOS UI interaction tests. Pass a target, then an optional configuration (e.g. just test ui Den_BrowserUIPerformanceTests Release).
 ui target="Den_BrowserUITests" configuration="Debug":
     @rm -rf "{{ui_test_result}}"
-    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{ui_test_scheme}}' -configuration '{{configuration}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test results .derived-data-ui/TestResults.xcresult'; exit 1; }
+    @rtk test xcodebuild test -project "{{project}}" -scheme "{{ui_test_scheme}}" -configuration "{{configuration}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{ui_test_derived_data}}" -resultBundlePath "{{ui_test_result}}" -only-testing:"Den BrowserUITests/{{target}}" || { echo "✗ UI tests failed."; echo '  Inspect: just test results .derived-data-ui/TestResults.xcresult'; exit 1; }
     echo "✓ UI tests passed"
 
 # Show a test result summary. Pass another result bundle path as the first argument.
@@ -36,10 +36,10 @@ architecture:
 
 # Test or build all local packages, treating compiler warnings as errors.
 packages:
-    @rtk test "swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors"
-    @rtk test "swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors"
-    @rtk test "swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors"
-    @rtk test "swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors"
-    @rtk test "swift build --package-path Packages/DenViews -Xswiftc -warnings-as-errors"
-    @rtk test "swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors"
+    @rtk test swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors
+    @rtk test swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors
+    @rtk test swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors
+    @rtk test swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors
+    @rtk test swift build --package-path Packages/DenViews -Xswiftc -warnings-as-errors
+    @rtk test swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
     @echo "✓ Package checks passed"
