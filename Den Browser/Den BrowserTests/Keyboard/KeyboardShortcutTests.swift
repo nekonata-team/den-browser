@@ -1044,6 +1044,60 @@ struct KeyboardShortcutTests {
         #expect(windowModel.drawer.expandedItemID == peekID)
     }
 
+    @Test func drawerPlacementDeskSelectionRoutesKeysAndCanBeCanceled() throws {
+        // Arrange
+        let session = try makeSession(boards: [board("First")])
+        let composition = DenWindowComposition(session: session)
+        let model = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        session.drawer.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        model.isDenMode = true
+        let shiftP = try keyEvent(characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], keyCode: 35)
+        let plainP = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
+        let repeatedShiftP = try keyEvent(
+            characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], isARepeat: true, keyCode: 35)
+        let escape = try keyEvent(characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+        let down = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
+        let enter = try keyEvent(characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+
+        // Act / Assert
+        #expect(
+            KeyboardController.decision(for: plainP, session: session, windowModel: model)
+                == .perform(.drawer(.placeSelectedItemAsBoard)))
+        #expect(
+            KeyboardController.decision(for: repeatedShiftP, session: session, windowModel: model)
+                == .consume(.ignoredRepeat))
+        #expect(
+            KeyboardController.decision(for: shiftP, session: session, windowModel: model)
+                == .perform(.drawer(.choosePlacementDesk)))
+        #expect(KeyboardController.handle(shiftP, session: session, windowModel: model))
+        #expect(model.drawer.isChoosingPlacementDesk)
+        for (digit, number) in [("1", 1), ("9", 9), ("0", 10)] {
+            let numeric = try keyEvent(characters: digit, charactersIgnoringModifiers: digit, keyCode: 18)
+            #expect(
+                KeyboardController.decision(for: numeric, session: session, windowModel: model)
+                    == .perform(.drawer(.placeInDeskNumber(number))))
+        }
+        #expect(
+            KeyboardController.decision(for: enter, session: session, windowModel: model)
+                == .perform(.drawer(.confirmPlacementDesk)))
+        #expect(
+            KeyboardController.decision(for: down, session: session, windowModel: model)
+                == .perform(.drawer(.selectPlacementDesk(1))))
+        #expect(KeyboardController.handle(escape, session: session, windowModel: model))
+        #expect(!model.drawer.isChoosingPlacementDesk)
+        #expect(model.isDrawerOpen)
+        #expect(model.isDenMode)
+        #expect(session.resources.state.drawerItems.count == 1)
+
+        model.isDenMode = false
+        model.chooseSelectedDrawerItemPlacementDesk()
+        #expect(KeyboardController.handle(escape, session: session, windowModel: model))
+        #expect(!model.drawer.isChoosingPlacementDesk)
+        #expect(!model.isDenMode)
+    }
+
     @Test func drawerCommandWDiscardsSelectedItemWithoutRemovingBoard() throws {
         let session = try makeSession(boards: [board("First")])
         let composition = DenWindowComposition(session: session)

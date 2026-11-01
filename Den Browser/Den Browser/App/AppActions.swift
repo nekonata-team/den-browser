@@ -171,6 +171,11 @@ enum DrawerAction: Equatable {
     case discardSelectedItem(focusNext: Bool)
     case restoreDiscardedItem
     case placeSelectedItemAsBoard
+    case choosePlacementDesk
+    case selectPlacementDesk(Int)
+    case confirmPlacementDesk
+    case placeInDeskNumber(Int)
+    case cancelPlacementDesk
     case requestClearConfirmation
 }
 
@@ -379,6 +384,11 @@ enum AppActionHandler {
                 windowModel.drawer.discardSelectedItem(focusNext: focusNext)
             case .restoreDiscardedItem: session.drawer.restoreRecentlyDiscardedDrawerItem()
             case .placeSelectedItemAsBoard: windowModel.placeSelectedDrawerItemAsBoard()
+            case .choosePlacementDesk: windowModel.chooseSelectedDrawerItemPlacementDesk()
+            case .selectPlacementDesk(let offset): windowModel.selectDrawerPlacementDesk(by: offset)
+            case .confirmPlacementDesk: windowModel.confirmDrawerPlacementDesk()
+            case .placeInDeskNumber(let number): windowModel.placeDrawerItem(inDeskNumber: number)
+            case .cancelPlacementDesk: windowModel.drawer.cancelPlacementDeskSelection()
             case .requestClearConfirmation: session.drawer.requestDrawerClearConfirmation()
             }
         }

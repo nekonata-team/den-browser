@@ -206,7 +206,7 @@ private struct DenActivePanelOverlay: View {
                 onClose: { windowModel.setTemporaryContext(nil) }
             )
         case .drawer:
-            EmptyView()
+            DrawerPlacementPanel(profileColor: profileColor)
         }
     }
 }

@@ -13,6 +13,93 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct NativeDrawerTests {
+    @Test func placingInAChosenDeskPreservesTheLiveRuntime() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        let source = desk("Source")
+        let anchor = board("Anchor")
+        let destination = desk("Destination", boards: [anchor], focusedBoardID: anchor.id)
+        let resources = DenProfileResources(
+            state: DenState(desks: [source, destination], focusedDeskID: source.id, drawerItems: [item]))
+        let session = ProfileWindowSession(resources: resources, configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        let runtime = session.drawer.drawerRuntime(for: item)
+        composition.model.openDrawer()
+        composition.model.isDenMode = true
+
+        // Act
+        composition.model.chooseSelectedDrawerItemPlacementDesk()
+        #expect(composition.model.drawer.placementDeskID == source.id)
+        composition.model.selectDrawerPlacementDesk(by: 1)
+        composition.model.confirmDrawerPlacementDesk()
+
+        // Assert
+        #expect(session.navigation.presentedDeskID == destination.id)
+        #expect(session.navigation.focusedDesk?.boards.map(\.id) == [anchor.id, BoardID(item.id)])
+        #expect(session.navigation.focusedDesk?.focusedBoardID == BoardID(item.id))
+        #expect(session.resources.webRuntimes[BoardID(item.id)] === runtime)
+        #expect(session.resources.state.drawerItems.isEmpty)
+        #expect(!composition.model.isDrawerOpen)
+        #expect(!composition.model.isDenMode)
+    }
+
+    @Test func choosingAnUnavailableDeskKeepsTheDrawerItem() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        let source = desk("Source")
+        let unavailable = desk("Unavailable")
+        let resources = DenProfileResources(
+            state: DenState(desks: [source, unavailable], focusedDeskID: source.id, drawerItems: [item]))
+        let session = ProfileWindowSession(
+            resources: resources, configuration: makeTestBoardRuntimeConfiguration(),
+            canPresentDesk: { $0 != unavailable.id })
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        composition.model.openDrawer()
+        composition.model.chooseSelectedDrawerItemPlacementDesk()
+
+        // Act
+        composition.model.selectDrawerPlacementDesk(by: 1)
+        #expect(composition.model.drawer.placementDeskID == source.id)
+        composition.model.placeDrawerItem(inDeskNumber: 9)
+        composition.model.placeDrawerItem(inDeskNumber: 2)
+
+        // Assert
+        #expect(session.resources.state.drawerItems.map(\.id) == [item.id])
+        #expect(composition.model.drawer.isChoosingPlacementDesk)
+        #expect(session.navigation.presentedDeskID == source.id)
+    }
+
+    @Test(arguments: [2, 10]) func placingInANumberedDeskCreatesItsFirstBoard(number: Int) throws {
+        // Arrange
+        let item = DrawerItem(terminal: .shell(workingDirectory: "/tmp"))
+        let source = desk("Source")
+        let destination = desk("Empty")
+        let intermediate = (2..<number).map { desk("Desk \($0)") }
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenState(
+                    desks: [source] + intermediate + [destination], focusedDeskID: source.id, drawerItems: [item])),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        composition.model.openDrawer()
+
+        // Act
+        composition.model.chooseSelectedDrawerItemPlacementDesk()
+        composition.model.placeDrawerItem(inDeskNumber: number)
+
+        // Assert
+        #expect(session.navigation.presentedDeskID == destination.id)
+        #expect(session.navigation.focusedDesk?.boards.map(\.id) == [BoardID(item.id)])
+        #expect(session.navigation.focusedDesk?.focusedBoardID == BoardID(item.id))
+        #expect(session.resources.state.drawerItems.isEmpty)
+    }
+
     @Test func openingDrawerCleansExpiredItemsAndProtectsVisiblePeeks() async throws {
         // Arrange
         let url = try #require(URL(string: "https://example.com/"))

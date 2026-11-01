@@ -64,7 +64,7 @@ enum KeyboardSurface {
     case boardWidth
     case overview(filterPhase: FilterPhase, hasQuery: Bool)
     case boardActivity
-    case drawer(filterPhase: FilterPhase, peekFirstResponder: Bool)
+    case drawer(filterPhase: FilterPhase, peekFirstResponder: Bool, choosingPlacementDesk: Bool)
     case zmxSessions(filterPhase: FilterPhase, hasQuery: Bool, hasSelection: Bool)
     case textInput
 }
@@ -100,7 +100,8 @@ struct InputContext {
                 case .drawer:
                     .drawer(
                         filterPhase: windowModel.drawer.filterPhase,
-                        peekFirstResponder: Self.isDrawerPeekFirstResponder(event, session: session))
+                        peekFirstResponder: Self.isDrawerPeekFirstResponder(event, session: session),
+                        choosingPlacementDesk: windowModel.drawer.isChoosingPlacementDesk)
                 case .zmxSessions:
                     .zmxSessions(
                         filterPhase: windowModel.zmxSessions.filterPhase,

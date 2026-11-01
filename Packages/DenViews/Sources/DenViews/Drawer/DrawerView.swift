@@ -5,6 +5,7 @@ import SwiftUI
 
 public struct DrawerView<Peek: View>: View {
     @Environment(DrawerModel.self) private var drawer
+    @Environment(DenWindowModel.self) private var windowModel
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     let availableHeight: CGFloat
@@ -112,6 +113,7 @@ public struct DrawerView<Peek: View>: View {
                                     peekHeight: peekHeight,
                                     onToggle: { drawer.toggleItem(item.id) },
                                     onPlaceFromContextMenu: { placeFromContextMenu(item.id) },
+                                    onChoosePlacementDesk: { windowModel.chooseDrawerPlacementDesk(for: item.id) },
                                     onPlaceAsBoard: { placeAsBoard(item.id) },
                                     onDiscard: { drawer.discardItem(item.id) },
                                     peek: {

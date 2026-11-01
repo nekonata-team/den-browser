@@ -24,13 +24,17 @@ public struct DenActivePanelOverlay<Content: View>: View {
     }
 
     public var body: some View {
-        if let context = windowModel.temporaryContext, context != .drawer {
+        if let context = windowModel.temporaryContext,
+            context != .drawer || windowModel.drawer.isChoosingPlacementDesk
+        {
             ZStack {
                 dismissBlocker(onDismiss: dismissTemporaryPresentation)
                     .frame(width: size.width, height: size.height)
                 panel(context)
             }
-            .zIndex(windowModel.isAddingToDrawer ? DenOverlayLayer.drawerInput : DenOverlayLayer.activePanel)
+            .zIndex(
+                windowModel.isAddingToDrawer || windowModel.drawer.isChoosingPlacementDesk
+                    ? DenOverlayLayer.drawerInput : DenOverlayLayer.activePanel)
         }
     }
 
@@ -97,7 +101,7 @@ public struct DenActivePanelOverlay<Content: View>: View {
         case .renameDesk:
             windowModel.hideRenameDeskPanel()
         case .drawer:
-            windowModel.closeDrawer()
+            windowModel.drawer.cancelPlacementDeskSelection()
         case .saveEssential:
             windowModel.hideSaveEssentialPanel()
         case .profilePicker:

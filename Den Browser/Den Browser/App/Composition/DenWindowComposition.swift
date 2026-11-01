@@ -167,7 +167,7 @@ final class DenWindowComposition {
                 didShowKeyboardShortcuts: { session.resources.recordOperation(.keyboardShortcutsShown) }),
             boardSizing: session.resources.boardSizing,
             boardActions: DenWindowModel.BoardActions(
-                placeDrawerItem: { session.drawer.placeDrawerItemAsBoard($0, preferredWidth: $1) },
+                placeDrawerItem: { session.drawer.placeDrawerItemAsBoard($0, preferredWidth: $1, deskID: $2) },
                 focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: $1) },
                 centerFocusedBoard: { session.boardNavigation.centerFocusedBoard() },
                 cancelBoardDrag: { session.boardNavigation.requestBoardDragCancellation() },

@@ -152,7 +152,7 @@ The temporary live Web or Terminal presentation expanded beneath a Drawer Item i
 _Avoid_: Board, floating Board, temporary Desk, Drawer Preview
 
 **Drawer Placement**:
-Creating a Board from a Drawer Item in the Focused Desk. Placement continues the Item's live Web or Terminal Session when present, including a Peek last shown in another window; the placed item leaves the Drawer.
+Creating a Board from a Drawer Item in the Focused Desk or a chosen Desk. Placement continues the Item's live Web or Terminal Session when present, including a Peek last shown in another window; the placed item leaves the Drawer.
 _Avoid_: Restore, open tab, move to workspace
 
 **Drawer Discard**:

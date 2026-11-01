@@ -48,14 +48,14 @@ public final class DenWindowModel {
     }
 
     public struct BoardActions {
-        public let placeDrawerItem: (UUID, Double?) -> BoardID?
+        public let placeDrawerItem: (UUID, Double?, DeskID?) -> BoardID?
         public let focusBoard: (BoardID, Bool) -> Void
         public let centerFocusedBoard: () -> Void
         public let cancelBoardDrag: () -> Void
         public let cancelDeskDrag: () -> Void
 
         public init(
-            placeDrawerItem: @escaping (UUID, Double?) -> BoardID?,
+            placeDrawerItem: @escaping (UUID, Double?, DeskID?) -> BoardID?,
             focusBoard: @escaping (BoardID, Bool) -> Void,
             centerFocusedBoard: @escaping () -> Void,
             cancelBoardDrag: @escaping () -> Void,

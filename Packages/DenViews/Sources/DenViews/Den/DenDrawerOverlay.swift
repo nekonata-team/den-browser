@@ -43,7 +43,7 @@ public struct DenDrawerOverlay<Peek: View>: View {
                     profileColor: profileColor,
                     shouldShowHeader: shouldShowHeader,
                     isDenMode: { windowModel.isDenMode },
-                    isInputActive: { windowModel.isDrawerOpen },
+                    isInputActive: { windowModel.isDrawerOpen && !windowModel.drawer.isChoosingPlacementDesk },
                     motionPreference: motionPreference,
                     peek: peek, placeFromContextMenu: placeFromContextMenu,
                     placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
@@ -57,8 +57,8 @@ public struct DenDrawerOverlay<Peek: View>: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .allowsHitTesting(windowModel.isDrawerOpen)
-        .accessibilityHidden(!windowModel.isDrawerOpen)
+        .allowsHitTesting(windowModel.isDrawerOpen && !windowModel.drawer.isChoosingPlacementDesk)
+        .accessibilityHidden(!windowModel.isDrawerOpen || windowModel.drawer.isChoosingPlacementDesk)
         .zIndex(DenOverlayLayer.drawer)
     }
 

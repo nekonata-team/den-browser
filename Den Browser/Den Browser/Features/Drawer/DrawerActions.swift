@@ -114,6 +114,10 @@ final class DrawerActions {
         preferredWidth: Double? = nil,
         deskID: DeskID? = nil
     ) -> BoardID? {
+        if let deskID, deskID != context.navigation.presentedDeskID, !(context.canPresentDesk?(deskID) ?? true) {
+            context.feedback.publish("Desk is open in another window.", severity: .warning)
+            return nil
+        }
         guard
             let boardID = storage.drawerPlacement.place(
                 .init(

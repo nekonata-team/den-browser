@@ -15,6 +15,8 @@ public final class DrawerModel {
     public var filterPhase: FilterPhase = .inactive
     public var selectedItemID: UUID?
     public var expandedItemID: UUID?
+    public private(set) var placementItemID: UUID?
+    public var placementDeskID: DeskID?
 
     @ObservationIgnored public var onPeekExpanded: (() -> Void)?
     @ObservationIgnored public var onWillPresent: (() -> Void)?
@@ -55,6 +57,18 @@ public final class DrawerModel {
     public var isFilterPresented: Bool { filterPhase != .inactive }
     public var isFilterInputActive: Bool { filterPhase == .filtering }
     public var isFilterSelecting: Bool { filterPhase == .selecting }
+    public var isChoosingPlacementDesk: Bool { placementItemID != nil }
+
+    public func choosePlacementDesk(for itemID: UUID, initialDeskID: DeskID) {
+        guard items.contains(where: { $0.id == itemID }) else { return }
+        placementItemID = itemID
+        placementDeskID = initialDeskID
+    }
+
+    public func cancelPlacementDeskSelection() {
+        placementItemID = nil
+        placementDeskID = nil
+    }
 
     public func setQuery(_ query: String) {
         self.query = WebURLPolicy.stripNewlines(query)
@@ -165,11 +179,13 @@ public final class DrawerModel {
     }
 
     public func endPresentation() {
+        cancelPlacementDeskSelection()
         query = ""
         filterPhase = .inactive
     }
 
     public func resetPresentation() {
+        cancelPlacementDeskSelection()
         releasePeek()
         selectedItemID = nil
         expandedItemID = nil
@@ -204,6 +220,7 @@ public final class DrawerModel {
     public func itemWasRemoved(
         _ itemID: UUID, previousItems: [DrawerItem], advancesPeek: Bool, focusNext: Bool
     ) {
+        if placementItemID == itemID { cancelPlacementDeskSelection() }
         let wasSelected = selectedItemID == itemID
         let wasExpanded = expandedItemID == itemID
         let adjacentItemID =

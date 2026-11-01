@@ -191,6 +191,7 @@ Click **Add to Drawer** (+) in the Drawer header, enter a URL, search, or Termin
 | `Up` / `Down` or `k` / `j` | Select Drawer item |
 | `Return` | Toggle expanded Peek |
 | `p` | Place selected item as a Board |
+| `Shift` + `P` | Choose a Desk for the selected item |
 | `x` | Discard item and focus previous |
 | `d` or `Delete` | Discard item and focus next |
 | `Command` + `W` | Discard selected item |
@@ -215,6 +216,7 @@ Discarding an expanded Item opens the next visible Item's Peek, or the previous 
 Restoration selects and expands the Item, preserving Den Mode when invoked there; its ten-Item history lasts only for the current app run.
 Optional automatic cleanup checks Items when the Drawer opens and discards those without a Peek for 12 hours. A visible Peek is protected, and closing it restarts the interval. Automatic cleanup does not add Items to restoration history and can end Terminal processes or discard unsaved Web state. Existing Items without a recorded touch time receive one when cleanup first runs.
 Placement focuses the new Board, removes the Item, and closes the Drawer; it transfers the Item's retained live state without reloading, including when the Item is collapsed or was last shown in another window.
+`Shift` + `P` or an Item's **Place in Desk** context menu opens a Desk selection panel in front of Drawer. Press `1`–`9` or `0` (Desk 10) to place directly in the numbered Desk. Use `Up` / `Down` or `k` / `j` to choose an available Desk, `Return` to place the Item after its Focused Board, or `Escape` to return to Drawer. A Desk shown in another window cannot be selected. Placement focuses the destination Desk and Board.
 Web URLs, Terminal session configuration and titles persist; expanded Peek identity and live Web or Terminal state do not.
 A hidden Terminal Peek stops rendering while its process continues. Discard ends its runtime; restoring an ordinary Shell Item starts a new Shell in its saved Working Directory. Terminal desktop notifications appear as feedback linking to the Item; the Board notification list applies after placement.
 

@@ -16,6 +16,7 @@ struct DrawerItemView<Peek: View>: View {
     let peekHeight: CGFloat
     let onToggle: () -> Void
     let onPlaceFromContextMenu: () -> Void
+    let onChoosePlacementDesk: () -> Void
     let onPlaceAsBoard: () -> Void
     let onDiscard: () -> Void
     @ViewBuilder let peek: () -> Peek
@@ -61,6 +62,9 @@ struct DrawerItemView<Peek: View>: View {
                 .contextMenu {
                     Button("Place as Board") {
                         onPlaceFromContextMenu()
+                    }
+                    Button("Place in Desk…") {
+                        onChoosePlacementDesk()
                     }
                     Button("Discard", role: .destructive) {
                         onDiscard()

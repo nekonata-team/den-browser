@@ -89,7 +89,7 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.overview(.toggleActivity))
         }
 
-        if case .drawer? = context.surface,
+        if case .drawer(_, _, false)? = context.surface,
             let binding = event.binding,
             binding == shortcuts.bindings[.toggleDenMode]
         {
@@ -133,12 +133,13 @@ enum KeyboardRouter {
         case .boardActivity:
             if event.isEscape, modifiers == [] { return .perform(.overview(.hideActivity)) }
             return .forward(.temporaryTextInput)
-        case .drawer(let filterPhase, let peekFirstResponder):
+        case .drawer(let filterPhase, let peekFirstResponder, let choosingPlacementDesk):
             return routeDrawer(
                 event,
                 mode: context.mode,
                 filterPhase: filterPhase,
-                peekFirstResponder: peekFirstResponder)
+                peekFirstResponder: peekFirstResponder,
+                choosingPlacementDesk: choosingPlacementDesk)
         case .zmxSessions(let filterPhase, let hasQuery, let hasSelection):
             return routeZmxSessions(event, filterPhase: filterPhase, hasQuery: hasQuery, hasSelection: hasSelection)
         case .textInput:
@@ -333,10 +334,29 @@ enum KeyboardRouter {
         _ event: KeyEvent,
         mode: KeyboardMode,
         filterPhase: FilterPhase,
-        peekFirstResponder: Bool
+        peekFirstResponder: Bool,
+        choosingPlacementDesk: Bool
     ) -> InputDecision {
         let modifiers = event.modifiers
         let character = event.character?.lowercased()
+
+        if choosingPlacementDesk {
+            guard modifiers == [] else { return .consume(.exclusiveContext) }
+            if let digit = character.flatMap(Int.init), (0...9).contains(digit) {
+                return event.isRepeat
+                    ? .consume(.ignoredRepeat)
+                    : .perform(.drawer(.placeInDeskNumber(digit == 0 ? 10 : digit)))
+            }
+            if event.isEscape { return .perform(.drawer(.cancelPlacementDesk)) }
+            if event.key == .returnKey {
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.confirmPlacementDesk))
+            }
+            switch (event.key, character) {
+            case (.downArrow, _), (_, "j"): return .perform(.drawer(.selectPlacementDesk(1)))
+            case (.upArrow, _), (_, "k"): return .perform(.drawer(.selectPlacementDesk(-1)))
+            default: return .consume(.exclusiveContext)
+            }
+        }
 
         if modifiers == [.command], character == "w" {
             return event.isRepeat
@@ -364,6 +384,9 @@ enum KeyboardRouter {
         }
 
         if mode == .den {
+            if modifiers == [.shift], character == "p" {
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.choosePlacementDesk))
+            }
             if modifiers == [], event.character?.lowercased() == "u" {
                 return event.isRepeat
                     ? .consume(.ignoredRepeat)
