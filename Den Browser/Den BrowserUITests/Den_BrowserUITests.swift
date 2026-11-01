@@ -529,7 +529,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
             let start = boardHeader(.bravo, in: app)
                 .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let end = charlie.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
+            let end = boardSurface(.charlie, in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
             start.click(forDuration: 0.5, thenDragTo: end)
         }
 
@@ -578,7 +578,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("dragging the Inspection Board header past Bravo") {
             let start = inspectionHeader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let end = bravo.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
+            let end = boardSurface(.bravo, in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
             start.click(forDuration: 0.5, thenDragTo: end)
         }
 
