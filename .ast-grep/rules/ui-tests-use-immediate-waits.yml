@@ -1,0 +1,19 @@
+id: ui-tests-use-immediate-waits
+language: Swift
+severity: error
+message: Use waitUntilExists or waitUntilAbsent to check the current state before polling.
+files:
+  - "Den Browser/Den BrowserUITests/**/*.swift"
+rule:
+  kind: simple_identifier
+  regex: '^waitFor(Non)?Existence$'
+  not:
+    inside:
+      all:
+        - any:
+            - pattern: 'func waitUntilExists(timeout: TimeInterval) -> Bool { $$$FUNCTION_BODY }'
+            - pattern: 'func waitUntilAbsent(timeout: TimeInterval) -> Bool { $$$FUNCTION_BODY }'
+        - inside:
+            pattern: 'private extension XCUIElement { $$$EXTENSION_BODY }'
+            stopBy: end
+      stopBy: end

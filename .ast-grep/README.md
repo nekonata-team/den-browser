@@ -1,6 +1,6 @@
 # Swift source checks
 
-Run `just architecture-check` to scan the application and all
+Run `just architecture-check` to scan the application, tests, and all
 package source modules: `DenDomain`, `DenIPCProtocol`, `DenApplication`, `DenModels`, `DenViews`, and `DenInfrastructure`.
 Run `just test architecture` to test the rule definitions against their fixtures.
 `just lint` and `just check` also run `architecture-check`. The ast-grep version is pinned in
@@ -31,6 +31,10 @@ omit the style or use `.continuous`.
 
 App unit/UI tests and package `Tests` sources reject explicit `UserDefaults.standard`
 access, including `Foundation.UserDefaults.standard`. Use isolated suites or test containers.
+
+UI tests use `waitUntilExists` and `waitUntilAbsent` to check the current state before polling.
+Direct `waitForExistence` and `waitForNonExistence` references are rejected except inside
+those helper definitions in the private `XCUIElement` extension.
 
 Rule fixtures include permitted imports, forbidden imports, qualified and
 attributed imports, and comments/strings. Snapshot output is not part of

@@ -139,7 +139,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("another Board is focused") {
             XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertTrue(bravoInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(bravoInput.waitUntilExists(timeout: 5))
         }
 
         when("clicking the Sheet input in an unfocused Board") {
@@ -163,7 +163,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("Alpha is focused and its Sheet input is available") {
             XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(sheetInput.waitUntilExists(timeout: 5))
         }
 
         when("focusing the Sheet input and typing a starting value") {
@@ -177,7 +177,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("creating a focused Inspection Board with Command-Option-I") {
             app.typeKey("i", modifierFlags: [.command, .option])
-            XCTAssertTrue(app.buttons["Pick Element"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["Pick Element"].waitUntilExists(timeout: 5))
         }
 
         when("typing while the Inspection Board is focused") {
@@ -218,16 +218,16 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         given("Sheet Navigation is enabled, two Drawer items exist, and the first peek is focused") {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilExists(timeout: 5))
             app.typeKey(.return, modifierFlags: [])
-            XCTAssertTrue(peekContent.waitForExistence(timeout: 10))
-            XCTAssertTrue(nextDrawerItem.waitForExistence(timeout: 10))
+            XCTAssertTrue(peekContent.waitUntilExists(timeout: 10))
+            XCTAssertTrue(nextDrawerItem.waitUntilExists(timeout: 10))
             XCTAssertTrue(drawerItem.exists)
         }
 
         when("moving to the Sheet input and typing in the first peek") {
             app.typeText("gi")
-            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(sheetInput.waitUntilExists(timeout: 5))
             app.typeText("a")
         }
 
@@ -240,7 +240,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         then("the next Drawer peek remains visible") {
-            XCTAssertTrue(nextDrawerItem.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(nextDrawerItem.waitUntilAbsent(timeout: 5))
             XCTAssertTrue(drawerItem.exists)
         }
 
@@ -249,7 +249,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         when("typing into the Sheet input from the remaining peek") {
-            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(sheetInput.waitUntilExists(timeout: 5))
             app.typeText("b")
         }
 
@@ -269,7 +269,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("Open Board contains a local web URL") {
             app.typeKey("t", modifierFlags: [.command])
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             paste(url.absoluteString, in: app)
         }
 
@@ -278,8 +278,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         then("the input opens as a Drawer Peek") {
-            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
-            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitUntilExists(timeout: 10))
         }
     }
 
@@ -293,15 +293,15 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("Universal Search contains a local URL") {
             app.typeKey("p", modifierFlags: [.command])
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             paste(url.absoluteString, in: app)
         }
         when("pressing Option Return") {
             app.typeKey(.return, modifierFlags: [.option])
         }
         then("the URL is presented inside Drawer Peek") {
-            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
-            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitUntilExists(timeout: 10))
         }
     }
 
@@ -316,13 +316,13 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("Open Board shows a Recent Item") {
             app.typeKey("t", modifierFlags: [.command])
-            XCTAssertTrue(recent.waitForExistence(timeout: 5))
+            XCTAssertTrue(recent.waitUntilExists(timeout: 5))
         }
         when("Option clicking the Recent Item") {
             XCUIElement.perform(withKeyModifiers: [.option]) { recent.click() }
         }
         then("the Recent Item opens in Drawer Peek") {
-            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitUntilExists(timeout: 10))
         }
     }
 
@@ -338,23 +338,23 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         given("an Essential has been saved from the Recent Item") {
             app.typeKey("t", modifierFlags: [.command])
             let save = app.buttons["Save as Essential…"].firstMatch
-            XCTAssertTrue(save.waitForExistence(timeout: 5))
+            XCTAssertTrue(save.waitUntilExists(timeout: 5))
             save.click()
             let key = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "e.g. c or C")).firstMatch
-            XCTAssertTrue(key.waitForExistence(timeout: 5))
+            XCTAssertTrue(key.waitUntilExists(timeout: 5))
             key.click()
             key.typeText("e")
             app.buttons["Save Essential"].click()
-            XCTAssertTrue(key.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(key.waitUntilAbsent(timeout: 5))
             enterDenMode(in: app)
             app.typeKey("g", modifierFlags: [])
-            XCTAssertTrue(essential.waitForExistence(timeout: 5))
+            XCTAssertTrue(essential.waitUntilExists(timeout: 5))
         }
         when("Option clicking the Essential") {
             XCUIElement.perform(withKeyModifiers: [.option]) { essential.click() }
         }
         then("the Essential opens in Drawer Peek") {
-            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitUntilExists(timeout: 10))
         }
     }
 
@@ -386,30 +386,30 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         given("an opened Drawer Item holds a form value") {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(item.waitForExistence(timeout: 5))
+            XCTAssertTrue(item.waitUntilExists(timeout: 5))
             item.click()
-            XCTAssertTrue(input.waitForExistence(timeout: 10))
+            XCTAssertTrue(input.waitUntilExists(timeout: 10))
             input.click()
             app.typeText("seed")
         }
 
         when("switching to another Item and returning") {
             otherItem.click()
-            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
             item.click()
         }
 
         then("the original form value survives") {
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             XCTAssertEqual(input.value as? String, "seed")
         }
 
         when("closing and reopening Drawer, then typing without clicking the form") {
             app.typeKey(.escape, modifierFlags: [.control])
-            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilAbsent(timeout: 5))
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             app.typeText("continued")
         }
 
@@ -438,39 +438,40 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("a Drawer Peek holds a live value") {
             app.buttons["drawer-button"].click()
-            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilExists(timeout: 5))
             drawer.buttons["drawer-add-item"].click()
             let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             input.click()
             paste(url.absoluteString, in: app)
             app.typeKey(.return, modifierFlags: [])
-            XCTAssertTrue(peekInput.waitForExistence(timeout: 10))
+            XCTAssertTrue(peekInput.waitUntilExists(timeout: 10))
             peekInput.click()
             app.typeText("seed")
+            XCTAssertEqual(peekInput.value as? String, "seed")
         }
 
         when("opening and canceling another addition over the filtered live Drawer") {
             drawer.buttons["Search Drawer Items"].click()
             let search = drawer.textFields["drawer-search"].firstMatch
-            XCTAssertTrue(search.waitForExistence(timeout: 5))
+            XCTAssertTrue(search.waitUntilExists(timeout: 5))
             search.click()
             paste("Live", in: app)
             drawer.buttons["drawer-add-item"].click()
             let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             input.click()
             app.typeKey("a", modifierFlags: [.command])
             paste("https://example.com/cancel", in: app)
             XCTAssertEqual(input.value as? String, "https://example.com/cancel")
             app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
             XCTAssertEqual(search.value as? String, "Live")
             app.typeKey(.rightArrow, modifierFlags: [.command])
             app.typeText(" Drawer Fixture")
             XCTAssertEqual(search.value as? String, "Live Drawer Fixture")
             app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(peekInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(peekInput.waitUntilExists(timeout: 5))
             XCTAssertEqual(peekInput.value as? String, "seed")
         }
 
@@ -479,8 +480,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         then("the Board keeps the live value") {
-            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
-            XCTAssertTrue(placedInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilAbsent(timeout: 5))
+            XCTAssertTrue(placedInput.waitUntilExists(timeout: 5))
             XCTAssertEqual(placedInput.value as? String, "seed")
         }
 
@@ -502,7 +503,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             app.menuItems["Move to Drawer"].click()
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(peekInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(peekInput.waitUntilExists(timeout: 5))
             XCTAssertEqual(peekInput.value as? String, "seedcontinued")
             app.typeKey(.rightArrow, modifierFlags: [.command])
             app.typeText("drawer")
@@ -564,15 +565,15 @@ final class Den_BrowserUITests: XCTestCase, BDD {
                 )
             )
             .firstMatch
-        XCTAssertTrue(inspectionHeader.waitForExistence(timeout: 5))
+        XCTAssertTrue(inspectionHeader.waitUntilExists(timeout: 5))
         XCTAssertTrue(app.buttons["Pick Element"].exists)
         let inspectionID = String(inspectionHeader.identifier.dropFirst("board-header.".count))
         let inspectionSurface = app.descendants(matching: .any)
             .matching(identifier: "board-surface.\(inspectionID)")
             .firstMatch
         let alphaSurface = boardSurface(.alpha, in: app)
-        XCTAssertTrue(inspectionSurface.waitForExistence(timeout: 5))
-        XCTAssertTrue(alphaSurface.waitForExistence(timeout: 5))
+        XCTAssertTrue(inspectionSurface.waitUntilExists(timeout: 5))
+        XCTAssertTrue(alphaSurface.waitUntilExists(timeout: 5))
         let alphaWidth = alphaSurface.frame.width
         let inspectionWidth = inspectionSurface.frame.width
 
@@ -641,12 +642,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("New Desk search offers to create a named empty Desk") {
             app.buttons["New Desk"].click()
-            XCTAssertTrue(search.waitForExistence(timeout: 5))
+            XCTAssertTrue(search.waitUntilExists(timeout: 5))
             search.click()
             app.typeText(label)
             XCTAssertTrue(
                 app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Create \"\(label)\""))
-                    .firstMatch.waitForExistence(timeout: 5))
+                    .firstMatch.waitUntilExists(timeout: 5))
         }
 
         when("pressing Return repeatedly while the panel closes") {
@@ -654,7 +655,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         then("only one Desk is created") {
-            XCTAssertTrue(search.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(search.waitUntilAbsent(timeout: 5))
             XCTAssertEqual(desks.count, initialDeskCount + 1)
             XCTAssertEqual(desks.matching(NSPredicate(format: "label CONTAINS %@", label)).count, 1)
         }
@@ -699,18 +700,18 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         given("Drawer is open in Den Mode") {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilExists(timeout: 5))
         }
 
         when("opening the Terminal in Drawer and setting Shell state") {
             app.typeKey(" ", modifierFlags: [])
             let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             XCTAssertEqual(input.value as? String, "")
             paste(":terminal /tmp", in: app)
             app.typeKey(.return, modifierFlags: [])
-            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
-            XCTAssertTrue(place.waitForExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilExists(timeout: 5))
+            XCTAssertTrue(place.waitUntilExists(timeout: 5))
             paste("drawer_probe_value=retained", in: app)
             app.typeKey(.return, modifierFlags: [])
         }
@@ -718,24 +719,24 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         when("canceling another addition without sending text to the live Terminal") {
             drawer.buttons["drawer-add-item"].click()
             let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilExists(timeout: 5))
             input.click()
             app.typeKey("a", modifierFlags: [.command])
             paste("https://example.com/cancel", in: app)
             XCTAssertEqual(input.value as? String, "https://example.com/cancel")
             app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
-            XCTAssertTrue(place.waitForExistence(timeout: 5))
+            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
+            XCTAssertTrue(place.waitUntilExists(timeout: 5))
         }
 
         when("closing Drawer, reopening it, and placing the Terminal as a Board") {
             app.typeKey(.escape, modifierFlags: [.control])
-            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilAbsent(timeout: 5))
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(place.waitForExistence(timeout: 5))
+            XCTAssertTrue(place.waitUntilExists(timeout: 5))
             place.click()
-            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(drawer.waitUntilAbsent(timeout: 5))
             assertEventually("The Terminal should be placed beside the original Board") {
                 surfaces.allElementsBoundByIndex.count == 2
             }
@@ -745,7 +746,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             enterDenMode(in: app)
             app.typeKey("a", modifierFlags: [])
             app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(place.waitForExistence(timeout: 5))
+            XCTAssertTrue(place.waitUntilExists(timeout: 5))
         }
 
         let discardItems = drawer.buttons.matching(
@@ -781,7 +782,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
         app.typeKey(",", modifierFlags: [.control])
         XCTAssertTrue(
-            sheetInputWindow.waitForExistence(timeout: 5),
+            sheetInputWindow.waitUntilExists(timeout: 5),
             "Den Mode should return to Sheet Input after focusing Bravo")
         XCTAssertTrue(bravo.isSelected)
 
@@ -790,7 +791,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
         app.typeKey(",", modifierFlags: [.control])
         XCTAssertTrue(
-            sheetInputWindow.waitForExistence(timeout: 5),
+            sheetInputWindow.waitUntilExists(timeout: 5),
             "Den Mode should return to Sheet Input after focusing Alpha")
         XCTAssertTrue(alpha.isSelected)
 
@@ -881,11 +882,11 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("opening Board Activity after the initial alignment") {
             window.typeKey(.escape, modifierFlags: [.shift])
-            XCTAssertTrue(window.staticTexts["Board Activity"].waitForExistence(timeout: 5))
+            XCTAssertTrue(window.staticTexts["Board Activity"].waitUntilExists(timeout: 5))
         }
 
         then("the offscreen Terminal Board remains inactive") {
-            XCTAssertTrue(alphaActivityRow.waitForExistence(timeout: 5))
+            XCTAssertTrue(alphaActivityRow.waitUntilExists(timeout: 5))
             XCTAssertTrue(alphaActivityRow.label.contains("Not active"), alphaActivityRow.label)
         }
 
@@ -902,7 +903,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("checking Board Activity again") {
             window.typeKey(.escape, modifierFlags: [.shift])
-            XCTAssertTrue(window.staticTexts["Board Activity"].waitForExistence(timeout: 5))
+            XCTAssertTrue(window.staticTexts["Board Activity"].waitUntilExists(timeout: 5))
         }
 
         then("alignment on the returned Desk still has not activated Alpha") {
@@ -960,9 +961,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         app.typeKey("u", modifierFlags: [.command, .option, .shift])
 
         XCTAssertTrue(
-            app.children(matching: .window).firstMatch.waitForExistence(timeout: 10), "Application window should appear"
+            app.children(matching: .window).firstMatch.waitUntilExists(timeout: 10), "Application window should appear"
         )
-        XCTAssertTrue(board(fixture.initialBoard, in: app).waitForExistence(timeout: 20))
+        XCTAssertTrue(board(fixture.initialBoard, in: app).waitUntilExists(timeout: 20))
         if fixture == .interactionBasics {
             if boardCount != .one {
                 XCTAssertTrue(board(.bravo, in: app).exists)
@@ -983,7 +984,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     @MainActor
     private func assertDenMode(in app: XCUIApplication) {
         XCTAssertTrue(
-            app.children(matching: .window).matching(identifier: "UI Testing · DEN MODE").firstMatch.waitForExistence(
+            app.children(matching: .window).matching(identifier: "UI Testing · DEN MODE").firstMatch.waitUntilExists(
                 timeout: 5),
             "Den should enter Den Mode")
     }
@@ -1027,6 +1028,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         timeout: TimeInterval = 5,
         condition: @escaping () -> Bool
     ) {
+        if condition() { return }
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate { _, _ in condition() },
             object: nil)
@@ -1118,12 +1120,12 @@ final class Den_BrowserUIPerformanceTests: XCTestCase, BDD {
         given("a loaded overflowing Desk with Standard Motion") {
             app.launch()
             app.typeKey("u", modifierFlags: [.command, .option, .shift])
-            XCTAssertTrue(window.waitForExistence(timeout: 10))
+            XCTAssertTrue(window.waitUntilExists(timeout: 10))
             XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 10))
-            XCTAssertTrue(app.textFields["Sheet input"].firstMatch.waitForExistence(timeout: 10))
+            XCTAssertTrue(app.textFields["Sheet input"].firstMatch.waitUntilExists(timeout: 10))
             app.typeKey(",", modifierFlags: .control)
             XCTAssertTrue(
-                app.windows.matching(identifier: "UI Testing · DEN MODE").firstMatch.waitForExistence(timeout: 5))
+                app.windows.matching(identifier: "UI Testing · DEN MODE").firstMatch.waitUntilExists(timeout: 5))
         }
 
         // Swipe in the Strip's top inset so a Web Sheet cannot consume the gesture.
@@ -1169,6 +1171,17 @@ final class Den_BrowserUIPerformanceTests: XCTestCase, BDD {
                 }
             }
         }
+    }
+}
+
+private extension XCUIElement {
+    // Avoid XCTest's initial polling delay when the expected state already holds.
+    func waitUntilExists(timeout: TimeInterval) -> Bool {
+        exists || waitForExistence(timeout: timeout)
+    }
+
+    func waitUntilAbsent(timeout: TimeInterval) -> Bool {
+        !exists || waitForNonExistence(timeout: timeout)
     }
 }
 

@@ -1,0 +1,41 @@
+id: ui-tests-use-immediate-waits
+valid:
+  - 'element.waitUntilExists(timeout: 5)'
+  - 'element.waitUntilAbsent(timeout: 5)'
+  - 'element.wait(for: \.isSelected, toEqual: true, timeout: 5)'
+  - 'let text = "element.waitForExistence(timeout: 5)"'
+  - '// element.waitForNonExistence(timeout: 5)'
+  - |
+    private extension XCUIElement {
+        func waitUntilExists(timeout: TimeInterval) -> Bool {
+            exists || waitForExistence(timeout: timeout)
+        }
+        func waitUntilAbsent(timeout: TimeInterval) -> Bool {
+            !exists || waitForNonExistence(timeout: timeout)
+        }
+    }
+invalid:
+  - 'element.waitForExistence(timeout: 5)'
+  - 'element.waitForNonExistence(timeout: 5)'
+  - 'waitForExistence(timeout: 5)'
+  - 'waitForNonExistence(timeout: 5)'
+  - 'let wait = element.waitForExistence'
+  - |
+    element
+        .waitForExistence(timeout: 5)
+  - |
+    func waitUntilExists(timeout: TimeInterval) -> Bool {
+        element.waitForExistence(timeout: timeout)
+    }
+  - |
+    private extension OtherElement {
+        func waitUntilAbsent(timeout: TimeInterval) -> Bool {
+            !exists || waitForNonExistence(timeout: timeout)
+        }
+    }
+  - |
+    private extension XCUIElement {
+        func testSomething() {
+            waitForExistence(timeout: 5)
+        }
+    }
