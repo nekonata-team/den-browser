@@ -120,16 +120,22 @@
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};
 		531CEF99304D46A100C9C636 /* den */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = den;
 			sourceTree = "<group>";
 		};
@@ -367,18 +373,18 @@
 			mainGroup = 530E9DD22FFFFED90033427C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenViews" */,
+				6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenViews" */,
 				53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */,
 				533B2062303A206F00B2A985 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 				55A10002301A000000000001 /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
 				56B1000230C0000000000001 /* XCRemoteSwiftPackageReference "swift-subprocess" */,
 				57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */,
-				58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */,
-				5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */,
-				5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenInfrastructure" */,
-				5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenModels" */,
-				5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenApplication" */,
+				58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */,
+				5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenIPCProtocol" */,
+				5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenInfrastructure" */,
+				5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenModels" */,
+				5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenApplication" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -642,7 +648,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_APP_SANDBOX = NO;
@@ -658,7 +664,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.55.0;
+				MARKETING_VERSION = 0.56.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nekonata.denbrowser;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -682,7 +688,7 @@
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_APP_SANDBOX = NO;
@@ -698,7 +704,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.55.0;
+				MARKETING_VERSION = 0.56.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nekonata.denbrowser;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "match Direct dev.nekonata.denbrowser macos";
@@ -718,12 +724,12 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.55.0;
+				MARKETING_VERSION = 0.56.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nekonata.denbrowser.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -740,12 +746,12 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.55.0;
+				MARKETING_VERSION = 0.56.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nekonata.denbrowser.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -761,11 +767,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.55.0;
+				MARKETING_VERSION = 0.56.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nekonata.denbrowser.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -781,11 +787,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.55.0;
+				MARKETING_VERSION = 0.56.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.nekonata.denbrowser.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -879,27 +885,27 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */ = {
+		58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenDomain;
 		};
-		5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */ = {
+		5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenIPCProtocol" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenIPCProtocol;
 		};
-		5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenApplication" */ = {
+		5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenApplication" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenApplication;
 		};
-		5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenModels" */ = {
+		5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenModels" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenModels;
 		};
-		5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenInfrastructure" */ = {
+		5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenInfrastructure" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenInfrastructure;
 		};
-		6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenViews" */ = {
+		6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenViews" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenViews;
 		};
@@ -994,32 +1000,32 @@
 		};
 		58C0A1E03000000000000003 /* DenDomain */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */;
+			package = 58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */;
 			productName = DenDomain;
 		};
 		5AC0A1E03000000000000003 /* DenIPCProtocol */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */;
+			package = 5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenIPCProtocol" */;
 			productName = DenIPCProtocol;
 		};
 		5BC0A1E03000000000000003 /* DenApplication */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenApplication" */;
+			package = 5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenApplication" */;
 			productName = DenApplication;
 		};
 		5CC0A1E03000000000000003 /* DenModels */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenModels" */;
+			package = 5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenModels" */;
 			productName = DenModels;
 		};
 		5DC0A1E03000000000000003 /* DenInfrastructure */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenInfrastructure" */;
+			package = 5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenInfrastructure" */;
 			productName = DenInfrastructure;
 		};
 		6AC0A1E03000000000000003 /* DenViews */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenViews" */;
+			package = 6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenViews" */;
 			productName = DenViews;
 		};
 /* End XCSwiftPackageProductDependency section */
