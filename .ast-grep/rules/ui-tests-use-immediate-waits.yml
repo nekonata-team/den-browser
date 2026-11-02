@@ -14,6 +14,8 @@ rule:
             - pattern: 'func waitUntilExists(timeout: TimeInterval) -> Bool { $$$FUNCTION_BODY }'
             - pattern: 'func waitUntilAbsent(timeout: TimeInterval) -> Bool { $$$FUNCTION_BODY }'
         - inside:
-            pattern: 'private extension XCUIElement { $$$EXTENSION_BODY }'
+            any:
+              - pattern: 'extension XCUIElement { $$$EXTENSION_BODY }'
+              - pattern: 'private extension XCUIElement { $$$EXTENSION_BODY }'
             stopBy: end
       stopBy: end

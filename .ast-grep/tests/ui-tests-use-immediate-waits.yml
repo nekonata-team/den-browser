@@ -6,6 +6,15 @@ valid:
   - 'let text = "element.waitForExistence(timeout: 5)"'
   - '// element.waitForNonExistence(timeout: 5)'
   - |
+    extension XCUIElement {
+        func waitUntilExists(timeout: TimeInterval) -> Bool {
+            exists || waitForExistence(timeout: timeout)
+        }
+        func waitUntilAbsent(timeout: TimeInterval) -> Bool {
+            !exists || waitForNonExistence(timeout: timeout)
+        }
+    }
+  - |
     private extension XCUIElement {
         func waitUntilExists(timeout: TimeInterval) -> Bool {
             exists || waitForExistence(timeout: timeout)
@@ -28,13 +37,13 @@ invalid:
         element.waitForExistence(timeout: timeout)
     }
   - |
-    private extension OtherElement {
+    extension OtherElement {
         func waitUntilAbsent(timeout: TimeInterval) -> Bool {
             !exists || waitForNonExistence(timeout: timeout)
         }
     }
   - |
-    private extension XCUIElement {
+    extension XCUIElement {
         func testSomething() {
             waitForExistence(timeout: 5)
         }

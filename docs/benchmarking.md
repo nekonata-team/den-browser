@@ -75,18 +75,18 @@ diagnostic log output. Stop the traced app before relaunching it normally.
 
 ## XCTest launch metric
 
-The `Den_BrowserUIPerformanceTests` class measures launch with XCTest's
-`XCTApplicationLaunchMetric`; it is separate from the default interaction test
-class. Run it explicitly and inspect the result bundle:
+The `PerformanceUITests` class measures launch with XCTest's
+`XCTApplicationLaunchMetric`; it is excluded from the default functional tests.
+Run it explicitly and inspect the result bundle:
 
 ```sh
-just test ui Den_BrowserUIPerformanceTests/testApplicationLaunchPerformance
+just test ui PerformanceUITests/testApplicationLaunchPerformance
 xcrun xcresulttool get test-results metrics --path <path-to-xcresult>
 ```
 
 ## Board Strip hitch metric
 
-`Den_BrowserUIPerformanceTests/testBoardStripScrollHitches` measures a native horizontal
+`PerformanceUITests/testBoardStripScrollHitches` measures a native horizontal
 swipe using `XCTHitchMetric`. It uses the local `rapidBoardFocus` fixture, Den Mode
 and Standard Motion. Launch, initial page loading, a warm-up swipe, position checks
 and Focused Board centering resets are outside the measured interval. Five measured
@@ -96,10 +96,10 @@ Run on the same Mac/display configuration with no competing UI tests or profilin
 The window must be narrow enough for the fixture Boards to overflow. Window and Strip
 frames and OS version are attached to the result; compare only matching geometry and
 display configurations. The test rejects window-size changes during measurement.
-This is a diagnostic performance test, separate from the default interaction test class.
+This diagnostic performance test is excluded from the default functional tests.
 
 ```sh
-just test ui Den_BrowserUIPerformanceTests/testBoardStripScrollHitches Release
+just test ui PerformanceUITests/testBoardStripScrollHitches Release
 xcrun xcresulttool get test-results metrics --path .derived-data-ui/TestResults.xcresult
 ```
 

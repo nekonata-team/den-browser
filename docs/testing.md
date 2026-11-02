@@ -37,7 +37,8 @@ Keep setup dependencies visible and avoid constructing an outer application grap
 Group tests by the responsibility they verify, with separate files for independent components.
 Board-kind tests live under `Board/Web`, `Board/Terminal` or `Board/Inspection`.
 Do not reproduce every source layer as a test folder.
-Shared helpers belong under `Support` and test resources under `Fixtures`.
+Shared UI test helpers live alongside the scenario files; other shared test helpers belong under `Support`.
+Keep test resources under `Fixtures`.
 
 Use explicit `// Arrange`, `// Act` and `// Assert` sections and keep each scenario focused on one contract.
 Tests touching preferences must use isolated suites or containers, never `UserDefaults.standard`.
@@ -89,6 +90,9 @@ All package checks treat compiler warnings as errors. Application test suites ar
 requiring MainActor for a rule breaks compilation before execution. Shared operation tests also run
 against a plain state owner without Models; Model integration tests protect the Observation bridge. Hosted tests cover native mounting, resource lifetime and App integration.
 Unit tests disable code signing; UI tests use development signing and separate `.derived-data-ui` output.
+`just test ui` runs all functional UI test classes. Pass a class or `Class/testMethod` to run a specific
+workflow, for example `just test ui DrawerEntryUITests`. Run `just test ui PerformanceUITests` for metrics.
+UI tests run serially because they share the foreground app and input devices.
 The UI Test Plan disables automatic screen capture to avoid per-test recording overhead; assertions,
 activity logs and failure diagnostics remain available in the result bundle.
 

@@ -12,7 +12,7 @@
   },
   "testTargets" : [
     {
-      "parallelizable" : true,
+      "parallelizable" : false,
       "target" : {
         "containerPath" : "container:Den Browser.xcodeproj",
         "identifier" : "530E9DF12FFFFEDB0033427C",

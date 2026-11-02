@@ -1,7 +1,7 @@
 import Foundation
 
 enum UITestFixtureFactory {
-    private static let resourceBundle = Bundle(for: Den_BrowserUITests.self)
+    private static let resourceBundle = Bundle(for: UITestCase.self)
 
     static func makeProfileSeed(
         fixture: UITestFixture,
