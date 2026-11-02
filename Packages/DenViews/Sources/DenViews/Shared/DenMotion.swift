@@ -28,7 +28,7 @@ public enum DenMotion {
 
     /// Movement, resizing, and focus changes; Reduced Motion removes spatial animation.
     public static func spatial(reduceMotion: Bool) -> Animation? {
-        reduceMotion ? nil : .smooth(duration: 0.22, extraBounce: 0)
+        reduceMotion ? nil : .smooth(duration: MotionPreference.standardSpatialDuration, extraBounce: 0)
     }
 
     /// Non-spatial feedback that retains a brief animation under Reduced Motion.

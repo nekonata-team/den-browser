@@ -2,6 +2,7 @@ import AppKit
 import Carbon
 import DenDomain
 import DenInfrastructure
+import DenModels
 import Observation
 
 @MainActor
@@ -11,13 +12,24 @@ final class BoardInputSourceTracker {
     private(set) var currentBoardID: BoardID?
     @ObservationIgnored private var notificationObserver: (any NSObjectProtocol)?
     @ObservationIgnored private var appActiveObserver: (any NSObjectProtocol)?
+    @ObservationIgnored private var windowActiveObserver: (any NSObjectProtocol)?
+    @ObservationIgnored private let notificationCenter: NotificationCenter
+    @ObservationIgnored private var restoreTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingSource: String?
+    @ObservationIgnored private var sourceBeforeRestore: String?
+    @ObservationIgnored var isHandlingKeyboardAction = false
+    @ObservationIgnored var isDenMode: () -> Bool = { false }
+    @ObservationIgnored var canRestoreInputSource: () -> Bool = { NSApp.isActive }
+    @ObservationIgnored var readInputSource: @MainActor () -> String? = systemCurrentInputSourceID
+    @ObservationIgnored var restoreInputSource: @MainActor (String) -> Void = systemSelectInputSource
     var isEnabled: () -> Bool = { false }
     var canRecordInputSource: () -> Bool = {
         !(NSApp.keyWindow?.firstResponder is NSTextView)
     }
 
-    init() {
-        notificationObserver = NotificationCenter.default.addObserver(
+    init(notificationCenter: NotificationCenter = .default) {
+        self.notificationCenter = notificationCenter
+        notificationObserver = notificationCenter.addObserver(
             forName: NSTextInputContext.keyboardSelectionDidChangeNotification,
             object: nil,
             queue: .main
@@ -27,7 +39,7 @@ final class BoardInputSourceTracker {
             }
         }
 
-        appActiveObserver = NotificationCenter.default.addObserver(
+        appActiveObserver = notificationCenter.addObserver(
             forName: NSApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
@@ -36,67 +48,132 @@ final class BoardInputSourceTracker {
                 self?.handleApplicationDidBecomeActive()
             }
         }
+        windowActiveObserver = notificationCenter.addObserver(
+            forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.handleApplicationDidBecomeActive()
+            }
+        }
     }
 
     isolated deinit {
+        restoreTask?.cancel()
         if let notificationObserver {
-            NotificationCenter.default.removeObserver(notificationObserver)
+            notificationCenter.removeObserver(notificationObserver)
         }
         if let appActiveObserver {
-            NotificationCenter.default.removeObserver(appActiveObserver)
+            notificationCenter.removeObserver(appActiveObserver)
+        }
+        if let windowActiveObserver {
+            notificationCenter.removeObserver(windowActiveObserver)
         }
     }
 
     func boardDidFocus(_ boardID: BoardID, isEnabled: Bool) {
         guard isEnabled else {
+            cancelPendingRestoration()
             currentBoardID = boardID
             return
         }
+        if currentBoardID == boardID, pendingSource != nil { return }
 
-        if let currentBoardID, currentBoardID != boardID, let currentSource = currentInputSourceID() {
+        let currentSource = readInputSource()
+        // A Board passed during navigation has not used its saved input source yet.
+        if pendingSource == nil, let currentBoardID, currentBoardID != boardID, let currentSource {
             lastInputSourceByBoardID[currentBoardID] = currentSource
         }
+        cancelPendingRestoration()
         currentBoardID = boardID
 
-        if let savedSource = lastInputSourceByBoardID[boardID] {
-            selectInputSource(id: savedSource)
-        } else if let currentSource = currentInputSourceID() {
+        if let savedSource = lastInputSourceByBoardID[boardID], savedSource != currentSource {
+            pendingSource = savedSource
+            sourceBeforeRestore = currentSource
+            if !isDenMode() {
+                if isHandlingKeyboardAction {
+                    scheduleRestoration()
+                } else {
+                    restorePendingInputSource()
+                }
+            }
+        } else if let currentSource {
             lastInputSourceByBoardID[boardID] = currentSource
         }
+    }
+
+    private func scheduleRestoration() {
+        restoreTask?.cancel()
+        // Keep the navigation delay even when spatial animation is disabled.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(MotionPreference.standardSpatialDuration))
+        restoreTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(until: deadline, clock: .continuous)
+            guard !Task.isCancelled, let self, !isDenMode(), canRestoreInputSource(), canRecordInputSource() else {
+                return
+            }
+            restorePendingInputSource()
+        }
+    }
+
+    func denModeDidChange() {
+        if isDenMode() {
+            restoreTask?.cancel()
+        } else {
+            restorePendingInputSource()
+        }
+    }
+
+    func restorePendingInputSource() {
+        let source = pendingSource
+        cancelPendingRestoration()
+        guard isEnabled(), let source else { return }
+        restoreInputSource(source)
+    }
+
+    func cancelPendingRestoration() {
+        restoreTask?.cancel()
+        restoreTask = nil
+        pendingSource = nil
+        sourceBeforeRestore = nil
     }
 
     func boardWillRemove(_ boardID: BoardID) {
         lastInputSourceByBoardID.removeValue(forKey: boardID)
         if currentBoardID == boardID {
+            cancelPendingRestoration()
             currentBoardID = nil
         }
     }
 
     private func handleKeyboardSelectionChanged() {
-        guard isEnabled() else { return }
+        guard isEnabled(), canRestoreInputSource() else { return }
         guard canRecordInputSource() else { return }
-        guard let currentBoardID, let currentSource = currentInputSourceID() else { return }
+        guard let currentBoardID, let currentSource = readInputSource() else { return }
+        if pendingSource != nil {
+            guard currentSource != sourceBeforeRestore else { return }
+            cancelPendingRestoration()
+        }
         lastInputSourceByBoardID[currentBoardID] = currentSource
     }
 
     private func handleApplicationDidBecomeActive() {
-        guard isEnabled() else { return }
+        guard isEnabled(), canRestoreInputSource(), canRecordInputSource(), !isDenMode() else { return }
         guard let currentBoardID, let savedSource = lastInputSourceByBoardID[currentBoardID] else { return }
-        selectInputSource(id: savedSource)
+        cancelPendingRestoration()
+        restoreInputSource(savedSource)
     }
 
     // MARK: - Carbon TIS Helpers
 
-    func currentInputSourceID() -> String? {
+    private static func systemCurrentInputSourceID() -> String? {
         guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return nil }
         guard let ptr = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
         return Unmanaged<CFString>.fromOpaque(ptr).takeUnretainedValue() as String
     }
 
-    func selectInputSource(id: String) {
+    private static func systemSelectInputSource(id: String) {
         let tracing = PerformanceTrace.isEnabled
         let startedAt = tracing ? ContinuousClock.now : nil
-        let previousSource = currentInputSourceID()
+        let previousSource = systemCurrentInputSourceID()
         let match = previousSource.map { $0 == id ? "same" : "different" } ?? "unknown"
         let interval = PerformanceTrace.beginInterval("BoardInputSourceTracker.selectInputSource")
         var carbonMilliseconds: Double?
@@ -128,7 +205,7 @@ final class BoardInputSourceTracker {
         carbonStatus = TISSelectInputSource(target)
         if let carbonStartedAt {
             carbonMilliseconds = carbonStartedAt.duration(to: .now) / .milliseconds(1)
-            restored = currentInputSourceID() == id
+            restored = systemCurrentInputSourceID() == id
         }
     }
 

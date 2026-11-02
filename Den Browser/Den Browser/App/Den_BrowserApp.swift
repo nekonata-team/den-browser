@@ -66,6 +66,9 @@ struct Den_BrowserApp: App {
                 route: $route,
                 startUpdater: { updaterController.start() },
                 registerKeyboardWindow: { window, windowModel in
+                    profileManager.session(for: window)?.inputSourceTracker.canRestoreInputSource = { [weak window] in
+                        window?.isKeyWindow == true
+                    }
                     keyboardController.register(windowModel: windowModel, for: window)
                 },
                 unregisterKeyboardWindow: { window in

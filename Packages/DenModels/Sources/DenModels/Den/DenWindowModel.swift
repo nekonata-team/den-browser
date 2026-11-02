@@ -103,7 +103,12 @@ public final class DenWindowModel {
     public var saveEssentialDraft: SaveEssentialDraft?
     public var isZenViewPresented = false
     public var isFocusModePresented = false
-    public var isDenMode = false
+    public var isDenMode = false {
+        didSet {
+            if oldValue != isDenMode { onDenModeChange?() }
+        }
+    }
+    @ObservationIgnored public var onDenModeChange: (() -> Void)?
     public var isFullscreenActive = false
     public var isNotificationListPresented = false
     public var boardWidthPanelMessage: String?

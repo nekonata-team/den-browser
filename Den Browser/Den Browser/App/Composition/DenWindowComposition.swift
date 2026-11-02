@@ -208,6 +208,8 @@ final class DenWindowComposition {
     }
 
     func connect() {
+        session.inputSourceTracker.isDenMode = { [weak model] in model?.isDenMode ?? false }
+        model.onDenModeChange = { [weak tracker = session.inputSourceTracker] in tracker?.denModeDidChange() }
         session.connection.visibleDrawerItemID = { [weak model] in
             guard let model, model.isDrawerPresented else { return nil }
             return model.drawer.expandedItemID
@@ -220,6 +222,9 @@ final class DenWindowComposition {
     }
 
     func disconnect() {
+        model.onDenModeChange = nil
+        session.inputSourceTracker.cancelPendingRestoration()
+        session.inputSourceTracker.isDenMode = { false }
         if let id = session.connection.visibleDrawerItemID() {
             session.resources.drawerItems.touch(id)
         }

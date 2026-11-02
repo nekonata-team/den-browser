@@ -24,7 +24,9 @@ final class KeyboardController {
     ) {
         guard monitor == nil else { return }
 
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [
+            .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown,
+        ]) {
             [weak self, weak profileManager, weak preferences] event in
             guard let self,
                 let session = profileManager?.session(for: event.window),
@@ -32,6 +34,12 @@ final class KeyboardController {
                 let windowModel = self.windowModels[ObjectIdentifier(window)],
                 let preferences
             else { return event }
+            if event.type != .keyDown {
+                if !windowModel.isDenMode {
+                    session.inputSourceTracker.restorePendingInputSource()
+                }
+                return event
+            }
             return Self.handle(
                 event,
                 session: session,
@@ -99,7 +107,12 @@ final class KeyboardController {
         windowModel: DenWindowModel,
         openSettings: @MainActor () -> Void
     ) {
+        if decision == .forward(.sheet) {
+            session.inputSourceTracker.restorePendingInputSource()
+        }
         guard case .perform(let action) = decision else { return }
+        session.inputSourceTracker.isHandlingKeyboardAction = true
+        defer { session.inputSourceTracker.isHandlingKeyboardAction = false }
         AppActionHandler.perform(action, session: session, windowModel: windowModel, openSettings: openSettings)
     }
 }

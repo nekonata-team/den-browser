@@ -1,4 +1,6 @@
 public enum MotionPreference: String, CaseIterable, Identifiable {
+    public static let standardSpatialDuration = 0.22
+
     case followSystem = "follow-system"
     case standard
     case reduced

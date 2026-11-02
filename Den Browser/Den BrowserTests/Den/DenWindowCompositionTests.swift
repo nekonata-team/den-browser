@@ -1,3 +1,4 @@
+import AppKit
 import DenApplication
 import DenDomain
 import DenModels
@@ -8,6 +9,64 @@ import Testing
 
 @MainActor
 struct DenWindowCompositionTests {
+    @Test func leavingDenModeRestoresThePendingBoardSourceSynchronously() {
+        // Arrange
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.configuration.preferences.setRememberBoardInputMethod(true)
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        let tracker = session.inputSourceTracker
+        var selected: [String] = []
+        tracker.readInputSource = { "english" }
+        tracker.restoreInputSource = { selected.append($0) }
+        composition.model.isDenMode = true
+        let board = BoardID()
+        tracker.setLastInputSource("japanese", for: board)
+        tracker.boardDidFocus(board, isEnabled: true)
+        #expect(selected.isEmpty)
+
+        // Act
+        composition.model.exitDenMode()
+
+        // Assert
+        #expect(selected == ["japanese"])
+    }
+
+    @Test func sheetInputRestoresThePendingSourceBeforeForwarding() throws {
+        // Arrange
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
+            configuration: makeTestBoardRuntimeConfiguration())
+        session.configuration.preferences.setRememberBoardInputMethod(true)
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        let tracker = session.inputSourceTracker
+        var selected: [String] = []
+        tracker.readInputSource = { "english" }
+        tracker.restoreInputSource = { selected.append($0) }
+        tracker.isHandlingKeyboardAction = true
+        let board = BoardID()
+        tracker.setLastInputSource("japanese", for: board)
+        tracker.boardDidFocus(board, isEnabled: true)
+        tracker.isHandlingKeyboardAction = false
+        let event = try #require(
+            NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+                windowNumber: 0, context: nil, characters: "a", charactersIgnoringModifiers: "a",
+                isARepeat: false, keyCode: 0))
+
+        // Act
+        let consumed = KeyboardController.handle(event, session: session, windowModel: composition.model)
+
+        // Assert
+        #expect(!consumed)
+        #expect(selected == ["japanese"])
+    }
+
     @Test func constructionDoesNotConnectWindowEffects() {
         // Arrange
         let session = ProfileWindowSession(
