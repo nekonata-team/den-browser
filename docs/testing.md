@@ -89,6 +89,8 @@ All package checks treat compiler warnings as errors. Application test suites ar
 requiring MainActor for a rule breaks compilation before execution. Shared operation tests also run
 against a plain state owner without Models; Model integration tests protect the Observation bridge. Hosted tests cover native mounting, resource lifetime and App integration.
 Unit tests disable code signing; UI tests use development signing and separate `.derived-data-ui` output.
+The UI Test Plan disables automatic screen capture to avoid per-test recording overhead; assertions,
+activity logs and failure diagnostics remain available in the result bundle.
 
 `just lint` runs the [source guards](../.ast-grep/README.md), swift-format in strict mode and SwiftLint.
 Builds treat compiler warnings as errors. Package dependencies are compiler-enforced; import scans do not

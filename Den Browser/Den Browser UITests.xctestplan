@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "4F8236B6-F281-4410-9B87-A349432A2026",
+      "name" : "Default",
+      "options" : {
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "uiTestingScreenshotsLifetime" : "keepNever"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Den Browser.xcodeproj",
+        "identifier" : "530E9DF12FFFFEDB0033427C",
+        "name" : "Den BrowserUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

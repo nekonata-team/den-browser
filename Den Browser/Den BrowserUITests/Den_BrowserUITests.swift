@@ -857,7 +857,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         then("Alpha is the only remaining Board and is centered") {
             XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            assertEventually("The remaining Alpha Board should be centered") {
+            assertEventually(
+                "The remaining Alpha Board should be centered. Alpha: \(alphaSurface.frame), strip: \(strip.frame), "
+                    + "Bravo exists: \(bravo.exists), Charlie exists: \(charlie.exists)"
+            ) {
                 !bravo.exists && !charlie.exists
                     && abs(alphaSurface.frame.midX - strip.frame.midX) <= 3
             }
@@ -1024,7 +1027,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     private func assertEventually(
-        _ message: String,
+        _ message: @autoclosure () -> String,
         timeout: TimeInterval = 5,
         condition: @escaping () -> Bool
     ) {
@@ -1032,7 +1035,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate { _, _ in condition() },
             object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message())
     }
 }
 
