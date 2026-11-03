@@ -814,7 +814,7 @@ private enum DenOverviewLayout {
     static let selectionIndicatorSize: CGFloat = 6
     static let emptyBoardWidth: CGFloat = 150
     static let boardCardHeight: CGFloat = DenLayout.overviewFacingHeight
-    static let boardSpacing: CGFloat = 10
+    static let boardSpacing: CGFloat = 6
     static let sideBoardSpacing: CGFloat = 4
     static let deskSpacing: CGFloat = 12
     static let boardPadding: CGFloat = 10

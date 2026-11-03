@@ -7,7 +7,7 @@ public enum DenRadius {
     /// Inner cards and inputs; use a continuous corner shape.
     public static let medium: CGFloat = 12
     /// Boards, panels, and Overview; use a continuous corner shape.
-    public static let large: CGFloat = 18
+    public static let large: CGFloat = 16
 }
 
 /// Shared app-owned motion.

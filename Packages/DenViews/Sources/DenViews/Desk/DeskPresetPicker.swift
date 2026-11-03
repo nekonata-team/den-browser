@@ -305,7 +305,7 @@ extension View {
 struct DeskPresetPreview: View {
     private static let cardHeight: CGFloat = DenPanelLayout.presetFacingHeight
     private static let boardSpacing: CGFloat = 6
-    private static let sideBoardSpacing: CGFloat = 3
+    private static let sideBoardSpacing: CGFloat = 4
 
     let boards: [DeskPresetBoard]
     var boardHeight: CGFloat = DenLayout.fallbackBoardHeight

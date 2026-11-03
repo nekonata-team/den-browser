@@ -52,7 +52,7 @@ public struct DeskSwitcher: View {
                         } label: {
                             Image(systemSymbol: .plus)
                                 .font(.system(size: 13, weight: .semibold))
-                                .frame(width: 28, height: 28)
+                                .frame(width: DenLayout.deskButtonHeight, height: DenLayout.deskButtonHeight)
                         }
                         .buttonStyle(.borderless)
                         .tint(.secondary)

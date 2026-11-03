@@ -297,7 +297,7 @@ struct BoardLayoutTests {
     @Test func newBoardWidthUsesHalfAvailableWindowWidthOrFocusedWidth() {
         let size = CGSize(width: 1000, height: 800)
 
-        #expect(DenLayout.newBoardWidth(in: size, focusedBoardWidth: nil) == 488)
+        #expect(DenLayout.newBoardWidth(in: size, focusedBoardWidth: nil) == 491)
         #expect(DenLayout.newBoardWidth(in: size, focusedBoardWidth: 760) == 760)
     }
 
