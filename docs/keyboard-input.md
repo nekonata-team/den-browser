@@ -31,12 +31,9 @@ Up/Down select, Return opens the selected Notification, and Escape dismisses.
 Shortcut recording updates `AppPreferences` without dispatching actions; the next event uses the effective values through `ShortcutConfiguration`.
 
 With **Remember input method per Board** enabled, Den Mode postpones input-source restoration until
-returning to Sheet Input. Keyboard navigation in Sheet Input restores the last destination after 220 ms
-without another Board focus change. This delay matches standard spatial motion and also applies when
-animations are disabled; it does not depend on animation completion. Pending restoration completes
-synchronously before a key is forwarded
-to a Sheet or a pointer press in Sheet Input is delivered. Boards passed during navigation retain their saved source.
-The macOS selection call still runs on the main thread; postponement reduces repeated calls, not its duration.
+returning to Sheet Input. Keyboard navigation in Sheet Input defers restoration until navigation pauses,
+avoiding input-source changes for Boards passed along the way. The destination's saved source is restored
+before keyboard or pointer input reaches a Sheet. Intermediate Boards retain their saved sources.
 
 Universal Search is an exclusive temporary input context. Its Router forwards text editing and all marked-text
 composition events to the native field, consumes Up/Down for result selection, Return for execution, Option-Return for opening a URL, search, or Essential in Drawer, and Escape

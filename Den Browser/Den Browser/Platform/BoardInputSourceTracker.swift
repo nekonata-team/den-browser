@@ -8,6 +8,8 @@ import Observation
 @MainActor
 @Observable
 final class BoardInputSourceTracker {
+    private static let restorationBuffer = 0.05
+
     private(set) var lastInputSourceByBoardID: [BoardID: String] = [:]
     private(set) var currentBoardID: BoardID?
     @ObservationIgnored private var notificationObserver: (any NSObjectProtocol)?
@@ -103,8 +105,9 @@ final class BoardInputSourceTracker {
 
     private func scheduleRestoration() {
         restoreTask?.cancel()
-        // Keep the navigation delay even when spatial animation is disabled.
-        let deadline = ContinuousClock.now.advanced(by: .seconds(MotionPreference.standardSpatialDuration))
+        // Allow a brief buffer after nominal motion; keep the delay when animation is disabled.
+        let delay = MotionPreference.standardSpatialDuration + Self.restorationBuffer
+        let deadline = ContinuousClock.now.advanced(by: .seconds(delay))
         restoreTask = Task { @MainActor [weak self] in
             try? await Task.sleep(until: deadline, clock: .continuous)
             guard !Task.isCancelled, let self, !isDenMode(), canRestoreInputSource(), canRecordInputSource() else {

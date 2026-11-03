@@ -134,7 +134,7 @@ struct BoardInputSourceTrackerTests {
 
         // Act
         tracker.boardDidFocus(board, isEnabled: true)
-        try await Task.sleep(for: .milliseconds(250))
+        try await Task.sleep(for: .milliseconds(350))
 
         // Assert
         #expect(source.selected.isEmpty)
@@ -157,7 +157,7 @@ struct BoardInputSourceTrackerTests {
 
         // Assert
         #expect(source.selected == ["japanese"])
-        try await Task.sleep(for: .milliseconds(250))
+        try await Task.sleep(for: .milliseconds(350))
         #expect(source.selected == ["japanese"])
     }
 
@@ -211,7 +211,7 @@ struct BoardInputSourceTrackerTests {
         // Act
         source.current = "korean"
         source.notifications.post(name: NSTextInputContext.keyboardSelectionDidChangeNotification, object: nil)
-        try await Task.sleep(for: .milliseconds(250))
+        try await Task.sleep(for: .milliseconds(350))
 
         // Assert
         #expect(source.selected.isEmpty)
@@ -237,7 +237,7 @@ struct BoardInputSourceTrackerTests {
             } else {
                 tracker.isEnabled = { false }
             }
-            try await Task.sleep(for: .milliseconds(250))
+            try await Task.sleep(for: .milliseconds(350))
 
             // Assert
             #expect(source.selected.isEmpty)
