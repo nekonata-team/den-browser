@@ -81,7 +81,7 @@ struct InputContext {
     init(session: ProfileWindowSession, windowModel: DenWindowModel, event: NSEvent? = nil) {
         isFullscreenActive = windowModel.isFullscreenActive
         hasPendingConfirmation = windowModel.hasPendingConfirmation
-        activeDrag = session.resources.data.snapshot.activeDrag
+        activeDrag = session.resources.store.snapshot.activeDrag
         mode = windowModel.isDenMode ? .den : .sheet
         if windowModel.isNotificationListPresented {
             surface = .notifications

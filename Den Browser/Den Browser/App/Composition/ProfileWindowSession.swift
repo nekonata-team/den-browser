@@ -47,7 +47,7 @@ final class ProfileWindowSession {
             presentedDeskID.flatMap { id in
                 resources.state.desks.contains { $0.id == id } ? id : nil
             } ?? resources.state.focusedDeskID
-        let navigation = WindowNavigationModel(state: resources.data, presentedDeskID: selectedDeskID)
+        let navigation = WindowNavigationModel(state: resources.store, presentedDeskID: selectedDeskID)
         let feedback = FeedbackModel()
         let downloads = DownloadActivityModel()
         let windowResources = DenWindowResources()

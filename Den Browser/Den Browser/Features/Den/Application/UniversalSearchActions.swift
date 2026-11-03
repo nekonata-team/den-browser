@@ -22,7 +22,7 @@ enum UniversalSearchActions {
         switch target {
         case .board(let id):
             guard
-                session.resources.data.snapshot.den.desks.contains(where: {
+                session.resources.store.snapshot.den.desks.contains(where: {
                     $0.boards.contains(where: { $0.id == id })
                 })
             else {
@@ -31,7 +31,7 @@ enum UniversalSearchActions {
             windowModel.hideUniversalSearch()
             session.boardNavigation.focusBoard(id, exitsDenMode: true)
         case .desk(let id):
-            guard session.resources.data.snapshot.den.desks.contains(where: { $0.id == id }) else {
+            guard session.resources.store.snapshot.den.desks.contains(where: { $0.id == id }) else {
                 return "This Desk is no longer available."
             }
             windowModel.hideUniversalSearch()
@@ -47,7 +47,7 @@ enum UniversalSearchActions {
             }
             return open(essential.input, session: session, windowModel: windowModel, inDrawer: inDrawer)
         case .recent(let item):
-            guard session.resources.data.snapshot.recentItems.contains(item) else {
+            guard session.resources.store.snapshot.recentItems.contains(item) else {
                 return "This Recent Item is no longer available."
             }
             return open(item.displayText, session: session, windowModel: windowModel, inDrawer: inDrawer)

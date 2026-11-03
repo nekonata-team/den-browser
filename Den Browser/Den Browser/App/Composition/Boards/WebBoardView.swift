@@ -57,7 +57,7 @@ struct WebBoardView: View {
                 return window.makeFirstResponder(runtime.webView)
             },
             onBeforeHide: {
-                guard session.resources.data.snapshot.activeDrag == nil else { return }
+                guard session.resources.store.snapshot.activeDrag == nil else { return }
                 guard session.resources.webRuntimes[board.id] === runtime else { return }
                 await session.resources.facingCapture.captureWeb(
                     boardID: board.id, webView: runtime.webView)

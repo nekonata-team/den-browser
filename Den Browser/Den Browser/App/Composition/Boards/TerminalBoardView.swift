@@ -49,7 +49,7 @@ struct TerminalBoardView: View {
                 return window.makeFirstResponder(runtime.terminalView)
             },
             onBeforeHide: {
-                guard session.resources.data.snapshot.activeDrag == nil,
+                guard session.resources.store.snapshot.activeDrag == nil,
                     session.resources.terminalRuntimes[board.id] === runtime
                 else { return }
                 session.resources.facingCapture.captureTerminal(

@@ -86,7 +86,7 @@ public struct BoardUndo {
         guard let source = reader.snapshot.den.desks.first(where: { $0.boards.contains { $0.id == boardID } }),
             reader.snapshot.den.desks.contains(where: { $0.id == deskID })
         else { return .unavailable }
-        BoardMovement(state: reader, writer: writer).transfer(
+        BoardMovement(reader: reader, writer: writer).transfer(
             boardID, from: source.id, to: deskID, at: index, recordsUndo: false)
         writer.update {
             guard let target = $0.den.desks.firstIndex(where: { $0.id == deskID }) else { return }

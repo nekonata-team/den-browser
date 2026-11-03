@@ -52,7 +52,7 @@ final class ZmxBoardActions {
 
     var zmxBoards: ZmxBoards {
         ZmxBoards(
-            state: storage.data, creation: storage.boardCreation, removal: storage.boardRemoval,
+            state: storage.store, creation: storage.boardCreation, removal: storage.boardRemoval,
             updates: storage.boardUpdates)
     }
 

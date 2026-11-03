@@ -15,7 +15,7 @@ struct PersonalDeskPresetOperationsTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var saves = 0
         let operations = DeskPresetOperations(
-            state: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { presets in
                 #expect(shared.store.snapshot.deskPresets == presets)
                 #expect(presets.first?.label == "Routine")
@@ -44,7 +44,7 @@ struct PersonalDeskPresetOperationsTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var savedPresets: [PersonalDeskPreset] = []
         let operations = DeskPresetOperations(
-            state: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: {
                 savedPresets = $0
                 return true
@@ -87,7 +87,7 @@ struct PersonalDeskPresetOperationsTests {
         }
         var saves = 0
         let operations = DeskPresetOperations(
-            state: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true
@@ -120,7 +120,7 @@ struct PersonalDeskPresetOperationsTests {
                 den: DenState(desks: [desk], focusedDeskID: desk.id), deskPresets: [routine, other]))
         var saves = 0
         let operations = DeskPresetOperations(
-            state: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true

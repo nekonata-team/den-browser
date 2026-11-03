@@ -9,7 +9,7 @@ nonisolated struct BoardUndoTests {
         var saves = 0
         var reader: DenStateReader { DenStateReader { self.snapshot } }
         var writer: DenStateWriter { DenStateWriter { $0(&self.snapshot) } }
-        var movement: BoardMovement { BoardMovement(state: reader, writer: writer) }
+        var movement: BoardMovement { BoardMovement(reader: reader, writer: writer) }
         var transfer: DrawerTransfer { DrawerTransfer(reader: reader, writer: writer) }
         var removal: BoardRemoval { BoardRemoval(reader: reader, writer: writer) }
         var items: DrawerItems { DrawerItems(reader: reader, writer: writer) }

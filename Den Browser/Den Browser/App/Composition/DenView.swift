@@ -131,11 +131,11 @@ private struct DenActivePanelOverlay: View {
             UniversalSearchPanel(
                 profileColor: profileColor,
                 sourceItems: UniversalSearchModel.sourceItems(
-                    state: session.resources.data.snapshot.den, essentials: preferences.essentials,
-                    hasBoardUndoHistory: !session.resources.data.snapshot.boardUndoHistory.isEmpty,
+                    state: session.resources.store.snapshot.den, essentials: preferences.essentials,
+                    hasBoardUndoHistory: !session.resources.store.snapshot.boardUndoHistory.isEmpty,
                     profiles: profileManager.profiles, profileName: profileName ?? ""),
-                recentItems: session.resources.data.snapshot.recentItems,
-                boards: session.resources.data.snapshot.den.desks.flatMap(\.boards),
+                recentItems: session.resources.store.snapshot.recentItems,
+                boards: session.resources.store.snapshot.den.desks.flatMap(\.boards),
                 perform: { target, inDrawer in
                     UniversalSearchActions.perform(
                         target, session: session, windowModel: windowModel, inDrawer: inDrawer,
@@ -165,7 +165,7 @@ private struct DenActivePanelOverlay: View {
             DeskPresetManagementPanel(
                 isStandalone: true,
                 profileColor: profileColor,
-                presets: session.resources.data.snapshot.deskPresets,
+                presets: session.resources.store.snapshot.deskPresets,
                 boardHeight: boardHeight,
                 renamePreset: windowModel.deskPresetActions.rename,
                 requestDeletion: windowModel.deskPresetActions.requestDeletion

@@ -335,7 +335,7 @@ private struct DenCommands: Commands {
                         windowModel?.focusedDesk?.focusedBoardID == nil
                             || windowModel?.pendingConfirmation != nil)
                 Button("Undo Board Operation") { perform(.board(.undo)) }
-                    .disabled(session?.resources.data.snapshot.boardUndoHistory.isEmpty ?? true)
+                    .disabled(session?.resources.store.snapshot.boardUndoHistory.isEmpty ?? true)
             }
 
             Button("zmx Sessions…") { windowModel?.showZmxSessions() }
@@ -345,7 +345,7 @@ private struct DenCommands: Commands {
                 Button("Restore Discarded Drawer Item") {
                     perform(.drawer(.restoreDiscardedItem))
                 }
-                .disabled(session?.resources.data.snapshot.recentlyDiscardedDrawerItems.isEmpty ?? true)
+                .disabled(session?.resources.store.snapshot.recentlyDiscardedDrawerItems.isEmpty ?? true)
             }
 
             Menu("Desk") {

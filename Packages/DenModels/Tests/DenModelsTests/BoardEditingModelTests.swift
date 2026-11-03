@@ -23,7 +23,7 @@ struct BoardEditingModelTests {
                     return true
                 }),
             recents: Recents(reader: shared.reader, writer: shared.writer),
-            movement: BoardMovement(state: shared.reader, writer: shared.writer),
+            movement: BoardMovement(reader: shared.reader, writer: shared.writer),
             focusedBoard: { shared.store.snapshot.den.desks[0].boards.first { $0.id == target } },
             essentials: { [] }, searchEngine: { .google }, finishEditing: { events.append("finish") },
             loadURL: { id, url in

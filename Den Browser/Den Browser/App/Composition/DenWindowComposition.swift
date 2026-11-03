@@ -10,11 +10,11 @@ final class DenWindowComposition {
 
     init(session: ProfileWindowSession, feedbackDuration: Duration = .seconds(5)) {
         self.session = session
-        let state = session.resources.data
+        let state = session.resources.store
         let navigation = session.navigation
         let preferences = session.configuration.preferences
         let boardEditing = BoardEditingModel(
-            state: session.resources.data, updates: session.resources.boardUpdates,
+            state: session.resources.store, updates: session.resources.boardUpdates,
             recents: session.resources.recents, movement: session.resources.boardMovement,
             focusedBoard: { navigation.focusedBoard }, essentials: { preferences.essentials },
             searchEngine: { session.configuration.preferences.searchEngine },
@@ -83,11 +83,11 @@ final class DenWindowComposition {
             focusedDesk: { navigation.focusedDesk },
             focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: true) })
         let notificationList = NotificationListModel(
-            state: session.resources.data,
+            state: session.resources.store,
             operations: session.resources.notificationOperations,
             openSource: session.notifications.openNotificationSource)
         let desks = DeskListModel(
-            state: session.resources.data, lifecycle: session.resources.deskLifecycle,
+            state: session.resources.store, lifecycle: session.resources.deskLifecycle,
             movement: session.resources.deskMovement, updates: session.resources.deskUpdates,
             navigation: session.navigation,
             isAvailable: { session.context.canPresentDesk?($0) ?? true },

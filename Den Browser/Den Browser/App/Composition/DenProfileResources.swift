@@ -9,7 +9,7 @@ import Observation
 @MainActor
 @Observable
 final class DenProfileResources {
-    let data: DenStateStore
+    let store: DenStateStore
     @ObservationIgnored private let reader: DenStateReader
     @ObservationIgnored private let writer: DenStateWriter
     @ObservationIgnored let notificationOperations: NotificationOperations
@@ -32,38 +32,38 @@ final class DenProfileResources {
     @ObservationIgnored let boardMovement: BoardMovement
 
     var deskPresetOperations: DeskPresetOperations {
-        DeskPresetOperations(state: reader, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
+        DeskPresetOperations(reader: reader, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
     }
 
-    var snapshot: DenSharedState { data.snapshot }
+    var snapshot: DenSharedState { store.snapshot }
 
     var state: DenState {
-        get { data.snapshot.den }
+        get { store.snapshot.den }
         set { writer.update { $0.den = newValue } }
     }
 
     var deskPresets: [PersonalDeskPreset] {
-        data.snapshot.deskPresets
+        store.snapshot.deskPresets
     }
 
-    var recentItems: [RecentItem] { data.snapshot.recentItems }
+    var recentItems: [RecentItem] { store.snapshot.recentItems }
 
     var notifications: [DenNotification] {
-        data.snapshot.notifications
+        store.snapshot.notifications
     }
 
     var activeDrag: ActiveDrag? {
-        get { data.snapshot.activeDrag }
+        get { store.snapshot.activeDrag }
         set { writer.update { $0.activeDrag = newValue } }
     }
 
     var recentlyRemovedBoards: [RecentlyRemovedBoard] {
-        get { data.snapshot.recentlyRemovedBoards }
+        get { store.snapshot.recentlyRemovedBoards }
         set { writer.update { $0.recentlyRemovedBoards = newValue } }
     }
 
     var recentlyDiscardedDrawerItems: [DrawerItem] {
-        get { data.snapshot.recentlyDiscardedDrawerItems }
+        get { store.snapshot.recentlyDiscardedDrawerItems }
         set { writer.update { $0.recentlyDiscardedDrawerItems = newValue } }
     }
 
@@ -107,7 +107,7 @@ final class DenProfileResources {
             { persist(DenStateNormalization.normalize($0)) }
         }
         boardRuntimes = DenBoardRuntimes()
-        data = shared.store
+        store = shared.store
         reader = shared.reader
         writer = shared.writer
         notificationOperations = NotificationOperations(reader: shared.reader, writer: shared.writer)
@@ -116,7 +116,7 @@ final class DenProfileResources {
         deskMovement = DeskMovement(reader: shared.reader, writer: shared.writer, persist: persistState)
         denReset = DenReset(reader: shared.reader, writer: shared.writer, persist: persistState)
         boardMovement = BoardMovement(
-            state: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: persistState)
         boardSizing = BoardSizing(
             reader: shared.reader, writer: shared.writer,

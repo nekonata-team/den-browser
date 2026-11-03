@@ -1,19 +1,19 @@
 public import DenDomain
 
 public struct BoardMovement {
-    private let state: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(state: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.state = state
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
 
     public func canMove(_ boardID: BoardID, by delta: Int) -> Bool {
         guard delta != 0,
-            let desk = state.snapshot.den.desks.first(where: { $0.boards.contains { $0.id == boardID } })
+            let desk = reader.snapshot.den.desks.first(where: { $0.boards.contains { $0.id == boardID } })
         else { return false }
         let boards = desk.boards
         guard let group = BoardGroup.containing(boardID, in: boards),
@@ -101,14 +101,14 @@ public struct BoardMovement {
     }
 
     public func place(_ boardID: BoardID, in deskID: DeskID, before anchorID: BoardID?) -> Bool {
-        guard state.snapshot.activeDrag == nil,
+        guard reader.snapshot.activeDrag == nil,
             let source = deskIndex(containing: boardID),
-            let target = state.snapshot.den.desks.firstIndex(where: { $0.id == deskID }),
-            let group = BoardGroup.containing(boardID, in: state.snapshot.den.desks[source].boards)
+            let target = reader.snapshot.den.desks.firstIndex(where: { $0.id == deskID }),
+            let group = BoardGroup.containing(boardID, in: reader.snapshot.den.desks[source].boards)
         else { return false }
         let ids = Set(group.boards.map(\.id))
         if let anchorID, ids.contains(anchorID) { return true }
-        let remaining = state.snapshot.den.desks[target].boards.filter { !ids.contains($0.id) }
+        let remaining = reader.snapshot.den.desks[target].boards.filter { !ids.contains($0.id) }
         let index: Int
         if let anchorID {
             guard let offset = remaining.firstIndex(where: { $0.id == anchorID }) else { return false }
@@ -116,7 +116,7 @@ public struct BoardMovement {
         } else {
             index = remaining.endIndex
         }
-        transfer(boardID, from: state.snapshot.den.desks[source].id, to: deskID, at: .init(rawValue: index))
+        transfer(boardID, from: reader.snapshot.den.desks[source].id, to: deskID, at: .init(rawValue: index))
         focusIfEmpty(boardID, in: target)
         save()
         return true
@@ -124,55 +124,55 @@ public struct BoardMovement {
 
     public func shiftAndCenter(_ boardID: BoardID, by delta: Int, center: () -> Void) {
         guard let destination = adjacentPosition(boardID, by: delta) else { return }
-        reorder(boardID, to: .init(rawValue: destination.board), in: state.snapshot.den.desks[destination.desk].id)
+        reorder(boardID, to: .init(rawValue: destination.board), in: reader.snapshot.den.desks[destination.desk].id)
         writer.update { $0.den.desks[destination.desk].scrollOffsetX = nil }
         center()
         save()
     }
 
     public func shiftInOverview(_ boardID: BoardID, by delta: Int) {
-        guard state.snapshot.activeDrag == nil, let destination = adjacentPosition(boardID, by: delta) else { return }
-        reorder(boardID, to: .init(rawValue: destination.board), in: state.snapshot.den.desks[destination.desk].id)
+        guard reader.snapshot.activeDrag == nil, let destination = adjacentPosition(boardID, by: delta) else { return }
+        reorder(boardID, to: .init(rawValue: destination.board), in: reader.snapshot.den.desks[destination.desk].id)
         save()
     }
 
     public func transferAndPresent(_ boardID: BoardID, to deskID: DeskID, present: (DeskID) -> Void) {
         guard let source = deskIndex(containing: boardID),
-            let target = state.snapshot.den.desks.firstIndex(where: { $0.id == deskID }), source != target
+            let target = reader.snapshot.den.desks.firstIndex(where: { $0.id == deskID }), source != target
         else { return }
-        transfer(boardID, from: state.snapshot.den.desks[source].id, to: deskID, at: insertionAfterFocus(in: target))
+        transfer(boardID, from: reader.snapshot.den.desks[source].id, to: deskID, at: insertionAfterFocus(in: target))
         writer.update { $0.den.desks[target].focusedBoardID = boardID }
         present(deskID)
         save()
     }
 
     public func transferInOverview(_ boardID: BoardID, by delta: Int) {
-        let count = state.snapshot.den.desks.count
-        guard state.snapshot.activeDrag == nil, count > 1, let source = deskIndex(containing: boardID) else { return }
+        let count = reader.snapshot.den.desks.count
+        guard reader.snapshot.activeDrag == nil, count > 1, let source = deskIndex(containing: boardID) else { return }
         let target = ((source + delta) % count + count) % count
         transfer(
-            boardID, from: state.snapshot.den.desks[source].id, to: state.snapshot.den.desks[target].id,
+            boardID, from: reader.snapshot.den.desks[source].id, to: reader.snapshot.den.desks[target].id,
             at: insertionAfterFocus(in: target))
         focusIfEmpty(boardID, in: target)
         save()
     }
 
     public func beginOverviewDrag(_ boardID: BoardID) -> Bool {
-        guard state.snapshot.activeDrag == nil, deskIndex(containing: boardID) != nil else { return false }
+        guard reader.snapshot.activeDrag == nil, deskIndex(containing: boardID) != nil else { return false }
         writer.update { $0.activeDrag = .board(boardID) }
         return true
     }
 
     public func finishOverviewDrag(_ boardID: BoardID, to deskID: DeskID, at index: BoardIndex) {
-        guard case .board(let activeID)? = state.snapshot.activeDrag, activeID == boardID,
+        guard case .board(let activeID)? = reader.snapshot.activeDrag, activeID == boardID,
             let source = deskIndex(containing: boardID),
-            let target = state.snapshot.den.desks.firstIndex(where: { $0.id == deskID })
+            let target = reader.snapshot.den.desks.firstIndex(where: { $0.id == deskID })
         else { return }
-        let keepsFocus = source == target && state.snapshot.den.desks[source].focusedBoardID == boardID
+        let keepsFocus = source == target && reader.snapshot.den.desks[source].focusedBoardID == boardID
         if source == target {
             reorder(boardID, to: index, in: deskID)
         } else {
-            transfer(boardID, from: state.snapshot.den.desks[source].id, to: deskID, at: index)
+            transfer(boardID, from: reader.snapshot.den.desks[source].id, to: deskID, at: index)
         }
         if keepsFocus { writer.update { $0.den.desks[target].focusedBoardID = boardID } }
         focusIfEmpty(boardID, in: target)
@@ -181,16 +181,16 @@ public struct BoardMovement {
     }
 
     public func cancelOverviewDrag() {
-        guard case .board? = state.snapshot.activeDrag else { return }
+        guard case .board? = reader.snapshot.activeDrag else { return }
         writer.update { $0.activeDrag = nil }
     }
 
     public func beginDrag(_ boardID: BoardID, in deskID: DeskID, prepare: () -> Void) -> Bool {
-        guard state.snapshot.activeDrag == nil,
-            let source = deskIndex(containing: boardID), state.snapshot.den.desks[source].id == deskID
+        guard reader.snapshot.activeDrag == nil,
+            let source = deskIndex(containing: boardID), reader.snapshot.den.desks[source].id == deskID
         else { return false }
         writer.update { $0.den.desks[source].focusedBoardID = boardID }
-        NotificationOperations(reader: state, writer: writer).markAllRead(for: boardID)
+        NotificationOperations(reader: reader, writer: writer).markAllRead(for: boardID)
         prepare()
         writer.update { $0.activeDrag = .board(boardID) }
         save()
@@ -198,26 +198,26 @@ public struct BoardMovement {
     }
 
     public func preview(_ boardID: BoardID, to index: BoardIndex, in deskID: DeskID) {
-        guard let desk = state.snapshot.den.desks.firstIndex(where: { $0.id == deskID }),
-            state.snapshot.den.desks[desk].boards.indices.contains(index.rawValue)
+        guard let desk = reader.snapshot.den.desks.firstIndex(where: { $0.id == deskID }),
+            reader.snapshot.den.desks[desk].boards.indices.contains(index.rawValue)
         else { return }
         reorder(boardID, to: index, in: deskID)
         writer.update { $0.den.desks[desk].focusedBoardID = boardID }
     }
 
     public func finishDrag() {
-        guard case .board? = state.snapshot.activeDrag else { return }
+        guard case .board? = reader.snapshot.activeDrag else { return }
         writer.update { $0.activeDrag = nil }
         save()
     }
 
     private func deskIndex(containing id: BoardID) -> Int? {
-        state.snapshot.den.desks.firstIndex { $0.boards.contains { $0.id == id } }
+        reader.snapshot.den.desks.firstIndex { $0.boards.contains { $0.id == id } }
     }
 
     private func adjacentPosition(_ id: BoardID, by delta: Int) -> (desk: Int, board: Int)? {
         guard let desk = deskIndex(containing: id) else { return nil }
-        let boards = state.snapshot.den.desks[desk].boards
+        let boards = reader.snapshot.den.desks[desk].boards
         guard let group = BoardGroup.containing(id, in: boards),
             let first = group.boards.first, let last = group.boards.last,
             let start = boards.firstIndex(where: { $0.id == first.id }),
@@ -228,19 +228,19 @@ public struct BoardMovement {
     }
 
     private func insertionAfterFocus(in index: Int) -> BoardIndex {
-        let desk = state.snapshot.den.desks[index]
+        let desk = reader.snapshot.den.desks[index]
         let focused = desk.focusedBoardID.flatMap { id in desk.boards.firstIndex { $0.id == id } }
         return .init(rawValue: focused.map { $0 + 1 } ?? desk.boards.endIndex)
     }
 
     private func focusIfEmpty(_ boardID: BoardID, in index: Int) {
-        if state.snapshot.den.desks[index].focusedBoardID == nil {
+        if reader.snapshot.den.desks[index].focusedBoardID == nil {
             writer.update { $0.den.desks[index].focusedBoardID = boardID }
         }
     }
 
     private func save() {
-        guard state.snapshot.activeDrag == nil else { return }
-        _ = persist?(state.snapshot.den)
+        guard reader.snapshot.activeDrag == nil else { return }
+        _ = persist?(reader.snapshot.den)
     }
 }

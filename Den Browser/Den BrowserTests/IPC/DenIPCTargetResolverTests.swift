@@ -547,7 +547,7 @@ struct DenIPCTargetResolverTests {
         let resolved1 = try #require(try? result1.get())
         #expect(resolved1.board.id == board1ID)
         #expect(resolved1.window.resources === session1.resources)
-        #expect(resolved1.window.resources.data.snapshot.den.board(for: board1ID) != nil)
+        #expect(resolved1.window.resources.store.snapshot.den.board(for: board1ID) != nil)
 
         // Act: Target board2 without explicit profileID
         let result2 = DenIPCTargetResolver.resolveBoard(
@@ -557,7 +557,7 @@ struct DenIPCTargetResolverTests {
         let resolved2 = try #require(try? result2.get())
         #expect(resolved2.board.id == board2ID)
         #expect(resolved2.window.resources === session2.resources)
-        #expect(resolved2.window.resources.data.snapshot.den.board(for: board2ID) != nil)
+        #expect(resolved2.window.resources.store.snapshot.den.board(for: board2ID) != nil)
     }
 
     @Test func resolveTargetBoardReturnsSameStoreRegardlessOfProfileScoping() throws {

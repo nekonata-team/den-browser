@@ -5,8 +5,8 @@ import DenModels
 extension BoardSurfaceModel {
     init(board: BoardState, session: ProfileWindowSession) {
         self.init(
-            desks: { [state = session.resources.data] in state.snapshot.den.desks },
-            boardDeskID: { [state = session.resources.data] in
+            desks: { [state = session.resources.store] in state.snapshot.den.desks },
+            boardDeskID: { [state = session.resources.store] in
                 state.snapshot.den.desks.first { $0.boards.contains { $0.id == board.id } }?.id
             },
             canMoveLeft: { [movement = session.resources.boardMovement] in movement.canMove(board.id, by: -1) },

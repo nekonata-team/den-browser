@@ -115,7 +115,7 @@ final class WindowNativeContext {
     }
 
     var focusedDesk: DeskState? {
-        storage.data.snapshot.den.desks.first { $0.id == navigation.presentedDeskID }
+        storage.store.snapshot.den.desks.first { $0.id == navigation.presentedDeskID }
     }
 
     var focusedBoard: BoardState? {
@@ -124,16 +124,16 @@ final class WindowNativeContext {
     }
 
     var focusedDeskIndex: DeskIndex? {
-        storage.data.snapshot.den.desks.firstIndex { $0.id == navigation.presentedDeskID }
+        storage.store.snapshot.den.desks.firstIndex { $0.id == navigation.presentedDeskID }
             .map { DeskIndex(rawValue: $0) }
     }
 
     func boardIndices(for id: BoardID) -> BoardIndices? {
-        storage.data.snapshot.den.boardIndices(for: id)
+        storage.store.snapshot.den.boardIndices(for: id)
     }
 
     func board(for id: BoardID) -> BoardState? {
-        storage.data.snapshot.den.board(for: id)
+        storage.store.snapshot.den.board(for: id)
     }
 
     var zmxClient: ZmxClient {

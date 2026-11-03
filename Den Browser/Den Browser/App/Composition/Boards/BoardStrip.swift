@@ -16,7 +16,7 @@ struct BoardStrip: View {
     var body: some View {
         DenViews.BoardStrip(
             model: BoardStripModel(
-                state: session.resources.data, movement: session.resources.boardMovement,
+                state: session.resources.store, movement: session.resources.boardMovement,
                 sizing: session.resources.boardSizing, deskUpdates: session.resources.deskUpdates,
                 presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
                 prepareDrag: { session.connection.onWindowEffect?(.clearMaximizedBoard) },
