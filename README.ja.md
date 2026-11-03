@@ -85,6 +85,12 @@ just check
 
 タスク一覧は`just --list`で確認できます。
 
+SourceKit-LSPを使う場合は、`xcode-build-server`をインストールし、Worktreeごとに次を実行します。
+
+```sh
+just lsp-config build
+```
+
 ## ドキュメント
 
 - [CONTEXT.md](./CONTEXT.md): プロダクト用語とドメインモデル

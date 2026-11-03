@@ -84,7 +84,7 @@ embedded-js-typecheck:
 # Bind SourceKit-LSP to this Xcode project.
 [group("development")]
 lsp-config:
-    xcode-build-server config -project "{{project}}" -scheme "{{scheme}}"
+    xcode-build-server config -workspace "{{absolute_path(project + "/project.xcworkspace")}}" -scheme "{{scheme}}" --build_root "{{absolute_path(derived_data)}}"
 
 # Build and launch the application locally.
 [group("development")]

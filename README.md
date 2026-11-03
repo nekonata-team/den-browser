@@ -90,6 +90,12 @@ just check
 
 Run `just --list` for the available tasks.
 
+To use SourceKit-LSP, install `xcode-build-server` and run the following in each worktree:
+
+```sh
+just lsp-config build
+```
+
 ## Documentation
 
 - [CONTEXT.md](./CONTEXT.md): product language and domain model
