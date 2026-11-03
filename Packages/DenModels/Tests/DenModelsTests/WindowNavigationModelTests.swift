@@ -16,7 +16,7 @@ struct WindowNavigationModelTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let model = WindowNavigationModel(state: shared.store, presentedDeskID: desk.id)
-        let sizing = BoardSizing(store: shared.reader, writer: shared.writer)
+        let sizing = BoardSizing(reader: shared.reader, writer: shared.writer)
 
         // Act
         sizing.adjustBoard(primary.id, by: 80)
@@ -56,7 +56,7 @@ struct WindowNavigationModelTests {
             initialState: DenSharedState(den: DenState(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id)))
         let first = WindowNavigationModel(state: shared.store, presentedDeskID: firstDesk.id)
         let other = WindowNavigationModel(state: shared.store, presentedDeskID: secondDesk.id)
-        let updates = BoardUpdates(store: shared.reader, writer: shared.writer)
+        let updates = BoardUpdates(reader: shared.reader, writer: shared.writer)
 
         // Act
         updates.rename(secondBoard.id, to: "Renamed", beforeSave: {})

@@ -16,14 +16,14 @@ struct DrawerPlacementTests {
             Issue.record("Failed placement must not save")
             return true
         }
-        let items = DrawerItems(store: shared.reader, writer: shared.writer, persist: persist)
+        let items = DrawerItems(reader: shared.reader, writer: shared.writer, persist: persist)
         let creation = BoardCreation(
-            store: shared.reader,
+            reader: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
+            recents: Recents(reader: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
-        let placement = DrawerPlacement(store: shared.reader, writer: shared.writer, creation: creation, items: items)
+        let placement = DrawerPlacement(reader: shared.reader, writer: shared.writer, creation: creation, items: items)
 
         let result = placement.place(
             .init(
@@ -56,14 +56,14 @@ struct DrawerPlacementTests {
             events.append(state.drawerItems.contains(item) ? "saveWithItem" : "saveWithoutItem")
             return saveSucceeds
         }
-        let items = DrawerItems(store: shared.reader, writer: shared.writer, persist: persist)
+        let items = DrawerItems(reader: shared.reader, writer: shared.writer, persist: persist)
         let creation = BoardCreation(
-            store: shared.reader,
+            reader: shared.reader,
             writer: shared.writer,
-            recents: Recents(store: shared.reader, writer: shared.writer, persist: persist),
+            recents: Recents(reader: shared.reader, writer: shared.writer, persist: persist),
             persist: persist,
             directoryExists: { _ in true })
-        let placement = DrawerPlacement(store: shared.reader, writer: shared.writer, creation: creation, items: items)
+        let placement = DrawerPlacement(reader: shared.reader, writer: shared.writer, creation: creation, items: items)
 
         let result = try #require(
             placement.place(
@@ -113,11 +113,11 @@ struct DrawerPlacementTests {
         var initial = DenSharedState(den: .sample)
         initial.den.drawerItems = [item]
         let shared = DenStateStore.make(initialState: initial)
-        let items = DrawerItems(store: shared.reader, writer: shared.writer)
+        let items = DrawerItems(reader: shared.reader, writer: shared.writer)
         let creation = BoardCreation(
-            store: shared.reader, writer: shared.writer,
-            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in true })
-        let placement = DrawerPlacement(store: shared.reader, writer: shared.writer, creation: creation, items: items)
+            reader: shared.reader, writer: shared.writer,
+            recents: Recents(reader: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+        let placement = DrawerPlacement(reader: shared.reader, writer: shared.writer, creation: creation, items: items)
 
         // Act
         let id = try #require(

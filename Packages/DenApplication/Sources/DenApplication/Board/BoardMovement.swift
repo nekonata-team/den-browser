@@ -190,7 +190,7 @@ public struct BoardMovement {
             let source = deskIndex(containing: boardID), state.snapshot.den.desks[source].id == deskID
         else { return false }
         writer.update { $0.den.desks[source].focusedBoardID = boardID }
-        NotificationOperations(store: state, writer: writer).markAllRead(for: boardID)
+        NotificationOperations(reader: state, writer: writer).markAllRead(for: boardID)
         prepare()
         writer.update { $0.activeDrag = .board(boardID) }
         save()

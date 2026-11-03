@@ -12,7 +12,7 @@ struct TutorialProgressTests {
         let desk = DeskState(label: "Desk", boards: [first, second])
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
-        let progress = TutorialProgress(store: shared.reader, writer: shared.writer)
+        let progress = TutorialProgress(reader: shared.reader, writer: shared.writer)
         // Act
         progress.record(.createDesk)
         let premature = shared.store.snapshot

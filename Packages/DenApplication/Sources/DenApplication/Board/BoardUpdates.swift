@@ -2,19 +2,19 @@ public import DenDomain
 import Foundation
 
 public struct BoardUpdates {
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
 
     public func recordZmxRoot(_ root: String?, for id: BoardID) {
         guard let root, let indices = indices(for: id),
-            store.snapshot.den.desks[indices.desk].boards[indices.board].zmxRootSessionName != root
+            reader.snapshot.den.desks[indices.desk].boards[indices.board].zmxRootSessionName != root
         else { return }
         writer.update { $0.den.desks[indices.desk].boards[indices.board].zmxRootSessionName = root }
         save()
@@ -40,7 +40,7 @@ public struct BoardUpdates {
 
     public func updateWeb(_ id: BoardID, url: URL?, title: String?, recents: Recents, onURLChange: () -> Void) {
         guard let location = indices(for: id) else { return }
-        let board = store.snapshot.den.desks[location.desk].boards[location.board]
+        let board = reader.snapshot.den.desks[location.desk].boards[location.board]
         var changed = false
         if let url, WebURLPolicy.isSupported(url) {
             let canonical = WebURLPolicy.canonicalSheetURL(url)
@@ -58,9 +58,10 @@ public struct BoardUpdates {
     }
 
     public func updateTerminal(_ id: BoardID, workingDirectory: String? = nil, title: String? = nil) {
-        guard let location = indices(for: id), store.snapshot.den.desks[location.desk].boards[location.board].isTerminal
+        guard let location = indices(for: id),
+            reader.snapshot.den.desks[location.desk].boards[location.board].isTerminal
         else { return }
-        let board = store.snapshot.den.desks[location.desk].boards[location.board]
+        let board = reader.snapshot.den.desks[location.desk].boards[location.board]
         var changed = false
         if let workingDirectory, !workingDirectory.isEmpty, board.terminalWorkingDirectory != workingDirectory {
             writer.update {
@@ -75,8 +76,8 @@ public struct BoardUpdates {
     }
 
     private func indices(for id: BoardID) -> (desk: Int, board: Int)? {
-        for desk in store.snapshot.den.desks.indices {
-            if let board = store.snapshot.den.desks[desk].boards.firstIndex(where: { $0.id == id }) {
+        for desk in reader.snapshot.den.desks.indices {
+            if let board = reader.snapshot.den.desks[desk].boards.firstIndex(where: { $0.id == id }) {
                 return (desk, board)
             }
         }
@@ -84,7 +85,7 @@ public struct BoardUpdates {
     }
 
     private func save() {
-        guard store.snapshot.activeDrag == nil else { return }
-        _ = persist?(store.snapshot.den)
+        guard reader.snapshot.activeDrag == nil else { return }
+        _ = persist?(reader.snapshot.den)
     }
 }

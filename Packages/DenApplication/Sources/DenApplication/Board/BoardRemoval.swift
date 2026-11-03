@@ -17,12 +17,12 @@ public final class BoardRemoval {
         case emptyHistory
     }
 
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
@@ -32,9 +32,9 @@ public final class BoardRemoval {
         _ boardID: BoardID, presentedDeskID: DeskID, focusNext: Bool = false,
         origin: BoardOperationOrigin = .interactive, notify: (Notice) -> Void
     ) -> Bool {
-        guard let deskIndex = store.snapshot.den.desks.firstIndex(where: { $0.boards.contains { $0.id == boardID } })
+        guard let deskIndex = reader.snapshot.den.desks.firstIndex(where: { $0.boards.contains { $0.id == boardID } })
         else { return false }
-        let source = store.snapshot.den.desks[deskIndex]
+        let source = reader.snapshot.den.desks[deskIndex]
         let background = origin == .cli && source.id == presentedDeskID && source.focusedBoardID != boardID
         if background {
             notify(.suppressMutationAnimation)
@@ -49,7 +49,7 @@ public final class BoardRemoval {
         }
         notify(.removed(source: source, plan: removal))
         let removedIDs = Set(removal.removedBoards.map(\.id))
-        if case .board(let id) = store.snapshot.activeDrag, removedIDs.contains(id) {
+        if case .board(let id) = reader.snapshot.activeDrag, removedIDs.contains(id) {
             writer.update { $0.activeDrag = nil }
         }
         save()
@@ -57,7 +57,7 @@ public final class BoardRemoval {
     }
 
     public func restore(presentedDeskID: DeskID, present: Bool = true, notify: (Notice) -> Void) -> RestoreResult {
-        guard let history = store.snapshot.recentlyRemovedBoards.first else { return .emptyHistory }
+        guard let history = reader.snapshot.recentlyRemovedBoards.first else { return .emptyHistory }
         return restore(history, presentedDeskID: presentedDeskID, present: present, notify: notify)
     }
 
@@ -65,7 +65,7 @@ public final class BoardRemoval {
         _ history: RecentlyRemovedBoard, presentedDeskID: DeskID, present: Bool,
         notify: (Notice) -> Void
     ) -> RestoreResult {
-        switch BoardRestoration.restore(history, in: store.snapshot.den.desks, presentedDeskID: presentedDeskID) {
+        switch BoardRestoration.restore(history, in: reader.snapshot.den.desks, presentedDeskID: presentedDeskID) {
         case .focusExistingTutorial(let id):
             forget(history)
             return .existingTutorial(id)
@@ -88,7 +88,7 @@ public final class BoardRemoval {
     }
 
     private func save() {
-        guard store.snapshot.activeDrag == nil else { return }
-        _ = persist?(store.snapshot.den)
+        guard reader.snapshot.activeDrag == nil else { return }
+        _ = persist?(reader.snapshot.den)
     }
 }

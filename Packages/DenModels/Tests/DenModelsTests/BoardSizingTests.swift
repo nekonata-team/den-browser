@@ -16,7 +16,7 @@ struct BoardSizingTests {
         var deferred = 0
         let deferSave: (() -> Void)? = hasDeferrer ? { deferred += 1 } : nil
         let sizing = BoardSizing(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].boards[0].width == 600)
                 immediate += 1
@@ -41,7 +41,7 @@ struct BoardSizingTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var saves = 0
-        let sizing = BoardSizing(store: shared.reader, writer: shared.writer, deferredSave: { saves += 1 })
+        let sizing = BoardSizing(reader: shared.reader, writer: shared.writer, deferredSave: { saves += 1 })
 
         // Act
         sizing.adjustDesk(desk.id, by: delta)
@@ -60,7 +60,7 @@ struct BoardSizingTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let sizing = BoardSizing(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Preview must not save")
                 return true
@@ -86,7 +86,7 @@ struct BoardSizingTests {
         let shared = DenStateStore.make(initialState: initial)
         var saved: [Double] = []
         let sizing = BoardSizing(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: {
                 saved.append($0.desks[0].boards[0].width)
                 return true
@@ -112,7 +112,7 @@ struct BoardSizingTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var saves = 0
         let sizing = BoardSizing(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return false

@@ -11,7 +11,7 @@ struct DrawerItemsTests {
         let original = shared.store.snapshot
         var events: [String] = []
         let items = DrawerItems(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return false
@@ -45,7 +45,7 @@ struct DrawerItemsTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let items = DrawerItems(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return false
@@ -82,7 +82,7 @@ struct DrawerItemsTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let items = DrawerItems(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 events.append("save")
                 return true
@@ -132,7 +132,7 @@ struct DrawerItemsTests {
         var initial = DenSharedState(den: .sample)
         initial.den.drawerItems = [expired, visible, legacy]
         let shared = DenStateStore.make(initialState: initial)
-        let items = DrawerItems(store: shared.reader, writer: shared.writer)
+        let items = DrawerItems(reader: shared.reader, writer: shared.writer)
         var discarded: [UUID] = []
 
         // Act
@@ -156,7 +156,7 @@ struct DrawerItemsTests {
         var initial = DenSharedState(den: .sample)
         initial.den.drawerItems = [item]
         let shared = DenStateStore.make(initialState: initial)
-        let items = DrawerItems(store: shared.reader, writer: shared.writer)
+        let items = DrawerItems(reader: shared.reader, writer: shared.writer)
 
         // Act
         items.touch(item.id, at: now)
@@ -174,7 +174,7 @@ struct DrawerItemsTests {
         let shared = DenStateStore.make(initialState: initial)
         var saves = 0
         let items = DrawerItems(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 saves += 1
                 return true

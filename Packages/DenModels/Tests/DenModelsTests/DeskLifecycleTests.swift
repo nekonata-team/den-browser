@@ -16,7 +16,7 @@ struct DeskLifecycleTests {
                     desks: [first, second], focusedDeskID: first.id)))
         var events: [String] = []
         let lifecycle = DeskLifecycle(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks.map(\.label) == ["First", "New", "Second"])
                 events.append("save")
@@ -31,7 +31,7 @@ struct DeskLifecycleTests {
                     switch notice {
                     case .presentCreatedDesk(let id):
                         #expect(shared.store.snapshot.den.desks[1].id == id)
-                        DeskUpdates(store: shared.reader, writer: shared.writer).recordPresentedDesk(id)
+                        DeskUpdates(reader: shared.reader, writer: shared.writer).recordPresentedDesk(id)
                         events.append("present")
                     case .didCreateDesk: events.append("tutorial")
                     default: Issue.record("Unexpected creation notification")
@@ -55,7 +55,7 @@ struct DeskLifecycleTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let lifecycle = DeskLifecycle(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks == [replacement])
                 #expect(state.focusedDeskID == replacement.id)
@@ -73,7 +73,7 @@ struct DeskLifecycleTests {
                     #expect(shared.store.snapshot.den.desks == [removed, replacement])
                     #expect(desk == removed)
                     #expect(wasPresented)
-                    DeskUpdates(store: shared.reader, writer: shared.writer).recordPresentedDesk(replacementID)
+                    DeskUpdates(reader: shared.reader, writer: shared.writer).recordPresentedDesk(replacementID)
                     events.append("prepare")
                 case .didDelete(let desk, let wasPresented):
                     #expect(shared.store.snapshot.den.desks == [replacement])
@@ -99,7 +99,7 @@ struct DeskLifecycleTests {
         let shared = DenStateStore.make(initialState: initial)
         var events: [String] = []
         let lifecycle = DeskLifecycle(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].label == "Replaced")
                 #expect(shared.store.snapshot.activeDrag == nil)
@@ -139,7 +139,7 @@ struct DeskLifecycleTests {
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let initial = shared.store.snapshot
         let lifecycle = DeskLifecycle(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Missing target must not save")
                 return true
@@ -162,7 +162,7 @@ struct DeskLifecycleTests {
         let source = DeskState(label: "Source", boards: [board, tutorial], focusedBoardID: board.id)
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [source], focusedDeskID: source.id)))
-        let lifecycle = DeskLifecycle(store: shared.reader, writer: shared.writer)
+        let lifecycle = DeskLifecycle(reader: shared.reader, writer: shared.writer)
 
         // Act
         let result = try #require(lifecycle.duplicate(source.id, presentedDeskID: source.id, notify: { _ in }))

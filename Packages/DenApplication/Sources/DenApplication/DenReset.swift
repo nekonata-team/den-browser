@@ -10,21 +10,21 @@ public struct DenReset {
         case finished
     }
 
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
 
     public func perform(notify: (Notice) -> Void) {
         notify(.prepare)
-        if let drag = store.snapshot.activeDrag { notify(.cancelDrag(drag)) }
+        if let drag = reader.snapshot.activeDrag { notify(.cancelDrag(drag)) }
         writer.update { $0.den = .sample }
-        notify(.stateReplaced(store.snapshot.den.focusedDeskID))
+        notify(.stateReplaced(reader.snapshot.den.focusedDeskID))
         writer.update { $0.activeDrag = nil }
         notify(.clearInputRequests)
         writer.update {
@@ -34,7 +34,7 @@ public struct DenReset {
             $0.notifications.removeAll()
         }
         notify(.clearWindowReferences)
-        if store.snapshot.activeDrag == nil { _ = persist?(store.snapshot.den) }
+        if reader.snapshot.activeDrag == nil { _ = persist?(reader.snapshot.den) }
         notify(.finished)
     }
 }

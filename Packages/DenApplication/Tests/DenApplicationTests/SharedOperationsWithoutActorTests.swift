@@ -16,7 +16,7 @@ nonisolated struct SharedOperationsWithoutActorTests {
         let state = State(DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let reader = DenStateReader { state.snapshot }
         let writer = DenStateWriter { mutation in mutation(&state.snapshot) }
-        let operations = NotificationOperations(store: reader, writer: writer)
+        let operations = NotificationOperations(reader: reader, writer: writer)
 
         // Act
         let notification = try #require(operations.record(title: nil, body: "Message", boardID: board.id))
@@ -37,7 +37,7 @@ nonisolated struct SharedOperationsWithoutActorTests {
         let board = BoardState(width: 520, workingDirectory: "/tmp")
         var events: [String] = []
         let creation = BoardCreation(
-            store: reader, writer: writer, recents: Recents(store: reader, writer: writer),
+            reader: reader, writer: writer, recents: Recents(reader: reader, writer: writer),
             persist: { den in
                 #expect(den.desks[0].boards.map(\.id) == [board.id])
                 events.append("save")

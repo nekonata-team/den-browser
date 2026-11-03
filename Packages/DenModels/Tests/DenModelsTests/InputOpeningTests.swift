@@ -12,10 +12,10 @@ struct InputOpeningTests {
         let desk = DeskState(label: "Desk", boards: [])
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
-        let recents = Recents(store: shared.reader, writer: shared.writer)
+        let recents = Recents(reader: shared.reader, writer: shared.writer)
         let creation = BoardCreation(
-            store: shared.reader, writer: shared.writer, recents: recents, directoryExists: { _ in true })
-        let drawer = DrawerItems(store: shared.reader, writer: shared.writer)
+            reader: shared.reader, writer: shared.writer, recents: recents, directoryExists: { _ in true })
+        let drawer = DrawerItems(reader: shared.reader, writer: shared.writer)
         let opening = InputOpening(creation: creation, drawer: drawer)
         let context = InputOpening.Context(
             width: 640, target: .init(presentedDeskID: desk.id),
@@ -51,9 +51,10 @@ struct InputOpeningTests {
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let initial = shared.store.snapshot
         let creation = BoardCreation(
-            store: shared.reader, writer: shared.writer,
-            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in true })
-        let opening = InputOpening(creation: creation, drawer: DrawerItems(store: shared.reader, writer: shared.writer))
+            reader: shared.reader, writer: shared.writer,
+            recents: Recents(reader: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+        let opening = InputOpening(
+            creation: creation, drawer: DrawerItems(reader: shared.reader, writer: shared.writer))
         let context = InputOpening.Context(
             width: 520, target: .init(presentedDeskID: initial.den.focusedDeskID),
             configuration: .init(
@@ -76,9 +77,10 @@ struct InputOpeningTests {
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let originalDesks = shared.store.snapshot.den.desks
         let creation = BoardCreation(
-            store: shared.reader, writer: shared.writer,
-            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in true })
-        let opening = InputOpening(creation: creation, drawer: DrawerItems(store: shared.reader, writer: shared.writer))
+            reader: shared.reader, writer: shared.writer,
+            recents: Recents(reader: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+        let opening = InputOpening(
+            creation: creation, drawer: DrawerItems(reader: shared.reader, writer: shared.writer))
         let context = InputOpening.Context(
             width: 520, target: .init(presentedDeskID: shared.store.snapshot.den.focusedDeskID),
             configuration: .init(
@@ -105,9 +107,10 @@ struct InputOpeningTests {
         let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
         let initial = shared.store.snapshot
         let creation = BoardCreation(
-            store: shared.reader, writer: shared.writer,
-            recents: Recents(store: shared.reader, writer: shared.writer), directoryExists: { _ in false })
-        let opening = InputOpening(creation: creation, drawer: DrawerItems(store: shared.reader, writer: shared.writer))
+            reader: shared.reader, writer: shared.writer,
+            recents: Recents(reader: shared.reader, writer: shared.writer), directoryExists: { _ in false })
+        let opening = InputOpening(
+            creation: creation, drawer: DrawerItems(reader: shared.reader, writer: shared.writer))
         let context = InputOpening.Context(
             width: 520, target: .init(presentedDeskID: initial.den.focusedDeskID),
             configuration: .init(

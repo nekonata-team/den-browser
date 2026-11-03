@@ -54,18 +54,18 @@ public final class BoardCreation {
         case selectZmxSession
     }
 
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
     private let recents: Recents
     private let directoryExists: (String) -> Bool
 
     public init(
-        store: DenStateReader, writer: DenStateWriter, recents: Recents,
+        reader: DenStateReader, writer: DenStateWriter, recents: Recents,
         persist: ((DenState) -> Bool)? = nil,
         directoryExists: @escaping (String) -> Bool
     ) {
-        self.store = store
+        self.reader = reader
         self.writer = writer
         self.persist = persist
         self.recents = recents
@@ -99,7 +99,7 @@ public final class BoardCreation {
 
     @discardableResult
     public func openTutorial(width: Double, target: Target, notify: (Notice) -> Void) -> BoardID? {
-        if let board = store.snapshot.den.desks.lazy.flatMap(\.boards).first(where: \.isTutorial) {
+        if let board = reader.snapshot.den.desks.lazy.flatMap(\.boards).first(where: \.isTutorial) {
             notify(.focusTutorial(board.id))
             return board.id
         }
@@ -135,7 +135,7 @@ public final class BoardCreation {
     ) -> BoardID? {
         guard
             let insertion = BoardInsertion.insert(
-                board, in: store.snapshot.den.desks, presentedDeskID: target.presentedDeskID,
+                board, in: reader.snapshot.den.desks, presentedDeskID: target.presentedDeskID,
                 deskID: target.deskID, afterBoardID: target.afterBoardID, beforeBoardID: target.beforeBoardID,
                 focus: target.focus)
         else { return nil }
@@ -145,7 +145,7 @@ public final class BoardCreation {
             notify(.prepareLinkFocus(anchor, target.origin))
         }
         let deskIndex = insertion.deskIndex.rawValue
-        if store.snapshot.den.desks[deskIndex].boards.isEmpty
+        if reader.snapshot.den.desks[deskIndex].boards.isEmpty
             || (target.origin == .cli && !target.focus && insertion.anchorBoardID != nil)
         {
             notify(.suppressMutationAnimation)
@@ -159,7 +159,7 @@ public final class BoardCreation {
     }
 
     private func save() -> Bool {
-        guard store.snapshot.activeDrag == nil else { return false }
-        return persist?(store.snapshot.den) ?? false
+        guard reader.snapshot.activeDrag == nil else { return false }
+        return persist?(reader.snapshot.den) ?? false
     }
 }

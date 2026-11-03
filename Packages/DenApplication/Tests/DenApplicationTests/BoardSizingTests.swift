@@ -10,7 +10,7 @@ nonisolated struct BoardSizingTests {
         var snapshot = DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id))
         var attemptedSave: DenState?
         let sizing = BoardSizing(
-            store: DenStateReader { snapshot }, writer: DenStateWriter { $0(&snapshot) },
+            reader: DenStateReader { snapshot }, writer: DenStateWriter { $0(&snapshot) },
             persist: {
                 attemptedSave = $0
                 return false
@@ -34,7 +34,7 @@ nonisolated struct BoardSizingTests {
         if reason == "drag" { snapshot.activeDrag = .board(board.id) }
         let before = snapshot.den
         let sizing = BoardSizing(
-            store: DenStateReader { snapshot }, writer: DenStateWriter { $0(&snapshot) },
+            reader: DenStateReader { snapshot }, writer: DenStateWriter { $0(&snapshot) },
             persist: { _ in
                 Issue.record("Rejected resize must not save")
                 return true

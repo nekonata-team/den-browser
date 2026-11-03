@@ -10,20 +10,20 @@ public struct DeskLifecycle {
         case didDelete(desk: DeskState, wasPresented: Bool)
     }
 
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
 
-    public var canCreate: Bool { store.snapshot.den.desks.count < DeskCreation.maximumDeskCount }
+    public var canCreate: Bool { reader.snapshot.den.desks.count < DeskCreation.maximumDeskCount }
 
     public func canDelete(_ id: DeskID, isAvailable: (DeskID) -> Bool) -> Bool {
-        DeskDeletion.delete(id, from: store.snapshot.den.desks, isAvailable: isAvailable) != nil
+        DeskDeletion.delete(id, from: reader.snapshot.den.desks, isAvailable: isAvailable) != nil
     }
 
     @discardableResult
@@ -34,7 +34,7 @@ public struct DeskLifecycle {
         guard
             let result = DeskCreation.create(
                 label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
-                in: store.snapshot.den.desks, presentedDeskID: deskID ?? presentedDeskID)
+                in: reader.snapshot.den.desks, presentedDeskID: deskID ?? presentedDeskID)
         else { return nil }
         writer.update { $0.den.desks = result.desks }
         if focus { notify(.presentCreatedDesk(result.createdDesk.id)) }
@@ -46,7 +46,7 @@ public struct DeskLifecycle {
     public func duplicate(
         _ id: DeskID, presentedDeskID: DeskID, notify: (Notice) -> Void
     ) -> (source: DeskState, copy: DeskState)? {
-        guard let source = store.snapshot.den.desks.first(where: { $0.id == id }) else { return nil }
+        guard let source = reader.snapshot.den.desks.first(where: { $0.id == id }) else { return nil }
         let preset = PersonalDeskPreset(label: source.label, desk: source)
         guard
             let copy = create(
@@ -64,7 +64,7 @@ public struct DeskLifecycle {
         guard
             let result = DeskReplacement.replace(
                 id, label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
-                in: store.snapshot.den.desks)
+                in: reader.snapshot.den.desks)
         else { return false }
         notify(.willReplace(result.removedBoards))
         writer.update { $0.den.desks[result.deskIndex.rawValue] = result.desk }
@@ -78,7 +78,7 @@ public struct DeskLifecycle {
     public func delete(
         _ id: DeskID, presentedDeskID: DeskID, isAvailable: (DeskID) -> Bool, notify: (Notice) -> Void
     ) -> Bool {
-        guard let result = DeskDeletion.delete(id, from: store.snapshot.den.desks, isAvailable: isAvailable) else {
+        guard let result = DeskDeletion.delete(id, from: reader.snapshot.den.desks, isAvailable: isAvailable) else {
             return false
         }
         let wasPresented = presentedDeskID == id
@@ -93,7 +93,7 @@ public struct DeskLifecycle {
     }
 
     private func cancelDrag(removing boardIDs: Set<BoardID>, deskID: DeskID? = nil) {
-        switch store.snapshot.activeDrag {
+        switch reader.snapshot.activeDrag {
         case .board(let id) where boardIDs.contains(id): writer.update { $0.activeDrag = nil }
         case .desk(let id) where id == deskID: writer.update { $0.activeDrag = nil }
         default: break
@@ -101,7 +101,7 @@ public struct DeskLifecycle {
     }
 
     private func save() {
-        guard store.snapshot.activeDrag == nil else { return }
-        _ = persist?(store.snapshot.den)
+        guard reader.snapshot.activeDrag == nil else { return }
+        _ = persist?(reader.snapshot.den)
     }
 }

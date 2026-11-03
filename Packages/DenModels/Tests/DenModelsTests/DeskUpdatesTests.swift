@@ -13,7 +13,7 @@ struct DeskUpdatesTests {
         let expectedLabel = label == "   " ? desk.label : "Renamed"
         var events: [String] = []
         let updates = DeskUpdates(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].label == expectedLabel)
                 events.append("save")
@@ -35,7 +35,7 @@ struct DeskUpdatesTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var savedOffsets: [Double?] = []
         let updates = DeskUpdates(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 savedOffsets.append(state.desks[0].scrollOffsetX)
                 return true
@@ -60,7 +60,7 @@ struct DeskUpdatesTests {
                 den: DenState(
                     desks: [first, second], focusedDeskID: first.id)))
         let updates = DeskUpdates(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("These updates must not save")
                 return true

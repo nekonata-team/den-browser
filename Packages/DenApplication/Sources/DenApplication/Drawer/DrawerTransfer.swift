@@ -7,12 +7,12 @@ public struct DrawerTransfer {
         case didMove(source: DeskState, plan: BoardRemovalPlan, item: DrawerItem)
     }
 
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
@@ -28,13 +28,13 @@ public struct DrawerTransfer {
     /// Move atomically without recording a removed Board or restarting its runtime.
     @discardableResult
     public func move(_ boardID: BoardID, recordsUndo: Bool = true, notify: (Notice) -> Void) -> UUID? {
-        guard store.snapshot.activeDrag == nil,
-            let deskIndex = store.snapshot.den.desks.firstIndex(where: { $0.boards.contains { $0.id == boardID } })
+        guard reader.snapshot.activeDrag == nil,
+            let deskIndex = reader.snapshot.den.desks.firstIndex(where: { $0.boards.contains { $0.id == boardID } })
         else { return nil }
-        let source = store.snapshot.den.desks[deskIndex]
+        let source = reader.snapshot.den.desks[deskIndex]
         guard let board = source.boards.first(where: { $0.id == boardID }),
             Self.canMove(board, among: source.boards),
-            !store.snapshot.den.drawerItems.contains(where: { $0.id == boardID.rawValue }),
+            !reader.snapshot.den.drawerItems.contains(where: { $0.id == boardID.rawValue }),
             let removal = BoardRemovalPlan.make(boardID, from: source)
         else { return nil }
         var item: DrawerItem
@@ -54,7 +54,7 @@ public struct DrawerTransfer {
             if recordsUndo { $0.rememberBoardOperation(.movedToDrawer(removal.historyEntry)) }
         }
         notify(.didMove(source: source, plan: removal, item: item))
-        _ = persist?(store.snapshot.den)
+        _ = persist?(reader.snapshot.den)
         return item.id
     }
 }

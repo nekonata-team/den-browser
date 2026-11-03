@@ -1,18 +1,18 @@
 public import DenDomain
 
 public struct DeskMovement {
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
 
-    public init(store: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+        self.reader = reader
         self.writer = writer
         self.persist = persist
     }
 
     public func beginDrag(_ id: DeskID) -> Bool {
-        guard store.snapshot.activeDrag == nil, store.snapshot.den.desks.contains(where: { $0.id == id }) else {
+        guard reader.snapshot.activeDrag == nil, reader.snapshot.den.desks.contains(where: { $0.id == id }) else {
             return false
         }
         writer.update { $0.activeDrag = .desk(id) }
@@ -20,8 +20,8 @@ public struct DeskMovement {
     }
 
     public func preview(_ id: DeskID, to index: DeskIndex) {
-        guard let source = store.snapshot.den.desks.firstIndex(where: { $0.id == id }),
-            store.snapshot.den.desks.indices.contains(index.rawValue), source != index.rawValue
+        guard let source = reader.snapshot.den.desks.firstIndex(where: { $0.id == id }),
+            reader.snapshot.den.desks.indices.contains(index.rawValue), source != index.rawValue
         else { return }
         writer.update {
             let desk = $0.den.desks.remove(at: source)
@@ -35,22 +35,22 @@ public struct DeskMovement {
     }
 
     public func finishDrag() {
-        guard case .desk? = store.snapshot.activeDrag else { return }
+        guard case .desk? = reader.snapshot.activeDrag else { return }
         writer.update { $0.activeDrag = nil }
         save()
     }
 
     public func move(_ id: DeskID, by delta: Int) {
-        guard store.snapshot.activeDrag == nil,
-            let index = store.snapshot.den.desks.firstIndex(where: { $0.id == id }),
-            store.snapshot.den.desks.indices.contains(index + delta)
+        guard reader.snapshot.activeDrag == nil,
+            let index = reader.snapshot.den.desks.firstIndex(where: { $0.id == id }),
+            reader.snapshot.den.desks.indices.contains(index + delta)
         else { return }
         writer.update { $0.den.desks.swapAt(index, index + delta) }
         save()
     }
 
     private func save() {
-        guard store.snapshot.activeDrag == nil else { return }
-        _ = persist?(store.snapshot.den)
+        guard reader.snapshot.activeDrag == nil else { return }
+        _ = persist?(reader.snapshot.den)
     }
 }

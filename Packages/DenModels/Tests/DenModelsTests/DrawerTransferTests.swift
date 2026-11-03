@@ -21,7 +21,7 @@ struct DrawerTransferTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var events: [String] = []
         let transfer = DrawerTransfer(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].boards == [neighbor])
                 #expect(state.drawerItems.first?.id == board.id.rawValue)
@@ -66,7 +66,7 @@ struct DrawerTransferTests {
         let initial = DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id))
         let shared = DenStateStore.make(initialState: initial)
         let transfer = DrawerTransfer(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { _ in
                 Issue.record("Rejected move must not save")
                 return true

@@ -1,16 +1,16 @@
 public import DenDomain
 
 public struct BoardSizing {
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
     private let deferredSave: (() -> Void)?
 
     public init(
-        store: DenStateReader, writer: DenStateWriter,
+        reader: DenStateReader, writer: DenStateWriter,
         persist: ((DenState) -> Bool)? = nil, deferredSave: (() -> Void)? = nil
     ) {
-        self.store = store
+        self.reader = reader
         self.writer = writer
         self.persist = persist
         self.deferredSave = deferredSave
@@ -18,7 +18,7 @@ public struct BoardSizing {
 
     public func adjustBoard(_ id: BoardID, by delta: Double) {
         guard let indices = indices(id) else { return }
-        let board = store.snapshot.den.desks[indices.desk].boards[indices.board]
+        let board = reader.snapshot.den.desks[indices.desk].boards[indices.board]
         let width = BoardState.constrainedWidth(board.width + delta)
         guard width != board.width else { return }
         writer.update { $0.den.desks[indices.desk].boards[indices.board].width = width }
@@ -26,8 +26,8 @@ public struct BoardSizing {
     }
 
     public func adjustDesk(_ id: DeskID, by delta: Double) {
-        guard let index = store.snapshot.den.desks.firstIndex(where: { $0.id == id }) else { return }
-        let original = store.snapshot.den.desks[index].boards
+        guard let index = reader.snapshot.den.desks.firstIndex(where: { $0.id == id }) else { return }
+        let original = reader.snapshot.den.desks[index].boards
         var boards = original
         for index in boards.indices where !boards[index].isSideBoard {
             boards[index].width = BoardState.constrainedWidth(boards[index].width + delta)
@@ -39,7 +39,7 @@ public struct BoardSizing {
 
     @discardableResult
     public func resizeDesk(_ id: DeskID, to width: Double) -> Bool {
-        guard let index = store.snapshot.den.desks.firstIndex(where: { $0.id == id }) else { return false }
+        guard let index = reader.snapshot.den.desks.firstIndex(where: { $0.id == id }) else { return false }
         writer.update {
             for boardIndex in $0.den.desks[index].boards.indices
             where !$0.den.desks[index].boards[boardIndex].isSideBoard {
@@ -58,18 +58,18 @@ public struct BoardSizing {
 
     public func setBoardWidth(_ id: BoardID, to width: Double, maximumWidth: Double) -> Double? {
         guard width.isFinite, width > 0, maximumWidth.isFinite, maximumWidth >= BoardState.minimumWidth,
-            store.snapshot.activeDrag == nil, let indices = indices(id)
+            reader.snapshot.activeDrag == nil, let indices = indices(id)
         else { return nil }
         let appliedWidth = min(max(width, BoardState.minimumWidth), maximumWidth)
         writer.update { $0.den.desks[indices.desk].boards[indices.board].width = appliedWidth }
-        guard persist?(store.snapshot.den) ?? true else { return nil }
+        guard persist?(reader.snapshot.den) ?? true else { return nil }
         return appliedWidth
     }
 
     public func resizePair(_ id: BoardID, to width: Double) {
         guard let indices = indices(id) else { return }
         let next = indices.board + 1
-        let boards = store.snapshot.den.desks[indices.desk].boards
+        let boards = reader.snapshot.den.desks[indices.desk].boards
         guard boards.indices.contains(next) else { return }
         let total = boards[indices.board].width + boards[next].width
         let minimum = max(BoardState.minimumWidth, total - BoardState.maximumWidth)
@@ -84,14 +84,14 @@ public struct BoardSizing {
     public func saveWidths() { save() }
 
     private func indices(_ id: BoardID) -> (desk: Int, board: Int)? {
-        for (desk, value) in store.snapshot.den.desks.enumerated() {
+        for (desk, value) in reader.snapshot.den.desks.enumerated() {
             if let board = value.boards.firstIndex(where: { $0.id == id }) { return (desk, board) }
         }
         return nil
     }
 
     private func save(deferred: Bool = false) {
-        guard store.snapshot.activeDrag == nil else { return }
-        if deferred, let deferredSave { deferredSave() } else { _ = persist?(store.snapshot.den) }
+        guard reader.snapshot.activeDrag == nil else { return }
+        if deferred, let deferredSave { deferredSave() } else { _ = persist?(reader.snapshot.den) }
     }
 }

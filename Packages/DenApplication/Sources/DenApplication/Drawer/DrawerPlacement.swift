@@ -16,13 +16,13 @@ public struct DrawerPlacement {
         }
     }
 
-    private let store: DenStateReader
+    private let reader: DenStateReader
     private let writer: DenStateWriter
     private let creation: BoardCreation
     private let items: DrawerItems
 
-    public init(store: DenStateReader, writer: DenStateWriter, creation: BoardCreation, items: DrawerItems) {
-        self.store = store
+    public init(reader: DenStateReader, writer: DenStateWriter, creation: BoardCreation, items: DrawerItems) {
+        self.reader = reader
         self.writer = writer
         self.creation = creation
         self.items = items
@@ -34,10 +34,10 @@ public struct DrawerPlacement {
         _ request: Request,
         notifyBoard: (BoardCreation.Notice) -> Void, notifyDrawer: (DrawerItems.Notice) -> Void
     ) -> BoardID? {
-        guard let index = store.snapshot.den.drawerItems.firstIndex(where: { $0.id == request.itemID }) else {
+        guard let index = reader.snapshot.den.drawerItems.firstIndex(where: { $0.id == request.itemID }) else {
             return nil
         }
-        let item = store.snapshot.den.drawerItems[index]
+        let item = reader.snapshot.den.drawerItems[index]
         let boardID: BoardID?
         switch item.content {
         case .web(let url):

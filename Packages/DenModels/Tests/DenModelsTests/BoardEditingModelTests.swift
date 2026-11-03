@@ -17,12 +17,12 @@ struct BoardEditingModelTests {
         let model = BoardEditingModel(
             state: shared.store,
             updates: BoardUpdates(
-                store: shared.reader, writer: shared.writer,
+                reader: shared.reader, writer: shared.writer,
                 persist: { _ in
                     events.append("save")
                     return true
                 }),
-            recents: Recents(store: shared.reader, writer: shared.writer),
+            recents: Recents(reader: shared.reader, writer: shared.writer),
             movement: BoardMovement(state: shared.reader, writer: shared.writer),
             focusedBoard: { shared.store.snapshot.den.desks[0].boards.first { $0.id == target } },
             essentials: { [] }, searchEngine: { .google }, finishEditing: { events.append("finish") },

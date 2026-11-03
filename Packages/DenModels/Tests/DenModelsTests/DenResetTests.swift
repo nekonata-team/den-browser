@@ -26,7 +26,7 @@ struct DenResetTests {
         var events: [String] = []
         var saved: DenState?
         let reset = DenReset(
-            store: shared.reader, writer: shared.writer,
+            reader: shared.reader, writer: shared.writer,
             persist: { state in
                 #expect(shared.store.snapshot.notifications.isEmpty)
                 #expect(shared.store.snapshot.activeDrag == nil)

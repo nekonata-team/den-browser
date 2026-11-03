@@ -10,23 +10,23 @@ nonisolated struct BoardUndoTests {
         var reader: DenStateReader { DenStateReader { self.snapshot } }
         var writer: DenStateWriter { DenStateWriter { $0(&self.snapshot) } }
         var movement: BoardMovement { BoardMovement(state: reader, writer: writer) }
-        var transfer: DrawerTransfer { DrawerTransfer(store: reader, writer: writer) }
-        var removal: BoardRemoval { BoardRemoval(store: reader, writer: writer) }
-        var items: DrawerItems { DrawerItems(store: reader, writer: writer) }
+        var transfer: DrawerTransfer { DrawerTransfer(reader: reader, writer: writer) }
+        var removal: BoardRemoval { BoardRemoval(reader: reader, writer: writer) }
+        var items: DrawerItems { DrawerItems(reader: reader, writer: writer) }
         var creation: BoardCreation {
             BoardCreation(
-                store: reader, writer: writer, recents: Recents(store: reader, writer: writer),
+                reader: reader, writer: writer, recents: Recents(reader: reader, writer: writer),
                 directoryExists: { _ in true })
         }
         var placement: DrawerPlacement {
-            DrawerPlacement(store: reader, writer: writer, creation: creation, items: items)
+            DrawerPlacement(reader: reader, writer: writer, creation: creation, items: items)
         }
 
         init(_ den: DenState) { snapshot = DenSharedState(den: den) }
 
         func undo() -> BoardUndo.Result {
             BoardUndo(
-                store: reader, writer: writer,
+                reader: reader, writer: writer,
                 persist: { _ in
                     self.saves += 1
                     return true
@@ -171,7 +171,7 @@ nonisolated struct BoardUndoTests {
         state.snapshot.activeDrag = .board(board.id)
         #expect(state.undo() == .dragging)
         #expect(state.snapshot.boardUndoHistory.count == 20)
-        DenReset(store: state.reader, writer: state.writer).perform(notify: { _ in })
+        DenReset(reader: state.reader, writer: state.writer).perform(notify: { _ in })
         #expect(state.snapshot.boardUndoHistory.isEmpty)
     }
 
