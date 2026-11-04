@@ -1,19 +1,19 @@
 # Install dependencies for the web project.
 [working-directory: "web"]
 install:
-    pnpm install --frozen-lockfile
+    vp install --frozen-lockfile
 
 # Start the web development server.
 [working-directory: "web"]
 dev:
-    pnpm dev
+    vp run dev
 
 # Build the web static site.
 [working-directory: "web"]
 build: install
-    pnpm build
+    vp run build
 
 # Preview the built web static site locally.
 [working-directory: "web"]
 preview: build
-    pnpm preview
+    vp run preview

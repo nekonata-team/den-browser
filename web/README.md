@@ -30,7 +30,7 @@ the Cloudflare dashboard:
 - connect the GitHub repository;
 - set `main` as the production branch;
 - set the root directory to `web`;
-- use `pnpm build` as the build command and `dist` as the output directory;
+- use `npm run build` as the build command and `dist` as the output directory;
 - set the build watch path to `web/**`;
 - add `den.nekonata.dev` as a custom domain.
 
