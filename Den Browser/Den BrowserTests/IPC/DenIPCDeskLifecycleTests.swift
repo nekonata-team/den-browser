@@ -10,6 +10,43 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenIPCDeskLifecycleTests {
+    @Test func overviewIncludesEveryDeskWithoutChangingPresentedDesk() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeManager(directory: directory)
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let visibleDeskID = session.navigation.presentedDeskID
+        let firstBoardID = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
+        session.desks.createDesk(label: "Caller", preset: .empty)
+        let callerDeskID = session.navigation.presentedDeskID
+        let callerBoardID = try #require(session.boardOpening.createBoard(urlString: "https://example.com/caller"))
+        session.desks.createDesk(label: "Empty", preset: .empty)
+        #expect(session.boardNavigation.setFocusedDesk(visibleDeskID))
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let result = await service.handleRequest(
+            DenIPCRequest(
+                operation: .inspectDen(target: .automatic),
+                context: .init(callerBoardID: callerBoardID.rawValue))
+        ).result
+
+        // Assert
+        guard case .denOverview(let overview) = result.payload else {
+            Issue.record("Expected Overview")
+            return
+        }
+        #expect(overview.desks.map(\.id) == session.resources.state.desks.map { $0.id.rawValue.uuidString })
+        #expect(overview.desks[0].boards?.map(\.id) == [firstBoardID.rawValue.uuidString])
+        #expect(overview.desks[1].id == callerDeskID.rawValue.uuidString)
+        #expect(overview.desks[1].boards?.map(\.id) == [callerBoardID.rawValue.uuidString])
+        #expect(overview.desks[1].boards?.first?.isFocused == true)
+        #expect(overview.desks[2].boards?.isEmpty == true)
+        #expect(overview.activeDesk?.id == visibleDeskID.rawValue.uuidString)
+        #expect(session.navigation.presentedDeskID == visibleDeskID)
+    }
+
     @Test(arguments: [false, true])
     func newDeskUsesCallerDeskAsInsertionAnchor(focus: Bool) async throws {
         // Arrange

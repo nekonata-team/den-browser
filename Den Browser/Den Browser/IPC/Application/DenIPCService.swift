@@ -380,27 +380,16 @@ final class DenIPCService {
                 hasWindow: profileManager.hasWindow(for: $0.id)
             )
         }
-        let desks = window.resources.snapshot.den.desks.map {
+        let desks = window.resources.snapshot.den.desks.map { desk in
             DenDeskInfo(
-                id: $0.id.rawValue.uuidString,
-                label: $0.label,
-                isActive: $0.id == desk.id,
-                boardCount: $0.boards.count
+                id: desk.id.rawValue.uuidString,
+                label: desk.label,
+                isActive: desk.id == window.presentedDeskID(),
+                boardCount: desk.boards.count,
+                boards: desk.boards.map { boardInfo($0, focusedBoardID: desk.focusedBoardID) }
             )
         }
-        let boards = desk.boards.map {
-            DenBoardInfo(
-                id: $0.id.rawValue.uuidString,
-                type: $0.isInspection
-                    ? "inspection"
-                    : ($0.isTutorial ? "tutorial" : ($0.isTerminal ? "terminal" : "web")),
-                label: $0.displayName,
-                url: $0.currentSheetURL?.absoluteString,
-                sessionName: $0.zellijSessionName ?? $0.zmxSessionName,
-                targetBoardID: $0.sideBoardTargetBoardID?.rawValue.uuidString,
-                isFocused: $0.id == desk.focusedBoardID
-            )
-        }
+        let boards = desk.boards.map { boardInfo($0, focusedBoardID: desk.focusedBoardID) }
         let activeDesk = desks.first { $0.isActive }
         return .success(
             .denOverview(

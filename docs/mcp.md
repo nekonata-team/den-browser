@@ -89,10 +89,10 @@ Tool-specific constraints:
 
 | Tool | Arguments | Description | CLI equivalent |
 |---|---|---|---|
-| `inspect_den` | `[profile_id]` | Aggregate the Profile list, selected Profile, its Desks, Boards on its active Desk, focused Board, and Drawer Item count into one compact result. | `profile list`, `desk list`, `board list`, `board focused`, `drawer list` |
+| `inspect_den` | `[profile_id]` | Aggregate the Profile list, selected Profile, all Desk layouts, ambient Desk Boards and focus, and Drawer Item count into one result. | `overview` |
 | `open_profile` | `profile_id` | Open a window for a Profile or activate its existing window. | `profile open <uuid>` |
 
-`inspect_den` returns `profiles`, `profile`, `profile_id`, `desks`, `active_desk`, `boards`, `focused_board_id`, and `drawer_item_count`. It resolves the Profile and active Desk once so every field describes the same context. Use `list_drawer_items` to retrieve individual items. It does not switch Desks.
+`inspect_den` returns `profiles`, `profile`, `profile_id`, `desks`, `active_desk`, `boards`, `focused_board_id`, and `drawer_item_count` from one resolved Profile/window context. Each Desk includes `boards` in layout order; `target_board_id` identifies a Side Board's Primary Board. Top-level `boards` and `focused_board_id` describe the ambient Desk. `active_desk` and `desks[].is_active` identify the Desk displayed in the resolved window, which may differ from the ambient Desk of a calling Terminal Board. Use `list_drawer_items` to retrieve individual items. It does not switch Desks.
 
 ### 4.2 Board and Sheet
 
@@ -155,8 +155,8 @@ Example `inspect_den` result:
   "profiles": [{ "id": "3FA85F64-...", "name": "Default", "is_active": true, "has_window": true }],
   "profile": { "id": "3FA85F64-...", "name": "Default" },
   "profile_id": "3FA85F64-...",
-  "desks": [{ "id": "93F4BD61-...", "label": "Main", "is_active": true, "board_count": 2 }],
-  "active_desk": { "id": "93F4BD61-...", "label": "Main" },
+  "desks": [{ "id": "93F4BD61-...", "label": "Main", "is_active": true, "board_count": 1, "boards": [{ "id": "4F72344C-...", "type": "web", "label": "Example", "url": "https://example.com", "is_focused": true }] }],
+  "active_desk": { "id": "93F4BD61-...", "label": "Main", "is_active": true, "board_count": 1, "boards": [{ "id": "4F72344C-...", "type": "web", "label": "Example", "url": "https://example.com", "is_focused": true }] },
   "boards": [{ "id": "4F72344C-...", "type": "web", "label": "Example", "url": "https://example.com", "is_focused": true }],
   "focused_board_id": "4F72344C-...",
   "drawer_item_count": 1

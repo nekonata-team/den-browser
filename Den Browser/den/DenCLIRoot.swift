@@ -10,6 +10,7 @@ struct DenCLI: AsyncParsableCommand {
         version: appVersion,
         subcommands: [
             HealthCommand.self,
+            OverviewCommand.self,
             BoardCommand.self,
             DeskCommand.self,
             DrawerCommand.self,

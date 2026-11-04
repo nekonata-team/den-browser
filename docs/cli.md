@@ -15,6 +15,7 @@ den <domain> <action> [arguments...] [options...]
 ```
 
 `den health` is an application-level readiness check. It does not target a Desk or Board.
+`den overview` shows the resolved Profile's Desk and Board arrangement.
 
 The hierarchy follows the product model, with operations grouped by Board kind:
 
@@ -114,6 +115,39 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 ```json
 {"ok":true}
 ```
+
+### `den overview` (Desk and Board Arrangement)
+
+`den overview` shows every Desk vertically and its Boards horizontally, preserving their displayed order.
+It uses the common `--profile` and `--socket` options and does not change focus.
+
+```text
+Profile: Default
+
+* Development
+  [web: Docs]  [terminal: Shell *]  [web: App | inspection: Console]
+
+  Notes
+  (empty)
+
+* Current Desk / Focused Board in each Desk
+```
+
+Each bracket encloses a Board Group; `|` separates a Primary Board from its Side Board.
+Widths are not proportional, and columns across Desks have no relationship.
+Labels longer than 32 characters are truncated. Control characters and whitespace are replaced with spaces;
+brackets and vertical bars in labels are replaced to keep the layout unambiguous.
+Rows are not wrapped by the CLI; use `den overview --text | less -S` for wide layouts.
+
+`-l` / `--long` adds numbers to Desks and Boards and a legend containing their full UUIDs and untruncated labels.
+These numbers are local to that output and are not accepted as command targets.
+
+TTY output is text; redirected or piped output is JSON, following the common output contract.
+`--text` forces the text layout, including when piped. `--text` and `--json` are mutually exclusive.
+JSON includes `desks[].boards` in layout order, including empty arrays for empty Desks;
+each Board uses the same fields as `board list`, including `target_board_id` for a Side Board.
+The top-level `boards` and `focused_board_id` describe the ambient Desk, while `active_desk` and
+`desks[].is_active` identify the Desk displayed in the resolved window.
 
 ### 3.2 `den board` (Board Surfaces & Layout)
 

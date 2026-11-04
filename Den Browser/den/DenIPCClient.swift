@@ -35,6 +35,7 @@ struct WebTargetOptions: ParsableArguments {
 private struct CLIOutputOptions {
     let isJSON: Bool
     let showBoardIDs: Bool
+    let forceText: Bool
 }
 
 private enum DenIPCClientError: LocalizedError {
@@ -78,12 +79,13 @@ enum DenIPCClient {
     static func execute(
         operation: @autoclosure () throws -> DenIPCOperation,
         options: CLIOptions,
-        showBoardIDs: Bool = false
+        showBoardIDs: Bool = false,
+        forceText: Bool = false
     ) throws {
         try execute(
             operation: operation,
             options: options,
-            output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs)
+            output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs, forceText: forceText)
         )
     }
 
@@ -169,7 +171,7 @@ enum DenIPCClient {
         isHealth: Bool,
         failureExitCode: ExitCode = .failure
     ) throws {
-        let isJSONOutput = output.isJSON || isatty(STDOUT_FILENO) == 0
+        let isJSONOutput = output.isJSON || (!output.forceText && isatty(STDOUT_FILENO) == 0)
 
         if isJSONOutput {
             if let jsonString = String(data: responseData, encoding: .utf8) {
@@ -230,7 +232,7 @@ enum DenIPCClient {
         case .profiles(let profiles):
             writeProfiles(profiles)
         case .denOverview(let overview):
-            writeBoards(overview.boards, showBoardIDs: output.showBoardIDs)
+            print(OverviewCommand.render(overview, showIDs: output.showBoardIDs))
         case .navigation(_, let url), .url(let url):
             print(url)
         case .status(let status):

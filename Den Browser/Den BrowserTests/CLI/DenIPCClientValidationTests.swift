@@ -5,6 +5,81 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: [[], ["--json"], ["--text"], ["--text", "-l"]])
+    func overviewPreservesLayoutAndOutputSelection(flags: [String]) async throws {
+        // Arrange
+        let profileID = UUID()
+        let deskID = UUID().uuidString
+        let boardID = UUID().uuidString
+        let sideID = UUID().uuidString
+        let terminalID = UUID().uuidString
+        let longLabel = String(repeating: "界", count: 40)
+        let boards = [
+            DenBoardInfo(id: boardID, type: "web", label: "Docs\n[API]", isFocused: false),
+            DenBoardInfo(id: sideID, type: "inspection", label: "Console", targetBoardID: boardID, isFocused: true),
+            DenBoardInfo(id: terminalID, type: "terminal", label: longLabel, isFocused: false),
+        ]
+        let desk = DenDeskInfo(id: deskID, label: "Work", isActive: true, boardCount: 3, boards: boards)
+        let empty = DenDeskInfo(id: UUID().uuidString, label: "Empty", isActive: false, boardCount: 0, boards: [])
+        let overview = DenIPCOverview(
+            profiles: [], profile: .init(id: profileID.uuidString, name: "Default"),
+            profileID: profileID.uuidString, desks: [desk, empty], activeDesk: desk,
+            boards: boards, focusedBoardID: sideID, drawerItemCount: 0)
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(
+                request?.operation == .inspectDen(target: .automatic) && request?.context.profileID == profileID
+                    ? .success(.denOverview(overview)) : .failure("Unexpected request"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["overview", "--profile", profileID.uuidString] + flags, socketPath: socketPath, forceJSON: false)
+
+        // Assert
+        #expect(result.status == 0)
+        if flags.contains("--text") {
+            let text = try #require(String(data: result.output, encoding: .utf8))
+            let long = flags.contains("-l")
+            #expect(text.contains(long ? "* 1: Work" : "* Work"))
+            #expect(
+                text.contains(
+                    long
+                        ? "[2: web: Docs (API) | 3: inspection: Console *]"
+                        : "[web: Docs (API) | inspection: Console *]"))
+            #expect(text.contains("  (empty)"))
+            #expect(text.contains("]  [\(long ? "4: " : "")terminal: \(String(longLabel.prefix(31)))…]"))
+            #expect(text.contains(boardID) == long)
+            if long {
+                #expect(text.contains("1: desk \(deskID) - Work"))
+                #expect(text.contains("3: inspection \(sideID) - Console"))
+                #expect(text.contains("4: terminal \(terminalID) - \(longLabel)"))
+            }
+        } else {
+            let object = try jsonResult(result.output)
+            let desks = try #require(object["desks"] as? [[String: Any]])
+            let nestedBoards = try #require(desks.first?["boards"] as? [[String: Any]])
+            #expect(nestedBoards.map { $0["id"] as? String } == [boardID, sideID, terminalID])
+            #expect(nestedBoards[1]["target_board_id"] as? String == boardID)
+            #expect((desks.last?["boards"] as? [Any])?.isEmpty == true)
+        }
+    }
+
+    @Test func overviewRejectsConflictingFormats() async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+
+        // Act
+        let result = try await runCLI(["overview", "--text", "--json"], socketPath: socketPath, forceJSON: false)
+
+        // Assert
+        #expect(result.status == 64)
+        #expect(String(data: result.error, encoding: .utf8)?.contains("Specify only one of --text or --json") == true)
+    }
+
     @Test func boardResizeSendsRequestedWidthAndReturnsAppliedWidth() async throws {
         // Arrange
         let boardID = UUID()
@@ -677,11 +752,12 @@ private func encodedResponse(
 private func runCLI(
     _ arguments: [String],
     socketPath: String,
-    environmentOverrides: [String: String] = [:]
+    environmentOverrides: [String: String] = [:],
+    forceJSON: Bool = true
 ) async throws -> CLIResult {
     let process = Process()
     process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-    process.arguments = arguments + ["--json", "--socket", socketPath]
+    process.arguments = arguments + (forceJSON ? ["--json"] : []) + ["--socket", socketPath]
     var environment = ProcessInfo.processInfo.environment
     environment.removeValue(forKey: "DEN_SOCKET")
     environment.removeValue(forKey: "DEN_BOARD_ID")

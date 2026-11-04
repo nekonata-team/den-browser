@@ -43,23 +43,27 @@ public nonisolated struct DenDeskInfo: Codable, Sendable {
     public var label: String
     public var isActive: Bool
     public var boardCount: Int
+    public var boards: [DenBoardInfo]?
 
     public init(
         id: String,
         label: String,
         isActive: Bool,
-        boardCount: Int
+        boardCount: Int,
+        boards: [DenBoardInfo]? = nil
     ) {
         self.id = id
         self.label = label
         self.isActive = isActive
         self.boardCount = boardCount
+        self.boards = boards
     }
     enum CodingKeys: String, CodingKey {
         case id
         case label
         case isActive = "is_active"
         case boardCount = "board_count"
+        case boards
     }
 }
 
