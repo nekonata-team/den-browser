@@ -134,7 +134,19 @@ final class BoardRuntimeReceiver {
                 connection.feedback?.publish("Download failed: \($0)", severity: .error)
             },
             isFocused: { [connection] in connection.focusedBoardID() == board.id },
-            restoreFocusedFirstResponder: { [connection] in connection.runtimes?.restoreFocusedFirstResponder() })
+            restoreFocusedFirstResponder: { [connection] in connection.runtimes?.restoreFocusedFirstResponder() },
+            onDenAPIFocus: { [weak self, connection] id in
+                guard let storage = self?.storage, storage.state.board(for: id) != nil else {
+                    throw DenAPIBridge.Failure(message: "Board not found in this Profile")
+                }
+                guard let navigation = connection.boardNavigation else {
+                    throw DenAPIBridge.Failure(message: "Board navigation is unavailable")
+                }
+                navigation.focusBoard(id)
+                guard connection.focusedBoardID() == id else {
+                    throw DenAPIBridge.Failure(message: "Could not focus Board in this window")
+                }
+            })
     }
 
     func terminalEvents(for board: BoardState, connection: RuntimeWindowConnection) -> TerminalRuntime.Events {

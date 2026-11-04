@@ -10,6 +10,7 @@
     "types": []
   },
   "files": [
+    "src/den-api/entry.ts",
     "globals.d.ts",
     "src/sheet-read/entry.ts",
     "src/sheet-read/browser.ts",

@@ -7,7 +7,7 @@ public enum BoardKind: Codable, Equatable {
     case tutorial(TutorialBoardState)
 
     private enum CodingKeys: String, CodingKey {
-        case kind, session, currentSheetURL, firstSheetURL, sheetNavigationPaused
+        case kind, session, currentSheetURL, firstSheetURL, sheetNavigationPaused, denAPIEnabled
     }
     private enum Kind: String, Codable { case web, inspection, terminal, tutorial }
 
@@ -21,7 +21,8 @@ public enum BoardKind: Codable, Equatable {
                     firstSheetURL: try container.decodeIfPresent(URL.self, forKey: .firstSheetURL),
                     sheetNavigationPaused: try container.decodeIfPresent(
                         Bool.self,
-                        forKey: .sheetNavigationPaused) ?? false))
+                        forKey: .sheetNavigationPaused) ?? false,
+                    denAPIEnabled: try container.decodeIfPresent(Bool.self, forKey: .denAPIEnabled) ?? false))
         case .inspection:
             self = .inspection
         case .terminal:
@@ -38,6 +39,9 @@ public enum BoardKind: Codable, Equatable {
             try container.encode(Kind.web, forKey: .kind)
             try container.encodeIfPresent(web.currentSheetURL, forKey: .currentSheetURL)
             try container.encodeIfPresent(web.firstSheetURL, forKey: .firstSheetURL)
+            if web.denAPIEnabled {
+                try container.encode(true, forKey: .denAPIEnabled)
+            }
             if web.sheetNavigationPaused {
                 try container.encode(true, forKey: .sheetNavigationPaused)
             }

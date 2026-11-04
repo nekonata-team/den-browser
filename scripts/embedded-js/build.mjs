@@ -19,6 +19,10 @@ if (check.exitCode !== 0) process.exit(check.exitCode || 1);
 const license = `/* Turndown and turndown-plugin-gfm; includes collapse-whitespace\nCopyright (c) 2014 Luc Thevenard <lucthevenard@gmail.com>\n${await readFile(resolve(packageRoot, 'node_modules/turndown/LICENSE'), 'utf8')}*/`;
 const entries = [
   {
+    entry: 'src/den-api/entry.ts',
+    output: 'DenAPI.js',
+  },
+  {
     entry: 'src/sheet-dom/entry.ts',
     output: 'SheetDOM.js',
   },

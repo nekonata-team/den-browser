@@ -109,13 +109,15 @@ public final class BoardCreation {
     @discardableResult
     public func createWeb(
         urlString: String, width: Double, searchEngine: SearchEngine, target: Target,
-        recentItem: RecentItem? = nil, notify: (Notice) -> Void
+        recentItem: RecentItem? = nil, denAPI: Bool = false, notify: (Notice) -> Void
     ) -> BoardID? {
         guard let url = BoardInputResolver.normalizedURL(from: urlString, searchEngine: searchEngine) else {
             return nil
         }
-        let board = BoardState(
+        guard !denAPI || DenAPIPolicy.isLocalHTML(url) else { return nil }
+        var board = BoardState(
             label: url.host(percentEncoded: false) ?? url.absoluteString, width: width, currentSheetURL: url)
+        board.denAPIEnabled = denAPI
         return insert(board, target: target, recentItem: recentItem, notify: notify)
     }
 

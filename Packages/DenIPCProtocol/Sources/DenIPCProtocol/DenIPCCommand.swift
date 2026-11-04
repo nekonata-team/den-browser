@@ -36,6 +36,7 @@ public nonisolated enum DenIPCCommand {
         case status
         case dialog(DenSheetDialogCommand)
         case reload
+        case reloadWithDenAPI(enabled: Bool)
         case eval(DenSheetEvalPayload)
         case text
         case read(within: String?)

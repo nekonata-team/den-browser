@@ -121,6 +121,8 @@ Removal invalidations reach each window through weak connections, clearing local
 without retaining closed windows.
 
 WebKit private headers, Ghostty execution and bundled scripts remain app-owned.
+The opt-in [Den JavaScript API](den-api.md) bridges local HTML main frames in an enabled Board to native Board operations.
+Its enabled flag belongs to persisted Web Board state; WebRuntime owns injection and validates each caller before dispatch.
 App supplies existing `NSView` instances, observed values and focused callbacks to DenViews.
 Detached Terminal surfaces stop rendering but keep their process and low-frequency ticks until disposed
 ([ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md)).

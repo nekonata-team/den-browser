@@ -57,6 +57,10 @@ The last Desk cannot be removed. Discover target UUIDs with `den desk list --jso
 
 ## Web interaction
 
+Local HTML can use the injected `den.*` JavaScript API when opened or reloaded with `--den-api`.
+Discover enable/disable options with `den board web new --help` and `den board web reload --help`.
+See [Den JavaScript API](https://github.com/nekonata-team/den-browser/blob/main/docs/den-api.md) for the API contract and HTML examples.
+
 Use `den board web read` to understand page content as Markdown, `text` for plain text or API response bodies, and `snapshot` for interaction targets and state. `read --within <selector|ref>` limits reading to an observed region, such as the main content; see `den board web read --help` for options.
 
 Create a Web Board with `den board web new <url> --json`. To reuse one, pass its Board ID to `den board web navigate <url> --board <id> --json`; `new` creates a Board, while `navigate` changes the Current Sheet in an existing Board's Sheet Stack.

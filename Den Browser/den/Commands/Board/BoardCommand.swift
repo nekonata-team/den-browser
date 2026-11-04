@@ -217,6 +217,10 @@ struct BoardWebNewCommand: ParsableCommand {
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the newly created Board")
     var focus: Bool = false
+    @Flag(
+        name: .customLong("den-api"),
+        help: "Enable and persist the Den JavaScript API on this Board for local HTML files")
+    var denAPI = false
 
     func validate() throws {
         try validateBoardWidth(width)
@@ -225,7 +229,7 @@ struct BoardWebNewCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .createWebBoard(
-                payload: DenBoardWebNewPayload(url: url, focus: focus, width: width),
+                payload: DenBoardWebNewPayload(url: url, focus: focus, width: width, denAPI: denAPI ? true : nil),
                 destination: try placement.destination()
             ),
             options: options

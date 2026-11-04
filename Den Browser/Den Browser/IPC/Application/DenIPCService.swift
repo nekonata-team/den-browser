@@ -529,6 +529,22 @@ final class DenIPCService {
                 runtime.webView.reload()
                 return .success(.message("Reloaded"))
 
+            case .reloadWithDenAPI(let enabled):
+                guard window.resources.snapshot.activeDrag == nil else {
+                    return .failure("Cannot change Den API settings during a drag; finish the drag and retry")
+                }
+                let url = runtime.webView.url ?? board.currentSheetURL
+                guard !enabled || DenAPIPolicy.isLocalHTML(url) else {
+                    return .failure("--den-api requires a local .html or .htm file")
+                }
+                let saved = window.resources.boardUpdates.setDenAPIEnabled(board.id, enabled: enabled)
+                runtime.setDenAPIEnabled(enabled)
+                runtime.reload()
+                guard saved else {
+                    return .failure("Den API settings changed for this session, but could not be saved")
+                }
+                return .success(.message("Reloaded"))
+
             case .url:
                 let currentURL = runtime.webView.url?.absoluteString ?? board.currentSheetURL?.absoluteString ?? ""
                 return .success(.url(currentURL))
@@ -1067,12 +1083,19 @@ final class DenIPCService {
         target resolved: ResolvedDeskTarget,
         creationTarget: BoardCreation.Target
     ) -> DenIPCOperationResult {
+        if payload.denAPI == true {
+            let url = BoardInputResolver.normalizedURL(from: payload.url, searchEngine: resolved.window.searchEngine())
+            guard DenAPIPolicy.isLocalHTML(url) else {
+                return .failure("--den-api requires a local .html or .htm file")
+            }
+        }
         guard
             let boardID = resolved.window.resources.boardCreation.createWeb(
                 urlString: payload.url,
                 width: payload.width ?? resolved.window.inheritedBoardWidth(),
                 searchEngine: resolved.window.searchEngine(),
                 target: creationTarget,
+                denAPI: payload.denAPI == true,
                 notify: resolved.window.board.creationNotice
             ), let board = resolved.window.resources.snapshot.den.board(for: boardID)
         else {

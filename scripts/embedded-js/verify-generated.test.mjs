@@ -6,10 +6,10 @@ import vm from 'node:vm';
 const outputDir = process.env.DEN_EMBEDDED_JS_OUTPUT_DIR;
 if (!outputDir) throw new Error('Set DEN_EMBEDDED_JS_OUTPUT_DIR to the generated resource directory');
 const source = name => readFile(resolve(outputDir, name), 'utf8');
-const names = ['InspectionAgent.js', 'PictureInPicture.js', 'SheetDOM.js', 'SheetNavigation.js', 'SheetRead.js'];
+const names = ['DenAPI.js', 'InspectionAgent.js', 'PictureInPicture.js', 'SheetDOM.js', 'SheetNavigation.js', 'SheetRead.js'];
 
 describe('generated resources', () => {
-  test('generates exactly five resources', async () => {
+  test('generates the embedded resources', async () => {
     expect((await readdir(outputDir)).sort()).toEqual(names);
   });
 
@@ -20,6 +20,22 @@ describe('generated resources', () => {
 });
 
 describe('public API', () => {
+  test('Den API forwards Board focus and propagates native errors', async () => {
+    const messages = [];
+    const context = vm.createContext({
+      window: {},
+      denAPITransport: { postMessage: async message => {
+        messages.push(message);
+        if (message.boardId === 'missing') throw new Error('Board not found');
+        return null;
+      } },
+    });
+    vm.runInContext(await source('DenAPI.js'), context);
+    await vm.runInContext('window.den.boards.focus("board-id")', context);
+    expect(JSON.parse(JSON.stringify(messages))).toEqual([{ action: 'board.focus', boardId: 'board-id' }]);
+    await expect(vm.runInContext('window.den.boards.focus("missing")', context)).rejects.toThrow('Board not found');
+  });
+
   test('publishes read without a module loader and supports repeated evaluation', async () => {
     const script = await source('SheetRead.js');
     const context = vm.createContext({ document: {} });

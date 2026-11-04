@@ -59,7 +59,7 @@ Nested objects use these keys:
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
 - `BoardState`: `id`, `label`, `width`, `role`, `content`, optional `customLabel`
 - `BoardRole`: `kind: primary`, or `kind: sideBoard` with `targetBoardID`
-- Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`, optional `sheetNavigationPaused`
+- Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`, optional `sheetNavigationPaused`, optional `denAPIEnabled`
 - Inspection Board `content`: `kind: inspection`
 - Terminal Board `content`: `kind: terminal`, `session`
 - Shell session: `kind: shell`, `workingDirectory`
@@ -80,6 +80,11 @@ while a missing First Sheet URL disables returning to the initial Sheet.
 Web Board URLs normalize HTTP(S) root paths to `/` before persistence.
 Local file URLs persist as standard Foundation `URL`s without saving contents, bookmarks, or verifying file existence.
 Consequently, a moved or missing local file fails to load upon restoration without invalidating saved models.
+
+`denAPIEnabled` enables the [Den JavaScript API](den-api.md) for local HTML main frames in that Board.
+It defaults to `false` when absent. The flag survives navigation and Profile restoration; remote pages cannot invoke the API.
+Other Boards opening the same file do not inherit it. No API-specific target URL is stored.
+Board duplication retains the flag; Desk Presets and Web Drawer Items do not capture this Board-specific setting.
 
 `PersistedProfileDocumentDecoder` migrates version 1, 2 and 3 documents before decoding:
 - Version 1 Boards decode as Web Boards.

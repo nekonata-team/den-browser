@@ -430,6 +430,7 @@
 			files = (
 			);
 			inputPaths = (
+				"$(SRCROOT)/../scripts/embedded-js/src/den-api/entry.ts",
 				"$(SRCROOT)/../mise.toml",
 				"$(SRCROOT)/../scripts/embedded-js/build.mjs",
 				"$(SRCROOT)/../scripts/embedded-js/globals.d.ts",
@@ -448,6 +449,7 @@
 			);
 			name = "Generate embedded JavaScript";
 			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/DenAPI.js",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetRead.js",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetDOM.js",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetNavigation.js",

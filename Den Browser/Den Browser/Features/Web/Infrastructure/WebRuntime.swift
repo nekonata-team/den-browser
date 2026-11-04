@@ -37,6 +37,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         var onDownloadFailed: (String) -> Void = { _ in }
         var isFocused: () -> Bool = { false }
         var restoreFocusedFirstResponder: () -> Void = {}
+        var onDenAPIFocus: ((BoardID) throws -> Void)?
     }
 
     struct ActionHighlight: Equatable {
@@ -59,6 +60,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     private var inspectionHighlightColor: ProfileRGB?
     private var inspectionCollectionUserScript: WKUserScript?
     private var navigationHTTPStatusCode: Int?
+    private var denAPI: DenAPIBridge?
 
     var httpStatusCode: Int? {
         webView.isLoading ? nil : navigationHTTPStatusCode
@@ -113,6 +115,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             id: board.id.rawValue,
             initialURL: board.currentSheetURL,
             sheetNavigationPaused: board.sheetNavigationPaused,
+            denAPIEnabled: board.denAPIEnabled,
             presentation: .board,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
@@ -128,6 +131,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         id: UUID,
         initialURL: URL?,
         sheetNavigationPaused: Bool = false,
+        denAPIEnabled: Bool = false,
         presentation: Presentation,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
@@ -149,9 +153,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
 
         super.init(
             id: id,
-            initialURL: webExtensionHost != nil && webExtensionWindow != nil
-                ? nil
-                : initialURL,
+            initialURL: nil,
             websiteDataStore: websiteDataStore,
             userContentController: popupWebView?.configuration.userContentController
                 ?? sheetNavigation.makeBoardUserContentController(),
@@ -188,6 +190,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             paused: sheetNavigationPaused,
             actions: self.sheetNavigationActions
         )
+        setDenAPIEnabled(denAPIEnabled)
         if let webExtensionHost, let webExtensionWindow {
             webExtensionHost.register(
                 webView: webView,
@@ -196,6 +199,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             ) { [weak self] url in
                 self?.load(url)
             }
+        } else if popupWebView == nil, let initialURL {
+            load(initialURL)
         }
 
         progressObservation = webView.observe(\.estimatedProgress, options: [.new]) {
@@ -230,6 +235,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
 
     /// Changes the presentation owner without loading or disposing the live page.
     func presentInDrawer(sheetNavigationActions: SheetNavigationManager.Actions, events: Events) {
+        setDenAPIEnabled(false)
         presentation = .drawer
         webView.configuration.preferences.isElementFullscreenEnabled = false
         updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
@@ -243,6 +249,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     ) {
         boardID = board.id
         presentation = .board
+        setDenAPIEnabled(board.denAPIEnabled)
         webView.configuration.preferences.isElementFullscreenEnabled = true
         updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
         sheetNavigation.didOpen(
@@ -309,6 +316,18 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         webView.reloadFromOrigin()
     }
 
+    func setDenAPIEnabled(_ enabled: Bool) {
+        if denAPI == nil, enabled {
+            denAPI = DenAPIBridge(webView: webView) { [weak self] id in
+                guard let self, self.presentation == .board, let focus = self.events.onDenAPIFocus else {
+                    throw DenAPIBridge.Failure(message: "Board navigation is unavailable")
+                }
+                try focus(id)
+            }
+        }
+        denAPI?.setEnabled(enabled)
+    }
+
     private static func configureNativePictureInPicture(
         preferences: WKPreferences
     ) {
@@ -338,6 +357,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func dispose() {
+        denAPI?.dispose()
+        denAPI = nil
         stopInspection()
         actionHighlightTask?.cancel()
         actionHighlightTask = nil

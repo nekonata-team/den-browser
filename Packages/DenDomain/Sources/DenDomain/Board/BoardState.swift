@@ -11,6 +11,18 @@ public struct BoardState: Codable, Equatable, Identifiable {
     public var role: BoardRole
     public var customLabel: String?
 
+    public var denAPIEnabled: Bool {
+        get {
+            guard case .web(let web) = kind else { return false }
+            return web.denAPIEnabled
+        }
+        set {
+            guard case .web(var web) = kind else { return }
+            web.denAPIEnabled = newValue
+            kind = .web(web)
+        }
+    }
+
     public var sheetNavigationPaused: Bool {
         get {
             guard case .web(let web) = kind else { return false }

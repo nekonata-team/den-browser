@@ -327,15 +327,18 @@ public nonisolated struct DenBoardWebNewPayload: Codable, Equatable, Sendable {
     public var url: String
     public var focus: Bool
     public var width: Double?
+    public var denAPI: Bool?
 
     public init(
         url: String,
         focus: Bool,
-        width: Double? = nil
+        width: Double? = nil,
+        denAPI: Bool? = nil
     ) {
         self.url = url
         self.focus = focus
         self.width = width
+        self.denAPI = denAPI
     }
 }
 

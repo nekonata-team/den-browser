@@ -51,10 +51,26 @@ struct WebReloadCommand: ParsableCommand {
         abstract: "Reload Current Sheet in the target Web Board")
 
     @OptionGroup var target: WebTargetOptions
+    @Flag(
+        name: .customLong("den-api"),
+        help: "Enable and save this Board's Den API setting for local HTML files before reloading")
+    var denAPI = false
+    @Flag(name: .customLong("no-den-api"), help: "Disable and save this Board's Den API setting before reloading")
+    var noDenAPI = false
+
+    func validate() throws {
+        guard !(denAPI && noDenAPI) else {
+            throw ValidationError("Specify only one of --den-api or --no-den-api")
+        }
+    }
+
+    var sheetCommand: DenIPCCommand.Sheet {
+        denAPI || noDenAPI ? .reloadWithDenAPI(enabled: denAPI) : .reload
+    }
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .reload,
+            command: sheetCommand,
             options: target
         )
     }
