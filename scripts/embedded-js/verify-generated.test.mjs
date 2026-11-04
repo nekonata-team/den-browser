@@ -26,6 +26,7 @@ describe('public API', () => {
     for (let i = 0; i < 2; i++) {
       vm.runInContext(script, context);
       expect(vm.runInContext('typeof denSheetRead.read', context)).toBe('function');
+      expect(vm.runInContext('denSheetRead.text()', context)).toBe('');
       expect(() => vm.runInContext('denSheetRead.read(null)', context)).toThrow(/HTML body/);
     }
   });

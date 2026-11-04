@@ -563,9 +563,7 @@ final class DenIPCService {
                 return .success(.value("undefined"))
 
             case .text:
-                let evalResult = try await runtime.webView.evaluateJavaScript(
-                    "document.body?.innerText ?? document.documentElement?.textContent ?? ''")
-                return .success(.text("\(evalResult ?? "")"))
+                return .success(.text(try await SheetReading.text(in: runtime.webView)))
 
             case .read(let within):
                 return .success(try await SheetReading.read(in: runtime.webView, within: within))

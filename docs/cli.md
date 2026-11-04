@@ -175,7 +175,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 | `den board web status` | None | Print the main page's final HTTP status code, or `null` when unavailable. | `den board web status` |
 | `den board web reload` | None | Reload Current Sheet in the target Web Board. | `den board web reload` |
 | `den board web eval` | `<script>` | Evaluate JavaScript and return the result. | `den board web eval document.title` |
-| `den board web text` | None | Extract visible text content (`innerText`) from the sheet, falling back to the root element's `textContent` for documents such as XML without an HTML body. | `den board web text` |
+| `den board web text` | None | Extract visible text content, including open shadow DOM, from the Current Sheet. For documents such as XML without an HTML body, return the root element's `textContent`. | `den board web text` |
 | `den board web read` | `[--within <selector\|ref>]` | Read the Current Sheet as Markdown, preserving headings, lists, links, tables, and code. Returns `title`, `url`, and `markdown` in JSON. | `den board web read --board <id> --within main --json` |
 | `den board web back` | None | Navigate back in browsing history. | `den board web back` |
 | `den board web forward` | None | Navigate forward in browsing history. | `den board web forward` |
@@ -196,9 +196,13 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 | `den board web interact` | `[<script-or-file>] [--snapshot [--full]]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`). Actions follow standard `den board web` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`, `navigate`); execution stops at the first failure. JSON returns status and action metadata. Add `--snapshot` for a final semantic snapshot, and `--full` for the complete semantic tree. | `den board web interact "click @e1; fill @e2 'query'" --snapshot` |
 | `den board web screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den board web screenshot /tmp/screen.png` |
 
-Use `text` for plain visible text, `read` for understanding page content with its structure, and `snapshot` for interaction targets and their state. `read` converts a copy of the currently loaded main-frame DOM without navigating, making another request, or modifying the live page. It excludes hidden content and non-content elements such as scripts and styles, but does not infer an article or remove navigation and footers. Links and image sources are resolved to absolute URLs. It requires an HTML body; iframe contents, shadow DOM, canvas, and unloaded content are not included. Markdown does not preserve every visual layout or form state; use `snapshot` or `query` to inspect controls.
+Use `text` for plain visible text, `read` for structured Markdown, and `snapshot` or `query` for controls.
 
-Use `read --within main` to read only the page's main region, or pass a CSS selector or current `@e…` reference to choose another element. The selected element and its descendants are converted; title and URL still identify the Current Sheet. A selector must match exactly one element. Missing, stale, invalid, or ambiguous scopes fail without falling back to the whole page. Omitting `--within` reads the whole body; it does not automatically select `main` or `article`.
+`read` converts loaded HTML without navigation, network requests, or live DOM changes. It skips hidden content and scripts/styles, keeps navigation and footers, resolves URLs, and requires an HTML body.
+
+Both readers include open shadow DOM in slot order. Closed roots, iframe contents, canvas, and unloaded content are excluded. On pages with open roots, `text` formatting is approximate.
+
+Use `read --within main` to read only the page's main region, or pass a CSS selector or current `@e…` reference to choose another element. The selected element and its descendants are converted; title and URL still identify the Current Sheet. A selector must match exactly one element and does not cross shadow boundaries. Missing, stale, invalid, or ambiguous scopes fail without falling back to the whole page. Omitting `--within` reads the whole body; it does not automatically select `main` or `article`.
 
 #### Download save dialogs
 

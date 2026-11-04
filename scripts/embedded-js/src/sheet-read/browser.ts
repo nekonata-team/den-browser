@@ -1,4 +1,4 @@
-import { read } from './entry';
+import { read, text } from './entry';
 
 // Bun IIFE output does not support esbuild's globalName.
-Object.assign(globalThis, { denSheetRead: { read } });
+Object.assign(globalThis, { denSheetRead: { read, text } });

@@ -16,6 +16,18 @@ enum SheetReading {
         return nil
     }()
 
+    static func text(in webView: WKWebView) async throws -> String {
+        guard let source else {
+            throw SheetInteractionError.executionFailed("Bundled reading script is unavailable")
+        }
+        let value = try await webView.evaluateJavaScript(
+            source + "\ndenSheetRead.text();", in: nil, contentWorld: SheetDOMRuntime.contentWorld)
+        guard let text = value as? String else {
+            throw SheetInteractionError.executionFailed("Text reader returned an invalid result")
+        }
+        return text
+    }
+
     static func read(in webView: WKWebView, within: String? = nil) async throws -> DenIPCResultPayload {
         guard let source else {
             throw NSError(

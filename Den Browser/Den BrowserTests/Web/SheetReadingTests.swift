@@ -7,6 +7,134 @@ import WebKit
 
 @MainActor
 struct SheetReadingTests {
+    @Test(arguments: [String?.none, "#host"])
+    func openShadowContentKeepsStructureAndNestedRootsWithoutChangingThePage(scope: String?) async throws {
+        // Arrange
+        let webView = await makeWebView(
+            html: """
+                <div id="host"></div><script>
+                const shadow = document.querySelector('#host').attachShadow({mode: 'open'});
+                shadow.innerHTML = '<h2>Shadow heading</h2><a href="/next">Shadow link</a>'
+                    + '<div id="nested"></div><pre><code class="language-js">  const x = 1;\\n  use(x);</code></pre>';
+                shadow.querySelector('#nested').attachShadow({mode: 'open'}).innerHTML = '<p>Nested marker</p>';
+                </script>
+                """)
+        let inspect = """
+            JSON.stringify([document.documentElement.outerHTML,
+              document.querySelector('#host').shadowRoot.innerHTML,
+              document.querySelector('#host').shadowRoot.querySelector('#nested').shadowRoot.innerHTML])
+            """
+        let before = try await webView.evaluateJavaScript(inspect) as? String
+
+        // Act
+        let result = try await SheetReading.read(in: webView, within: scope)
+        let text = try await SheetReading.text(in: webView)
+        let after = try await webView.evaluateJavaScript(inspect) as? String
+
+        // Assert
+        guard case .reading(_, _, let markdown) = result else {
+            Issue.record("Expected Markdown reading payload")
+            return
+        }
+        #expect(markdown.contains("## Shadow heading"))
+        #expect(markdown.contains("[Shadow link](https://example.com/next)"))
+        #expect(markdown.contains("Nested marker"))
+        #expect(markdown.contains("```js\n  const x = 1;\n  use(x);\n```"))
+        #expect(text.contains("Shadow heading\nShadow link"))
+        #expect(text.contains("Nested marker"))
+        #expect(text.contains("  const x = 1;\n  use(x);"))
+        #expect(before == after)
+    }
+
+    @Test func slotsUseRenderedOrderAndFallbackWithoutDuplicatingLightContent() async throws {
+        // Arrange
+        let webView = await makeWebView(
+            html: """
+                <div id="host"><span slot="last">Last marker</span><span slot="first">First marker</span>
+                <span id="unassigned">Unassigned marker</span></div><script>
+                const shadow = document.querySelector('#host').attachShadow({mode: 'open'});
+                shadow.innerHTML = '<p><slot name="first">Replaced fallback</slot></p>'
+                    + '<p><slot name="empty">Fallback marker</slot></p><p><slot name="last"></slot></p>';
+                </script>
+                """)
+
+        // Act
+        let result = try await SheetReading.read(in: webView)
+        let text = try await SheetReading.text(in: webView)
+        let unassigned = try await SheetReading.read(in: webView, within: "#unassigned")
+
+        // Assert
+        guard case .reading(_, _, let markdown) = result,
+            case .reading(_, _, let unassignedMarkdown) = unassigned
+        else {
+            Issue.record("Expected Markdown reading payload")
+            return
+        }
+        for content in [markdown, text] {
+            #expect(content.components(separatedBy: "First marker").count == 2)
+            #expect(content.components(separatedBy: "Last marker").count == 2)
+            let first = try #require(content.range(of: "First marker"))
+            let fallback = try #require(content.range(of: "Fallback marker"))
+            let last = try #require(content.range(of: "Last marker"))
+            #expect(first.lowerBound < fallback.lowerBound)
+            #expect(fallback.lowerBound < last.lowerBound)
+            #expect(!content.contains("Unassigned marker"))
+            #expect(!content.contains("Replaced fallback"))
+        }
+        #expect(unassignedMarkdown.isEmpty)
+    }
+
+    @Test func shadowStylesAndHiddenSlotsExcludeContentButKeepVisibleDescendants() async throws {
+        // Arrange
+        let webView = await makeWebView(
+            html: """
+                <div id="host"><span slot="hidden">Hidden assignment</span></div>
+                <div id="hidden" hidden></div><div id="closed"></div><script>
+                const shadow = document.querySelector('#host').attachShadow({mode: 'open'});
+                shadow.innerHTML = '<style>.hidden {display:none}</style><p class="hidden">Hidden marker</p>'
+                    + '<slot name="hidden" style="display:none"></slot><slot name="missing" hidden>Hidden fallback</slot>'
+                    + '<p style="visibility:hidden">Invisible marker<span style="visibility:visible">Visible marker</span></p>'
+                    + '<div style="content-visibility:hidden">Skipped marker</div>'
+                    + '<details><summary>Summary marker</summary>Closed details marker</details>';
+                document.querySelector('#hidden').attachShadow({mode: 'open'}).innerHTML = '<p>Hidden host marker</p>';
+                document.querySelector('#closed').attachShadow({mode: 'closed'}).innerHTML = '<p>Closed root marker</p>';
+                </script>
+                """)
+
+        // Act
+        let result = try await SheetReading.read(in: webView)
+        let text = try await SheetReading.text(in: webView)
+
+        // Assert
+        guard case .reading(_, _, let markdown) = result else {
+            Issue.record("Expected Markdown reading payload")
+            return
+        }
+        for content in [markdown, text] {
+            #expect(content.contains("Visible marker"))
+            #expect(content.contains("Summary marker"))
+            for hidden in [
+                "Hidden marker", "Hidden assignment", "Hidden fallback", "Invisible marker",
+                "Skipped marker", "Closed details marker", "Hidden host marker", "Closed root marker",
+            ] {
+                #expect(!content.contains(hidden))
+            }
+        }
+    }
+
+    @Test func textWithoutShadowContentKeepsNativeFormatting() async throws {
+        // Arrange
+        let webView = await makeWebView(
+            html: "<h1>Heading</h1><p>First<br>Second</p><pre>  code\n    indented</pre><p hidden>Hidden</p>")
+        let expected = try await webView.evaluateJavaScript("document.body.innerText") as? String
+
+        // Act
+        let text = try await SheetReading.text(in: webView)
+
+        // Assert
+        #expect(text == expected)
+    }
+
     @Test func highlightedSpansInPreKeepCodeBoundariesAndWhitespace() async throws {
         // Arrange
         let webView = await makeWebView(
@@ -150,6 +278,7 @@ struct SheetReadingTests {
                 customElements.define('read-probe', class extends HTMLElement {
                     constructor() {
                         super();
+                        this.attachShadow({mode: 'open'}).innerHTML = '<slot></slot><p>Shadow content marker</p>';
                         window.constructorCalls++;
                         document.getElementById('state').textContent = 'Changed by constructor';
                     }
@@ -163,6 +292,7 @@ struct SheetReadingTests {
         // Act
         let result = try await SheetReading.read(in: webView)
         _ = try await SheetReading.read(in: webView)
+        let text = try await SheetReading.text(in: webView)
         let constructorCalls = try await webView.evaluateJavaScript("window.constructorCalls") as? Int
         let after = try await webView.evaluateJavaScript("document.documentElement.outerHTML") as? String
 
@@ -174,7 +304,10 @@ struct SheetReadingTests {
             return
         }
         #expect(markdown.contains("Custom element content"))
+        #expect(markdown.contains("Shadow content marker"))
         #expect(markdown.contains("Unchanged marker"))
+        #expect(text.contains("Custom element content"))
+        #expect(text.contains("Shadow content marker"))
     }
 
     @Test(arguments: [String?.none, "#scope", "#child"])
@@ -419,6 +552,7 @@ struct SheetReadingTests {
         await #expect(throws: (any Error).self) {
             _ = try await SheetReading.read(in: webView)
         }
+        #expect(try await SheetReading.text(in: webView) == "XML result")
     }
 
     private func makeWebView(html: String) async -> WKWebView {

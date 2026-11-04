@@ -9,6 +9,72 @@ function hidesSubtree(element: Element, style: CSSStyleDeclaration): boolean {
       && element !== parent.querySelector(':scope > summary'));
 }
 
+function renderedChildren(element: Element): Node[] {
+  if (element instanceof HTMLSlotElement) {
+    const assigned = element.assignedNodes();
+    return assigned.length ? assigned : [...element.childNodes];
+  }
+  return [...(element.shadowRoot ?? element).childNodes];
+}
+
+function renderedParent(element: Element): Element | null {
+  if (element.assignedSlot) return element.assignedSlot;
+  const parent = element.parentNode;
+  return parent instanceof ShadowRoot ? parent.host : element.parentElement;
+}
+
+function copyVisibleContent(root: Element): { container: HTMLElement; text: string } {
+  // Import shallow nodes into an inert document so custom element constructors never run.
+  const inertDocument = document.implementation.createHTMLDocument('');
+  const container = inertDocument.createElement('div');
+  function copyElement(original: Element): { copy: Element; text: string } | null {
+    const style = getComputedStyle(original);
+    if (hidesSubtree(original, style)) return null;
+    const copy = inertDocument.importNode(original, false);
+    const visible = style.visibility !== 'hidden' && style.visibility !== 'collapse';
+    const closed = original instanceof HTMLDetailsElement && !original.open;
+    let text = '';
+    for (const child of renderedChildren(original)) {
+      if (child instanceof Element) {
+        const result = copyElement(child);
+        if (result) {
+          copy.append(result.copy);
+          text += result.text;
+        }
+      } else if (child.nodeType === Node.TEXT_NODE && visible && !closed) {
+        copy.append(inertDocument.importNode(child, false));
+        const value = child.textContent ?? '';
+        text += /^(pre|break-spaces)/.test(style.whiteSpace) ? value : value.replace(/[\t\n\r\f ]+/g, ' ');
+      }
+    }
+    if ((!visible || closed) && copy.childElementCount === 0) return null;
+    if (original instanceof HTMLAnchorElement && original.hasAttribute('href')) {
+      copy.setAttribute('href', original.href);
+    }
+    if (original instanceof HTMLImageElement && original.hasAttribute('src')) {
+      copy.setAttribute('src', original.currentSrc || original.src);
+    }
+    if (visible && original instanceof HTMLBRElement) text = '\n';
+    if (text && /^(block|flow-root|flex|grid|list-item|table|table-row|table-caption)$/.test(style.display)) {
+      text = (text.startsWith('\n') ? '' : '\n') + text + (text.endsWith('\n') ? '' : '\n');
+    } else if (text && style.display === 'table-cell') {
+      text += '\t';
+    }
+    return { copy, text };
+  }
+  const result = copyElement(root);
+  if (result) container.append(result.copy);
+  return { container, text: result?.text ?? '' };
+}
+
+export function text(): string {
+  if (!document.body) return document.documentElement?.textContent ?? '';
+  if (![document.body, ...document.body.querySelectorAll('*')].some(element => element.shadowRoot)) {
+    return document.body.innerText;
+  }
+  return copyVisibleContent(document.body).text.replace(/^\n+|\n+$/g, '');
+}
+
 export function read(within: string | null = null): { title: string; url: string; markdown: string } {
   if (!document.body) {
     throw new Error('Markdown reading requires a document with an HTML body');
@@ -29,43 +95,15 @@ export function read(within: string | null = null): { title: string; url: string
     }
   }
 
-  for (let ancestor: Element | null = root; ancestor; ancestor = ancestor.parentElement) {
-    if (hidesSubtree(ancestor, getComputedStyle(ancestor))) {
+  for (let ancestor: Element | null = root; ancestor; ancestor = renderedParent(ancestor)) {
+    if (hidesSubtree(ancestor, getComputedStyle(ancestor))
+      || (ancestor.parentElement?.shadowRoot && !ancestor.assignedSlot)) {
       return { title: document.title, url: location.href, markdown: '' };
     }
   }
 
-  // An inert document prevents custom element constructors from running on either clone.
-  const inertDocument = document.implementation.createHTMLDocument('');
-  const body = inertDocument.importNode(root, true);
-  // Keep the scope element itself, so selecting a heading preserves its level.
-  const container = inertDocument.createElement('div');
-  container.append(body);
-  const originals = [root, ...root.querySelectorAll('*')];
-  const copies = [body, ...body.querySelectorAll('*')];
-  for (let index = 0; index < originals.length; index++) {
-    const original = originals[index];
-    const copy = copies[index];
-    const style = getComputedStyle(original);
-    if (hidesSubtree(original, style)) {
-      copy.remove();
-      continue;
-    }
-    if (style.visibility === 'hidden' || style.visibility === 'collapse'
-      || (original instanceof HTMLDetailsElement && !original.open)) {
-      // A visible descendant or a closed details element's summary can still be readable.
-      for (const child of [...copy.childNodes]) {
-        if (child.nodeType === Node.TEXT_NODE) child.remove();
-      }
-      if (copy.childElementCount === 0) copy.remove();
-    }
-    if (original instanceof HTMLAnchorElement && original.hasAttribute('href')) {
-      copy.setAttribute('href', original.href);
-    }
-    if (original instanceof HTMLImageElement && original.hasAttribute('src')) {
-      copy.setAttribute('src', original.currentSrc || original.src);
-    }
-  }
+  const { container } = copyVisibleContent(root);
+  const inertDocument = container.ownerDocument;
 
   // The GFM plugin requires a first row. Preserve captions when no rows remain.
   for (const table of container.querySelectorAll('table')) {
