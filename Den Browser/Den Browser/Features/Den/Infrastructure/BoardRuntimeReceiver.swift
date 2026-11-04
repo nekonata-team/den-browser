@@ -146,6 +146,12 @@ final class BoardRuntimeReceiver {
                 guard connection.focusedBoardID() == id else {
                     throw DenAPIBridge.Failure(message: "Could not focus Board in this window")
                 }
+            },
+            onDenAPIToast: { [connection] message, severity in
+                guard let feedback = connection.feedback else {
+                    throw DenAPIBridge.Failure(message: "Toast display is unavailable")
+                }
+                feedback.publish(title: nil, body: message, severity: severity, target: .board(board.id))
             })
     }
 

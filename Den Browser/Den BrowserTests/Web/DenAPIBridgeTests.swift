@@ -1,4 +1,5 @@
 import DenDomain
+import DenModels
 import Foundation
 import Testing
 import WebKit
@@ -7,6 +8,56 @@ import WebKit
 
 @MainActor
 struct DenAPIBridgeTests {
+    @Test(.timeLimit(.minutes(1)))
+    func toastPreservesMessageAndSeverityAndRejectsInvalidInput() async throws {
+        // Arrange
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        var toasts: [DenFeedback] = []
+        let bridge = DenAPIBridge(
+            webView: webView,
+            showToast: { message, severity in
+                toasts.append(DenFeedback(body: message, severity: severity))
+            }, focus: { _ in })
+        defer { bridge.dispose() }
+        bridge.setEnabled(true)
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load("<p>Sketch</p>", baseURL: URL(fileURLWithPath: "/tmp/sketch.html"), in: webView)
+
+        // Act / Assert
+        let severities: [(String, DenFeedback.Severity)] = [
+            ("info", .info), ("success", .success), ("warning", .warning), ("error", .error),
+        ]
+        for (name, severity) in severities {
+            _ = try await webView.callAsyncJavaScript(
+                "await den.toast.show('Message', { severity });", arguments: ["severity": name], in: nil,
+                contentWorld: .page)
+            #expect(toasts.last?.body == "Message")
+            #expect(toasts.last?.severity == severity)
+        }
+        _ = try await webView.callAsyncJavaScript("await den.toast.show('Default');", in: nil, contentWorld: .page)
+        #expect(toasts.last?.severity == .info)
+        let rejected = try await webView.callAsyncJavaScript(
+            """
+            const results = [];
+            for (const message of ['', '   ', 42]) {
+                try { await den.toast.show(message); results.push(false); } catch { results.push(true); }
+            }
+            try { await den.toast.show('Message', { severity: 'invalid' }); results.push(false); }
+            catch { results.push(true); }
+            return results;
+            """, in: nil, contentWorld: .page)
+        #expect(rejected as? [Bool] == [true, true, true, true])
+        #expect(toasts.count == 5)
+        bridge.setEnabled(false)
+        let disabled = try await webView.callAsyncJavaScript(
+            "try { await den.toast.show('Disabled'); return false; } catch { return true; }",
+            in: nil, contentWorld: .page)
+        #expect(disabled as? Bool == true)
+        #expect(toasts.count == 5)
+    }
+
     @Test(.timeLimit(.minutes(1)))
     func sharedPopupControllerKeepsEachWebViewsGrantAndLifetimeSeparate() async throws {
         // Arrange

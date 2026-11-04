@@ -20,6 +20,21 @@ describe('generated resources', () => {
 });
 
 describe('public API', () => {
+  test('Den Toast defaults to info and forwards an explicit severity', async () => {
+    const messages = [];
+    const context = vm.createContext({
+      window: {},
+      denAPITransport: { postMessage: async message => { messages.push(message); } },
+    });
+    vm.runInContext(await source('DenAPI.js'), context);
+    await vm.runInContext('window.den.toast.show("Saved")', context);
+    await vm.runInContext('window.den.toast.show("Could not save", { severity: "error" })', context);
+    expect(JSON.parse(JSON.stringify(messages))).toEqual([
+      { action: 'toast.show', message: 'Saved', severity: 'info' },
+      { action: 'toast.show', message: 'Could not save', severity: 'error' },
+    ]);
+  });
+
   test('Den API forwards Board focus and propagates native errors', async () => {
     const messages = [];
     const context = vm.createContext({

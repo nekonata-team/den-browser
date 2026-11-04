@@ -1,8 +1,12 @@
 # Den JavaScript API
 
 Local HTML can opt into a bundled `window.den` API. No package install, script tag, or local server is required.
-The first API is `den.boards.focus(boardId: string): Promise<void>`, which focuses an existing Board in the same Profile without activating its window.
+`den.boards.focus(boardId: string): Promise<void>` focuses an existing Board in the same Profile without activating its window.
 It rejects invalid IDs, missing Boards, unavailable navigation, and unauthorized callers.
+`den.toast.show(message: string, options?: { severity?: 'info' | 'success' | 'warning' | 'error' }): Promise<void>`
+shows a transient Toast in the owning Den window. Severity defaults to `info`.
+Clicking the Toast returns to the Board that called it; showing it does not change focus.
+Empty or whitespace-only messages and unsupported severities reject the Promise. Toasts are not retained as notifications or persisted.
 
 ## Enable and disable
 
@@ -42,6 +46,11 @@ Den injects the API at document start in local HTML main frames of an enabled Bo
 
 Discover Board IDs through `den board list`; use full UUIDs. These calls use existing native Board operations and do not invoke an AI model.
 The TypeScript contract is [DenAPI](../scripts/embedded-js/src/den-api/entry.ts).
+
+```js
+await den.toast.show('Saved');
+await den.toast.show('Could not save', { severity: 'error' });
+```
 
 ## Scope
 

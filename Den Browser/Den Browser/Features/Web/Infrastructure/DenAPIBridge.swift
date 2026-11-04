@@ -1,4 +1,5 @@
 import DenDomain
+import DenModels
 import Foundation
 import WebKit
 
@@ -11,14 +12,19 @@ final class DenAPIBridge: NSObject {
 
     private weak var webView: WKWebView?
     private let focus: (BoardID) throws -> Void
+    private let showToast: ((String, DenFeedback.Severity) throws -> Void)?
     static let handlerName = "denAPI"
     private let router: DenAPIMessageRouter
     private var isEnabled = false
     private var userScript: WKUserScript?
 
-    init(webView: WKWebView, focus: @escaping (BoardID) throws -> Void) {
+    init(
+        webView: WKWebView, showToast: ((String, DenFeedback.Severity) throws -> Void)? = nil,
+        focus: @escaping (BoardID) throws -> Void
+    ) {
         self.webView = webView
         self.focus = focus
+        self.showToast = showToast
         router = DenAPIMessageRouter.shared(for: webView.configuration.userContentController)
         super.init()
         router.owners.setObject(self, forKey: webView)
@@ -71,14 +77,34 @@ final class DenAPIBridge: NSObject {
             replyHandler(nil, "Den API is not enabled for this document")
             return
         }
-        guard let body = message.body as? [String: Any], body["action"] as? String == "board.focus",
-            let rawID = body["boardId"] as? String, let id = UUID(uuidString: rawID)
-        else {
-            replyHandler(nil, "Expected board.focus with a Board UUID")
+        guard let body = message.body as? [String: Any], let action = body["action"] as? String else {
+            replyHandler(nil, "Expected a Den API action")
             return
         }
         do {
-            try focus(BoardID(id))
+            switch action {
+            case "board.focus":
+                guard let rawID = body["boardId"] as? String, let id = UUID(uuidString: rawID) else {
+                    throw Failure(message: "Expected board.focus with a Board UUID")
+                }
+                try focus(BoardID(id))
+            case "toast.show":
+                guard let text = body["message"] as? String,
+                    !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                else { throw Failure(message: "Toast message must be a non-empty string") }
+                let severity: DenFeedback.Severity
+                switch body["severity"] as? String {
+                case "info": severity = .info
+                case "success": severity = .success
+                case "warning": severity = .warning
+                case "error": severity = .error
+                default: throw Failure(message: "Toast severity must be info, success, warning, or error")
+                }
+                guard let showToast else { throw Failure(message: "Toast display is unavailable") }
+                try showToast(text, severity)
+            default:
+                throw Failure(message: "Unknown Den API action: \(action)")
+            }
             replyHandler(NSNull(), nil)
         } catch {
             replyHandler(nil, error.localizedDescription)

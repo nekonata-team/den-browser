@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import DenDomain
 import DenInfrastructure
+import DenModels
 import Foundation
 import WebKit
 
@@ -38,6 +39,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         var isFocused: () -> Bool = { false }
         var restoreFocusedFirstResponder: () -> Void = {}
         var onDenAPIFocus: ((BoardID) throws -> Void)?
+        var onDenAPIToast: ((String, DenFeedback.Severity) throws -> Void)?
     }
 
     struct ActionHighlight: Equatable {
@@ -318,12 +320,20 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
 
     func setDenAPIEnabled(_ enabled: Bool) {
         if denAPI == nil, enabled {
-            denAPI = DenAPIBridge(webView: webView) { [weak self] id in
-                guard let self, self.presentation == .board, let focus = self.events.onDenAPIFocus else {
-                    throw DenAPIBridge.Failure(message: "Board navigation is unavailable")
-                }
-                try focus(id)
-            }
+            denAPI = DenAPIBridge(
+                webView: webView,
+                showToast: { [weak self] message, severity in
+                    guard let self, self.presentation == .board, let show = self.events.onDenAPIToast else {
+                        throw DenAPIBridge.Failure(message: "Toast display is unavailable")
+                    }
+                    try show(message, severity)
+                },
+                focus: { [weak self] id in
+                    guard let self, self.presentation == .board, let focus = self.events.onDenAPIFocus else {
+                        throw DenAPIBridge.Failure(message: "Board navigation is unavailable")
+                    }
+                    try focus(id)
+                })
         }
         denAPI?.setEnabled(enabled)
     }

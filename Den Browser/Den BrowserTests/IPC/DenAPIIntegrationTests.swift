@@ -1,6 +1,7 @@
 import DenDomain
 import DenIPCProtocol
 import DenInfrastructure
+import DenModels
 import Foundation
 import Testing
 
@@ -47,6 +48,14 @@ struct DenAPIIntegrationTests {
 
         // Assert
         #expect(session.connection.focusedBoardID() == destination)
+        _ = try await runtime.webView.callAsyncJavaScript(
+            "await den.toast.show('Saved', { severity: 'success' });", in: nil, contentWorld: .page)
+        #expect(session.feedback.latest?.body == "Saved")
+        #expect(session.feedback.latest?.severity == .success)
+        #expect(session.feedback.latest?.target == .board(id))
+        #expect(session.connection.focusedBoardID() == destination)
+        session.notifications.openFeedbackTarget(session.feedback.latest?.target)
+        #expect(session.connection.focusedBoardID() == id)
         let persisted = ProfilePersistence(
             directoryURL: directory.appendingPathComponent("profiles"), isEphemeral: false,
             quarantineFile: { try FileManager.default.moveItem(at: $0, to: $1) }
