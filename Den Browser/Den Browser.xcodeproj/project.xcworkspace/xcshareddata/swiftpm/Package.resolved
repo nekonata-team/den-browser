@@ -1,5 +1,5 @@
 {
-  "originHash" : "c962ca06d3cfaa8a6c1fdba175a653043f3c5a79b9cb571072059ab04ed4d55c",
+  "originHash" : "4047e710a3d0efe3e1dd024b72abdbd3fb2507939b34b75686d1ecf70fb6167d",
   "pins" : [
     {
       "identity" : "displaylink",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/libghostty-spm.git",
       "state" : {
-        "revision" : "d139d99a5b10ab45a0a0704d4c1fb1d595710837",
-        "version" : "2.2.2026100901"
+        "revision" : "3404c8a2e6403d0a5e730eb08abdaa1c865a83e9",
+        "version" : "2.2.2026103001"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sparkle-project/Sparkle.git",
       "state" : {
-        "revision" : "eef1a539a373c1f1a320624b1130fc5de7b2e100",
-        "version" : "2.10.0"
+        "revision" : "ab7d71291238df6e0492143b120c9b696a35f603",
+        "version" : "2.10.1"
       }
     },
     {
@@ -105,8 +105,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-subprocess.git",
       "state" : {
-        "revision" : "55d30558b8b12c0343793421328fe81a4919c776",
-        "version" : "1.0.1"
+        "revision" : "dbe21bd7dfd4ffef8c32588918542a8abfa1b54c",
+        "version" : "1.0.2"
       }
     },
     {

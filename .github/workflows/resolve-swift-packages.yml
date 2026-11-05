@@ -1,0 +1,50 @@
+name: Resolve Swift packages
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'Den Browser/Den Browser.xcodeproj/project.pbxproj'
+
+concurrency:
+  group: resolve-swift-packages-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-26
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      RESOLVED_FILE: Den Browser/Den Browser.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Resolve package versions
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project 'Den Browser/Den Browser.xcodeproj' \
+            -scheme 'Den Browser' \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/den-source-packages"
+
+      - name: Commit resolved versions
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add -- "$RESOLVED_FILE"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(deps): update swift package lockfile'
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' \
+            push origin "HEAD:$HEAD_REF"
