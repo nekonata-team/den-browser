@@ -12,16 +12,16 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct NativeDisplayIntegrationTests {
-    @Test func essentialsPanelHeightFollowsContentUntilScrollLimit() async throws {
+    @Test func essentialsPanelHeightFollowsContentUntilScrollLimit() throws {
         // Arrange
-        func panelHeight(count: Int) async throws -> CGFloat {
+        func panelHeight(count: Int) throws -> CGFloat {
             let essentials = (0..<count).map {
                 Essential(name: "Essential \($0)", key: "a", input: "https://example.com/\($0)")
             }
             let window = TestWindow()
             defer { window.contentView = nil }
             var height: CGFloat = 0
-            window.contentView = NSHostingView(
+            let hostingView = NSHostingView(
                 rootView: EssentialsPrefixPanel(
                     profileColor: .blue, essentials: essentials, onSelect: { _ in }, onOpenInDrawer: { _ in }
                 )
@@ -31,23 +31,24 @@ struct NativeDisplayIntegrationTests {
                     height = $0
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top))
-            let deadline = ContinuousClock.now + .seconds(5)
+            window.contentView = hostingView
             var stableSamples = 0
-            while stableSamples < 3, ContinuousClock.now < deadline {
+            // Drive SwiftUI layout directly so other MainActor tests cannot consume a settling deadline.
+            for _ in 0..<10 {
                 let previous = height
-                window.contentView?.layoutSubtreeIfNeeded()
-                try await Task.sleep(for: .milliseconds(20))
+                hostingView.layout()
                 stableSamples = height > 0 && height == previous ? stableSamples + 1 : 0
+                if stableSamples == 3 { break }
             }
-            #expect(stableSamples == 3)
+            try #require(stableSamples == 3)
             return height
         }
 
         // Act
-        let one = try await panelHeight(count: 1)
-        let three = try await panelHeight(count: 3)
-        let thirty = try await panelHeight(count: 30)
-        let sixty = try await panelHeight(count: 60)
+        let one = try panelHeight(count: 1)
+        let three = try panelHeight(count: 3)
+        let thirty = try panelHeight(count: 30)
+        let sixty = try panelHeight(count: 60)
 
         // Assert
         #expect(one < three)
