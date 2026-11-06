@@ -73,22 +73,12 @@ final class DrawerEntryUITests: UITestCase {
     @MainActor
     func testDrawerEntryEssentialOptionClick() throws {
         let url = try makeDrawerEntryFixture()
-        let app = launchApp(boardCount: .one, recentURL: url)
+        let app = launchApp(boardCount: .one, essentialURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let essential = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH %@", "essential.")).firstMatch
 
-        given("an Essential has been saved from the Recent Item") {
-            app.typeKey("t", modifierFlags: [.command])
-            let save = app.buttons["Save as Essential…"].firstMatch
-            XCTAssertTrue(save.waitUntilExists(timeout: 5))
-            save.click()
-            let key = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "e.g. c or C")).firstMatch
-            XCTAssertTrue(key.waitUntilExists(timeout: 5))
-            key.click()
-            key.typeText("e")
-            app.buttons["Save Essential"].click()
-            XCTAssertTrue(key.waitUntilAbsent(timeout: 5))
+        given("a saved Essential is available in its Prefix panel") {
             enterDenMode(in: app)
             app.typeKey("g", modifierFlags: [])
             XCTAssertTrue(essential.waitUntilExists(timeout: 5))
@@ -102,9 +92,6 @@ final class DrawerEntryUITests: UITestCase {
     }
 
     private func makeDrawerEntryFixture() throws -> URL {
-        let url = FileManager.default.temporaryDirectory.appending(path: "drawer-entry.html")
-        try "<html><body><input aria-label='Opened in Drawer'></body></html>"
-            .write(to: url, atomically: true, encoding: .utf8)
-        return url
+        try makeHTMLFixture("<html><body><input aria-label='Opened in Drawer'></body></html>")
     }
 }

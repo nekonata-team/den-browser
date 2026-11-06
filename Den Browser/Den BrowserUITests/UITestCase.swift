@@ -36,8 +36,6 @@ class UITestCase: XCTestCase, BDD {
         for directory in fixtureDirectories {
             try? FileManager.default.removeItem(at: directory)
         }
-        try? FileManager.default.removeItem(
-            at: FileManager.default.temporaryDirectory.appending(path: "drawer-entry.html"))
         processLock = nil
     }
 
@@ -106,8 +104,17 @@ class UITestCase: XCTestCase, BDD {
         app.typeKey("v", modifierFlags: [.command])
     }
 
+    func makeHTMLFixture(_ html: String) throws -> URL {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        fixtureDirectories.append(directory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appending(path: "fixture.html")
+        try html.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
     @MainActor
-    func launchApp(
+    func prepareApp(
         fixture: UITestFixture = .interactionBasics,
         boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
@@ -115,7 +122,8 @@ class UITestCase: XCTestCase, BDD {
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false,
         drawerSheetURL: URL? = nil,
-        recentURL: URL? = nil
+        recentURL: URL? = nil,
+        essentialURL: URL? = nil
     ) -> XCUIApplication {
         let app = uiTestApplication()
         let runID = UUID().uuidString
@@ -145,12 +153,40 @@ class UITestCase: XCTestCase, BDD {
         if sheetNavigationEnabled {
             args.append("--enable-sheet-navigation")
         }
-        if standardMotion {
-            args += ["-preferences.appearance.motion.mode", "standard"]
+        args += ["-preferences.appearance.motion.mode", standardMotion ? "standard" : "reduced"]
+        if let essentialURL {
+            do {
+                let data = try UITestFixtureFactory.makeEssentials(url: essentialURL)
+                // NSArgumentDomain parses <hex> as Data, matching the stored property-list value.
+                let hex = data.map { String(format: "%02x", $0) }.joined()
+                args += ["-preferences.essentials.items", "<\(hex)>"]
+            } catch {
+                XCTFail("Could not encode UI test Essentials: \(error)")
+            }
         }
         app.launchArguments = args
         defaultsSuiteNames.append(uiTestDefaultsSuiteName(runID: runID))
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
+        return app
+    }
+
+    @MainActor
+    func launchApp(
+        fixture: UITestFixture = .interactionBasics,
+        boardCount: UITestBoardCount = .three,
+        terminalBoard: Bool = false,
+        standardMotion: Bool = false,
+        sheetNavigationEnabled: Bool = false,
+        multipleDrawerItems: Bool = false,
+        drawerSheetURL: URL? = nil,
+        recentURL: URL? = nil,
+        essentialURL: URL? = nil
+    ) -> XCUIApplication {
+        let app = prepareApp(
+            fixture: fixture, boardCount: boardCount, terminalBoard: terminalBoard,
+            standardMotion: standardMotion, sheetNavigationEnabled: sheetNavigationEnabled,
+            multipleDrawerItems: multipleDrawerItems, drawerSheetURL: drawerSheetURL, recentURL: recentURL,
+            essentialURL: essentialURL)
         app.launch()
         // Each fixture has one Profile; invoke its menu action without navigating the menu.
         app.typeKey("u", modifierFlags: [.command, .option, .shift])
@@ -221,12 +257,28 @@ class UITestCase: XCTestCase, BDD {
     func assertEventually(
         _ message: @autoclosure () -> String,
         timeout: TimeInterval = 5,
+        file: StaticString = #filePath,
+        line: UInt = #line,
         condition: @escaping () -> Bool
     ) {
         if condition() { return }
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate { _, _ in condition() },
             object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message())
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message(), file: file, line: line)
+    }
+
+    @MainActor
+    func assertValue(
+        _ expected: String, in element: XCUIElement,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        assertEventually(
+            "Expected \(element.identifier) value \(expected.debugDescription), got \(String(describing: element.value))",
+            file: file, line: line
+        ) {
+            element.value as? String == expected
+        }
     }
 }

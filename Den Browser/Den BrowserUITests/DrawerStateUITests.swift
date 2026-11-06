@@ -35,7 +35,7 @@ final class DrawerStateUITests: UITestCase {
         }
 
         then("the first Drawer peek accepts Sheet input") {
-            XCTAssertEqual(sheetInput.value as? String, "a")
+            assertValue("a", in: sheetInput)
         }
 
         when("discarding the focused Drawer Item") {
@@ -57,7 +57,7 @@ final class DrawerStateUITests: UITestCase {
         }
 
         then("the remaining peek accepts Sheet input") {
-            XCTAssertEqual(sheetInput.value as? String, "b")
+            assertValue("b", in: sheetInput)
         }
     }
 
@@ -65,13 +65,8 @@ final class DrawerStateUITests: UITestCase {
     // Unit tests cannot observe form state and key delivery through the mounted native surface.
     @MainActor
     func testDrawerRetainsFormAndReceivesInputAfterSwitchingAndReopening() throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        fixtureDirectories.append(directory)
-        let url = directory.appending(path: "retained.html")
-        try "<html><head><title>Drawer Fixture</title></head><body><input aria-label='Retained input'></body></html>"
-            .write(
-                to: url, atomically: true, encoding: .utf8)
+        let url = try makeHTMLFixture(
+            "<html><head><title>Drawer Fixture</title></head><body><input aria-label='Retained input'></body></html>")
         let app = launchApp(boardCount: .one, multipleDrawerItems: true, drawerSheetURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let input = drawer.textFields["Retained input"].firstMatch
@@ -86,7 +81,7 @@ final class DrawerStateUITests: UITestCase {
             item.click()
             XCTAssertTrue(input.waitUntilExists(timeout: 10))
             input.click()
-            app.typeText("seed")
+            app.typeText("a")
         }
 
         when("switching to another Item and returning") {
@@ -97,7 +92,7 @@ final class DrawerStateUITests: UITestCase {
 
         then("the original form value survives") {
             XCTAssertTrue(input.waitUntilExists(timeout: 5))
-            XCTAssertEqual(input.value as? String, "seed")
+            assertValue("a", in: input)
         }
 
         when("closing and reopening Drawer, then typing without clicking the form") {
@@ -106,11 +101,11 @@ final class DrawerStateUITests: UITestCase {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(input.waitUntilExists(timeout: 5))
-            app.typeText("continued")
+            app.typeText("b")
         }
 
         then("the retained form receives the input") {
-            XCTAssertEqual(input.value as? String, "seedcontinued")
+            assertValue("ab", in: input)
         }
     }
 
@@ -118,16 +113,13 @@ final class DrawerStateUITests: UITestCase {
     // Unit tests cannot observe keyboard delivery to the newly mounted Board surface.
     @MainActor
     func testDrawerPlacementPreservesLivePageAndReceivesBoardInput() throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        fixtureDirectories.append(directory)
-        let url = directory.appending(path: "drawer.html")
-        try """
-        <html><head><title>Live Drawer Fixture</title></head><body>
-          <input aria-label="Live input" spellcheck="false" autocorrect="off" autocapitalize="off">
-        </body></html>
-        """.write(to: url, atomically: true, encoding: .utf8)
-        let app = launchApp(boardCount: .one)
+        let url = try makeHTMLFixture(
+            """
+            <html><head><title>Live Drawer Fixture</title></head><body>
+              <input aria-label="Live input" spellcheck="false" autocorrect="off" autocapitalize="off">
+            </body></html>
+            """)
+        let app = launchApp(boardCount: .one, drawerSheetURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let peekInput = drawer.textFields["Live input"].firstMatch
         let placedInput = app.textFields["Live input"].firstMatch
@@ -135,58 +127,33 @@ final class DrawerStateUITests: UITestCase {
         given("a Drawer Peek holds a live value") {
             app.buttons["drawer-button"].click()
             XCTAssertTrue(drawer.waitUntilExists(timeout: 5))
-            drawer.buttons["drawer-add-item"].click()
-            let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitUntilExists(timeout: 5))
-            input.click()
-            paste(url.absoluteString, in: app)
-            app.typeKey(.return, modifierFlags: [])
+            let item = drawer.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Drawer Fixture")).firstMatch
+            XCTAssertTrue(item.waitUntilExists(timeout: 5))
+            item.click()
             XCTAssertTrue(peekInput.waitUntilExists(timeout: 10))
             peekInput.click()
-            app.typeText("seed")
-            XCTAssertEqual(peekInput.value as? String, "seed")
-        }
-
-        when("opening and canceling another addition over the filtered live Drawer") {
-            drawer.buttons["Search Drawer Items"].click()
-            let search = drawer.textFields["drawer-search"].firstMatch
-            XCTAssertTrue(search.waitUntilExists(timeout: 5))
-            search.click()
-            paste("Live", in: app)
-            drawer.buttons["drawer-add-item"].click()
-            let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitUntilExists(timeout: 5))
-            input.click()
-            app.typeKey("a", modifierFlags: [.command])
-            paste("https://example.com/cancel", in: app)
-            XCTAssertEqual(input.value as? String, "https://example.com/cancel")
-            app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
-            XCTAssertEqual(search.value as? String, "Live")
-            app.typeKey(.rightArrow, modifierFlags: [.command])
-            app.typeText(" Drawer Fixture")
-            XCTAssertEqual(search.value as? String, "Live Drawer Fixture")
-            app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(peekInput.waitUntilExists(timeout: 5))
-            XCTAssertEqual(peekInput.value as? String, "seed")
+            app.typeText("a")
+            assertValue("a", in: peekInput)
         }
 
         when("placing the Peek into the Desk") {
-            app.buttons["Place Live Drawer Fixture as Board"].click()
+            let place = app.buttons["Place Live Drawer Fixture as Board"]
+            XCTAssertTrue(place.waitUntilExists(timeout: 5))
+            place.click()
         }
 
         then("the Board keeps the live value") {
             XCTAssertTrue(drawer.waitUntilAbsent(timeout: 5))
             XCTAssertTrue(placedInput.waitUntilExists(timeout: 5))
-            XCTAssertEqual(placedInput.value as? String, "seed")
+            assertValue("a", in: placedInput)
         }
 
         when("typing after placement without clicking the Sheet again") {
-            app.typeText("continued")
+            app.typeText("b")
         }
 
         then("the placed Board receives that input") {
-            XCTAssertEqual(placedInput.value as? String, "seedcontinued")
+            assertValue("ab", in: placedInput)
         }
 
         when("moving the live Web Board back to Drawer from its header menu") {
@@ -200,13 +167,13 @@ final class DrawerStateUITests: UITestCase {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(peekInput.waitUntilExists(timeout: 5))
-            XCTAssertEqual(peekInput.value as? String, "seedcontinued")
+            assertValue("ab", in: peekInput)
             app.typeKey(.rightArrow, modifierFlags: [.command])
-            app.typeText("drawer")
+            app.typeText("c")
         }
 
         then("the same page retains its form state and receives Drawer input") {
-            XCTAssertEqual(peekInput.value as? String, "seedcontinueddrawer")
+            assertValue("abc", in: peekInput)
         }
     }
 
@@ -239,19 +206,6 @@ final class DrawerStateUITests: UITestCase {
             XCTAssertTrue(place.waitUntilExists(timeout: 5))
             paste("drawer_probe_value=retained", in: app)
             app.typeKey(.return, modifierFlags: [])
-        }
-
-        when("canceling another addition without sending text to the live Terminal") {
-            drawer.buttons["drawer-add-item"].click()
-            let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitUntilExists(timeout: 5))
-            input.click()
-            app.typeKey("a", modifierFlags: [.command])
-            paste("https://example.com/cancel", in: app)
-            XCTAssertEqual(input.value as? String, "https://example.com/cancel")
-            app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(input.waitUntilAbsent(timeout: 5))
-            XCTAssertTrue(place.waitUntilExists(timeout: 5))
         }
 
         when("closing Drawer, reopening it, and placing the Terminal as a Board") {

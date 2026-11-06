@@ -49,6 +49,10 @@ Use Given/When/Then activities through the thin `BDD.swift` helpers.
 Keep scenario names in Den's domain language and leave the causal action and final assertions visible.
 `Then` blocks contain assertions; input and other mutations belong in `When`.
 Use `assertEventually` for settling, avoid arbitrary sleeps, and paste long text rather than typing it character by character.
+Use `assertValue` to wait for text-field values; send the action once and wait only for its result.
+Do not insert focus waits or repeat input between a responder handoff and its first keystroke.
+Normal UI tests use Reduced Motion; tests of animation behavior opt into Standard Motion explicitly.
+For rapid unmodified input, send one `typeText` sequence; separate event calls can add idle waits between actions.
 
 Choose the smallest deterministic fixture that covers the workflow.
 Prepare unrelated state through fixtures; perform the transition under test through the UI.

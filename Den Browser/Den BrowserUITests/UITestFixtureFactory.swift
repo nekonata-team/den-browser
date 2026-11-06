@@ -3,6 +3,16 @@ import Foundation
 enum UITestFixtureFactory {
     private static let resourceBundle = Bundle(for: UITestCase.self)
 
+    static func makeEssentials(url: URL) throws -> Data {
+        try PropertyListSerialization.data(
+            fromPropertyList: [
+                [
+                    "id": "00000000-0000-0000-0000-000000000501",
+                    "name": "Drawer Essential Fixture", "key": "e", "input": url.absoluteString,
+                ]
+            ], format: .binary, options: 0)
+    }
+
     static func makeProfileSeed(
         fixture: UITestFixture,
         boardCount: UITestBoardCount = .three,

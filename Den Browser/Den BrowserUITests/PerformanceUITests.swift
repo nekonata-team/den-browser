@@ -1,66 +1,9 @@
 import XCTest
 
-final class PerformanceUITests: XCTestCase, BDD {
-    private var processLock: UITestProcessLock?
-    private var defaultsSuiteName: String?
-    private var fixtureDirectory: URL?
-
-    override func setUpWithError() throws {
-        processLock = try UITestProcessLock()
-        continueAfterFailure = false
-        try super.setUpWithError()
-    }
-
-    override func tearDownWithError() throws {
-        MainActor.assumeIsolated {
-            uiTestApplication().terminate()
-        }
-        if let defaultsSuiteName {
-            UserDefaults().removePersistentDomain(forName: defaultsSuiteName)
-        }
-        if let fixtureDirectory {
-            try? FileManager.default.removeItem(at: fixtureDirectory)
-        }
-        processLock = nil
-        try super.tearDownWithError()
-    }
-
-    @MainActor
-    private func preparedApplication(
-        fixture: UITestFixture = .interactionBasics,
-        boardCount: UITestBoardCount = .one,
-        standardMotion: Bool = false
-    ) -> XCUIApplication {
-        let app = uiTestApplication()
-        let runID = UUID().uuidString
-        let fixtureDirectory = FileManager.default.temporaryDirectory
-            .appending(path: "DenBrowserUITests", directoryHint: .isDirectory)
-            .appending(path: runID, directoryHint: .isDirectory)
-        self.fixtureDirectory = fixtureDirectory
-        let seedURL = fixtureDirectory.appending(path: "initial-profile.json")
-        do {
-            try FileManager.default.createDirectory(at: fixtureDirectory, withIntermediateDirectories: true)
-            try UITestFixtureFactory.makeProfileSeed(fixture: fixture, boardCount: boardCount)
-                .write(to: seedURL, options: .atomic)
-        } catch {
-            XCTFail("Could not write UI test profile seed: \(error)")
-        }
-        app.launchArguments = [
-            "-ApplePersistenceIgnoreState", "YES",
-            "--ui-testing", "--initial-profile", seedURL.path,
-        ]
-        defaultsSuiteName = uiTestDefaultsSuiteName(runID: runID)
-        app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
-
-        if standardMotion {
-            app.launchArguments += ["-preferences.appearance.motion.mode", "standard"]
-        }
-        return app
-    }
-
+final class PerformanceUITests: UITestCase {
     @MainActor
     func testApplicationLaunchPerformance() {
-        let app = preparedApplication()
+        let app = prepareApp(boardCount: .one)
         let options = XCTMeasureOptions()
         options.iterationCount = 1
         measure(
@@ -74,7 +17,7 @@ final class PerformanceUITests: XCTestCase, BDD {
     // Exercises native ScrollView rendering; unit tests cannot observe missed display updates.
     @MainActor
     func testBoardStripScrollHitches() {
-        let app = preparedApplication(fixture: .rapidBoardFocus, standardMotion: true)
+        let app = prepareApp(fixture: .rapidBoardFocus, boardCount: .one, standardMotion: true)
         let window = app.windows.firstMatch
         let strip = app.descendants(matching: .any).matching(identifier: "board-strip").firstMatch
         let charlie = window.descendants(matching: .any).matching(

@@ -20,7 +20,7 @@ final class BoardUITests: UITestCase {
 
         then("the clicked input receives the first keystroke") {
             XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertEqual(bravoInput.value as? String, "a")
+            assertValue("a", in: bravoInput)
         }
     }
 
@@ -39,11 +39,11 @@ final class BoardUITests: UITestCase {
 
         when("focusing the Sheet input and typing a starting value") {
             sheetInput.click()
-            app.typeText("seed")
+            app.typeText("a")
         }
 
         then("the starting value is in the Sheet") {
-            XCTAssertEqual(sheetInput.value as? String, "seed")
+            assertValue("a", in: sheetInput)
         }
 
         when("creating a focused Inspection Board with Command-Option-I") {
@@ -56,16 +56,16 @@ final class BoardUITests: UITestCase {
         }
 
         then("Alpha's Sheet input does not receive that typing") {
-            XCTAssertEqual(sheetInput.value as? String, "seed")
+            XCTAssertEqual(sheetInput.value as? String, "a")
         }
 
         when("returning focus to Alpha and typing again") {
             app.buttons["Focus"].firstMatch.click()
-            app.typeText("y")
+            app.typeText("b")
         }
 
         then("Alpha's Sheet input receives typing after focus returns") {
-            XCTAssertEqual(sheetInput.value as? String, "seedy")
+            assertValue("ab", in: sheetInput)
         }
     }
 
@@ -236,7 +236,9 @@ final class BoardUITests: UITestCase {
 
         given("Charlie is visible on an overflowing Desk with animations enabled") {
             XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
-            XCTAssertEqual(boardSurface(.charlie, in: app).frame.midX, strip.frame.midX, accuracy: 3)
+            assertEventually("Charlie should be centered before rapid focus changes") {
+                abs(self.boardSurface(.charlie, in: app).frame.midX - strip.frame.midX) <= 3
+            }
             enterDenMode(in: app)
         }
 
@@ -265,12 +267,15 @@ final class BoardUITests: UITestCase {
 
         given("Charlie is centered on an overflowing Desk with animations enabled") {
             XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
-            XCTAssertEqual(boardSurface(.charlie, in: app).frame.midX, strip.frame.midX, accuracy: 3)
+            assertEventually("Charlie should be centered before rapid removal") {
+                abs(self.boardSurface(.charlie, in: app).frame.midX - strip.frame.midX) <= 3
+            }
+            enterDenMode(in: app)
         }
 
         when("removing Charlie and Bravo in succession") {
-            app.typeKey("w", modifierFlags: [.command])
-            app.typeKey("w", modifierFlags: [.command])
+            // One event sequence avoids XCTest's idle wait between the two removals.
+            app.typeText("xx")
         }
 
         then("Alpha is the only remaining Board and is centered") {
