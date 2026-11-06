@@ -17,22 +17,13 @@ struct NativeQuitBoardTests {
             : BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://example.com/"))
         let neighbor = BoardState(
             label: "Neighbor", width: 520, currentSheetURL: URL(string: "https://example.com/neighbor"))
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [
-                            DeskState(label: "Desk", boards: [neighbor, target], focusedBoardID: target.id)
-                        ]))), configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [
+                        DeskState(label: "Desk", boards: [neighbor, target], focusedBoardID: target.id)
+                    ])))
+        ) { session, model in
             // Act
             session.zmx.quitFocusedBoard()
 
@@ -47,24 +38,13 @@ struct NativeQuitBoardTests {
         // Arrange
         let target = BoardState(label: "Terminal", width: 520, zmxSessionName: "work")
         let runner = QuitCommandRunner(succeeds: true)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [
-                            DeskState(label: "Desk", boards: [target], focusedBoardID: target.id)
-                        ]))),
-                configuration: makeTestBoardRuntimeConfiguration(
-                    defaults: denFixtureDefaults, terminalCommandRunner: runner))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        await withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [
+                        DeskState(label: "Desk", boards: [target], focusedBoardID: target.id)
+                    ]))), terminalCommandRunner: runner
+        ) { session, model in
             session.configuration.preferences.setZmxPath("/test/bin/zmx")
             session.zmx.quitFocusedBoard()
             #expect(model.zmxSessionPendingEnd == "work")
@@ -87,24 +67,13 @@ struct NativeQuitBoardTests {
         let target = BoardState(label: "Root", width: 520, zmxSessionName: "work")
         let child = BoardState(label: "Child", width: 520, zmxSessionName: "work-child", rootSessionName: "work")
         let runner = QuitCommandRunner(succeeds: succeeds)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [
-                            DeskState(label: "Desk", boards: [target, child], focusedBoardID: target.id)
-                        ]))),
-                configuration: makeTestBoardRuntimeConfiguration(
-                    defaults: denFixtureDefaults, terminalCommandRunner: runner))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        await withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [
+                        DeskState(label: "Desk", boards: [target, child], focusedBoardID: target.id)
+                    ]))), terminalCommandRunner: runner
+        ) { session, model in
             session.configuration.preferences.setZmxPath("/test/bin/zmx")
             session.zmx.quitFocusedBoard()
             session.boardNavigation.focusBoard(child.id)

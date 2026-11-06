@@ -69,24 +69,19 @@ struct BoardOpeningIntegrationTests {
         // Arrange
         let anchor = BoardState(label: "Anchor", width: 520, workingDirectory: "/tmp")
         var events: [String] = []
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(boards: [anchor])),
-                    onSave: { state in
-                        #expect(state.desks.flatMap(\.boards).count == 2)
-                        events.append("save")
-                        return true
-                    },
-                    onRecentItemsSave: { _ in
-                        events.append("recent")
-                        return true
-                    }), configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(boards: [anchor])),
+                onSave: { state in
+                    #expect(state.desks.flatMap(\.boards).count == 2)
+                    events.append("save")
+                    return true
+                },
+                onRecentItemsSave: { _ in
+                    events.append("recent")
+                    return true
+                })
+        ) { session in
             // Act
             let result = session.boardOpening.requestOpenBoard(
                 input: "https://example.com", afterBoardID: targetExists ? anchor.id : BoardID())
@@ -106,23 +101,18 @@ struct BoardOpeningIntegrationTests {
         // Arrange
         var saveCount = 0
         let input = String(repeating: "x", count: BoardOpening.maximumPersistedRecentInputLength + 1)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState()),
-                    onSave: { _ in
-                        saveCount += 1
-                        return true
-                    },
-                    onRecentItemsSave: { _ in
-                        Issue.record("Oversized input must not be recorded")
-                        return true
-                    }), configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                onSave: { _ in
+                    saveCount += 1
+                    return true
+                },
+                onRecentItemsSave: { _ in
+                    Issue.record("Oversized input must not be recorded")
+                    return true
+                })
+        ) { session in
             ({
                 // Act
                 let result = session.boardOpening.requestOpenBoard(input: input)

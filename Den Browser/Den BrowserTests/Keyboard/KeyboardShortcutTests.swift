@@ -79,10 +79,12 @@ struct KeyboardShortcutTests {
         let session = try makeSession(boards: [board("Board")])
         let composition = DenWindowComposition(session: session)
         let model = composition.model
-        let search = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", modifiers: [.command], keyCode: 35)
+        let search = try keyEvent(
+            characters: "p", charactersIgnoringModifiers: "p", modifiers: [.command], keyCode: 35)
         let commands = try keyEvent(
             characters: "P", charactersIgnoringModifiers: "P", modifiers: [.command, .shift], keyCode: 35)
-        let colon = try keyEvent(characters: ":", charactersIgnoringModifiers: ":", modifiers: [.shift], keyCode: 41)
+        let colon = try keyEvent(
+            characters: ":", charactersIgnoringModifiers: ":", modifiers: [.shift], keyCode: 41)
 
         // Act
         let searchDecision = KeyboardController.decision(for: search, session: session, windowModel: model)
@@ -174,7 +176,8 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         session.pasteboard.setString(input, forType: .string)
         model.isDenMode = true
-        let event = try keyEvent(characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], keyCode: 9)
+        let event = try keyEvent(
+            characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], keyCode: 9)
         let repeated = try keyEvent(
             characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], isARepeat: true, keyCode: 9)
 
@@ -391,23 +394,14 @@ struct KeyboardShortcutTests {
         let middle = DeskState(label: "Middle", boards: [focused], focusedBoardID: focused.id)
         let last = DeskState(label: "Last", boards: [])
         var savedState: DenState?
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, middle, last])),
-                    onSave: {
-                        savedState = $0
-                        return true
-                    }), configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, middle, last])),
+                onSave: {
+                    savedState = $0
+                    return true
+                })
+        ) { session, model in
             session.boardNavigation.focusDesk(middle.id)
             model.isDenMode = true
             let event =
@@ -1053,7 +1047,8 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         session.drawer.keepInDrawer(try #require(URL(string: "https://example.com/")))
         model.isDenMode = true
-        let shiftP = try keyEvent(characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], keyCode: 35)
+        let shiftP = try keyEvent(
+            characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], keyCode: 35)
         let plainP = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
         let repeatedShiftP = try keyEvent(
             characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], isARepeat: true, keyCode: 35)
@@ -2471,48 +2466,6 @@ struct KeyboardShortcutTests {
                     pasteboard: pasteboard,
                     scriptSource: ""), preferences: AppPreferences(defaults: defaults),
                 terminalCommandRunner: terminalCommandRunner), pasteboard: pasteboard)
-    }
-
-    private func keyEvent(
-        characters: String,
-        charactersIgnoringModifiers: String,
-        modifiers: NSEvent.ModifierFlags = [],
-        isARepeat: Bool = false,
-        keyCode: UInt16
-    ) throws -> NSEvent {
-        try #require(
-            NSEvent.keyEvent(
-                with: .keyDown,
-                location: .zero,
-                modifierFlags: modifiers,
-                timestamp: 0,
-                windowNumber: 0,
-                context: nil,
-                characters: characters,
-                charactersIgnoringModifiers: charactersIgnoringModifiers,
-                isARepeat: isARepeat,
-                keyCode: keyCode))
-    }
-
-    private func arrowEvent(
-        _ specialKey: NSEvent.SpecialKey,
-        modifiers: NSEvent.ModifierFlags,
-        isARepeat: Bool = false
-    ) throws -> NSEvent {
-        let (characters, keyCode): (String, UInt16) =
-            switch specialKey {
-            case .upArrow: ("\u{F700}", 126)
-            case .downArrow: ("\u{F701}", 125)
-            case .leftArrow: ("\u{F702}", 123)
-            case .rightArrow: ("\u{F703}", 124)
-            default: ("", 0)
-            }
-        return try keyEvent(
-            characters: characters,
-            charactersIgnoringModifiers: characters,
-            modifiers: modifiers,
-            isARepeat: isARepeat,
-            keyCode: keyCode)
     }
 
     private func board(_ label: String, url: String = "https://example.com/") -> BoardState {

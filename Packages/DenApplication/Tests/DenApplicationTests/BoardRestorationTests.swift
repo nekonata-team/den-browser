@@ -3,15 +3,16 @@ import DenDomain
 import Testing
 
 nonisolated struct BoardRestorationTests {
-    @Test
-    func restorationInsertsAfterExistingGroup() {
+    @Test(arguments: [false, true])
+    func restorationInsertsAfterExistingGroup(sourceExists: Bool) {
         // Arrange
         let primary = BoardState(label: "Primary", width: 520, currentSheetURL: nil)
         let side = BoardState(width: 390, targetBoardID: primary.id)
         let inserted = BoardState(label: "Inserted", width: 520, currentSheetURL: nil)
-        let target = DeskState(label: "Target", boards: [primary, side])
+        let target = DeskState(label: "Target", boards: [primary, side], focusedBoardID: primary.id)
         let history = RecentlyRemovedBoard(
-            board: inserted, sourceDeskID: target.id, sourceBoardIndex: BoardIndex(rawValue: 1))
+            board: inserted, sourceDeskID: sourceExists ? target.id : DeskID(),
+            sourceBoardIndex: BoardIndex(rawValue: 1))
 
         // Act
         let outcome = BoardRestoration.restore(history, in: [target], presentedDeskID: target.id)

@@ -22,17 +22,11 @@ struct NativeBoardMoveTests {
             saved = $0
             return true
         }
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])),
-                    onSave: recordSave),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        try withTestSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])),
+                onSave: recordSave)
+        ) { session in
             let deskID = sameDesk ? source.id : target.id
             let anchorID = atEnd ? nil : (sameDesk ? first.id : last.id)
 
@@ -59,16 +53,10 @@ struct NativeBoardMoveTests {
         let board = BoardState(label: "Moved", width: 520, currentSheetURL: nil)
         let source = DeskState(label: "Source", boards: [board])
         let target = DeskState(label: "Target", boards: [])
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])))
+        ) { session in
             // Act
             let result = session.resources.boardMovement.place(board.id, in: target.id, before: nil)
 

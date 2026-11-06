@@ -220,33 +220,6 @@ struct DeskFilterKeyboardTests {
         #expect(didPerform)
     }
 
-    private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {
-        let scalar = try #require(UnicodeScalar(specialKey.rawValue))
-        return try keyEvent(String(scalar), keyCode: keyCode)
-    }
-
-    private func keyEvent(
-        _ character: String,
-        keyCode: UInt16,
-        modifiers: NSEvent.ModifierFlags = [],
-        charactersIgnoringModifiers: String? = nil,
-        windowNumber: Int = 0
-    ) throws -> NSEvent {
-        try #require(
-            NSEvent.keyEvent(
-                with: .keyDown,
-                location: .zero,
-                modifierFlags: modifiers,
-                timestamp: 0,
-                windowNumber: windowNumber,
-                context: nil,
-                characters: character,
-                charactersIgnoringModifiers: charactersIgnoringModifiers ?? character,
-                isARepeat: false,
-                keyCode: keyCode
-            ))
-    }
-
     private func board(_ label: String, url: String = "https://example.com/") -> BoardState {
         BoardState(label: label, width: 520, currentSheetURL: URL(string: url))
     }

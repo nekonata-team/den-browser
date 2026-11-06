@@ -14,20 +14,10 @@ struct UniversalSearchActionsTests {
         let initial = BoardState(label: "First", width: 520, currentSheetURL: URL(string: "https://example.org/"))
         let first = DeskState(label: "First", boards: [initial], focusedBoardID: initial.id)
         let second = DeskState(label: "Second", boards: [target], focusedBoardID: target.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second])))
+        ) { session, model in
             model.isDenMode = true
             model.showUniversalSearch()
 
@@ -50,20 +40,10 @@ struct UniversalSearchActionsTests {
         let input = "https://example.com/"
         let existing = BoardState(label: "Existing", width: 520, currentSheetURL: URL(string: input))
         let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+        ) { session, model in
             #expect(session.essentials.saveEssential(name: "Example", key: "e", input: input))
             let essential = try #require(session.configuration.preferences.essentials.first)
             model.showUniversalSearch()
@@ -86,20 +66,10 @@ struct UniversalSearchActionsTests {
         // Arrange
         let existing = BoardState(label: "Existing", width: 520, currentSheetURL: URL(string: "https://example.com/"))
         let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+        ) { session, model in
             model.showUniversalSearch()
 
             // Act
@@ -119,20 +89,10 @@ struct UniversalSearchActionsTests {
         let existing = BoardState(
             label: "Existing", width: 520, currentSheetURL: URL(string: "https://existing.example/"))
         let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+        ) { session, model in
             let input = "Swift concurrency"
             let essential = Essential(name: "Search", key: "s", input: input)
             #expect(session.configuration.preferences.setEssentials([essential]))
@@ -165,20 +125,10 @@ struct UniversalSearchActionsTests {
     func drawerSubmissionRejectsCommandsAndNavigation(target: UniversalSearchItem.Target) {
         // Arrange
         let desk = DeskState(label: "Desk", boards: [])
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let model = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+        ) { session, model in
             ({
                 model.showUniversalSearch()
                 var openedProfile = false
@@ -207,24 +157,16 @@ struct UniversalSearchActionsTests {
         // Arrange
         let item = RecentItem.url(URL(string: "https://example.com/")!)
         let existing = BoardState(label: "Example", width: 520, currentSheetURL: URL(string: item.displayText))
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(boards: [existing])),
-                    recentItems: [.search("other"), item]),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(boards: [existing])),
+                recentItems: [.search("other"), item])
+        ) { session in
             do {
-                let denWindowSession = session
-                let denWindowComposition = DenWindowComposition(session: denWindowSession)
+                let denWindowComposition = DenWindowComposition(session: session)
                 denWindowComposition.connect()
                 defer { denWindowComposition.disconnect() }
                 let model = denWindowComposition.model
-                let session = denWindowSession
 
                 model.showUniversalSearch()
 

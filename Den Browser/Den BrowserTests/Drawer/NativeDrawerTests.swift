@@ -1349,39 +1349,6 @@ struct NativeDrawerTests {
         #expect(windowModel.isDrawerOpen)
     }
 
-    private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {
-        let scalar = try #require(UnicodeScalar(specialKey.rawValue))
-        return try #require(
-            NSEvent.keyEvent(
-                with: .keyDown,
-                location: .zero,
-                modifierFlags: [],
-                timestamp: 0,
-                windowNumber: 0,
-                context: nil,
-                characters: String(scalar),
-                charactersIgnoringModifiers: String(scalar),
-                isARepeat: false,
-                keyCode: keyCode
-            ))
-    }
-
-    private func keyEvent(_ character: String, keyCode: UInt16) throws -> NSEvent {
-        try #require(
-            NSEvent.keyEvent(
-                with: .keyDown,
-                location: .zero,
-                modifierFlags: [],
-                timestamp: 0,
-                windowNumber: 0,
-                context: nil,
-                characters: character,
-                charactersIgnoringModifiers: character,
-                isARepeat: false,
-                keyCode: keyCode
-            ))
-    }
-
     private func board(_ label: String, width: Double = 520, url: String? = nil) -> BoardState {
         BoardState(
             label: label,

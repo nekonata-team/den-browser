@@ -15,15 +15,9 @@ import Testing
 struct DenWindowModelPresentationTests {
     @Test func boardRailSettingRemainsSharedAndObservable() {
         // Arrange
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState())),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState()))
+        ) { session in
             let first = DenWindowComposition(session: session).model
             let second = DenWindowComposition(session: session).model
             let isPresented = !first.isBoardRailPresented
@@ -49,20 +43,10 @@ struct DenWindowModelPresentationTests {
         // Arrange
         let target = board("Board")
         let source = desk("Desk", boards: [target], focusedBoardID: target.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+        ) { session, windowModel in
             let changed = Mutex(false)
             withObservationTracking {
                 _ = windowModel.defaultBoardWidth
@@ -254,20 +238,10 @@ struct DenWindowModelPresentationTests {
     @Test func openBoardPanelKeepsDraftAndShowsConfigurationFailure() {
         // Arrange
         let source = desk("Desk")
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+        ) { session, windowModel in
             windowModel.showOpenBoardPanel()
             windowModel.openBoard.input = ":zmx project"
 
@@ -288,20 +262,10 @@ struct DenWindowModelPresentationTests {
         let first = board("First")
         let second = board("Second")
         let source = desk("Desk", boards: [first, second], focusedBoardID: second.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+        ) { session, windowModel in
             let item = RecentItem.url(URL(string: "https://example.com/recent")!)
             windowModel.showOpenBoardPanel(afterBoardID: first.id)
 
@@ -325,20 +289,10 @@ struct DenWindowModelPresentationTests {
         // Arrange
         let first = board("First")
         let source = desk("Desk", boards: [first], focusedBoardID: first.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+        ) { session, windowModel in
             windowModel.showOpenBoardPanel(afterBoardID: first.id)
             windowModel.openBoard.input = input
 
@@ -361,20 +315,10 @@ struct DenWindowModelPresentationTests {
     func openBoardPanelKeepsInvalidDrawerInput(input: String) {
         // Arrange
         let source = desk("Desk")
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+        ) { session, windowModel in
             windowModel.showOpenBoardPanel()
             windowModel.openBoard.input = input
 
@@ -525,71 +469,21 @@ struct DenWindowModelPresentationTests {
         #expect(savedState == session.resources.state)
     }
 
-    @Test func escapePassesThroughToSheetInput() throws {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
+    @Test(arguments: [false, true])
+    func escapeForwardsSheetInputOrExitsDenMode(inDenMode: Bool) throws {
+        // Arrange
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+        ) { session, windowModel in
+            windowModel.isDenMode = inDenMode
+            let event = try keyEvent("\u{1B}", keyCode: 53)
 
-            let event = try #require(
-                NSEvent.keyEvent(
-                    with: .keyDown,
-                    location: .zero,
-                    modifierFlags: [],
-                    timestamp: 0,
-                    windowNumber: 0,
-                    context: nil,
-                    characters: "\u{1B}",
-                    charactersIgnoringModifiers: "\u{1B}",
-                    isARepeat: false,
-                    keyCode: 53
-                ))
+            // Act
+            let handled = KeyboardController.handle(event, session: session, windowModel: windowModel)
 
-            #expect(!KeyboardController.handle(event, session: session, windowModel: windowModel))
-            #expect(!windowModel.isDenMode)
-        }
-    }
-
-    @Test func escapeExitsDenMode() throws {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
-            windowModel.isDenMode = true
-            let event = try #require(
-                NSEvent.keyEvent(
-                    with: .keyDown,
-                    location: .zero,
-                    modifierFlags: [],
-                    timestamp: 0,
-                    windowNumber: 0,
-                    context: nil,
-                    characters: "\u{1B}",
-                    charactersIgnoringModifiers: "\u{1B}",
-                    isARepeat: false,
-                    keyCode: 53
-                ))
-
-            #expect(KeyboardController.handle(event, session: session, windowModel: windowModel))
+            // Assert
+            #expect(handled == inDenMode)
             #expect(!windowModel.isDenMode)
         }
     }
@@ -598,20 +492,10 @@ struct DenWindowModelPresentationTests {
         let first = desk("First")
         let second = desk("Second")
         let third = desk("Third")
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second, third]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second, third])))
+        ) { session, windowModel in
             // 1. focusDesk(number:) exits DenMode on actual switch
             windowModel.isDenMode = true
             session.boardNavigation.focusDesk(number: 2)
@@ -663,21 +547,11 @@ struct DenWindowModelPresentationTests {
 
     @Test func boardRenamingAndCustomLabelStickiness() {
         let googleBoard = board("Google", url: "https://google.com")
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Main", boards: [googleBoard])]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [desk("Main", boards: [googleBoard])])))
+        ) { session, windowModel in
             ({
                 // 1. Initially, customLabel is nil, displayName returns page title
                 let boardID = googleBoard.id
@@ -743,20 +617,10 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func controlCommaTogglesDenMode() throws {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+        ) { session, windowModel in
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -779,20 +643,10 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func controlPeriodPassesThroughToSheetInput() throws {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+        ) { session, windowModel in
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -814,21 +668,11 @@ struct DenWindowModelPresentationTests {
 
     @Test func commandOptionArrowsNavigateBoardsWithoutEnteringDenMode() throws {
         let boards = [board("First"), board("Second")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+        ) { session, windowModel in
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option])
 
@@ -844,21 +688,11 @@ struct DenWindowModelPresentationTests {
 
     @Test func shiftCommandOptionArrowsMoveFocusedBoardWithoutEnteringDenMode() throws {
         let boards = [board("First"), board("Second")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+        ) { session, windowModel in
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option, .shift])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option, .shift])
 
@@ -873,20 +707,10 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func commandQPassesThroughFromDenMode() throws {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+        ) { session, windowModel in
             windowModel.isDenMode = true
             let event = try #require(
                 NSEvent.keyEvent(
@@ -909,21 +733,11 @@ struct DenWindowModelPresentationTests {
 
     @Test func denModeMaximizesAndCentersFocusedBoardWithoutChangingDenState() throws {
         let current = board("Current", width: 520)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: [current])]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [desk("Desk", boards: [current])])))
+        ) { session, windowModel in
             windowModel.isDenMode = true
             let stateBeforeCommands = session.resources.state
             let maximize = try #require(
@@ -1025,21 +839,11 @@ struct DenWindowModelPresentationTests {
 
     @Test func denModeBoardWidthPanelAdjustsAllBoardsAndAcceptsFitSelectionKeys() throws {
         let boards = [board("First"), board("Second")]
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(
-                        makeNativeTestState(desks: [desk("Desk", boards: boards)]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        try withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    makeNativeTestState(desks: [desk("Desk", boards: boards)])))
+        ) { session, windowModel in
             windowModel.isDenMode = true
             windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
             let open = try #require(
@@ -1191,18 +995,11 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func saveEssentialValidatesInputAndUpdatesPreferences() {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState())),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState()))
+        ) { session in
             do {
-                let denWindowSession = session
-                let denWindowComposition = DenWindowComposition(session: denWindowSession)
+                let denWindowComposition = DenWindowComposition(session: session)
                 denWindowComposition.connect()
                 defer { denWindowComposition.disconnect() }
                 let windowModel = denWindowComposition.model
@@ -1241,18 +1038,11 @@ struct DenWindowModelPresentationTests {
 
     @Test(arguments: [false, true])
     func essentialReplacementRequiresConfirmationAndPreservesIdentity(confirm: Bool) throws {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState())),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        try withTestSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState()))
+        ) { session in
             do {
-                let denWindowSession = session
-                let denWindowComposition = DenWindowComposition(session: denWindowSession)
+                let denWindowComposition = DenWindowComposition(session: session)
                 denWindowComposition.connect()
                 defer { denWindowComposition.disconnect() }
                 let windowModel = denWindowComposition.model
@@ -1302,18 +1092,11 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func essentialReplacementDoesNotOverwriteReassignedKey() {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState())),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let session = denWindowSession
-
+        withTestSession(
+            resources: DenProfileResources(state: DenStateNormalization.normalize(makeNativeTestState()))
+        ) { session in
             do {
-                let denWindowSession = session
-                let denWindowComposition = DenWindowComposition(session: denWindowSession)
+                let denWindowComposition = DenWindowComposition(session: session)
                 denWindowComposition.connect()
                 defer { denWindowComposition.disconnect() }
                 let windowModel = denWindowComposition.model
@@ -1343,20 +1126,10 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func saveFocusedBoardAsEssentialShowsToastWhenNoBoardFocused() {
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Empty")]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Empty")])))
+        ) { session, windowModel in
             windowModel.saveFocusedBoardAsEssential()
             #expect(!windowModel.isSaveEssentialPanelPresented)
             #expect(session.feedback.latest?.message == "No focused board.")
@@ -1368,20 +1141,10 @@ struct DenWindowModelPresentationTests {
         let targetBoard = board("Target")
         var currentDesk = desk("Main", boards: [targetBoard], focusedBoardID: targetBoard.id)
         currentDesk.scrollOffsetX = 180
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-            let session = denWindowSession
-
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk])))
+        ) { session, windowModel in
             let initialCenterRequests = windowModel.centerFocusedBoardRequest
 
             // Act
@@ -1399,18 +1162,11 @@ struct DenWindowModelPresentationTests {
         var sourceDesk = desk("Source", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
         sourceDesk.scrollOffsetX = 180
         let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
-        do {
-            let denFixtureSuiteName = "NativeWindowFixture-\(UUID().uuidString)"
-            let denFixtureDefaults = makeTestDefaults(suiteName: denFixtureSuiteName)
-            defer { denFixtureDefaults.removePersistentDomain(forName: denFixtureSuiteName) }
-            let denWindowSession = ProfileWindowSession(
-                resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [sourceDesk, targetDesk]))),
-                configuration: makeTestBoardRuntimeConfiguration(defaults: denFixtureDefaults))
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let existingSession = denWindowSession
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [sourceDesk, targetDesk])))
+        ) { session, _ in
+            let existingSession = session
 
             let session = ProfileWindowSession(
                 resources: existingSession.resources,
@@ -1425,22 +1181,6 @@ struct DenWindowModelPresentationTests {
             #expect(session.navigation.presentedDeskID == sourceDesk.id)
             #expect(session.navigation.focusedDesk?.scrollOffsetX == 180)
         }
-    }
-
-    private func arrowEvent(
-        _ specialKey: NSEvent.SpecialKey,
-        modifiers: NSEvent.ModifierFlags
-    ) throws -> NSEvent {
-        let (characters, keyCode): (String, UInt16) =
-            switch specialKey {
-            case .leftArrow: ("\u{F702}", 123)
-            case .rightArrow: ("\u{F703}", 124)
-            default: ("", 0)
-            }
-        return try #require(
-            NSEvent.keyEvent(
-                with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0, windowNumber: 0, context: nil,
-                characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode))
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
