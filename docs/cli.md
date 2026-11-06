@@ -261,10 +261,16 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board terminal new` | `[<path>] [--end-of <desk-id> \| --left-of <board-id> \| --right-of <board-id>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --end-of <desk-id> --run "npm test" --width 800 --focus` |
-| `den board terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den board terminal text` |
+| `den board terminal text` | `[--lines <N>] [--board <id>]` | Read visible terminal screen text, or the last N lines of retained history and screen text. N must be positive. | `den board terminal text --lines 200` |
 | `den board terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den board terminal send "git status"` |
 | `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |
 | `den board terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den board terminal kill -s TERM` |
+
+`terminal text --lines N` reads retained scrollback and the screen without changing the viewport or focus.
+It returns at most N newline-separated lines; soft-wrapped text is joined, and blank lines count.
+If fewer lines are retained, it returns all available text. Without `--lines`, it reads only the current viewport.
+This is terminal text, not a conversation transcript: cleared, overwritten, or evicted content cannot be recovered,
+and alternate-screen applications may keep their own history outside terminal scrollback.
 
 ### 3.5 `den board inspection` (Inspection Boards & Context)
 

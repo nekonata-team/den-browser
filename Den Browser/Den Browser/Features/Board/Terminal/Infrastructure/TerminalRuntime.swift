@@ -137,19 +137,22 @@ final class TerminalRuntime: NSObject, ObservableObject {
         }
     }
 
-    func readViewportText() -> String? {
+    func readText(lines: Int? = nil) -> String? {
         guard let surface = rawGhosttySurface else { return nil }
+        if let lines, lines <= 0 { return nil }
+        let includeHistory = lines != nil
         let topLeft = ghostty_point_s(
-            tag: GHOSTTY_POINT_VIEWPORT,
+            tag: includeHistory ? GHOSTTY_POINT_SCREEN : GHOSTTY_POINT_VIEWPORT,
             coord: GHOSTTY_POINT_COORD_TOP_LEFT,
             x: 0,
             y: 0
         )
+        // Screen-relative exact coordinates clamp to the retained scrollback bounds.
         let bottomRight = ghostty_point_s(
-            tag: GHOSTTY_POINT_VIEWPORT,
-            coord: GHOSTTY_POINT_COORD_BOTTOM_RIGHT,
-            x: 0,
-            y: 0
+            tag: includeHistory ? GHOSTTY_POINT_SCREEN : GHOSTTY_POINT_VIEWPORT,
+            coord: includeHistory ? GHOSTTY_POINT_COORD_EXACT : GHOSTTY_POINT_COORD_BOTTOM_RIGHT,
+            x: includeHistory ? UInt32.max : 0,
+            y: includeHistory ? UInt32.max : 0
         )
         let selection = ghostty_selection_s(
             top_left: topLeft,
@@ -168,7 +171,9 @@ final class TerminalRuntime: NSObject, ObservableObject {
         }
         let bytes = UnsafeBufferPointer(start: textPtr, count: Int(out.text_len))
             .map { UInt8(bitPattern: $0) }
-        return String(bytes: bytes, encoding: .utf8) ?? ""
+        let text = String(bytes: bytes, encoding: .utf8) ?? ""
+        guard let lines else { return text }
+        return text.split(separator: "\n", omittingEmptySubsequences: false).suffix(lines).joined(separator: "\n")
     }
 
     @discardableResult

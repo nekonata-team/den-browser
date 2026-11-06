@@ -161,7 +161,7 @@ struct TerminalRuntimeTests {
         runtime.dispose()
     }
 
-    @Test func terminalRuntimeReadViewportTextAndSendText() {
+    @Test func terminalRuntimeReadTextAndSendText() {
         let runtime = TerminalRuntime(
             workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
             events: .init(
@@ -183,7 +183,7 @@ struct TerminalRuntimeTests {
         window.contentView = runtime.terminalView
 
         runtime.sendText("echo hello\n")
-        let text = runtime.readViewportText()
+        let text = runtime.readText()
         #expect(text != nil)
         runtime.dispose()
     }
@@ -214,13 +214,47 @@ struct TerminalRuntimeTests {
         runtime.runCommand("printf \(marker)")
 
         for _ in 0..<40 {
-            if runtime.readViewportText()?.contains(marker) == true {
+            if runtime.readText()?.contains(marker) == true {
                 break
             }
             try? await Task.sleep(for: .milliseconds(50))
         }
 
-        #expect(runtime.readViewportText()?.contains(marker) == true)
+        #expect(runtime.readText()?.contains(marker) == true)
+    }
+
+    @Test func terminalHistoryIncludesOffscreenOutputAndHonorsLineLimit() async throws {
+        // Arrange
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            command: "/bin/zsh -f",
+            events: .init(
+                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 300),
+            styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = runtime.terminalView
+        defer { runtime.dispose() }
+
+        // Act
+        runtime.runCommand("printf 'history-row-%03d\\n' {1..90}")
+        let deadline = ContinuousClock.now + .seconds(5)
+        while runtime.readText()?.contains("history-row-090") != true, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let viewport = try #require(runtime.readText())
+        let history = try #require(runtime.readText(lines: 200))
+        let recent = try #require(runtime.readText(lines: 5))
+
+        // Assert
+        #expect(!viewport.contains("history-row-001"))
+        #expect(history.contains("history-row-001"))
+        #expect(history.contains("history-row-090"))
+        #expect(recent.contains("history-row-090"))
+        #expect(!recent.contains("history-row-001"))
+        #expect(recent.split(separator: "\n", omittingEmptySubsequences: false).count <= 5)
+        #expect(runtime.readText() == viewport)
     }
 
     @Test func terminalRuntimeQueuesCommandUntilSurfaceIsReady() async {
@@ -250,13 +284,13 @@ struct TerminalRuntimeTests {
         defer { runtime.dispose() }
 
         for _ in 0..<40 {
-            if runtime.readViewportText()?.contains(marker) == true {
+            if runtime.readText()?.contains(marker) == true {
                 break
             }
             try? await Task.sleep(for: .milliseconds(50))
         }
 
-        #expect(runtime.readViewportText()?.contains(marker) == true)
+        #expect(runtime.readText()?.contains(marker) == true)
     }
 
     @Test func denIPCServiceParseSignalSupportsNamesAndNumbers() {

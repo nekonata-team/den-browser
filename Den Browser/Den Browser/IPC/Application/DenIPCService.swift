@@ -1380,9 +1380,12 @@ final class DenIPCService {
         let board = resolved.board
 
         switch command {
-        case .text:
+        case .text(let lines):
+            if let lines, lines <= 0 {
+                return .failure("--lines must be a positive integer")
+            }
             let runtime = window.board.terminalRuntime(board)
-            guard let text = runtime.readViewportText() else {
+            guard let text = runtime.readText(lines: lines) else {
                 return .failure("Failed to read terminal screen")
             }
             return .success(.text(text))

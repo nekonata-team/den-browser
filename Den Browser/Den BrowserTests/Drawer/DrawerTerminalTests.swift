@@ -265,10 +265,10 @@ struct DrawerTerminalTests {
 
     private func waitForText(_ text: String, runtime: TerminalRuntime) async throws {
         let deadline = ContinuousClock.now + .seconds(10)
-        while runtime.readViewportText()?.contains(text) != true, ContinuousClock.now < deadline {
+        while runtime.readText()?.contains(text) != true, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
-        try #require(runtime.readViewportText()?.contains(text) == true)
+        try #require(runtime.readText()?.contains(text) == true)
     }
 
     private func sessions(_ item: DrawerItem) -> (ProfileWindowSession, ProfileWindowSession) {

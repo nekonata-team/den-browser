@@ -117,7 +117,7 @@ struct NativeDisplayIntegrationTests {
         window.contentView = NSHostingView(rootView: NativeSurfaceView(surface: runtime.terminalView))
         window.contentView?.layoutSubtreeIfNeeded()
         let deadline = ContinuousClock.now + .seconds(10)
-        while runtime.readViewportText()?.contains(marker) != true, ContinuousClock.now < deadline {
+        while runtime.readText()?.contains(marker) != true, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
         window.contentView = nil
@@ -126,6 +126,6 @@ struct NativeDisplayIntegrationTests {
 
         // Assert
         #expect(runtime.terminalView.window === window)
-        #expect(runtime.readViewportText()?.contains(marker) == true)
+        #expect(runtime.readText()?.contains(marker) == true)
     }
 }

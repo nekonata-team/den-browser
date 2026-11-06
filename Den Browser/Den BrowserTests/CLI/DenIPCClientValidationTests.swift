@@ -5,6 +5,44 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: [nil, 1, 200] as [Int?])
+    func terminalTextForwardsHistoryLimit(lines: Int?) async throws {
+        // Arrange
+        let boardID = UUID()
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(
+                request?.operation == .terminal(command: .text(lines: lines), target: .explicit(boardID))
+                    ? .success(.text("retained output")) : .failure("Unexpected request"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["board", "terminal", "text", "--board", boardID.uuidString]
+                + (lines.map { ["--lines", String($0)] } ?? []),
+            socketPath: socketPath)
+        let object = try jsonResult(result.output)
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(object["text"] as? String == "retained output")
+    }
+
+    @Test(arguments: ["0", "-1", "1.5", "invalid"])
+    func terminalTextRejectsInvalidHistoryLimit(value: String) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+
+        // Act
+        let result = try await runCLI(["board", "terminal", "text", "--lines", value], socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 64)
+    }
+
     @Test(arguments: [[], ["--json"], ["--text"], ["--text", "-l"]])
     func overviewPreservesLayoutAndOutputSelection(flags: [String]) async throws {
         // Arrange

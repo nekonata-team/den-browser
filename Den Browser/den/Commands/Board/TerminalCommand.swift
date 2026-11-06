@@ -4,13 +4,21 @@ import DenIPCProtocol
 struct TerminalTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",
-        abstract: "Print visible screen text from the target Terminal Board")
+        abstract: "Print visible screen text or recent history from the target Terminal Board")
 
     @OptionGroup var target: BoardTargetOptions
+    @Option(help: "Read the last N lines of retained history, including the screen (must be positive)")
+    var lines: Int?
+
+    func validate() throws {
+        if let lines, lines <= 0 {
+            throw ValidationError("--lines must be a positive integer")
+        }
+    }
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: .terminal(command: .text, target: try DenIPCClient.boardTarget(target.boardID)),
+            operation: .terminal(command: .text(lines: lines), target: try DenIPCClient.boardTarget(target.boardID)),
             options: target.common
         )
     }

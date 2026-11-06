@@ -94,6 +94,8 @@ den board terminal kill --board <id> --json
 ```
 
 Terminal Boards suit long-running, human-visible processes and interactive TUIs.
+Use `den board terminal text --lines <N> --board <id> --json` to read recent retained history beyond the viewport.
+This does not recover text erased by the application or discarded from scrollback; see `text --help`.
 
 ## Drawer work
 

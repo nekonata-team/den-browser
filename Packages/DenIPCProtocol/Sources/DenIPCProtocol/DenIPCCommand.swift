@@ -68,7 +68,7 @@ public nonisolated enum DenIPCCommand {
     }
 
     public enum Terminal: Codable, Equatable, Sendable {
-        case text
+        case text(lines: Int? = nil)
         case send(text: String)
         case run(command: String)
         case kill(signal: String)

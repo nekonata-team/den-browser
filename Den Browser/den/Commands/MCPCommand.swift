@@ -673,7 +673,7 @@ private struct DenMCPToolRunner: Sendable {
             )
         case .readTerminalSession:
             return .terminal(
-                command: .text,
+                command: .text(),
                 target: try DenIPCClient.boardTarget(input.string(.boardID))
             )
         case .runTerminalCommand:
