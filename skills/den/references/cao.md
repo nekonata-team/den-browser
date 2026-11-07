@@ -1,15 +1,10 @@
----
-name: den-cao
-description: Coordinate Codex or other interactive CLI agents in Den Terminal Boards when delegating work through Den. Covers startup, task submission, reply recovery, and cleanup.
----
-
-# Den CLI Agent Orchestrator
+# Agent orchestration through Terminal Boards
 
 The parent chooses tasks and concurrency. Adapt launch options, input submission, and state detection to each agent.
 
 ## Before starting
 
-- Use the `den` skill for targeting and placement, or consult CLI help. If `den` is absent from PATH, use `/Applications/Den Browser.app/Contents/MacOS/den`.
+- Follow the Den CLI targeting and placement guidance in the `den` skill, or consult CLI help.
 - Check `den health --json` and `den board terminal text --help` for `--lines` support. If unavailable, report the prerequisite failure; do not launch or restart Den automatically.
 - Use `--json`. Track each child's returned `.board_id`, task, and status; target it explicitly with `--board`.
 - Use the same Profile/socket context throughout, inheriting the caller's unless otherwise requested.

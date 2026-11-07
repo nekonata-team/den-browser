@@ -39,7 +39,7 @@ Otherwise, run focused validation that exercises the changed behavior.
 - `docs/testing.md`: automated and exploratory validation, including XCUITest admission rules
 - `docs/releasing.md`: signed release and publishing workflow
 - `web/README.md`: public website and deployment
-- `.agents/skills/den`: end-user agent skill; limit to discovery and pointers without project paths
+- `skills/den`: end-user agent skill; limit to discovery and pointers without project paths
 
 ## Documentation operation
 

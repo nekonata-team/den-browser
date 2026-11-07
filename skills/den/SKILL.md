@@ -1,6 +1,6 @@
 ---
 name: den
-description: Control Den Browser through its first-party den CLI when inspecting or operating Boards, Sheets, or Drawer items.
+description: Control Den Browser through its first-party den CLI for Boards, Sheets, Drawer items, and agent orchestration in Terminal Boards.
 ---
 
 # Den Browser (`den`)
@@ -96,6 +96,7 @@ den board terminal kill --board <id> --json
 Terminal Boards suit long-running, human-visible processes and interactive TUIs.
 Use `den board terminal text --lines <N> --board <id> --json` to read recent retained history beyond the viewport.
 This does not recover text erased by the application or discarded from scrollback; see `text --help`.
+When delegating to an interactive CLI agent, follow [Agent orchestration through Terminal Boards](references/cao.md).
 
 ## Drawer work
 
