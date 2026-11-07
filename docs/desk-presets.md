@@ -21,13 +21,6 @@ A Desk with no Boards can be saved to reuse its work-context label before adding
 A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content still carries meaning.
 Inspection runtime data (such as DOM selections, highlights, and Console events) and live WebKit state (Sheet Stacks, scroll positions, input, and cookies) are not captured.
 
-Creating a Desk from a Desk Preset instantiates fresh Desk and Board identities.
-Web Boards receive the Preset's initial Sheet URL as both their Current and First Sheet URL.
-Inspection Boards start empty and reconnect to the new Target Board.
-Terminal, Zellij, and zmx Boards restore their persisted terminal content.
-Replacing a Desk preserves its Desk identity and position while creating new Board identities.
-Neither operation keeps the Desk linked to the Preset, while Profile-owned WebKit data preserves site logins.
-
 When a zmx Board's root session name is known, the Personal Desk Preset retains it.
 If the session must be recreated, the Board uses this name to restore the `den.root` group label.
 

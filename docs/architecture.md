@@ -36,7 +36,7 @@ flowchart TD
 | `DenInfrastructure` | Profile persistence, filesystem and image-cache I/O, process sampling, and diagnostics |
 | `DenIPCProtocol` | CLI/app request and response types |
 
-App-target folders:
+App-target folders (under `Den Browser/Den Browser/`):
 
 | Folder | Role |
 | --- | --- |
@@ -190,6 +190,3 @@ stay with their Features; native display helpers belong to DenViews.
 ## Validation
 
 Follow [testing.md](./testing.md) for automated and exploratory checks.
-Current boundaries belong here; ADRs record consequential decisions and their reasons in the
-[short format](../.agents/skills/domain-modeling/ADR-FORMAT.md).
-Product terms are defined in [CONTEXT.md](../CONTEXT.md).

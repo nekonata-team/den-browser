@@ -13,10 +13,7 @@ Den Browser persists only state needed to restore user-owned work. Version 4 add
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
 - uBlock Origin Lite resources and enabled preferences persist app-wide.
   Ordinary Profiles use a persistent WebKit extension controller, while Private Den uses a non-persistent one that discards session state.
-  Only inactive Profiles with no open windows can be deleted.
-  Settings disables deletion while windows are open, and deletion verifies this before touching data.
-  During deletion, that Profile cannot open windows, create controllers, or start another deletion.
-  If deletion fails, those operations become available again.
+  Only inactive Profiles with no open windows can be deleted; deletion locks the Profile until completion or failure.
   Deleting an eligible Profile releases its resources and removes its dedicated `~/Library/WebKit/<bundle-id>/WebExtensions/<profile-id>/` directory, including settings and compiled content-blocking rules.
   The directory is keyed by Profile ID independently of the website data store ID.
   A cleanup error reports Profile deletion failure and retains the Profile document for retry; website data may already have been removed.
@@ -48,27 +45,18 @@ Den Browser persists only state needed to restore user-owned work. Version 4 add
 - `deskPresets`
 - optional `recentItems`
 
-Nested objects use these keys:
+Nested document structure and keys:
 
-- `ProfileState`: `id`, `name`, `color` (a preset name or custom sRGB components), `webProfileStore`
-- `WebProfileStore`: `kind`, optional `identifier`
+- `ProfileState`: `id`, `name`, `color` (preset name or custom sRGB), `webProfileStore` (`kind`, optional `identifier`)
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
-- `DrawerItem`: `id`, `content`, optional `title`, optional `touchedAt`
-- Web Drawer `content`: `kind: web`, `url`
-- Terminal Drawer `content`: `kind: terminal`, `session` using the same Shell, Zellij or zmx configuration as a Terminal Board
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, `role`, `content`, optional `customLabel`
-- `BoardRole`: `kind: primary`, or `kind: sideBoard` with `targetBoardID`
-- Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`, optional `sheetNavigationPaused`, optional `denAPIEnabled`
-- Inspection Board `content`: `kind: inspection`
-- Terminal Board `content`: `kind: terminal`, `session`
-- Shell session: `kind: shell`, `workingDirectory`
-- Zellij session: `kind: zellij`, optional `sessionName`
-- zmx session: `kind: zmx`, `sessionName`, `workingDirectory`, optional `rootSessionName`
-- `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
-- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, `content` using Web, Inspection, or Terminal with a Shell, Zellij, or zmx `session`, and optional `targetBoardIndex` for a Side Board (Inspection or Terminal) pointing to its Primary Board. A zmx session may include `rootSessionName` when its group is known.
-- `RecentItem`: `kind`, plus `url` for a URL, `query` for search, `workingDirectory` for Terminal,
-  optional `sessionName` for Zellij, or `sessionName` for zmx Open Board intent
+- `BoardState`: `id`, `label`, `width`, `role` (`primary` or `sideBoard` with `targetBoardID`), optional `customLabel`, and `content`:
+  - Web: `kind: web`, optional `currentSheetURL`, `firstSheetURL`, `sheetNavigationPaused`, `denAPIEnabled`
+  - Inspection: `kind: inspection`
+  - Terminal: `kind: terminal`, `session` (`shell` with `workingDirectory`, `zellij` with optional `sessionName`, or `zmx` with `sessionName`, `workingDirectory`, optional `rootSessionName`)
+- `DrawerItem`: `id`, optional `title`, optional `touchedAt`, and `content` (Web `url` or Terminal `session`)
+- `PersonalDeskPreset`: `id`, `label`, `boards` (`DeskPresetBoard`), optional `focusedBoardIndex`
+- `RecentItem`: `kind` with `url`, `query`, or terminal target (`workingDirectory`, `sessionName`)
 
 Recent Items are recorded when a new Board opens from an input, such as an Essential,
 a link-to-new-Board action, a Drawer placement, or a selected zmx Session.
@@ -78,8 +66,7 @@ Removing an item or clearing Recent immediately saves the Profile document, rest
 A Web Board without an optional Current Sheet URL simply has no Current Sheet,
 while a missing First Sheet URL disables returning to the initial Sheet.
 Web Board URLs normalize HTTP(S) root paths to `/` before persistence.
-Local file URLs persist as standard Foundation `URL`s without saving contents, bookmarks, or verifying file existence.
-Consequently, a moved or missing local file fails to load upon restoration without invalidating saved models.
+Local file URLs persist as standard Foundation `URL`s without saving contents, bookmarks, or verifying file existence; moved or missing files fail to load upon restoration without invalidating saved models.
 
 `denAPIEnabled` enables the [Den JavaScript API](den-api.md) for local HTML main frames in that Board.
 It defaults to `false` when absent. The flag survives navigation and Profile restoration; remote pages cannot invoke the API.

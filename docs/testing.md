@@ -104,7 +104,5 @@ activity logs and failure diagnostics remain available in the result bundle.
 Builds treat compiler warnings as errors. Package dependencies are compiler-enforced; import scans do not
 prove isolation between App source groups, event destinations or resource lifetimes.
 
-Before merge, run `just check` and the focused UI tests admitted above, then review the diff.
-Add exploratory validation when the affected boundary requires it.
 Use XCTest result bundles for durations; launch/resource measurement is documented in
 [benchmarking.md](./benchmarking.md).
