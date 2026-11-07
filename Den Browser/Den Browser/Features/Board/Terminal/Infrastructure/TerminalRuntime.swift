@@ -86,6 +86,28 @@ final class TerminalRuntime: NSObject, ObservableObject {
         self.events = events
     }
 
+    func startForCLI() -> Bool {
+        guard !isDisposed else { return false }
+        if isSurfaceReady { return true }
+        guard terminalView.window == nil else { return false }
+
+        // Ghostty creates its surface only after attachment to a sized AppKit window.
+        // Bootstrap offscreen, then retain the same surface for its eventual presentation.
+        setSurfaceVisible(false)
+        let host = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: .borderless, backing: .buffered, defer: false)
+        host.isReleasedWhenClosed = false
+        host.isRestorable = false
+        terminalView.frame = host.contentLayoutRect
+        host.contentView = terminalView
+        defer {
+            host.contentView = nil
+            host.close()
+        }
+        return isSurfaceReady
+    }
+
     func sendText(_ text: String) {
         terminalView.paste(text: text)
     }
@@ -101,40 +123,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
 
     private func sendCommand(_ command: String) {
         terminalView.paste(text: command)
-
-        let timestamp = ProcessInfo.processInfo.systemUptime
-        let windowNumber = terminalView.window?.windowNumber ?? 0
-        let event = NSEvent.keyEvent(
-            with: .keyDown,
-            location: .zero,
-            modifierFlags: [],
-            timestamp: timestamp,
-            windowNumber: windowNumber,
-            context: nil,
-            characters: "\r",
-            charactersIgnoringModifiers: "\r",
-            isARepeat: false,
-            keyCode: 36
-        )
-        if let event {
-            terminalView.keyDown(with: event)
-        }
-
-        let keyUp = NSEvent.keyEvent(
-            with: .keyUp,
-            location: .zero,
-            modifierFlags: [],
-            timestamp: timestamp,
-            windowNumber: windowNumber,
-            context: nil,
-            characters: "\r",
-            charactersIgnoringModifiers: "\r",
-            isARepeat: false,
-            keyCode: 36
-        )
-        if let keyUp {
-            terminalView.keyUp(with: keyUp)
-        }
+        terminalView.sendKey(.enter)
     }
 
     func readText(lines: Int? = nil) -> String? {

@@ -437,6 +437,9 @@ struct DenIPCServiceTests {
         let drawerBoardID = try responseBoardID(drawerResponse)
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
+        let terminalRuntime = try #require(session.resources.terminalRuntimes[terminalBoardID])
+        #expect(terminalRuntime.readText() != nil)
+        #expect(terminalRuntime.terminalView.window == nil)
         #expect(drawerResponse.isOk)
         #expect(session.resources.state.boardIndices(for: webBoardID)?.deskOffset == targetDeskIndex)
         #expect(session.resources.state.boardIndices(for: terminalBoardID)?.deskOffset == targetDeskIndex)
@@ -524,6 +527,64 @@ struct DenIPCServiceTests {
         )
         let terminalID = try responseBoardID(response)
         #expect(session.resources.state.board(for: terminalID)?.width == 1_500)
+    }
+
+    @Test(arguments: ["text", "send", "run"])
+    func terminalCommandsStartUnpresentedSessionsWithoutChangingDesk(command: String) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let session = try #require(manager.session(for: manager.personalProfileID))
+        let visibleDeskID = session.navigation.presentedDeskID
+        let visibleBoardID = session.navigation.focusedBoard?.id
+        session.desks.createDesk(label: "Background", preset: .empty)
+        let boardID = try #require(session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: false))
+        #expect(session.boardNavigation.setFocusedDesk(visibleDeskID))
+        let board = try #require(session.resources.state.board(for: boardID))
+        let runtime = session.runtimes.terminalRuntime(for: board)
+        defer { runtime.dispose() }
+        #expect(runtime.readText() == nil)
+        let service = DenIPCService(profileManager: manager)
+        let operation: DenIPCCommand.Terminal
+        switch command {
+        case "text": operation = .text()
+        case "send": operation = .send(text: "den_cli_value=17")
+        default: operation = .run(command: "den_cli_value=17")
+        }
+
+        // Act
+        let result = await service.handleResult(
+            ipcRequest(.terminal(command: operation, target: .explicit(boardID.rawValue))))
+        #expect(result.isOk)
+        #expect(runtime.readText() != nil)
+        if command == "text" {
+            runtime.runCommand("den_cli_value=17")
+        }
+        let continuation = command == "send" ? "; " : ""
+        let followup = await service.handleResult(
+            ipcRequest(
+                .terminal(
+                    command: .run(command: "\(continuation)printf 'ipc-result-%s\\n' \"$den_cli_value\""),
+                    target: .explicit(boardID.rawValue))))
+        let deadline = ContinuousClock.now + .seconds(5)
+        while runtime.readText()?.contains("ipc-result-17") != true, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        // Assert
+        #expect(followup.isOk)
+        #expect(runtime.readText()?.contains("ipc-result-17") == true)
+        #expect(runtime.terminalView.window == nil)
+        #expect(session.navigation.presentedDeskID == visibleDeskID)
+        #expect(session.navigation.focusedBoard?.id == visibleBoardID)
+        session.boardRemoval.removeBoard(boardID)
+        #expect(session.resources.terminalRuntimes[boardID] == nil)
     }
 
     @Test func boardCreationFallsBackWhenAmbientBoardIDIsStale() async throws {

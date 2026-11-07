@@ -1190,10 +1190,16 @@ final class DenIPCService {
             return .failure("Failed to create terminal board")
         }
 
-        if let runCommand = payload.runCommand,
-            let board = resolved.window.resources.snapshot.den.board(for: boardID)
-        {
-            let runtime = resolved.window.board.terminalRuntime(board)
+        guard let board = resolved.window.resources.snapshot.den.board(for: boardID) else {
+            return .failure("Created Terminal Board not found: \(boardID.rawValue.uuidString)")
+        }
+        let runtime = resolved.window.board.terminalRuntime(board)
+        guard runtime.startForCLI() else {
+            return .failure(
+                "Terminal Board was created but could not start. Retry using Board \(boardID.rawValue.uuidString).",
+                payload: .createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil))
+        }
+        if let runCommand = payload.runCommand {
             runtime.runCommand(runCommand)
         }
 
@@ -1385,6 +1391,9 @@ final class DenIPCService {
                 return .failure("--lines must be a positive integer")
             }
             let runtime = window.board.terminalRuntime(board)
+            guard runtime.startForCLI() else {
+                return .failure("Failed to start Terminal Board \(board.id.rawValue.uuidString)")
+            }
             guard let text = runtime.readText(lines: lines) else {
                 return .failure("Failed to read terminal screen")
             }
@@ -1400,6 +1409,9 @@ final class DenIPCService {
                 .replacingOccurrences(of: "\\r", with: "\r")
                 .replacingOccurrences(of: "\\t", with: "\t")
             let runtime = window.board.terminalRuntime(board)
+            guard runtime.startForCLI() else {
+                return .failure("Failed to start Terminal Board \(board.id.rawValue.uuidString)")
+            }
             runtime.sendText(text)
             return .success(.message("Sent text to Terminal Board \(board.id.rawValue.uuidString)"))
 
@@ -1408,6 +1420,9 @@ final class DenIPCService {
                 return .failure("Usage: den board terminal run <command> [--board <id>]")
             }
             let runtime = window.board.terminalRuntime(board)
+            guard runtime.startForCLI() else {
+                return .failure("Failed to start Terminal Board \(board.id.rawValue.uuidString)")
+            }
             runtime.runCommand(command)
             return .success(.message("Ran command in Terminal Board \(board.id.rawValue.uuidString)"))
 

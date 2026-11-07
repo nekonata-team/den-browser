@@ -24,6 +24,7 @@ den board terminal new <working-directory> --run 'codex --no-alt-screen' --json
 ```
 
 Confirm options and input submission with the agent's `--help`. Codex's `--no-alt-screen` enables useful scrollback; other agents may use different options. Preserve focus unless requested otherwise.
+CLI Terminal creation and I/O work on unpresented Desks while the Profile has an open window; do not switch Desks just to start a child.
 
 Read `.text` to check readiness:
 

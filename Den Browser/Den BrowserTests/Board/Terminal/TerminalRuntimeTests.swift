@@ -7,6 +7,71 @@ import Testing
 
 @MainActor
 struct TerminalRuntimeTests {
+    @Test func cliStartupRunsWithoutPresentationAndSurvivesFirstDisplay() async throws {
+        // Arrange
+        let runtime = TerminalRuntime(
+            workingDirectory: "/tmp", command: "/bin/zsh -f",
+            events: .init(
+                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+        defer { runtime.dispose() }
+        #expect(runtime.readText() == nil)
+
+        // Act
+        #expect(runtime.startForCLI())
+        runtime.runCommand("den_cli_value=47; printf 'background-%s\\n' \"$den_cli_value\"")
+        let deadline = ContinuousClock.now + .seconds(5)
+        while runtime.readText()?.contains("background-47") != true, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(runtime.terminalView.window == nil)
+        #expect(runtime.readText()?.contains("background-47") == true)
+
+        #expect(runtime.startForCLI())
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+            styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = runtime.terminalView
+        defer { window.contentView = nil }
+        runtime.runCommand("printf 'followup-%s\\n' \"$den_cli_value\"")
+        let followupDeadline = ContinuousClock.now + .seconds(5)
+        while runtime.readText()?.contains("followup-47") != true, ContinuousClock.now < followupDeadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        // Assert
+        #expect(runtime.terminalView.window === window)
+        #expect(runtime.readText(lines: 200)?.contains("background-47") == true)
+        #expect(runtime.readText()?.contains("followup-47") == true)
+    }
+
+    @Test func cliStartupDeliversHiddenProcessExitAndRejectsDisposedRuntime() async throws {
+        // Arrange
+        var closed = false
+        let runtime = TerminalRuntime(
+            workingDirectory: "/tmp", command: "/bin/zsh -f",
+            events: .init(
+                onClose: { closed = true }, onFocus: {}, onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+        defer { runtime.dispose() }
+
+        // Act
+        #expect(runtime.startForCLI())
+        // Outlive Ghostty's fast-exit warning, which intentionally keeps the surface open.
+        runtime.runCommand("sleep 1; exit")
+        let deadline = ContinuousClock.now + .seconds(5)
+        while !closed, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let output = runtime.readText()
+        runtime.dispose()
+
+        // Assert
+        #expect(closed, "Terminal output: \(output ?? "unavailable")")
+        #expect(!runtime.startForCLI())
+        #expect(runtime.terminalView.window == nil)
+    }
+
     @Test func terminalViewReportsAnEmptySelectionWithoutMarkedText() {
         let view = DenTerminalView(frame: .zero)
 

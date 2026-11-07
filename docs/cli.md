@@ -266,6 +266,10 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 | `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |
 | `den board terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den board terminal kill -s TERM` |
 
+`terminal new`, `send`, `run`, and `text` start the session even when its Desk has never been displayed.
+The Profile must have an open window; the displayed Desk and focus are preserved unless creation requests `--focus`.
+If session startup fails during creation, the error includes the created `board_id` for retrying against that Board.
+
 `terminal text --lines N` reads retained scrollback and the screen without changing the viewport or focus.
 It returns at most N newline-separated lines; soft-wrapped text is joined, and blank lines count.
 If fewer lines are retained, it returns all available text. Without `--lines`, it reads only the current viewport.
