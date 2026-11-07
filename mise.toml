@@ -1,14 +1,14 @@
 [tools]
 bun = "1.4.4"
-ast-grep = "0.45.3"
-ruby = "4.0.6"
-lefthook = "2.1.10"
+ast-grep = "0.51.1"
+ruby = "4.0.9"
+lefthook = "2.2.2"
 rtk = "1.1.0"
 jq = "1.8.2"
-swiftlint = "0.65.0"
+swiftlint = "0.65.1"
 lychee = "0.24.2"
-"npm:@steipete/peekaboo" = "4.9.5"
-"github:getopenscreen/openscreen" = "2.1.0"
+"npm:@steipete/peekaboo" = "4.9.8"
+"github:getopenscreen/openscreen" = "2.2.2"
 
 [hooks]
 postinstall = "lefthook install"
