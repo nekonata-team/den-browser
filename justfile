@@ -129,7 +129,12 @@ precommit:
 prepush:
     lefthook run pre-push
 
+# Check Markdown links offline.
+[group("quality")]
+link-check:
+    @lychee --offline .
+
 # Run lint, TypeScript checks, and unit tests.
 [group("quality")]
-check: lint embedded-js-typecheck
+check: lint embedded-js-typecheck link-check
     just test
