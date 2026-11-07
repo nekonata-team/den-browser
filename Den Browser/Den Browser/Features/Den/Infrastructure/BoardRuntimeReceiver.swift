@@ -124,6 +124,9 @@ final class BoardRuntimeReceiver {
                     webView, requestedURL: url, fromBoardID: board.id, modifierFlags: flags) ?? false
             },
             onClosePopupBoard: { [weak self, connection] in self?.removeBoard(connection: connection) },
+            onReturnFromPictureInPicture: { [connection] in
+                connection.boardNavigation?.returnFromPictureInPicture(boardID: board.id)
+            },
             onLinkActivated: { [connection] in connection.boardNavigation?.prepareBoardLinkFocus(board.id) },
             downloadActivityOwnerID: ObjectIdentifier(connection),
             onDownloadActivity: { [connection] in connection.onDownloadActivity?($0) },

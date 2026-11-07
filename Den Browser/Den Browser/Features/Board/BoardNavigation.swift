@@ -47,7 +47,7 @@ final class BoardNavigation {
         if changedDesk { storage.saveDeferredState() }
     }
 
-    func focusBoard(_ boardID: BoardID, exitsDenMode: Bool = false) {
+    func focusBoard(_ boardID: BoardID, exitsDenMode: Bool = false, autoPIP: Bool = true) {
         inputSourceTracker.boardDidFocus(boardID, isEnabled: preferences.rememberBoardInputMethod)
         guard let indices = context.boardIndices(for: boardID) else { return }
         let deskID = state.desks[indices.deskOffset].id
@@ -61,7 +61,7 @@ final class BoardNavigation {
         }
         onWindowEffect?(.clearBoardInputRequests)
         storage.state.desks[indices.deskOffset].focusedBoardID = boardID
-        let changedDesk = setFocusedDesk(deskID)
+        let changedDesk = setFocusedDesk(deskID, autoPIP: autoPIP)
         if !changedDesk && presentedDeskID == deskID {
             storage.notificationOperations.markAllRead(for: boardID)
         }
@@ -69,6 +69,16 @@ final class BoardNavigation {
             onWindowEffect?(.exitDenMode)
         }
         storage.saveDeferredState()
+    }
+
+    func returnFromPictureInPicture(boardID: BoardID) {
+        guard context.boardIndices(for: boardID) != nil else { return }
+        onWindowEffect?(.dismissTemporaryPresentation)
+        focusBoard(boardID, exitsDenMode: true, autoPIP: false)
+        if focusedDesk?.focusedBoardID == boardID {
+            centerFocusedBoard()
+        }
+        NSApp.activate()
     }
 
     func focusPreviousDesk() {

@@ -31,6 +31,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         var onFullscreenChange: ((BoardID, Bool) -> Void)?
         var onCreatePopupBoard: (WKWebView, URL?, NSEvent.ModifierFlags) -> Bool = { _, _, _ in false }
         var onClosePopupBoard: () -> Void = {}
+        var onReturnFromPictureInPicture: () -> Void = {}
         var onLinkActivated: () -> Void = {}
         var downloadActivityOwnerID: ObjectIdentifier?
         var onDownloadActivity: (DownloadActivityEvent) -> Void = { _ in }
@@ -397,6 +398,11 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     override func handleWebViewDidClose(_ webView: WKWebView) {
         guard webView === self.webView else { return }
         events.onClosePopupBoard()
+    }
+
+    override func handleWebViewFullscreenMayReturnToInline(_ webView: WKWebView) {
+        guard webView === self.webView else { return }
+        events.onReturnFromPictureInPicture()
     }
 
     override func handleLinkNavigation(

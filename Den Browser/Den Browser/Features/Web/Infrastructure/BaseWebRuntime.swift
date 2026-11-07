@@ -389,6 +389,14 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
 
     func handleWebViewDidClose(_ webView: WKWebView) {}
 
+    // WebKit notifies the UI delegate before returning a Picture-in-Picture video inline.
+    @objc(_webViewFullscreenMayReturnToInline:)
+    func webViewFullscreenMayReturnToInline(_ webView: WKWebView) {
+        handleWebViewFullscreenMayReturnToInline(webView)
+    }
+
+    func handleWebViewFullscreenMayReturnToInline(_ webView: WKWebView) {}
+
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
         for prompt in authenticationPrompts.filter({ $0.webView?.window === window }) { prompt.finish(nil) }

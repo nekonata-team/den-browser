@@ -1,6 +1,7 @@
 import DenApplication
 import DenDomain
 import DenModels
+import Foundation
 import Testing
 
 @testable import Den_Browser
@@ -74,5 +75,33 @@ struct BoardRuntimeReceiverTests {
         // Assert
         #expect(focused == [board.id])
         #expect(session.connection.runtimes === session.runtimes)
+    }
+
+    @Test func returnFromPictureInPicturePresentsBackgroundDeskAndFocusesBoard() {
+        // Arrange
+        let pipBoard = BoardState(label: "Video", width: 640, currentSheetURL: URL(string: "https://example.com/video"))
+        let otherBoard = BoardState(label: "Other", width: 520, workingDirectory: "/tmp")
+        let pipDesk = DeskState(label: "Media", boards: [pipBoard], focusedBoardID: nil)
+        let activeDesk = DeskState(label: "Work", boards: [otherBoard], focusedBoardID: otherBoard.id)
+        let session = ProfileWindowSession(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(
+                    DenState(desks: [pipDesk, activeDesk], focusedDeskID: activeDesk.id))),
+            configuration: makeTestBoardRuntimeConfiguration())
+        let runtime = session.runtimes.webRuntime(for: pipBoard)
+        let selector = NSSelectorFromString("_webViewFullscreenMayReturnToInline:")
+        var effects: [DenWindowEffect] = []
+        session.connection.onWindowEffect = { effects.append($0) }
+
+        // Act
+        _ = runtime.webView.uiDelegate?.perform(selector, with: runtime.webView)
+
+        // Assert
+        #expect(runtime.webView.uiDelegate?.responds(to: selector) == true)
+        #expect(session.navigation.presentedDeskID == pipDesk.id)
+        #expect(session.navigation.focusedDesk?.focusedBoardID == pipBoard.id)
+        #expect(effects.contains { if case .dismissTemporaryPresentation = $0 { true } else { false } })
+        #expect(effects.contains { if case .exitDenMode = $0 { true } else { false } })
+        #expect(effects.contains { if case .centerFocusedBoard = $0 { true } else { false } })
     }
 }
