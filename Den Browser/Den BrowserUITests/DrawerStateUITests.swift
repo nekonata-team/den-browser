@@ -125,7 +125,8 @@ final class DrawerStateUITests: UITestCase {
         let placedInput = app.textFields["Live input"].firstMatch
 
         given("a Drawer Peek holds a live value") {
-            app.buttons["drawer-button"].click()
+            enterDenMode(in: app)
+            app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(drawer.waitUntilExists(timeout: 5))
             let item = drawer.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Drawer Fixture")).firstMatch
             XCTAssertTrue(item.waitUntilExists(timeout: 5))
