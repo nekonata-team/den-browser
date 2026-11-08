@@ -106,6 +106,14 @@ nonisolated struct BoardOpeningTests {
         }
     }
 
+    @Test(arguments: [":zmx first second", ":zellij 'unfinished"])
+    func invalidSessionInputIsRejected(input: String) {
+        guard case .rejected(.invalidSessionInput) = resolve(input) else {
+            Issue.record("Expected invalid session input")
+            return
+        }
+    }
+
     @Test func missingTerminalDirectoryReturnsTheResolvedPath() {
         // Arrange
         let input = ":terminal missing"

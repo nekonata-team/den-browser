@@ -16,20 +16,28 @@ public nonisolated enum TerminalInputError: Error, Equatable {
 public nonisolated enum ZellijInput: Equatable {
     case welcome
     case session(String)
+    case invalid
 }
 
 public nonisolated enum ZmxInput: Equatable {
     case missingSessionName
     case session(String)
+    case invalid
 }
 
 public enum BoardInputResolver {
     public static func terminalArguments(_ input: String) -> Result<
         (path: String, command: String?), TerminalInputError
     >? {
+        parseArguments(input, name: ":terminal")
+    }
+
+    private static func parseArguments(_ input: String, name: String) -> Result<
+        (path: String, command: String?), TerminalInputError
+    >? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
-        guard parts.first == ":terminal" else { return nil }
+        guard let first = parts.first, first == name else { return nil }
         guard parts.count == 2 else { return .success(("", nil)) }
         let text = String(parts[1])
         var path = ""
@@ -59,23 +67,15 @@ public enum BoardInputResolver {
         return .success((path, command.isEmpty ? nil : command))
     }
     public static func resolveZellijInput(_ input: String) -> ZellijInput? {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
-        guard parts.first == ":zellij" else { return nil }
-        guard parts.count == 2 else { return .welcome }
-
-        let sessionName = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
-        return sessionName.isEmpty ? .welcome : .session(sessionName)
+        guard let result = parseArguments(input, name: ":zellij") else { return nil }
+        guard case .success(let args) = result, args.command == nil else { return .invalid }
+        return args.path.isEmpty ? .welcome : .session(args.path)
     }
 
     public static func resolveZmxInput(_ input: String) -> ZmxInput? {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
-        guard parts.first == ":zmx" else { return nil }
-        guard parts.count == 2 else { return .missingSessionName }
-
-        let sessionName = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
-        return sessionName.isEmpty ? .missingSessionName : .session(sessionName)
+        guard let result = parseArguments(input, name: ":zmx") else { return nil }
+        guard case .success(let args) = result, args.command == nil else { return .invalid }
+        return args.path.isEmpty ? .missingSessionName : .session(args.path)
     }
 
     public static func resolveTerminalInput(

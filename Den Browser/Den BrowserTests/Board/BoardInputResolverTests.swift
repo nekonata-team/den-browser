@@ -21,6 +21,18 @@ struct BoardInputResolverTests {
         #expect(BoardInputResolver.resolveZmxInput(":zmxly") == nil)
     }
 
+    @Test func sessionNamesUseOneQuotedArgument() {
+        #expect(BoardInputResolver.resolveZellijInput(":zellij 'my project'") == .session("my project"))
+        #expect(BoardInputResolver.resolveZmxInput(":zmx my\\ project") == .session("my project"))
+        #expect(BoardInputResolver.resolveZellijInput(":zellij my project") == .invalid)
+        #expect(BoardInputResolver.resolveZmxInput(":zmx my project") == .invalid)
+        #expect(BoardInputResolver.resolveZmxInput(":zmx 'unfinished") == .invalid)
+        let name = "my project's session"
+        #expect(
+            BoardInputResolver.resolveZellijInput(RecentItem.zellij(sessionName: name).displayText) == .session(name))
+        #expect(BoardInputResolver.resolveZmxInput(RecentItem.zmx(sessionName: name).displayText) == .session(name))
+    }
+
     @Test func resolvesTerminalCommands() throws {
         let temp = FileManager.default.temporaryDirectory
 

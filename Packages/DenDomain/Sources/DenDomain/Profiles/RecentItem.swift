@@ -21,16 +21,19 @@ public enum RecentItem: Sendable, Codable, Equatable, Hashable, Identifiable {
         case .terminal(let workingDirectory):
             let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
             if workingDirectory == homeDirectory { return ":terminal" }
-            if !workingDirectory.contains(where: { $0.isWhitespace || $0 == "'" || $0 == "\"" || $0 == "\\" }) {
-                return ":terminal \(workingDirectory)"
-            }
-            let escaped = workingDirectory.replacingOccurrences(of: "'", with: "'\\''")
-            return ":terminal '\(escaped)'"
+            return ":terminal \(Self.quotedArgument(workingDirectory))"
         case .zellij(let sessionName):
-            return sessionName.map { ":zellij \($0)" } ?? ":zellij"
+            return sessionName.map { ":zellij \(Self.quotedArgument($0))" } ?? ":zellij"
         case .zmx(let sessionName):
-            return sessionName.isEmpty ? ":zmx" : ":zmx \(sessionName)"
+            return sessionName.isEmpty ? ":zmx" : ":zmx \(Self.quotedArgument(sessionName))"
         }
+    }
+
+    private static func quotedArgument(_ value: String) -> String {
+        guard value.contains(where: { $0.isWhitespace || $0 == "'" || $0 == "\"" || $0 == "\\" }) else {
+            return value
+        }
+        return "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     public var title: String? {

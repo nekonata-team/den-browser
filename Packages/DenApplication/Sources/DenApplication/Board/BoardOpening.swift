@@ -9,6 +9,7 @@ public enum BoardOpening {
         case zellijNotConfigured
         case terminalDirectoryMissing(String)
         case terminalInvalidPath
+        case invalidSessionInput
         case invalidInput
 
         public var message: String? {
@@ -17,6 +18,7 @@ public enum BoardOpening {
             case .zellijNotConfigured: "Set an absolute Zellij executable path in Settings > Terminal."
             case .terminalDirectoryMissing(let path): TerminalInputError.missingDirectory(path).message
             case .terminalInvalidPath: TerminalInputError.invalidPath.message
+            case .invalidSessionInput: "Enter one session name; quote names containing spaces."
             case .invalidInput: nil
             }
         }
@@ -57,6 +59,7 @@ public enum BoardOpening {
         let board: BoardState
         let recent: RecentItem
         if let zmx = BoardInputResolver.resolveZmxInput(input) {
+            if case .invalid = zmx { return .rejected(.invalidSessionInput) }
             guard configuration.zmxConfigured else { return .rejected(.zmxNotConfigured) }
             guard case .session(let name) = zmx else { return .selectZmxSession }
             board = BoardState(
@@ -66,11 +69,13 @@ public enum BoardOpening {
                 rootSessionName: zmxRootSessionName)
             recent = .zmx(sessionName: name)
         } else if let zellij = BoardInputResolver.resolveZellijInput(input) {
+            if case .invalid = zellij { return .rejected(.invalidSessionInput) }
             guard configuration.zellijConfigured else { return .rejected(.zellijNotConfigured) }
             let name: String?
             switch zellij {
             case .welcome: name = nil
             case .session(let sessionName): name = sessionName
+            case .invalid: return .rejected(.invalidSessionInput)
             }
             board = BoardState(width: width, zellijSessionName: name)
             recent = .zellij(sessionName: name)
