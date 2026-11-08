@@ -87,6 +87,42 @@ nonisolated struct BoardOpeningTests {
         #expect(recent == .zmx(sessionName: "project"))
     }
 
+    @Test(arguments: [
+        (":term", "/home/test"),
+        (":term /tmp", "/tmp"),
+    ])
+    func terminalAliasesResolveToTerminalBoard(input: String, expectedPath: String) {
+        guard case .createBoard(let board, let recent) = resolve(input) else {
+            Issue.record("Expected a Terminal Board creation decision")
+            return
+        }
+        #expect(board.terminalWorkingDirectory == expectedPath)
+        #expect(recent == .terminal(workingDirectory: expectedPath))
+    }
+
+    @Test func zellijAliasResolvesToZellijBoard() {
+        guard case .createBoard(let board, let recent) = resolve(":zj project") else {
+            Issue.record("Expected a Zellij Board creation decision")
+            return
+        }
+        #expect(board.zellijSessionName == "project")
+        #expect(recent == .zellij(sessionName: "project"))
+    }
+
+    @Test func zmxAliasResolvesToZmxBoardAndSessionSelection() {
+        guard case .selectZmxSession = resolve(":x") else {
+            Issue.record("Expected Session selection for bare :x")
+            return
+        }
+
+        guard case .createBoard(let board, let recent) = resolve(":x project") else {
+            Issue.record("Expected a zmx Board creation decision for :x project")
+            return
+        }
+        #expect(board.zmxSessionName == "project")
+        #expect(recent == .zmx(sessionName: "project"))
+    }
+
     @Test(arguments: [":zmx project", ":zellij project"])
     func unconfiguredSessionToolsAreRejected(input: String) {
         // Arrange
