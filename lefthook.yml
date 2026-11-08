@@ -5,7 +5,14 @@ pre-commit:
       run: just format-staged {staged_files}
       stage_fixed: true
     lint:
+      glob: "*.swift"
       run: just lint
+    embedded-js:
+      glob: "scripts/embedded-js/**"
+      run: just embedded-js-typecheck
+    link-check:
+      glob: "*.md"
+      run: just link-check
 
 pre-push:
   commands:
