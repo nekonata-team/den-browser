@@ -77,6 +77,8 @@ final class BoardOpeningActions {
                     runtimes.updateBoard(
                         boardID: board.id, url: existingRuntime.webView.url, title: existingRuntime.webView.title)
                 }
+            case .runTerminalCommand(let board, let command):
+                runtimes.terminalRuntime(for: board).runCommand(command)
                 if board.isWeb {
                     storage.recordOperation(.webBoardOpened)
                 } else if board.isTerminal {

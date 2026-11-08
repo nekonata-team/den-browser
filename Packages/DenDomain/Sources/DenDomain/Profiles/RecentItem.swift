@@ -20,7 +20,12 @@ public enum RecentItem: Sendable, Codable, Equatable, Hashable, Identifiable {
         case .search(let query): return query
         case .terminal(let workingDirectory):
             let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
-            return workingDirectory == homeDirectory ? ":terminal" : ":terminal \(workingDirectory)"
+            if workingDirectory == homeDirectory { return ":terminal" }
+            if !workingDirectory.contains(where: { $0.isWhitespace || $0 == "'" || $0 == "\"" || $0 == "\\" }) {
+                return ":terminal \(workingDirectory)"
+            }
+            let escaped = workingDirectory.replacingOccurrences(of: "'", with: "'\\''")
+            return ":terminal '\(escaped)'"
         case .zellij(let sessionName):
             return sessionName.map { ":zellij \($0)" } ?? ":zellij"
         case .zmx(let sessionName):

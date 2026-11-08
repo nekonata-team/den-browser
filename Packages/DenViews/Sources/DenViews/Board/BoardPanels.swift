@@ -149,7 +149,7 @@ public struct OpenBoardPanel: View {
                 if !openBoard.opensInDrawer {
                     DenPanelHint("Use :tutorial for the interactive guide")
                 }
-                DenPanelHint("Terminal commands: :terminal [path], :zellij [session], or :zmx <session>")
+                DenPanelHint("Terminal commands: :terminal [path] [command], :zellij [session], or :zmx <session>")
             }
         }
         .denPanel(width: DenPanelLayout.wideWidth)

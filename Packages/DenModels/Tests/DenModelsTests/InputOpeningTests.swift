@@ -7,6 +7,32 @@ import Testing
 @MainActor
 struct InputOpeningTests {
     @Test(arguments: [false, true])
+    func terminalInitialCommandReachesRuntime(inDrawer: Bool) {
+        let shared = DenStateStore.make(initialState: DenSharedState(den: .sample))
+        let creation = BoardCreation(
+            reader: shared.reader, writer: shared.writer,
+            recents: Recents(reader: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+        let opening = InputOpening(
+            creation: creation, drawer: DrawerItems(reader: shared.reader, writer: shared.writer))
+        let context = InputOpening.Context(
+            width: 520, target: .init(presentedDeskID: shared.store.snapshot.den.focusedDeskID),
+            configuration: .init(
+                searchEngine: .google, zmxConfigured: false, zellijConfigured: false,
+                homeDirectory: URL(fileURLWithPath: "/tmp")))
+        var command: String?
+        let result = opening.open(":terminal /tmp nvim README.md", context: context, inDrawer: inDrawer) { notice in
+            switch notice {
+            case .board(.runTerminalCommand(_, let value)), .runDrawerTerminalCommand(_, let value): command = value
+            default: break
+            }
+        }
+        guard case .accepted = result else {
+            Issue.record("Expected success")
+            return
+        }
+        #expect(command == "nvim README.md")
+    }
+    @Test(arguments: [false, true])
     func essentialAndClipboardUseSharedCreationOrDrawer(inDrawer: Bool) throws {
         // Arrange
         let desk = DeskState(label: "Desk", boards: [])

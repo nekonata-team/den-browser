@@ -54,6 +54,20 @@ struct BoardInputResolverTests {
         #expect(throws: TerminalInputError.self) { try resolved?.get() }
     }
 
+    @Test func terminalCommandAndQuotedPath() throws {
+        let input = try #require(BoardInputResolver.terminalArguments(":terminal '~/My Projects' nvim 'a b'"))
+        let arguments = try input.get()
+        #expect(arguments.path == "~/My Projects")
+        #expect(arguments.command == "nvim 'a b'")
+        #expect(throws: TerminalInputError.self) {
+            try BoardInputResolver.terminalArguments(":terminal 'unfinished")?.get()
+        }
+        let recent = RecentItem.terminal(workingDirectory: "/tmp/a b's")
+        let restored = try #require(BoardInputResolver.terminalArguments(recent.displayText)).get()
+        #expect(restored.path == "/tmp/a b's")
+        #expect(restored.command == nil)
+    }
+
     @Test func resolvesURLsAndSearch() {
         let http = BoardInputResolver.resolveOpenBoardInput("https://example.com", searchEngine: .google)
         #expect(http?.url.absoluteString == "https://example.com")

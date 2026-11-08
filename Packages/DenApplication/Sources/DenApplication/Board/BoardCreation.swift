@@ -49,6 +49,7 @@ public final class BoardCreation {
         case suppressMutationAnimation
         case focusInsertedBoard(DeskID)
         case didInsert(BoardState)
+        case runTerminalCommand(BoardState, String)
         case focusTutorial(BoardID)
         case didOpenInput
         case selectZmxSession
@@ -83,6 +84,11 @@ public final class BoardCreation {
         case .createBoard(let board, let recentItem):
             guard insert(board, target: request.target, recentItem: recentItem, notify: notify) != nil else {
                 return .rejected(nil)
+            }
+            if case .success(let arguments) = BoardInputResolver.terminalArguments(request.input),
+                let command = arguments.command
+            {
+                notify(.runTerminalCommand(board, command))
             }
             notify(.didOpenInput)
             return .accepted

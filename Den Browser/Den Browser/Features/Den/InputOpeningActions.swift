@@ -40,6 +40,10 @@ final class InputOpeningActions {
             case .board(let notice): boardOpening.boardCreationNotifications()(notice)
             case .drawer(let notice): drawer.drawerItemNotifications()(notice)
             case .keptInDrawer: context.feedback.publish("Kept in Drawer.", severity: .success)
+            case .runDrawerTerminalCommand(let id, let command):
+                if let item = storage.state.drawerItems.first(where: { $0.id == id }) {
+                    drawer.drawerTerminalRuntime(for: item).runCommand(command)
+                }
             }
         }
     }

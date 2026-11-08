@@ -3,10 +3,12 @@ import Foundation
 
 public nonisolated enum TerminalInputError: Error, Equatable {
     case missingDirectory(String)
+    case invalidPath
 
     public var message: String {
         switch self {
         case .missingDirectory(let path): "Terminal directory does not exist: \(path)"
+        case .invalidPath: "Invalid terminal directory quoting."
         }
     }
 }
@@ -22,6 +24,40 @@ public nonisolated enum ZmxInput: Equatable {
 }
 
 public enum BoardInputResolver {
+    public static func terminalArguments(_ input: String) -> Result<
+        (path: String, command: String?), TerminalInputError
+    >? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
+        guard parts.first == ":terminal" else { return nil }
+        guard parts.count == 2 else { return .success(("", nil)) }
+        let text = String(parts[1])
+        var path = ""
+        var quote: Character?
+        var escaped = false
+        var index = text.startIndex
+        while index < text.endIndex {
+            let character = text[index]
+            if escaped {
+                path.append(character)
+                escaped = false
+            } else if character == "\\" && quote != "'" {
+                escaped = true
+            } else if let current = quote {
+                if character == current { quote = nil } else { path.append(character) }
+            } else if character == "\"" || character == "'" {
+                quote = character
+            } else if character.isWhitespace {
+                break
+            } else {
+                path.append(character)
+            }
+            index = text.index(after: index)
+        }
+        guard quote == nil, !escaped, !path.isEmpty else { return .failure(.invalidPath) }
+        let command = text[index...].trimmingCharacters(in: .whitespacesAndNewlines)
+        return .success((path, command.isEmpty ? nil : command))
+    }
     public static func resolveZellijInput(_ input: String) -> ZellijInput? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
@@ -47,14 +83,12 @@ public enum BoardInputResolver {
         homeDirectory: URL,
         directoryExists: (String) -> Bool
     ) -> Result<String, TerminalInputError>? {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
-        guard parts.first == ":terminal" else { return nil }
-
-        let rawPath =
-            parts.count == 1
-            ? ""
-            : String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let arguments = terminalArguments(input) else { return nil }
+        let rawPath: String
+        switch arguments {
+        case .success(let value): rawPath = value.path
+        case .failure(let error): return .failure(error)
+        }
         let url: URL
         if rawPath.isEmpty || rawPath == "~" {
             url = homeDirectory

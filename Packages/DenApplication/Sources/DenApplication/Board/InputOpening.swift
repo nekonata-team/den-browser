@@ -19,6 +19,7 @@ public struct InputOpening {
         case board(BoardCreation.Notice)
         case drawer(DrawerItems.Notice)
         case keptInDrawer
+        case runDrawerTerminalCommand(UUID, String)
     }
 
     private let creation: BoardCreation
@@ -40,7 +41,12 @@ public struct InputOpening {
                     guard let url = web.currentSheetURL, drawer.keep(url, notify: { notify(.drawer($0)) }) != nil
                     else { return .rejected("Could not open in Drawer.") }
                 case .terminal(let session):
-                    drawer.keep(terminal: session, notify: { notify(.drawer($0)) })
+                    let id = drawer.keep(terminal: session, notify: { notify(.drawer($0)) })
+                    if case .success(let arguments) = BoardInputResolver.terminalArguments(input),
+                        let command = arguments.command
+                    {
+                        notify(.runDrawerTerminalCommand(id, command))
+                    }
                 case .inspection, .tutorial:
                     return .rejected("This content requires a Board.")
                 }

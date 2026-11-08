@@ -8,6 +8,7 @@ public enum BoardOpening {
         case zmxNotConfigured
         case zellijNotConfigured
         case terminalDirectoryMissing(String)
+        case terminalInvalidPath
         case invalidInput
 
         public var message: String? {
@@ -15,6 +16,7 @@ public enum BoardOpening {
             case .zmxNotConfigured: "Set an absolute zmx executable path in Settings > Terminal."
             case .zellijNotConfigured: "Set an absolute Zellij executable path in Settings > Terminal."
             case .terminalDirectoryMissing(let path): TerminalInputError.missingDirectory(path).message
+            case .terminalInvalidPath: TerminalInputError.invalidPath.message
             case .invalidInput: nil
             }
         }
@@ -81,6 +83,8 @@ public enum BoardOpening {
                 recent = .terminal(workingDirectory: directory)
             case .failure(.missingDirectory(let path)):
                 return .rejected(.terminalDirectoryMissing(path))
+            case .failure(.invalidPath):
+                return .rejected(.terminalInvalidPath)
             }
         } else {
             guard
