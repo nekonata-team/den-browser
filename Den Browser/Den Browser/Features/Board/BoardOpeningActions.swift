@@ -77,13 +77,13 @@ final class BoardOpeningActions {
                     runtimes.updateBoard(
                         boardID: board.id, url: existingRuntime.webView.url, title: existingRuntime.webView.title)
                 }
-            case .runTerminalCommand(let board, let command):
-                runtimes.terminalRuntime(for: board).runCommand(command)
                 if board.isWeb {
                     storage.recordOperation(.webBoardOpened)
                 } else if board.isTerminal {
                     storage.recordOperation(.terminalBoardOpened)
                 }
+            case .runTerminalCommand(let board, let command):
+                runtimes.terminalRuntime(for: board).runCommand(command)
             case .focusTutorial(let boardID):
                 boardNavigation.focusBoard(boardID, exitsDenMode: true)
                 onWindowEffect?(.dismissTemporaryPresentation)
