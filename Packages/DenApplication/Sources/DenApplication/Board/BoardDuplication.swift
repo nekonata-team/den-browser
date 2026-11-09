@@ -28,6 +28,7 @@ public enum BoardDuplication {
                 label: source.label, width: source.width,
                 currentSheetURL: fromFirstSheet ? source.firstSheetURL : source.currentSheetURL,
                 firstSheetURL: fromFirstSheet ? source.firstSheetURL : nil,
-                customLabel: source.customLabel, sheetNavigationPaused: source.sheetNavigationPaused))
+                customLabel: source.customLabel, sheetNavigationPaused: source.sheetNavigationPaused,
+                backgroundExecutionEnabled: source.backgroundExecutionEnabled))
     }
 }

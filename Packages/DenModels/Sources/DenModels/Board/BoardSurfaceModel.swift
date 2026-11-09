@@ -15,6 +15,7 @@ public struct BoardSurfaceModel {
         case moveToDrawer
         case goToFirst
         case toggleNavigation
+        case toggleBackgroundExecution
         case screenshot
         case increaseSize
         case decreaseSize

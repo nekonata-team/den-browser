@@ -311,6 +311,14 @@ public struct WebBoardView: View {
             }
         }
 
+        Toggle(
+            "Run in Background",
+            isOn: Binding(
+                get: { board.backgroundExecutionEnabled },
+                set: { _ in model.perform(.toggleBackgroundExecution) })
+        )
+        .help("Keep this Board running and updating while hidden. Uses more energy.")
+
         Button {
             model.perform(.focus)
             model.perform(.screenshot)

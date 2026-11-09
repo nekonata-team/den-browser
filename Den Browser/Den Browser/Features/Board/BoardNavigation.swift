@@ -146,6 +146,16 @@ final class BoardNavigation {
         storage.save()
     }
 
+    func toggleBoardBackgroundExecution(_ boardID: BoardID) {
+        guard storage.activeDrag == nil, let indices = context.boardIndices(for: boardID),
+            state.desks[indices.deskOffset].boards[indices.boardOffset].isWeb
+        else { return }
+        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].backgroundExecutionEnabled.toggle()
+        let board = state.desks[indices.deskOffset].boards[indices.boardOffset]
+        _ = runtimes.webRuntime(for: board)
+        storage.save()
+    }
+
     func centerFocusedBoard() {
         guard let focusedDeskIndex, focusedDesk?.focusedBoardID != nil else { return }
         if state.desks[focusedDeskIndex.rawValue].scrollOffsetX != nil {

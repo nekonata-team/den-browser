@@ -11,6 +11,18 @@ public struct BoardState: Codable, Equatable, Identifiable {
     public var role: BoardRole
     public var customLabel: String?
 
+    public var backgroundExecutionEnabled: Bool {
+        get {
+            guard case .web(let web) = kind else { return false }
+            return web.backgroundExecutionEnabled
+        }
+        set {
+            guard case .web(var web) = kind else { return }
+            web.backgroundExecutionEnabled = newValue
+            kind = .web(web)
+        }
+    }
+
     public var denAPIEnabled: Bool {
         get {
             guard case .web(let web) = kind else { return false }
@@ -185,7 +197,8 @@ public struct BoardState: Codable, Equatable, Identifiable {
         currentSheetURL: URL?,
         firstSheetURL: URL? = nil,
         customLabel: String? = nil,
-        sheetNavigationPaused: Bool = false
+        sheetNavigationPaused: Bool = false,
+        backgroundExecutionEnabled: Bool = false
     ) {
         self.id = id
         self.label = label
@@ -194,7 +207,8 @@ public struct BoardState: Codable, Equatable, Identifiable {
             WebBoardState(
                 currentSheetURL: currentSheetURL,
                 firstSheetURL: firstSheetURL ?? currentSheetURL,
-                sheetNavigationPaused: sheetNavigationPaused))
+                sheetNavigationPaused: sheetNavigationPaused,
+                backgroundExecutionEnabled: backgroundExecutionEnabled))
         role = .primary
         self.customLabel = customLabel
     }

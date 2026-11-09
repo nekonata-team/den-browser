@@ -32,6 +32,7 @@ extension BoardSurfaceModel {
                 case .moveToDrawer: session.drawer.moveBoardToDrawer(board.id)
                 case .goToFirst: session.boardOpening.goToFirstSheetInFocusedBoard()
                 case .toggleNavigation: session.boardNavigation.toggleBoardSheetNavigationPause(board.id)
+                case .toggleBackgroundExecution: session.boardNavigation.toggleBoardBackgroundExecution(board.id)
                 case .screenshot: session.screenshots.captureFocusedSheetScreenshot()
                 case .increaseSize: session.runtimes.adjustFocusedSheetSize(by: 1)
                 case .decreaseSize: session.runtimes.adjustFocusedSheetSize(by: -1)

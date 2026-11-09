@@ -139,5 +139,9 @@ final class ProfileWindowSession {
         self.screenshots = screenshots
         self.facings = facings
         self.reset = reset
+        for board in resources.state.desks.flatMap(\.boards)
+        where board.backgroundExecutionEnabled && resources.webRuntimes[board.id] == nil {
+            _ = runtimes.webRuntime(for: board)
+        }
     }
 }

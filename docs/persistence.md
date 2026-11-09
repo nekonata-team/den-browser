@@ -51,7 +51,7 @@ Nested document structure and keys:
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
 - `BoardState`: `id`, `label`, `width`, `role` (`primary` or `sideBoard` with `targetBoardID`), optional `customLabel`, and `content`:
-  - Web: `kind: web`, optional `currentSheetURL`, `firstSheetURL`, `sheetNavigationPaused`, `denAPIEnabled`
+  - Web: `kind: web`, optional `currentSheetURL`, `firstSheetURL`, `sheetNavigationPaused`, `denAPIEnabled`, `backgroundExecutionEnabled`
   - Inspection: `kind: inspection`
   - Terminal: `kind: terminal`, `session` (`shell` with `workingDirectory`, `zellij` with optional `sessionName`, or `zmx` with `sessionName`, `workingDirectory`, optional `rootSessionName`)
 - `DrawerItem`: `id`, optional `title`, optional `touchedAt`, and `content` (Web `url` or Terminal `session`)
@@ -72,6 +72,13 @@ Local file URLs persist as standard Foundation `URL`s without saving contents, b
 It defaults to `false` when absent. The flag survives navigation and Profile restoration; remote pages cannot invoke the API.
 Other Boards opening the same file do not inherit it. No API-specific target URL is stored.
 Board duplication retains the flag; Desk Presets and Web Drawer Items do not capture this Board-specific setting.
+
+`backgroundExecutionEnabled` defaults to `false` when absent. The Web Board header menu's
+Run in Background option keeps the page's animation frames and execution active while hidden,
+including on another Desk. Enabled Boards start when their Profile window opens.
+It follows the Board through Desk moves, duplication and restoration; Desk Presets and
+Web Drawer Items do not retain it. Moving a live Board into the Drawer disables background execution.
+This uses more energy and does not prevent macOS system sleep or continue after the Profile closes.
 
 `PersistedProfileDocumentDecoder` migrates version 1, 2 and 3 documents before decoding:
 - Version 1 Boards decode as Web Boards.

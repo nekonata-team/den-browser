@@ -13,10 +13,13 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct WebRuntimeOwnershipTests {
-    @Test(.timeLimit(.minutes(1)), arguments: [false, true])
-    func mountingAnExistingWebRuntimeReusesItAndOnlyConnectsAnOpenWindow(disconnected: Bool) async throws {
+    @Test(.timeLimit(.minutes(1)), arguments: [false, true], [false, true])
+    func mountingAnExistingWebRuntimeReusesItAndOnlyConnectsAnOpenWindow(
+        disconnected: Bool, backgroundExecutionEnabled: Bool
+    ) async throws {
         // Arrange
-        let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
+        let board = BoardState(
+            label: "Web", width: 520, currentSheetURL: nil, backgroundExecutionEnabled: backgroundExecutionEnabled)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let original = ProfileWindowSession(
             resources: DenProfileResources(

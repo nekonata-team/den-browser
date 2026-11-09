@@ -11,7 +11,7 @@ nonisolated struct BoardDuplicationTests {
         let first = try #require(URL(string: "https://example.com/first"))
         let source = BoardState(
             label: "Source", width: 700, currentSheetURL: current, firstSheetURL: first,
-            customLabel: "Custom", sheetNavigationPaused: true)
+            customLabel: "Custom", sheetNavigationPaused: true, backgroundExecutionEnabled: true)
 
         // Act
         let decision = BoardDuplication.resolve(source, fromFirstSheet: fromFirstSheet)
@@ -26,6 +26,7 @@ nonisolated struct BoardDuplicationTests {
         #expect(copy.customLabel == source.customLabel)
         #expect(copy.width == source.width)
         #expect(copy.sheetNavigationPaused)
+        #expect(copy.backgroundExecutionEnabled)
         #expect(copy.currentSheetURL == (fromFirstSheet ? first : current))
         #expect(copy.firstSheetURL == (fromFirstSheet ? first : current))
     }

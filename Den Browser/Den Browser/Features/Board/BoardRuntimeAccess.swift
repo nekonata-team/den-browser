@@ -94,6 +94,7 @@ final class BoardRuntimeAccess {
         let events = receiver.webEvents(for: board, connection: runtimeConnection)
         if let runtime = webRuntimes[board.id] {
             runtime.setDenAPIEnabled(board.denAPIEnabled)
+            runtime.setBackgroundExecutionEnabled(board.backgroundExecutionEnabled)
             runtime.updateOwner(sheetNavigationActions: actions, events: events)
             if let webExtensionHost, let webExtensionWindow {
                 webExtensionHost.register(

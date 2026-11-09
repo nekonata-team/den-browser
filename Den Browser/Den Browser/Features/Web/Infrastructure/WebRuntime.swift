@@ -6,19 +6,6 @@ import DenModels
 import Foundation
 import WebKit
 
-final class RuntimeWKWebView: WKWebView {
-    var isFocusAllowed: () -> Bool = { false }
-    var onRejectedFocus: (() -> Void)?
-
-    override func becomeFirstResponder() -> Bool {
-        guard isFocusAllowed() else {
-            onRejectedFocus?()
-            return false
-        }
-        return super.becomeFirstResponder()
-    }
-}
-
 @MainActor
 final class WebRuntime: BaseWebRuntime, ObservableObject {
     enum Presentation {
@@ -119,6 +106,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             initialURL: board.currentSheetURL,
             sheetNavigationPaused: board.sheetNavigationPaused,
             denAPIEnabled: board.denAPIEnabled,
+            backgroundExecutionEnabled: board.backgroundExecutionEnabled,
             presentation: .board,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
@@ -135,6 +123,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         initialURL: URL?,
         sheetNavigationPaused: Bool = false,
         denAPIEnabled: Bool = false,
+        backgroundExecutionEnabled: Bool = false,
         presentation: Presentation,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
@@ -194,6 +183,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             actions: self.sheetNavigationActions
         )
         setDenAPIEnabled(denAPIEnabled)
+        setBackgroundExecutionEnabled(backgroundExecutionEnabled)
         if let webExtensionHost, let webExtensionWindow {
             webExtensionHost.register(
                 webView: webView,
@@ -239,6 +229,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     /// Changes the presentation owner without loading or disposing the live page.
     func presentInDrawer(sheetNavigationActions: SheetNavigationManager.Actions, events: Events) {
         setDenAPIEnabled(false)
+        setBackgroundExecutionEnabled(false)
         presentation = .drawer
         webView.configuration.preferences.isElementFullscreenEnabled = false
         updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
@@ -253,6 +244,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         boardID = board.id
         presentation = .board
         setDenAPIEnabled(board.denAPIEnabled)
+        setBackgroundExecutionEnabled(board.backgroundExecutionEnabled)
         webView.configuration.preferences.isElementFullscreenEnabled = true
         updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
         sheetNavigation.didOpen(
@@ -339,6 +331,10 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         denAPI?.setEnabled(enabled)
     }
 
+    func setBackgroundExecutionEnabled(_ enabled: Bool) {
+        (webView as? RuntimeWKWebView)?.setBackgroundExecutionEnabled(enabled)
+    }
+
     private static func configureNativePictureInPicture(
         preferences: WKPreferences
     ) {
@@ -368,6 +364,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func dispose() {
+        setBackgroundExecutionEnabled(false)
         denAPI?.dispose()
         denAPI = nil
         stopInspection()

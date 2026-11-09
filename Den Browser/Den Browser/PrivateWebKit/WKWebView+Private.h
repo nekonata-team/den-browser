@@ -6,6 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly) pid_t _webProcessIdentifier;
 @property (nonatomic, readonly) BOOL _webProcessIsResponsive;
+@property (nonatomic, setter=_setWindowOcclusionDetectionEnabled:) BOOL _windowOcclusionDetectionEnabled;
 
 @end
 
