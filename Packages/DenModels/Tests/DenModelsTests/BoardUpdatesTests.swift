@@ -6,6 +6,31 @@ import Testing
 
 @MainActor
 struct BoardUpdatesTests {
+    @Test func backgroundSettingRetainsSessionValueOnSaveFailureAndRejectsNonWebBoards() {
+        // Arrange
+        let web = BoardState(label: "Web", width: 520, currentSheetURL: nil)
+        let terminal = BoardState(width: 520, workingDirectory: "/tmp")
+        let desk = DeskState(label: "Desk", boards: [web, terminal])
+        let shared = DenStateStore.make(
+            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
+        var saves = 0
+        let updates = BoardUpdates(
+            reader: shared.reader, writer: shared.writer,
+            persist: { _ in
+                saves += 1
+                return false
+            })
+        // Act / Assert
+        #expect(!updates.setBackgroundExecutionEnabled(web.id, enabled: true))
+        #expect(shared.store.snapshot.den.board(for: web.id)?.backgroundExecutionEnabled == true)
+        #expect(!updates.setBackgroundExecutionEnabled(terminal.id, enabled: true))
+        #expect(!updates.setBackgroundExecutionEnabled(BoardID(), enabled: true))
+        shared.writer.update { $0.activeDrag = .board(web.id) }
+        #expect(!updates.setBackgroundExecutionEnabled(web.id, enabled: false))
+        #expect(shared.store.snapshot.den.board(for: web.id)?.backgroundExecutionEnabled == true)
+        #expect(saves == 1)
+    }
+
     @Test func editingNotifiesBeforeSaveAndRetainsChangesOnSaveFailure() {
         // Arrange
         let board = BoardState(label: "Board", width: 520, zmxSessionName: "session")

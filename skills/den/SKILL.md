@@ -57,6 +57,10 @@ The last Desk cannot be removed. Discover target UUIDs with `den desk list --jso
 
 ## Web interaction
 
+Use `den board web background --board <id> --json` to read Run in Background, or add `on` / `off`
+to set it without focusing or reloading the Board. The response's `enabled` field reports the setting.
+Use `den board web new <url> --background --json` to enable it at creation; this uses more energy.
+
 Local HTML can use the injected `den.*` JavaScript API when opened or reloaded with `--den-api`.
 Discover enable/disable options with `den board web new --help` and `den board web reload --help`.
 See [Den JavaScript API](https://github.com/nekonata-team/den-browser/blob/main/docs/den-api.md) for the API contract and HTML examples.

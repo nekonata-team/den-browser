@@ -178,6 +178,7 @@ struct BoardWebCommand: ParsableCommand {
             WebNavigateCommand.self,
             WebURLCommand.self,
             WebStatusCommand.self,
+            WebBackgroundCommand.self,
             WebDialogCommand.self,
             WebReloadCommand.self,
             WebBackCommand.self,
@@ -221,6 +222,8 @@ struct BoardWebNewCommand: ParsableCommand {
         name: .customLong("den-api"),
         help: "Enable and persist the Den JavaScript API on this Board for local HTML files")
     var denAPI = false
+    @Flag(name: .long, help: "Keep this Board running and updating while hidden, and save the setting")
+    var background = false
 
     func validate() throws {
         try validateBoardWidth(width)
@@ -229,7 +232,9 @@ struct BoardWebNewCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .createWebBoard(
-                payload: DenBoardWebNewPayload(url: url, focus: focus, width: width, denAPI: denAPI ? true : nil),
+                payload: DenBoardWebNewPayload(
+                    url: url, focus: focus, width: width, denAPI: denAPI ? true : nil,
+                    backgroundExecution: background ? true : nil),
                 destination: try placement.destination()
             ),
             options: options

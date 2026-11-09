@@ -150,10 +150,10 @@ final class BoardNavigation {
         guard storage.activeDrag == nil, let indices = context.boardIndices(for: boardID),
             state.desks[indices.deskOffset].boards[indices.boardOffset].isWeb
         else { return }
-        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].backgroundExecutionEnabled.toggle()
+        let enabled = !state.desks[indices.deskOffset].boards[indices.boardOffset].backgroundExecutionEnabled
+        storage.boardUpdates.setBackgroundExecutionEnabled(boardID, enabled: enabled)
         let board = state.desks[indices.deskOffset].boards[indices.boardOffset]
         _ = runtimes.webRuntime(for: board)
-        storage.save()
     }
 
     func centerFocusedBoard() {

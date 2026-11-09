@@ -28,6 +28,15 @@ public struct BoardUpdates {
         return persist?(reader.snapshot.den) ?? true
     }
 
+    @discardableResult
+    public func setBackgroundExecutionEnabled(_ id: BoardID, enabled: Bool) -> Bool {
+        guard reader.snapshot.activeDrag == nil, let location = indices(for: id),
+            reader.snapshot.den.desks[location.desk].boards[location.board].isWeb
+        else { return false }
+        writer.update { $0.den.desks[location.desk].boards[location.board].backgroundExecutionEnabled = enabled }
+        return persist?(reader.snapshot.den) ?? true
+    }
+
     public func rename(_ id: BoardID, to name: String, beforeSave: () -> Void) {
         guard let indices = indices(for: id) else { return }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

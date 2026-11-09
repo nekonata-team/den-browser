@@ -185,9 +185,18 @@ Success returns the moved Board using the same JSON fields as `board focused`; u
 separately to show the moved Board.
 
 ### 3.3 `den board web` (Web Board and Sheet Operations)
-Commands operating on the Current Sheet of the resolved Web Board.
+Commands operating on the resolved Web Board and its Current Sheet.
 
 These commands operate on the Sheet Stack of a Web Board. Terminal Board interaction uses the `den board terminal` command family.
+
+`den board web background [on|off]` reads or sets the Board's Run in Background setting.
+It accepts `--board` and `--profile`, preserves Desk and Board focus, and applies changes immediately without reloading.
+With no argument it only reads Board state and does not activate an unopened Board.
+JSON returns `{"ok":true,"enabled":true}` or `{"ok":true,"enabled":false}`; text output prints `true` or `false`.
+Repeated `on` or `off` calls keep the requested state rather than toggling it. Changes persist across restarts.
+During a drag, setting changes fail; reads remain available. Save failures report an error while retaining the session's setting.
+Use `den board web new <url> --background` to enable it before the new page loads; omission defaults to off.
+Background execution uses more energy and does not prevent macOS system sleep.
 
 `den board web status` reads the final HTTP response received for the main page in the current live runtime; it does not make another request or inspect individual `fetch`/XHR calls, iframe responses, or popup windows.
 JSON returns `{"ok":true,"status":200}` (including for HTTP error codes such as 404 or 500), and TTY prints the code.
@@ -195,7 +204,7 @@ While loading, after a navigation failure, or when no HTTP response was observed
 HTTP status is not persisted across app restarts.
 Use a load condition with `den board web wait` before reading a newly navigated page's status.
 
-Every existing-Board Sheet operation except `dialog` accepts `--snapshot` to include a compact semantic snapshot after a successful operation. JSON retains the usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the operation awaits. It does not wait for subsequent page activity: use a condition such as `den board web wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the operation succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
+Every existing-Board Sheet operation except `dialog` accepts `--snapshot` to include a compact semantic snapshot after a successful operation. The Board setting command `background` does not accept it. JSON retains the usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the operation awaits. It does not wait for subsequent page activity: use a condition such as `den board web wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the operation succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
 
 `den board web snapshot` already returns a snapshot, so `--snapshot` does not capture twice. Like other Sheet operations, `den board web interact` captures a final snapshot only when `--snapshot` is specified. `interact --full` requires `--snapshot`; `--no-snapshot` has been removed. On an action failure, `interact --snapshot` attempts a best-effort snapshot alongside failure metadata.
 
@@ -203,10 +212,11 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--end-of <desk-id> \| --left-of <board-id> \| --right-of <board-id>] [--width <points>] [--focus] [--den-api]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. `--den-api` enables and persists the [Den JavaScript API](den-api.md) for local HTML files in that Board; creation must open a local `.html` or `.htm` file. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new /tmp/report.html --den-api` |
+| `den board web new` | `<url> [--end-of <desk-id> \| --left-of <board-id> \| --right-of <board-id>] [--width <points>] [--focus] [--den-api] [--background]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. `--den-api` enables and persists the [Den JavaScript API](den-api.md) for local HTML files in that Board; creation must open a local `.html` or `.htm` file. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new /tmp/report.html --den-api` |
 | `den board web navigate` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den board web navigate https://example.com` |
 | `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
 | `den board web status` | None | Print the main page's final HTTP status code, or `null` when unavailable. | `den board web status` |
+| `den board web background` | `[on\|off] [--board <id>]` | Read or persist Run in Background without focusing or reloading the Board. | `den board web background on --board <id> --json` |
 | `den board web reload` | `[--den-api \| --no-den-api]` | Reload Current Sheet. `--den-api` enables and saves this Board's API flag from a local HTML Sheet; `--no-den-api` disables it. Without either, preserve the setting. See [Den JavaScript API](den-api.md). | `den board web reload --board <id> --den-api` |
 | `den board web eval` | `<script>` | Evaluate JavaScript and return the result. | `den board web eval document.title` |
 | `den board web text` | None | Extract visible text content, including open shadow DOM, from the Current Sheet. For documents such as XML without an HTML body, return the root element's `textContent`. | `den board web text` |

@@ -415,7 +415,7 @@ enum DenIPCClient {
         let requiresValidCallerBoardID: Bool
         switch operation {
         case .sheet(_, .automatic), .sheetWithSnapshot(_, .automatic, _),
-            .boardClose(.automatic), .terminal(_, .automatic):
+            .boardClose(.automatic), .boardBackgroundExecution(_, .automatic), .terminal(_, .automatic):
             requiresValidCallerBoardID = true
         default:
             requiresValidCallerBoardID = false

@@ -100,6 +100,10 @@ final class DenIPCService {
             return await withBoardTarget(target, context: request.context, kind: kind) {
                 self.handleBoardClose(target: $0)
             }
+        case .boardBackgroundExecution(let enabled, let target):
+            return await withBoardTarget(target, context: request.context, kind: .web) {
+                self.handleBoardBackgroundExecution(enabled: enabled, target: $0)
+            }
         case .createWebBoard(let payload, let destination):
             guard !payload.url.isEmpty else {
                 return DenIPCResponse(result: .failure("Usage: den board web new <url> [--focus]"), target: .none)
@@ -1067,6 +1071,26 @@ final class DenIPCService {
         )
     }
 
+    private func handleBoardBackgroundExecution(
+        enabled: Bool?, target resolved: ResolvedBoardTarget
+    ) -> DenIPCOperationResult {
+        guard let enabled else { return .success(.enabled(resolved.board.backgroundExecutionEnabled)) }
+        let window = resolved.window
+        guard window.resources.snapshot.activeDrag == nil else {
+            return .failure("Cannot change background execution during a drag; finish the drag and retry")
+        }
+        let saved = window.resources.boardUpdates.setBackgroundExecutionEnabled(resolved.board.id, enabled: enabled)
+        if let board = window.resources.state.board(for: resolved.board.id), enabled {
+            _ = window.board.webRuntime(board)
+        } else {
+            window.resources.webRuntimes[resolved.board.id]?.setBackgroundExecutionEnabled(false)
+        }
+        guard saved else {
+            return .failure("Background execution changed for this session, but could not be saved")
+        }
+        return .success(.enabled(enabled))
+    }
+
     private func handleWebBoardNew(
         payload: DenBoardWebNewPayload,
         target resolved: ResolvedDeskTarget,
@@ -1085,6 +1109,7 @@ final class DenIPCService {
                 searchEngine: resolved.window.searchEngine(),
                 target: creationTarget,
                 denAPI: payload.denAPI == true,
+                backgroundExecution: payload.backgroundExecution == true,
                 notify: resolved.window.board.creationNotice
             ), let board = resolved.window.resources.snapshot.den.board(for: boardID)
         else {
