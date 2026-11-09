@@ -35,6 +35,13 @@ public struct BoardHeaderTitle: View {
                         .foregroundStyle(.secondary)
                         .help("Anchor Board")
                 }
+
+                if board.backgroundExecutionEnabled {
+                    Image(systemSymbol: .boltFill)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .help("Run in Background Enabled")
+                }
             }
 
             if let supplementaryText {
@@ -62,6 +69,7 @@ public struct BoardHeaderTitle: View {
         [
             board.isSideBoard ? "Side board" : nil,
             isAnchor ? "Anchor board" : nil,
+            board.backgroundExecutionEnabled ? "Run in Background enabled" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
             isFocused ? "Focused board" : "Board",

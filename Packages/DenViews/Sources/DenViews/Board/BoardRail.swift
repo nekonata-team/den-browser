@@ -296,6 +296,7 @@ public struct BoardRail<Favicon: View>: View {
         return [
             board.isSideBoard ? "Side Board" : nil,
             isAnchor ? "Anchor Board" : nil,
+            board.backgroundExecutionEnabled ? "Run in Background enabled" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
             unreadNotificationCount > 0 ? "\(unreadNotificationCount) unread notifications" : nil,

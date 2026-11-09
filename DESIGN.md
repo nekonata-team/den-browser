@@ -46,6 +46,8 @@ Package responsibilities are defined in [Architecture](docs/architecture.md).
   Show a trailing arrow for switching, `plus.app` for creation, and chevron for command execution.
   Hide the toolbar entrance in Overview and Zen View; keyboard entrances remain available in Zen View.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
+- Show enabled Run in Background beside the Board title with a secondary `bolt.fill` icon,
+  matching the Anchor indicator's size in the header and Board Rail. Include the setting in accessibility labels.
 - Keep Board-kind icon mappings in [BoardSymbol.swift](Packages/DenViews/Sources/DenViews/Board/BoardSymbol.swift)
   in DenViews as the single source of truth. Boards, Presets, Recent Items, Essentials, and related controls must
   use that shared mapping rather than select SF Symbols independently. Keep URL-item and action icons distinct
