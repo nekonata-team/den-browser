@@ -229,6 +229,15 @@ enum DenIPCClient {
             }
         case .drawerItem(let id, _):
             print(id)
+        case .notifications(let notifications):
+            for notification in notifications {
+                let mark = notification.isRead ? "read" : "unread"
+                let title = notification.title.map { "\($0): " } ?? ""
+                print(
+                    "\(notification.id.uuidString) [\(mark)] \(notification.createdAt) board=\(notification.boardID.uuidString)"
+                )
+                print("\(title)\(notification.body)")
+            }
         case .profiles(let profiles):
             writeProfiles(profiles)
         case .denOverview(let overview):

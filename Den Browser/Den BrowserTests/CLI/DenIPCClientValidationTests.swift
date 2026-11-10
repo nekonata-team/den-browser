@@ -5,6 +5,84 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: [false, true])
+    func notificationListForwardsFiltersAndReturnsPublicFields(filtered: Bool) async throws {
+        // Arrange
+        let boardID = UUID()
+        let id = UUID()
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            let expected = DenIPCOperation.listNotifications(
+                unreadOnly: filtered, boardID: filtered ? boardID : nil, limit: filtered ? 10 : nil)
+            return encodedResponse(
+                request?.operation == expected
+                    ? .success(
+                        .notifications([
+                            DenNotificationInfo(
+                                id: id, title: "Title", body: "Body", boardID: boardID,
+                                createdAt: "2026-11-11T00:00:00Z", isRead: false)
+                        ])) : .failure("Unexpected notification request"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["notification", "list"] + (filtered ? ["--unread", "--board", boardID.uuidString, "--limit", "10"] : []),
+            socketPath: socketPath
+        )
+        let object = try jsonResult(result.output)
+        let item = try #require((object["notifications"] as? [[String: Any]])?.first)
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(item["id"] as? String == id.uuidString)
+        #expect(item["board_id"] as? String == boardID.uuidString)
+        #expect(item["created_at"] as? String == "2026-11-11T00:00:00Z")
+        #expect(item["is_read"] as? Bool == false)
+        #expect(item["title"] as? String == "Title")
+        #expect(item["body"] as? String == "Body")
+    }
+
+    @Test(arguments: [false, true])
+    func notificationReadForwardsIdentity(isRead: Bool) async throws {
+        // Arrange
+        let id = UUID()
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(
+                request?.operation == .setNotificationRead(id: id, isRead: isRead) ? .success() : .failure("Wrong ID"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["notification", isRead ? "read" : "unread", id.uuidString], socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(try jsonResult(result.output)["ok"] as? Bool == true)
+    }
+
+    @Test(arguments: [
+        ["list", "--limit", "0"], ["list", "--limit", "-1"], ["list", "--limit", "1.5"],
+        ["list", "--board", "invalid"], ["read", "invalid"], ["read"], ["list", "--count"],
+        ["unread", "invalid"], ["unread"],
+    ])
+    func notificationRejectsInvalidArguments(arguments: [String]) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+
+        // Act
+        let result = try await runCLI(["notification"] + arguments, socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 64)
+    }
+
     @Test(arguments: [nil, 1, 200] as [Int?])
     func terminalTextForwardsHistoryLimit(lines: Int?) async throws {
         // Arrange

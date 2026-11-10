@@ -269,6 +269,31 @@ public nonisolated struct DenBoardLocation: Codable, Sendable {
     }
 }
 
+public nonisolated struct DenNotificationInfo: Codable, Sendable {
+    public let id: UUID
+    public let title: String?
+    public let body: String
+    public let boardID: UUID
+    public let createdAt: String
+    public let isRead: Bool
+
+    public init(id: UUID, title: String?, body: String, boardID: UUID, createdAt: String, isRead: Bool) {
+        self.id = id
+        self.title = title
+        self.body = body
+        self.boardID = boardID
+        self.createdAt = createdAt
+        self.isRead = isRead
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, body
+        case boardID = "board_id"
+        case createdAt = "created_at"
+        case isRead = "is_read"
+    }
+}
+
 public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case empty
     case message(String)
@@ -283,6 +308,7 @@ public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case createdDesk(id: String)
     case removedDesk(id: String)
     case drawerItems([DenDrawerItemInfo])
+    case notifications([DenNotificationInfo])
     case drawerItem(id: String, message: String)
     case profiles([DenProfileInfo])
     case denOverview(DenIPCOverview)
@@ -423,6 +449,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case removedDeskID = "removed_desk_id"
         case drawerItemId = "drawer_item_id"
         case drawerItems = "drawer_items"
+        case notifications
         case profiles
         case profile
         case profileID = "profile_id"
@@ -493,6 +520,8 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
             try container.encode(id, forKey: .removedDeskID)
         case .drawerItems(let items):
             try container.encode(items, forKey: .drawerItems)
+        case .notifications(let notifications):
+            try container.encode(notifications, forKey: .notifications)
         case .drawerItem(let id, let message):
             try container.encode(id, forKey: .drawerItemId)
             try container.encode(message, forKey: .message)

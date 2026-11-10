@@ -14,6 +14,7 @@ struct DenCLI: AsyncParsableCommand {
             BoardCommand.self,
             DeskCommand.self,
             DrawerCommand.self,
+            NotificationCommand.self,
             ProfileCommand.self,
             MCPCommand.self,
         ]

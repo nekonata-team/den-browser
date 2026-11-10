@@ -137,6 +137,30 @@ final class DenIPCService {
             return await withBoardTarget(target, context: request.context, kind: .terminal) {
                 await self.handleTerminalCommand(command, target: $0)
             }
+        case .listNotifications(let unreadOnly, let boardID, let limit):
+            if let limit, limit <= 0 {
+                return DenIPCResponse(result: .failure("--limit must be a positive integer"), target: .none)
+            }
+            return withDeskTarget(.automatic, context: request.context) { resolved in
+                let notifications = resolved.window.resources.snapshot.notifications.filter {
+                    (!unreadOnly || !$0.isRead) && (boardID == nil || $0.boardID.rawValue == boardID)
+                }
+                let items = notifications.prefix(limit ?? notifications.count).map {
+                    DenNotificationInfo(
+                        id: $0.id, title: $0.title, body: $0.body, boardID: $0.boardID.rawValue,
+                        createdAt: $0.createdAt.ISO8601Format(), isRead: $0.isRead)
+                }
+                return .success(.notifications(items))
+            }
+        case .setNotificationRead(let id, let isRead):
+            return withDeskTarget(.automatic, context: request.context) { resolved in
+                guard resolved.window.resources.snapshot.notifications.contains(where: { $0.id == id }) else {
+                    return .failure(
+                        "Notification not found: \(id). Run 'den notification list' to find retained Notifications.")
+                }
+                resolved.window.resources.notificationOperations.setRead(id, isRead: isRead)
+                return .success()
+            }
         case .readInspection(let boardID):
             return await withBoardTarget(
                 .explicit(boardID), context: request.context, kind: .inspection

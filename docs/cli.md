@@ -347,6 +347,31 @@ Commands inspecting and managing profiles in Den Browser.
 
 ---
 
+### 3.9 `den notification` (Notifications)
+
+Notifications are Profile-owned events retained during the current app run, separate from a program's current status.
+These commands use the common Profile resolution and output options and do not change focus.
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den notification list` | `[--unread] [--board <uuid>] [--limit <N>]` | List retained Notifications, newest first, without marking them as read. | `den notification list --unread --limit 10 --json` |
+| `den notification read` | `<uuid>` | Mark one Notification as read without opening its source Board. | `den notification read <notification-id>` |
+| `den notification unread` | `<uuid>` | Mark one Notification as unread without opening its source Board. | `den notification unread <notification-id>` |
+
+With no filters, `list` returns all retained Notifications in the resolved Profile, across all Desks.
+It does not implicitly filter to the caller's Board. `--board` filters by source Board UUID, including Notifications
+whose Board has since been removed; a valid UUID with no matching Notifications returns an empty list.
+`--limit` must be a positive integer and applies after filtering. Omission returns all retained matches (at most 200).
+The oldest Notifications are evicted as new ones exceed the retention limit; Notifications are not persisted across app restarts.
+
+JSON returns `{"ok":true,"notifications":[{"id":"<uuid>","title":"Build","body":"Passed","board_id":"<uuid>","created_at":"2026-11-11T00:00:00Z","is_read":false}]}`.
+`title` is omitted when absent; `created_at` is an ISO 8601 timestamp. No matches returns `notifications: []`.
+TTY output shows each Notification's UUID, read status, timestamp, source Board UUID, title and body.
+
+`read` and `unread` succeed when the Notification already has the requested status and fail when its UUID is not retained in the resolved Profile.
+Both work even if the source Board no longer exists. Success returns `{"ok":true}` in JSON and is silent on a TTY.
+Malformed UUIDs and invalid limits exit with `64`; missing Notifications exit with `1`.
+
 ## 4. Output Contract (Dual Human + Agent Ergonomics)
 
 See [ADR 0072](adr/0072-use-cli-exit-codes-for-operation-completion.md) for the exit-code policy and its relationship to JSON results.

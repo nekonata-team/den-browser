@@ -62,6 +62,8 @@ public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case createDesk(label: String, focus: Bool)
     case removeDesk(deskID: UUID, force: Bool)
     case drawer(command: DenIPCCommand.Drawer, target: DeskTarget)
+    case listNotifications(unreadOnly: Bool, boardID: UUID?, limit: Int?)
+    case setNotificationRead(id: UUID, isRead: Bool)
     case terminal(command: DenIPCCommand.Terminal, target: BoardTarget)
     case readInspection(boardID: UUID)
     case profileList

@@ -32,10 +32,16 @@ public final class NotificationOperations {
     }
 
     public func markRead(_ notificationID: UUID) {
-        guard reader.snapshot.notifications.contains(where: { $0.id == notificationID && !$0.isRead }) else { return }
+        setRead(notificationID, isRead: true)
+    }
+
+    public func setRead(_ notificationID: UUID, isRead: Bool) {
+        guard reader.snapshot.notifications.contains(where: { $0.id == notificationID && $0.isRead != isRead }) else {
+            return
+        }
         writer.update { state in
             guard let index = state.notifications.firstIndex(where: { $0.id == notificationID }) else { return }
-            state.notifications[index].isRead = true
+            state.notifications[index].isRead = isRead
         }
     }
 
