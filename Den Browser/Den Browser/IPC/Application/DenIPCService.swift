@@ -1475,6 +1475,22 @@ final class DenIPCService {
             runtime.runCommand(command)
             return .success(.message("Ran command in Terminal Board \(board.id.rawValue.uuidString)"))
 
+        case .press(let rawKey):
+            let chord: TerminalKeyPress
+            do {
+                chord = try TerminalKeyPress(rawKey)
+            } catch {
+                return .failure(error.localizedDescription)
+            }
+            let runtime = window.board.terminalRuntime(board)
+            guard runtime.startForCLI() else {
+                return .failure("Failed to start Terminal Board \(board.id.rawValue.uuidString)")
+            }
+            guard runtime.pressKey(chord) else {
+                return .failure("Could not send key to Terminal Board \(board.id.rawValue.uuidString)")
+            }
+            return .success()
+
         case .kill(let rawSignal):
             let signal = rawSignal.trimmingCharacters(in: .whitespacesAndNewlines)
             let signalName =

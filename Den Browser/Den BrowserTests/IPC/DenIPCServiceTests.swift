@@ -529,7 +529,7 @@ struct DenIPCServiceTests {
         #expect(session.resources.state.board(for: terminalID)?.width == 1_500)
     }
 
-    @Test(arguments: ["text", "send", "run"])
+    @Test(arguments: ["text", "send", "run", "press"])
     func terminalCommandsStartUnpresentedSessionsWithoutChangingDesk(command: String) async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
@@ -552,9 +552,16 @@ struct DenIPCServiceTests {
         #expect(runtime.readText() == nil)
         let service = DenIPCService(profileManager: manager)
         let operation: DenIPCCommand.Terminal
+        if command == "press" {
+            let invalid = await service.handleResult(
+                ipcRequest(.terminal(command: .press(key: "Unknown"), target: .explicit(boardID.rawValue))))
+            #expect(!invalid.isOk)
+            #expect(runtime.readText() == nil)
+        }
         switch command {
         case "text": operation = .text()
         case "send": operation = .send(text: "den_cli_value=17")
+        case "press": operation = .press(key: "Enter")
         default: operation = .run(command: "den_cli_value=17")
         }
 
@@ -563,7 +570,7 @@ struct DenIPCServiceTests {
             ipcRequest(.terminal(command: operation, target: .explicit(boardID.rawValue))))
         #expect(result.isOk)
         #expect(runtime.readText() != nil)
-        if command == "text" {
+        if command == "text" || command == "press" {
             runtime.runCommand("den_cli_value=17")
         }
         let continuation = command == "send" ? "; " : ""

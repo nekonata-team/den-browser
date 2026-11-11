@@ -1,4 +1,5 @@
 import DenDomain
+import DenIPCProtocol
 import Foundation
 import GhosttyTerminal
 import Testing
@@ -7,6 +8,36 @@ import Testing
 
 @MainActor
 struct TerminalRuntimeTests {
+    @Test func keyPressesReachTheProcessAsKeysEvenWithBracketedPasteEnabled() async throws {
+        let runtime = TerminalRuntime(
+            workingDirectory: "/tmp",
+            command:
+                "/bin/sh -c 'stty raw -echo; printf \"\\033[?2004h\\033[?1lREADY\\r\\n\"; od -An -tx1 -N 13; stty sane; printf \"\\033[?2004lDONE\\n\"; sleep 1'",
+            events: .init(
+                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+        defer { runtime.dispose() }
+        #expect(runtime.startForCLI())
+        let readyDeadline = ContinuousClock.now + .seconds(5)
+        while runtime.readText()?.contains("READY") != true, ContinuousClock.now < readyDeadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(runtime.readText()?.contains("READY") == true)
+
+        for key in ["Enter", "Tab", "Escape", "Shift+Tab", "ArrowDown", "Ctrl+C", "Ctrl+Alt+a", "Shift+a"] {
+            #expect(try runtime.pressKey(DenIPCProtocol.TerminalKeyPress(key)))
+        }
+        let deadline = ContinuousClock.now + .seconds(5)
+        while runtime.readText()?.contains("DONE") != true, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let output = try #require(runtime.readText()).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        #expect(output.contains("0d 09 1b 1b 5b 5a 1b 5b 42 03 1b 01 41"), "\(output)")
+        #expect(output.contains("DONE"))
+        runtime.dispose()
+        #expect(try !runtime.pressKey(DenIPCProtocol.TerminalKeyPress("Enter")))
+    }
+
     @Test func cliStartupRunsWithoutPresentationAndSurvivesFirstDisplay() async throws {
         // Arrange
         let runtime = TerminalRuntime(

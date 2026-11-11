@@ -71,6 +71,7 @@ public nonisolated enum DenIPCCommand {
         case text(lines: Int? = nil)
         case send(text: String)
         case run(command: String)
+        case press(key: String)
         case kill(signal: String)
     }
 }

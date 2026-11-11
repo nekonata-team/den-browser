@@ -97,6 +97,9 @@ To stop the foreground process:
 den board terminal kill --board <id> --json
 ```
 
+Use `den board terminal press Enter --board <id> --json` to confirm a terminal prompt without pasting text.
+`press` also accepts keys such as `Escape`, `ArrowDown`, and chords such as `Ctrl+C` or `Shift+Tab`.
+
 Terminal Boards suit long-running, human-visible processes and interactive TUIs.
 Use `den board terminal text --lines <N> --board <id> --json` to read recent retained history beyond the viewport.
 This does not recover text erased by the application or discarded from scrollback; see `text --help`.

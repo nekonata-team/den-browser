@@ -251,6 +251,7 @@ struct BoardTerminalCommand: ParsableCommand {
             TerminalTextCommand.self,
             TerminalSendCommand.self,
             TerminalRunCommand.self,
+            TerminalPressCommand.self,
             TerminalKillCommand.self,
         ]
     )

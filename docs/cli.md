@@ -272,13 +272,23 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 |---|---|---|---|
 | `den board terminal new` | `[<path>] [--end-of <desk-id> \| --left-of <board-id> \| --right-of <board-id>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --end-of <desk-id> --run "npm test" --width 800 --focus` |
 | `den board terminal text` | `[--lines <N>] [--board <id>]` | Read visible terminal screen text, or the last N lines of retained history and screen text. N must be positive. | `den board terminal text --lines 200` |
-| `den board terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den board terminal send "git status"` |
+| `den board terminal send` | `<text> [--board <id>]` | Paste text into the Terminal Session without pressing Enter. | `den board terminal send "git status"` |
 | `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |
+| `den board terminal press` | `<key> [--board <id>]` | Press and release a key, optionally with modifiers, in the Terminal Session. | `den board terminal press Shift+Tab` |
 | `den board terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den board terminal kill -s TERM` |
 
-`terminal new`, `send`, `run`, and `text` start the session even when its Desk has never been displayed.
+`terminal new`, `send`, `run`, `press`, and `text` start the session even when its Desk has never been displayed.
 The Profile must have an open window; the displayed Desk and focus are preserved unless creation requests `--focus`.
 If session startup fails during creation, the error includes the created `board_id` for retrying against that Board.
+
+`press` sends key events rather than pasted text, so `press Enter` can confirm an interactive prompt without adding text.
+Keys are case-insensitive: `Enter`, `Escape`, `Tab`, `Backspace`, `Delete`, `Home`, `End`, `PageUp`, `PageDown`,
+`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Space`, or a single printable ASCII key on a US layout.
+Combine `Ctrl`, `Alt`, `Shift`, and `Meta` (`Cmd`) with `+`, for example `Ctrl+C`, `Shift+Tab`, or `Ctrl+Shift+C`.
+Letter case does not imply Shift; use `Shift+A` to type uppercase A. Use `Plus` in a chord such as `Ctrl+Plus`.
+Terminal key encoding and configured key bindings apply; `Alt` follows Ghostty's [macos-option-as-alt setting](https://ghostty.org/docs/config/reference#macos-option-as-alt).
+Unsupported keys or invalid modifiers exit with `64` before connecting. IPC callers are also validated before starting the session.
+Key delivery does not change Board or Desk focus; success acknowledges delivery, not the receiving program's action.
 
 `terminal text --lines N` reads retained scrollback and the screen without changing the viewport or focus.
 It returns at most N newline-separated lines; soft-wrapped text is joined, and blank lines count.

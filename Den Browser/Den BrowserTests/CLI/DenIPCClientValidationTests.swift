@@ -5,6 +5,30 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: ["Enter", "Shift+Tab", "Ctrl+C", "Alt+ArrowLeft", "Meta+A"])
+    func terminalPressForwardsKeys(key: String) async throws {
+        let boardID = UUID()
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(
+                request?.operation == .terminal(command: .press(key: key), target: .explicit(boardID))
+                    ? .success() : .failure("Unexpected terminal key"))
+        }
+        defer { server.stop() }
+        let result = try await runCLI(
+            ["board", "terminal", "press", key, "--board", boardID.uuidString], socketPath: socketPath)
+        #expect(result.status == 0)
+        #expect(try jsonResult(result.output)["ok"] as? Bool == true)
+    }
+
+    @Test(arguments: ["Unknown", "Ctrl+", "Hyper+Enter", "Ctrl+Ctrl+C"])
+    func terminalPressRejectsInvalidKeysBeforeConnecting(key: String) async throws {
+        let result = try await runCLI(["board", "terminal", "press", key], socketPath: temporarySocketPath())
+        #expect(result.status == 64)
+    }
+
     @Test(arguments: [false, true])
     func notificationListForwardsFiltersAndReturnsPublicFields(filtered: Bool) async throws {
         // Arrange

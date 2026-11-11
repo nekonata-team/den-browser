@@ -57,6 +57,23 @@ struct TerminalRunCommand: ParsableCommand {
     }
 }
 
+struct TerminalPressCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "press", abstract: "Press and release a terminal key, optionally with modifiers")
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Key or chord (e.g. Enter, Escape, ArrowDown, Ctrl+C, Shift+Tab)") var key: String
+
+    func run() throws {
+        try DenIPCClient.execute(operation: operation(), options: target.common)
+    }
+
+    private func operation() throws -> DenIPCOperation {
+        _ = try TerminalKeyPress(key)
+        return .terminal(command: .press(key: key), target: try DenIPCClient.boardTarget(target.boardID))
+    }
+}
+
 struct TerminalKillCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "kill",
