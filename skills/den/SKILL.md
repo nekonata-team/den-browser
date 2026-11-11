@@ -1,6 +1,6 @@
 ---
 name: den
-description: Control Den Browser through its first-party den CLI for Boards, Sheets, Drawer items, and agent orchestration in Terminal Boards.
+description: Control Den Browser through its first-party den CLI for Boards, Sheets, Drawer items, and task handoff through Terminal Boards.
 ---
 
 # Den Browser (`den`)
@@ -100,7 +100,16 @@ den board terminal kill --board <id> --json
 Terminal Boards suit long-running, human-visible processes and interactive TUIs.
 Use `den board terminal text --lines <N> --board <id> --json` to read recent retained history beyond the viewport.
 This does not recover text erased by the application or discarded from scrollback; see `text --help`.
-When delegating to an interactive CLI agent, follow [Agent orchestration through Terminal Boards](references/cao.md).
+
+To hand off a task, open a Terminal Board and launch the chosen CLI agent with a task prompt:
+
+```sh
+den board terminal new <working-directory> --run 'codex "Review the changes in this directory and report findings."' --json
+```
+
+Use the selected agent's supported CLI syntax; include the goal, working directory, allowed changes, and completion criteria in the prompt as needed.
+Shell-quote both the startup command and its prompt argument safely.
+Success acknowledges Board creation, not task acceptance or completion. Leave execution management and result collection to the user or external tools.
 
 ## Drawer work
 
