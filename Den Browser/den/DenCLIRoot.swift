@@ -2,7 +2,6 @@ import ArgumentParser
 import Foundation
 
 @main
-@available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
 struct DenCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "den",
