@@ -24,6 +24,7 @@ publish $version: (_validate-version version) _require-main _commit-version-if-n
 [confirm("Prepare and publish release without manual verification?")]
 ship $version: (_validate-version version) _require-main
     caffeinate -dimsu just release _ship-inner "$version"
+    -afplay /System/Library/Sounds/Blow.aiff
 
 [private]
 _ship-inner $version: (prepare version)
