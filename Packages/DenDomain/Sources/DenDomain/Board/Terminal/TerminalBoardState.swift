@@ -41,13 +41,17 @@ public enum TerminalBoardState: Codable, Equatable {
         case .zellij:
             self = .zellij(
                 ZellijBoardState(
-                    sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName)))
+                    sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName)
+                )
+            )
         case .zmx:
             self = .zmx(
                 ZmxBoardState(
                     sessionName: try container.decode(String.self, forKey: .sessionName),
                     workingDirectory: try container.decode(String.self, forKey: .workingDirectory),
-                    rootSessionName: try container.decodeIfPresent(String.self, forKey: .rootSessionName)))
+                    rootSessionName: try container.decodeIfPresent(String.self, forKey: .rootSessionName)
+                )
+            )
         }
     }
 

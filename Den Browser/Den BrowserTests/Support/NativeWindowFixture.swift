@@ -15,7 +15,10 @@ func withTestSession(
     let session = ProfileWindowSession(
         resources: resources,
         configuration: makeTestBoardRuntimeConfiguration(
-            defaults: defaults, terminalCommandRunner: terminalCommandRunner))
+            defaults: defaults,
+            terminalCommandRunner: terminalCommandRunner
+        )
+    )
     try body(session)
 }
 
@@ -31,7 +34,10 @@ func withTestSession(
     let session = ProfileWindowSession(
         resources: resources,
         configuration: makeTestBoardRuntimeConfiguration(
-            defaults: defaults, terminalCommandRunner: terminalCommandRunner))
+            defaults: defaults,
+            terminalCommandRunner: terminalCommandRunner
+        )
+    )
     try await body(session)
 }
 

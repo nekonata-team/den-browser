@@ -18,11 +18,18 @@ public struct BoardStripModel {
     private let readMotion: () -> MotionPreference
 
     public init(
-        state: DenStateStore, movement: BoardMovement, sizing: BoardSizing, deskUpdates: DeskUpdates,
-        presentedDeskID: @escaping () -> DeskID, prepareDrag: @escaping () -> Void,
-        focus: @escaping (BoardID) -> Void, remove: @escaping (BoardID) -> Void,
-        hasWebRuntime: @escaping (BoardID) -> Bool, activateWebRuntime: @escaping (BoardState) -> Void,
-        centering: @escaping () -> FocusedBoardCentering, motion: @escaping () -> MotionPreference
+        state: DenStateStore,
+        movement: BoardMovement,
+        sizing: BoardSizing,
+        deskUpdates: DeskUpdates,
+        presentedDeskID: @escaping () -> DeskID,
+        prepareDrag: @escaping () -> Void,
+        focus: @escaping (BoardID) -> Void,
+        remove: @escaping (BoardID) -> Void,
+        hasWebRuntime: @escaping (BoardID) -> Bool,
+        activateWebRuntime: @escaping (BoardState) -> Void,
+        centering: @escaping () -> FocusedBoardCentering,
+        motion: @escaping () -> MotionPreference
     ) {
         self.state = state
         self.movement = movement

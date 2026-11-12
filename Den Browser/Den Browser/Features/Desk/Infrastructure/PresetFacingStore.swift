@@ -84,7 +84,9 @@ final class PresetFacingStore {
             for index in 0..<boardCount {
                 if let cgImage = await disk.image(for: presetID, at: index) {
                     loaded[index] = NSImage(
-                        cgImage: cgImage, size: CGSize(width: cgImage.width, height: cgImage.height))
+                        cgImage: cgImage,
+                        size: CGSize(width: cgImage.width, height: cgImage.height)
+                    )
                 }
             }
             if !Task.isCancelled {

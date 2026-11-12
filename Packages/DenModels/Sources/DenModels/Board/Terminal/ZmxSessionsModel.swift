@@ -57,7 +57,8 @@ public final class ZmxSessionsModel {
             return ZmxSessionGroup(
                 rootSessionName: group.rootSessionName,
                 isRootActive: group.isRootActive,
-                childSessionNames: childSessionNames)
+                childSessionNames: childSessionNames
+            )
         }
     }
 

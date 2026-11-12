@@ -23,7 +23,9 @@ public enum ProfileColor: Codable, Equatable, Hashable, Identifiable, Sendable {
             case "gray": self = .gray
             default:
                 throw DecodingError.dataCorruptedError(
-                    in: singleValue, debugDescription: "Unknown ProfileColor preset")
+                    in: singleValue,
+                    debugDescription: "Unknown ProfileColor preset"
+                )
             }
             return
         }
@@ -31,13 +33,18 @@ public enum ProfileColor: Codable, Equatable, Hashable, Identifiable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         guard try container.decode(Kind.self, forKey: .kind) == .sRGB else {
             throw DecodingError.dataCorruptedError(
-                forKey: .kind, in: container, debugDescription: "Unsupported ProfileColor kind")
+                forKey: .kind,
+                in: container,
+                debugDescription: "Unsupported ProfileColor kind"
+            )
         }
         self = .custom(
             ProfileRGB(
                 red: try container.decode(UInt8.self, forKey: .red),
                 green: try container.decode(UInt8.self, forKey: .green),
-                blue: try container.decode(UInt8.self, forKey: .blue)))
+                blue: try container.decode(UInt8.self, forKey: .blue)
+            )
+        )
     }
 
     public func encode(to encoder: Encoder) throws {

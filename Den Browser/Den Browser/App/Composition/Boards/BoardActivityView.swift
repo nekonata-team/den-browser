@@ -21,10 +21,12 @@ struct BoardActivityView: View {
     var body: some View {
         DenViews.BoardActivityView(profileColor: profileColor) { board in
             DenViews.BoardActivityRow(
-                board: board, usage: sampling.usage(for: board),
+                board: board,
+                usage: sampling.usage(for: board),
                 processLabel: sampling.processLabel(for: board),
                 processIdentifier: sampling.processIdentifier(for: board),
-                sharedWebBoardCount: sampling.sharedWebBoardCount(for: board), profileColor: profileColor,
+                sharedWebBoardCount: sampling.sharedWebBoardCount(for: board),
+                profileColor: profileColor,
                 onOpen: { windowModel.enterBoardFromActivity(board.id) },
                 onRemove: { remove(board.id) },
                 stateIcon: {
@@ -40,7 +42,8 @@ struct BoardActivityView: View {
                     if let runtime = resources.terminalRuntimes[board.id] {
                         ObservedTerminalActivityStatus(runtime: runtime)
                     }
-                })
+                }
+            )
         }
         .task {
             await sampling.run()
@@ -53,8 +56,10 @@ private struct ObservedWebActivityIcon: View {
     var body: some View {
         DenViews.WebActivityStateIcon(
             didTerminateContentProcess: runtime.didTerminateContentProcess,
-            isLoading: runtime.isLoading, estimatedProgress: runtime.estimatedProgress,
-            webProcessIsResponsive: runtime.webProcessIsResponsive)
+            isLoading: runtime.isLoading,
+            estimatedProgress: runtime.estimatedProgress,
+            webProcessIsResponsive: runtime.webProcessIsResponsive
+        )
     }
 }
 
@@ -62,8 +67,11 @@ private struct ObservedTerminalActivityStatus: View {
     @ObservedObject var runtime: TerminalRuntime
     var body: some View {
         DenViews.TerminalActivityStatus(
-            progressLabel: progressLabel, exitCode: runtime.lastCommandResult?.exitCode,
-            durationNanos: runtime.lastCommandResult?.durationNanos, lastBellDate: runtime.lastBellDate)
+            progressLabel: progressLabel,
+            exitCode: runtime.lastCommandResult?.exitCode,
+            durationNanos: runtime.lastCommandResult?.durationNanos,
+            lastBellDate: runtime.lastBellDate
+        )
     }
     private var progressLabel: String? {
         guard let state = runtime.progressState else { return nil }

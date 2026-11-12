@@ -13,7 +13,8 @@ struct DenWindowCompositionTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.configuration.preferences.setRememberBoardInputMethod(true)
         let composition = DenWindowComposition(session: session)
         composition.connect()
@@ -39,7 +40,8 @@ struct DenWindowCompositionTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.configuration.preferences.setRememberBoardInputMethod(true)
         let composition = DenWindowComposition(session: session)
         composition.connect()
@@ -55,9 +57,18 @@ struct DenWindowCompositionTests {
         tracker.isHandlingKeyboardAction = false
         let event = try #require(
             NSEvent.keyEvent(
-                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
-                windowNumber: 0, context: nil, characters: "a", charactersIgnoringModifiers: "a",
-                isARepeat: false, keyCode: 0))
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: "a",
+                charactersIgnoringModifiers: "a",
+                isARepeat: false,
+                keyCode: 0
+            )
+        )
 
         // Act
         let consumed = KeyboardController.handle(event, session: session, windowModel: composition.model)
@@ -71,7 +82,8 @@ struct DenWindowCompositionTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.context.feedback.publish("Ready")
 
         // Act
@@ -86,7 +98,8 @@ struct DenWindowCompositionTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.context.feedback.publish("Ready")
         let composition = DenWindowComposition(session: session)
         defer { composition.disconnect() }
@@ -104,7 +117,8 @@ struct DenWindowCompositionTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         session.context.feedback.publish("Ready")

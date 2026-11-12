@@ -40,13 +40,15 @@ final class ProfileExtensionCoordinator {
             websiteDataStore: websiteDataStore,
             userContentController: userContentController,
             descriptors: effectiveDescriptors,
-            isEphemeral: isEphemeral)
+            isEphemeral: isEphemeral
+        )
         hosts[profileID] = host
         return host
     }
 
     func setEnabled(
-        _ enabled: Bool, sessions: [(windowID: UUID, profileID: ProfileID?, session: ProfileWindowSession)]
+        _ enabled: Bool,
+        sessions: [(windowID: UUID, profileID: ProfileID?, session: ProfileWindowSession)]
     ) {
         preferences.setUBOLiteEnabled(enabled)
         updateSessions(sessions)

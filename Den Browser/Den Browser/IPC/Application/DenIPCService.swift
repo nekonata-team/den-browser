@@ -71,7 +71,11 @@ final class DenIPCService {
             return await withWebBoardTarget(target: target, context: request.context, command: command) { resolved in
                 let result = await self.performSheetCommand(command, target: resolved)
                 return await self.appendRequestedSnapshot(
-                    to: result, command: command, snapshot: snapshot, target: resolved)
+                    to: result,
+                    command: command,
+                    snapshot: snapshot,
+                    target: resolved
+                )
             }
         case .boardList(let target):
             return withDeskTarget(target, context: request.context) { self.handleBoardList(target: $0) }
@@ -86,7 +90,9 @@ final class DenIPCService {
         case .resizeBoard(let boardID, let width):
             guard width.isFinite, width > 0 else {
                 return DenIPCResponse(
-                    result: .failure("Board width must be a finite positive number of points"), target: .none)
+                    result: .failure("Board width must be a finite positive number of points"),
+                    target: .none
+                )
             }
             return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
                 self.handleBoardResize(width: width, target: $0)
@@ -117,7 +123,9 @@ final class DenIPCService {
             }
         case .createInspectionBoard(let targetBoardID, let payload):
             return await withBoardTarget(
-                .explicit(targetBoardID), context: request.context, kind: .web
+                .explicit(targetBoardID),
+                context: request.context,
+                kind: .web
             ) { self.handleInspectionBoardNew(payload: payload, target: $0) }
         case .deskList(let target):
             return withDeskTarget(target, context: request.context) { self.handleDeskList(target: $0) }
@@ -147,8 +155,13 @@ final class DenIPCService {
                 }
                 let items = notifications.prefix(limit ?? notifications.count).map {
                     DenNotificationInfo(
-                        id: $0.id, title: $0.title, body: $0.body, boardID: $0.boardID.rawValue,
-                        createdAt: $0.createdAt.ISO8601Format(), isRead: $0.isRead)
+                        id: $0.id,
+                        title: $0.title,
+                        body: $0.body,
+                        boardID: $0.boardID.rawValue,
+                        createdAt: $0.createdAt.ISO8601Format(),
+                        isRead: $0.isRead
+                    )
                 }
                 return .success(.notifications(items))
             }
@@ -156,14 +169,17 @@ final class DenIPCService {
             return withDeskTarget(.automatic, context: request.context) { resolved in
                 guard resolved.window.resources.snapshot.notifications.contains(where: { $0.id == id }) else {
                     return .failure(
-                        "Notification not found: \(id). Run 'den notification list' to find retained Notifications.")
+                        "Notification not found: \(id). Run 'den notification list' to find retained Notifications."
+                    )
                 }
                 resolved.window.resources.notificationOperations.setRead(id, isRead: isRead)
                 return .success()
             }
         case .readInspection(let boardID):
             return await withBoardTarget(
-                .explicit(boardID), context: request.context, kind: .inspection
+                .explicit(boardID),
+                context: request.context,
+                kind: .inspection
             ) { await self.handleInspectionRead(target: $0) }
         case .profileList:
             return DenIPCResponse(result: handleProfileList(), target: .none)
@@ -175,7 +191,10 @@ final class DenIPCService {
                 return DenIPCResponse(
                     result: .failure(
                         DenIPCTargetResolver.TargetResolutionError.profileNotFound(profileID.uuidString)
-                            .localizedDescription), target: .none)
+                            .localizedDescription
+                    ),
+                    target: .none
+                )
             }
             return DenIPCResponse(
                 result: handleProfileOpen(profile: profile, in: profileManager),
@@ -194,7 +213,10 @@ final class DenIPCService {
             return DenIPCResponse(
                 result: .failure(
                     DenIPCTargetResolver.TargetResolutionError.profileNotFound(profileID.uuidString)
-                        .localizedDescription), target: .none)
+                        .localizedDescription
+                ),
+                target: .none
+            )
         }
         for window in profileManager.ipcWindows where profileID == nil || window.profileID.rawValue == profileID {
             guard let indices = window.resources.snapshot.den.boardIndices(for: BoardID(boardID)) else { continue }
@@ -204,11 +226,18 @@ final class DenIPCService {
                     .boardExistence(
                         boardID: boardID.uuidString,
                         location: DenBoardLocation(
-                            deskID: desk.id.rawValue.uuidString, profileID: window.profileID.rawValue.uuidString))),
-                target: .board(profileID: window.profileID.rawValue, boardID: boardID))
+                            deskID: desk.id.rawValue.uuidString,
+                            profileID: window.profileID.rawValue.uuidString
+                        )
+                    )
+                ),
+                target: .board(profileID: window.profileID.rawValue, boardID: boardID)
+            )
         }
         return DenIPCResponse(
-            result: .success(.boardExistence(boardID: boardID.uuidString, location: nil)), target: .none)
+            result: .success(.boardExistence(boardID: boardID.uuidString, location: nil)),
+            target: .none
+        )
     }
 
     private func withDeskTarget(
@@ -246,11 +275,18 @@ final class DenIPCService {
                 afterBoardID = resolved.desk.boards.last?.id
             } else {
                 afterBoardID = newBoardInsertionAnchor(
-                    context: context, in: resolved.window.resources.snapshot.den, deskID: resolved.desk.id)
+                    context: context,
+                    in: resolved.window.resources.snapshot.den,
+                    deskID: resolved.desk.id
+                )
             }
         case .leftOf(let id), .rightOf(let id):
             switch DenIPCTargetResolver.resolveBoard(
-                target: .explicit(id), context: context, kind: .any, in: profileManager)
+                target: .explicit(id),
+                context: context,
+                kind: .any,
+                in: profileManager
+            )
             {
             case .success(let target):
                 let state = target.window.resources.snapshot.den
@@ -258,10 +294,15 @@ final class DenIPCService {
                     return DenIPCResponse(
                         result: .failure(
                             DenIPCTargetResolver.TargetResolutionError.boardNotFound(id.uuidString).localizedDescription
-                        ), target: .none)
+                        ),
+                        target: .none
+                    )
                 }
                 resolved = ResolvedDeskTarget(
-                    window: target.window, desk: state.desks[indices.deskOffset], profileID: target.profileID)
+                    window: target.window,
+                    desk: state.desks[indices.deskOffset],
+                    profileID: target.profileID
+                )
                 if case .leftOf = destination {
                     beforeBoardID = target.board.id
                 } else {
@@ -272,10 +313,17 @@ final class DenIPCService {
             }
         }
         let target = BoardCreation.Target(
-            presentedDeskID: resolved.window.presentedDeskID(), deskID: resolved.desk.id,
-            afterBoardID: afterBoardID, beforeBoardID: beforeBoardID, focus: focus, origin: .cli)
+            presentedDeskID: resolved.window.presentedDeskID(),
+            deskID: resolved.desk.id,
+            afterBoardID: afterBoardID,
+            beforeBoardID: beforeBoardID,
+            focus: focus,
+            origin: .cli
+        )
         return DenIPCResponse(
-            result: perform(resolved, target), target: .profile(profileID: resolved.profileID.rawValue))
+            result: perform(resolved, target),
+            target: .profile(profileID: resolved.profileID.rawValue)
+        )
     }
 
     private func withBoardTarget(
@@ -285,7 +333,11 @@ final class DenIPCService {
         perform: (ResolvedBoardTarget) async -> DenIPCOperationResult
     ) async -> DenIPCResponse {
         switch DenIPCTargetResolver.resolveBoard(
-            target: requested, context: context, kind: kind, in: profileManager)
+            target: requested,
+            context: context,
+            kind: kind,
+            in: profileManager
+        )
         {
         case .success(let resolved):
             let result = await perform(resolved)
@@ -365,7 +417,8 @@ final class DenIPCService {
                         attributes: $0.attributes,
                         labels: $0.labels,
                         capturedAt: $0.capturedAt,
-                        isConnected: page.selectionConnected ?? false)
+                        isConnected: page.selectionConnected ?? false
+                    )
                 },
                 ancestors: ancestors.map {
                     DenInspectionNodeInfo(
@@ -373,16 +426,19 @@ final class DenIPCService {
                         tag: $0.tag,
                         attributes: $0.attributes.map { DenInspectionAttributeInfo(name: $0.name, value: $0.value) },
                         text: $0.text,
-                        childCount: $0.childCount)
+                        childCount: $0.childCount
+                    )
                 },
                 events: page.events.map {
                     DenInspectionEventInfo(
                         id: $0.id,
                         time: $0.timestamp ?? $0.time,
                         level: $0.level,
-                        message: $0.message)
+                        message: $0.message
+                    )
                 },
-                eventsDropped: page.eventsDropped ?? 0)
+                eventsDropped: page.eventsDropped ?? 0
+            )
             return .success(.inspection(result))
         } catch {
             return .failure(error.localizedDescription)
@@ -430,7 +486,9 @@ final class DenIPCService {
                     boards: boards,
                     focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
                     drawerItemCount: window.resources.snapshot.den.drawerItems.count
-                )))
+                )
+            )
+        )
     }
 
     // MARK: - Sheet Commands
@@ -471,7 +529,8 @@ final class DenIPCService {
                     failedActionIndex: {
                         guard case .interact(let payload) = command else { return nil }
                         return max(payload.steps.count - 1, 0)
-                    }()),
+                    }()
+                ),
                 snapshot: result.snapshot
             )
         }
@@ -523,7 +582,8 @@ final class DenIPCService {
                 guard
                     let resolved = BoardInputResolver.resolveOpenBoardInput(
                         payload.url,
-                        searchEngine: window.searchEngine()),
+                        searchEngine: window.searchEngine()
+                    ),
                     WebURLPolicy.isSupported(resolved.url)
                 else {
                     return .failure("Invalid or unsupported URL: \(payload.url)")
@@ -540,7 +600,9 @@ final class DenIPCService {
                     within: payload.within
                 )
                 return .success(
-                    .sheet(boardID: board.id.rawValue.uuidString, url: currentURL), snapshot: snapshot)
+                    .sheet(boardID: board.id.rawValue.uuidString, url: currentURL),
+                    snapshot: snapshot
+                )
 
             case .reload:
                 runtime.webView.reload()
@@ -646,7 +708,8 @@ final class DenIPCService {
                 }
                 if let target, Double(target) != nil {
                     return .failure(
-                        "Duration waits are no longer supported; use --state, --url, --text, --load, or --fn")
+                        "Duration waits are no longer supported; use --state, --url, --text, --load, or --fn"
+                    )
                 }
                 guard payload.timeout.isFinite, payload.timeout >= 0 else {
                     return .failure("Timeout must be a finite non-negative number")
@@ -782,11 +845,15 @@ final class DenIPCService {
                     }
                     guard
                         let newBoardID = window.resources.boardCreation.createWeb(
-                            urlString: href, width: window.inheritedBoardWidth(),
+                            urlString: href,
+                            width: window.inheritedBoardWidth(),
                             searchEngine: window.searchEngine(),
                             target: BoardCreation.Target(
-                                presentedDeskID: window.presentedDeskID(), afterBoardID: board.id,
-                                focus: shouldFocus, origin: .cli),
+                                presentedDeskID: window.presentedDeskID(),
+                                afterBoardID: board.id,
+                                focus: shouldFocus,
+                                origin: .cli
+                            ),
                             notify: window.board.creationNotice
                         ), let newBoard = window.resources.snapshot.den.board(for: newBoardID)
                     else {
@@ -797,7 +864,9 @@ final class DenIPCService {
                         .createdBoard(
                             id: newBoardID.rawValue.uuidString,
                             message: "Opened \(description) in new Board",
-                            url: href))
+                            url: href
+                        )
+                    )
                 }
 
                 return .success(.message("Clicked \(description)"))
@@ -844,7 +913,8 @@ final class DenIPCService {
             case .drag(let payload):
                 guard !payload.source.isEmpty else {
                     return .failure(
-                        "Usage: den board web drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
+                        "Usage: den board web drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]"
+                    )
                 }
                 let source = payload.source
                 let target = payload.destination
@@ -960,7 +1030,8 @@ final class DenIPCService {
                 case .click(let payload):
                     guard let coordX = payload.coordX, let coordY = payload.coordY else {
                         return .failure(
-                            "Usage: den board web mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
+                            "Usage: den board web mouse click <x> <y> [--button <left|right|middle>] [--count <n>]"
+                        )
                     }
                     let button = buttonCode(payload.button)
                     let count = payload.count ?? 1
@@ -1070,7 +1141,10 @@ final class DenIPCService {
         }
         guard
             let appliedWidth = resolved.window.resources.boardSizing.setBoardWidth(
-                resolved.board.id, to: width, maximumWidth: maximumWidth)
+                resolved.board.id,
+                to: width,
+                maximumWidth: maximumWidth
+            )
         else { return .failure("Could not save Board width") }
         resolved.window.board.didResize()
         return .success(.resizedBoard(id: resolved.board.id.rawValue.uuidString, width: appliedWidth))
@@ -1096,7 +1170,8 @@ final class DenIPCService {
     }
 
     private func handleBoardBackgroundExecution(
-        enabled: Bool?, target resolved: ResolvedBoardTarget
+        enabled: Bool?,
+        target resolved: ResolvedBoardTarget
     ) -> DenIPCOperationResult {
         guard let enabled else { return .success(.enabled(resolved.board.backgroundExecutionEnabled)) }
         let window = resolved.window
@@ -1156,7 +1231,8 @@ final class DenIPCService {
     }
 
     private func handleBoardMove(
-        destination: DenBoardMoveDestination, target resolved: ResolvedBoardTarget
+        destination: DenBoardMoveDestination,
+        target resolved: ResolvedBoardTarget
     ) -> DenIPCOperationResult {
         let window = resolved.window
         let desk: DeskState
@@ -1165,7 +1241,8 @@ final class DenIPCService {
         case .endOfDesk(let id):
             guard let target = window.resources.snapshot.den.desks.first(where: { $0.id == DeskID(id) }) else {
                 return .failure(
-                    DenIPCTargetResolver.TargetResolutionError.deskNotFound(id.uuidString).localizedDescription)
+                    DenIPCTargetResolver.TargetResolutionError.deskNotFound(id.uuidString).localizedDescription
+                )
             }
             desk = target
             anchorID = nil
@@ -1173,10 +1250,13 @@ final class DenIPCService {
             let boardID = BoardID(id)
             guard let indices = window.resources.snapshot.den.boardIndices(for: boardID),
                 let group = BoardGroup.containing(
-                    boardID, in: window.resources.snapshot.den.desks[indices.deskOffset].boards)
+                    boardID,
+                    in: window.resources.snapshot.den.desks[indices.deskOffset].boards
+                )
             else {
                 return .failure(
-                    DenIPCTargetResolver.TargetResolutionError.boardNotFound(id.uuidString).localizedDescription)
+                    DenIPCTargetResolver.TargetResolutionError.boardNotFound(id.uuidString).localizedDescription
+                )
             }
             desk = window.resources.snapshot.den.desks[indices.deskOffset]
             if group.boards.contains(where: { $0.id == resolved.board.id }) {
@@ -1200,12 +1280,17 @@ final class DenIPCService {
 
     private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
         resolved.window.resources.boardRemoval.remove(
-            resolved.board.id, presentedDeskID: resolved.window.presentedDeskID(), origin: .cli,
-            notify: resolved.window.board.removalNotice)
+            resolved.board.id,
+            presentedDeskID: resolved.window.presentedDeskID(),
+            origin: .cli,
+            notify: resolved.window.board.removalNotice
+        )
         return .success(
             .closedBoard(
                 id: resolved.board.id.rawValue.uuidString,
-                message: "Closed Board \(resolved.board.id.rawValue.uuidString)"))
+                message: "Closed Board \(resolved.board.id.rawValue.uuidString)"
+            )
+        )
     }
 
     private func handleTerminalBoardNew(
@@ -1217,7 +1302,8 @@ final class DenIPCService {
         if let dir = payload.path {
             switch BoardInputResolver.validateTerminalWorkingDirectory(
                 dir,
-                directoryExists: TerminalWorkingDirectory.exists)
+                directoryExists: TerminalWorkingDirectory.exists
+            )
             {
             case .success(let path):
                 resolvedDir = path
@@ -1246,7 +1332,8 @@ final class DenIPCService {
         guard runtime.startForCLI() else {
             return .failure(
                 "Terminal Board was created but could not start. Retry using Board \(boardID.rawValue.uuidString).",
-                payload: .createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil))
+                payload: .createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil)
+            )
         }
         if let runCommand = payload.runCommand {
             runtime.runCommand(runCommand)
@@ -1280,10 +1367,14 @@ final class DenIPCService {
         }
         guard
             let desk = resolved.window.resources.deskLifecycle.create(
-                label: label, boards: BuiltInDeskPreset.empty.boards,
+                label: label,
+                boards: BuiltInDeskPreset.empty.boards,
                 focusedBoardIndex: BuiltInDeskPreset.empty.focusedBoardIndex,
-                presentedDeskID: resolved.window.presentedDeskID(), after: resolved.desk.id, focus: focus,
-                notify: resolved.window.desk.lifecycleNotice)
+                presentedDeskID: resolved.window.presentedDeskID(),
+                after: resolved.desk.id,
+                focus: focus,
+                notify: resolved.window.desk.lifecycleNotice
+            )
         else { return .failure("Could not create Desk") }
         return .success(.createdDesk(id: desk.id.rawValue.uuidString))
     }
@@ -1298,8 +1389,11 @@ final class DenIPCService {
             return .failure("Desk is not empty (Boards: \(desk.boards.count)); use --force to remove it and its Boards")
         }
         window.resources.deskLifecycle.delete(
-            desk.id, presentedDeskID: window.presentedDeskID(),
-            isAvailable: window.desk.isAvailable, notify: window.desk.lifecycleNotice)
+            desk.id,
+            presentedDeskID: window.presentedDeskID(),
+            isAvailable: window.desk.isAvailable,
+            notify: window.desk.lifecycleNotice
+        )
         guard !window.resources.snapshot.den.desks.contains(where: { $0.id == desk.id }) else {
             return .failure("Could not remove Desk: no available replacement Desk")
         }
@@ -1338,9 +1432,13 @@ final class DenIPCService {
                     case .terminal(.zmx): "zmx"
                     }
                 return DenDrawerItemInfo(
-                    id: item.id.uuidString, url: item.url?.absoluteString, title: item.title, type: type,
+                    id: item.id.uuidString,
+                    url: item.url?.absoluteString,
+                    title: item.title,
+                    type: type,
                     workingDirectory: item.terminal?.workingDirectory,
-                    sessionName: item.terminal?.zellijSessionName ?? item.terminal?.zmxSessionName)
+                    sessionName: item.terminal?.zellijSessionName ?? item.terminal?.zmxSessionName
+                )
             }
             return .success(.drawerItems(items))
 
@@ -1351,7 +1449,8 @@ final class DenIPCService {
             guard
                 let openInput = BoardInputResolver.resolveOpenBoardInput(
                     payload.url,
-                    searchEngine: window.searchEngine()),
+                    searchEngine: window.searchEngine()
+                ),
                 case let .url(url, _) = openInput.item,
                 WebURLPolicy.isSupported(url)
             else {
@@ -1359,14 +1458,17 @@ final class DenIPCService {
             }
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
             if let itemID = window.resources.drawerItems.keep(
-                canonicalURL, title: payload.title,
-                notify: window.drawer.keepNotice)
-            {
+                canonicalURL,
+                title: payload.title,
+                notify: window.drawer.keepNotice
+            ) {
                 window.drawer.didKeep()
                 return .success(
                     .drawerItem(
                         id: itemID.uuidString,
-                        message: "Kept in Drawer: \(canonicalURL.absoluteString)"))
+                        message: "Kept in Drawer: \(canonicalURL.absoluteString)"
+                    )
+                )
             }
             return .failure("Failed to keep in Drawer: \(canonicalURL.absoluteString)")
 
@@ -1380,11 +1482,14 @@ final class DenIPCService {
             }
             if let boardID = window.resources.drawerPlacement.place(
                 .init(
-                    itemID: item.id, width: window.inheritedBoardWidth(),
+                    itemID: item.id,
+                    width: window.inheritedBoardWidth(),
                     searchEngine: window.searchEngine(),
-                    target: BoardCreation.Target(presentedDeskID: window.presentedDeskID(), deskID: desk.id)),
+                    target: BoardCreation.Target(presentedDeskID: window.presentedDeskID(), deskID: desk.id)
+                ),
                 notifyBoard: window.drawer.placementNotice(item.id),
-                notifyDrawer: window.drawer.itemNotice),
+                notifyDrawer: window.drawer.itemNotice
+            ),
                 let board = window.resources.snapshot.den.board(for: boardID)
             {
                 window.drawer.didPlace()
@@ -1397,7 +1502,9 @@ final class DenIPCService {
                     .createdBoard(
                         id: boardID.rawValue.uuidString,
                         message: "Placed Drawer Item as Board",
-                        url: nil))
+                        url: nil
+                    )
+                )
             }
             return .failure("Failed to place Drawer Item as Board: \(idString)")
 
@@ -1503,7 +1610,8 @@ final class DenIPCService {
             do {
                 let pid = try await window.board.sendSignal(parsed.number, board)
                 return .success(
-                    .message("Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))"))
+                    .message("Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))")
+                )
             } catch {
                 return .failure(error.localizedDescription)
             }

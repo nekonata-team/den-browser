@@ -14,7 +14,9 @@ final class SideBoardCreation {
     private var state: DenState { context.storage.state }
 
     init(
-        context: WindowNativeContext, boardNavigation: BoardNavigation, boardOpening: BoardOpeningActions,
+        context: WindowNativeContext,
+        boardNavigation: BoardNavigation,
+        boardOpening: BoardOpeningActions,
         zmx: ZmxBoardActions
     ) {
         self.context = context
@@ -43,7 +45,11 @@ final class SideBoardCreation {
         let targetRuntime = focus ? nil : runtimes.webRuntime(for: targetBoard)
         guard
             boardOpening.insertBoard(
-                board, afterBoardID: targetBoardID, focus: focus, origin: focus ? .interactive : .cli)
+                board,
+                afterBoardID: targetBoardID,
+                focus: focus,
+                origin: focus ? .interactive : .cli
+            )
         else {
             return nil
         }
@@ -77,14 +83,18 @@ final class SideBoardCreation {
             primaryBoard.terminalWorkingDirectory
             ?? FileManager.default.homeDirectoryForCurrentUser.path
         var board = BoardState(
-            label: "Terminal Side Board", width: DenLayout.sideBoardInitialWidth, workingDirectory: workingDirectory)
+            label: "Terminal Side Board",
+            width: DenLayout.sideBoardInitialWidth,
+            workingDirectory: workingDirectory
+        )
         board.role = .sideBoard(targetBoardID: primaryBoardID)
         guard
             boardOpening.insertBoard(
                 board,
                 afterBoardID: primaryBoardID,
                 focus: focus,
-                origin: focus ? .interactive : .cli)
+                origin: focus ? .interactive : .cli
+            )
         else { return nil }
         return board.id
     }

@@ -19,7 +19,8 @@ final class DeskUITests: UITestCase {
             app.typeText(label)
             XCTAssertTrue(
                 app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Create \"\(label)\""))
-                    .firstMatch.waitUntilExists(timeout: 5))
+                    .firstMatch.waitUntilExists(timeout: 5)
+            )
         }
 
         when("pressing Return repeatedly while the panel closes") {

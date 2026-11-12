@@ -13,22 +13,34 @@ public enum BoardDuplication {
         if let directory = source.terminalWorkingDirectory {
             return .create(
                 BoardState(
-                    label: source.label, width: source.width, workingDirectory: directory,
-                    customLabel: source.customLabel))
+                    label: source.label,
+                    width: source.width,
+                    workingDirectory: directory,
+                    customLabel: source.customLabel
+                )
+            )
         }
         if source.isZellij {
             return .create(
                 BoardState(
-                    label: source.label, width: source.width, zellijSessionName: source.zellijSessionName,
-                    customLabel: source.customLabel))
+                    label: source.label,
+                    width: source.width,
+                    zellijSessionName: source.zellijSessionName,
+                    customLabel: source.customLabel
+                )
+            )
         }
         if fromFirstSheet && source.firstSheetURL == nil { return .unavailable }
         return .create(
             BoardState(
-                label: source.label, width: source.width,
+                label: source.label,
+                width: source.width,
                 currentSheetURL: fromFirstSheet ? source.firstSheetURL : source.currentSheetURL,
                 firstSheetURL: fromFirstSheet ? source.firstSheetURL : nil,
-                customLabel: source.customLabel, sheetNavigationPaused: source.sheetNavigationPaused,
-                backgroundExecutionEnabled: source.backgroundExecutionEnabled))
+                customLabel: source.customLabel,
+                sheetNavigationPaused: source.sheetNavigationPaused,
+                backgroundExecutionEnabled: source.backgroundExecutionEnabled
+            )
+        )
     }
 }

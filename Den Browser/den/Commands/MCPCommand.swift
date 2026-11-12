@@ -192,31 +192,50 @@ private struct DenMCPToolDefinition: Sendable {
 
     static let all: [Self] = [
         .init(
-            .inspectDen, "Inspect Profiles, Desks, Boards, focus, and Drawer count.", [.profileID: uuid()],
-            readOnly: true),
+            .inspectDen,
+            "Inspect Profiles, Desks, Boards, focus, and Drawer count.",
+            [.profileID: uuid()],
+            readOnly: true
+        ),
         .init(.openProfile, "Open or activate a Profile Window.", [.profileID: uuid()], [.profileID]),
         .init(
             .createWebBoard,
             "Create a Web Board from a URL, hostname, or search query; focus defaults to false. Set width to a positive point value.",
-            [.url: string(), .profileID: uuid(), .focus: bool(), .width: boardWidth()], [.url]),
+            [.url: string(), .profileID: uuid(), .focus: bool(), .width: boardWidth()],
+            [.url]
+        ),
         .init(
             .createInspectionBoard,
             "Create or reuse an Inspection Board for a Web Board; focus defaults to false.",
-            [.targetBoardID: uuid(), .profileID: uuid(), .focus: bool()], [.targetBoardID]),
+            [.targetBoardID: uuid(), .profileID: uuid(), .focus: bool()],
+            [.targetBoardID]
+        ),
         .init(
-            .readInspection, "Read the selected element and collected page events from an Inspection Board.",
-            [.profileID: uuid(), .boardID: uuid()], [.boardID], readOnly: true),
+            .readInspection,
+            "Read the selected element and collected page events from an Inspection Board.",
+            [.profileID: uuid(), .boardID: uuid()],
+            [.boardID],
+            readOnly: true
+        ),
         .init(
-            .openSheet, "Navigate the target Web Board to a URL or search query.",
-            [.url: string(), .profileID: uuid(), .boardID: uuid()], [.url]),
+            .openSheet,
+            "Navigate the target Web Board to a URL or search query.",
+            [.url: string(), .profileID: uuid(), .boardID: uuid()],
+            [.url]
+        ),
         .init(
-            .inspectSheet, "Read the Current Sheet URL and semantic snapshot; full defaults to false.",
-            [.profileID: uuid(), .boardID: uuid(), .full: bool(), .within: string()], readOnly: true),
+            .inspectSheet,
+            "Read the Current Sheet URL and semantic snapshot; full defaults to false.",
+            [.profileID: uuid(), .boardID: uuid(), .full: bool(), .within: string()],
+            readOnly: true
+        ),
         .init(.readSheetText, "Read visible text from the Current Sheet.", sheetTarget, readOnly: true),
         .init(
             .readSheetMarkdown,
             "Read the Current Sheet as Markdown with title and URL; within scopes to one selector or ref. No article extraction.",
-            sheetTarget.merging([.within: string()]) { _, new in new }, readOnly: true),
+            sheetTarget.merging([.within: string()]) { _, new in new },
+            readOnly: true
+        ),
         .init(
             .querySheet,
             "Return matching elements; fields defaults to tag, role, name, and text; visible and all default to false.",
@@ -227,7 +246,11 @@ private struct DenMCPToolDefinition: Sendable {
                     .fields: stringArray(
                         "Use tag, role, name, text, value, checked, disabled, selected, expanded, class, or attr:<name>."
                     ),
-                ]), [.selector], readOnly: true),
+                ]
+            ),
+            [.selector],
+            readOnly: true
+        ),
         .init(
             .readSheetElement,
             "Read an element's text, value, attribute, count, or box; attribute requires an attribute name.",
@@ -236,46 +259,77 @@ private struct DenMCPToolDefinition: Sendable {
                 [
                     .target: string(), .field: enumeration(DenMCPReadSheetElementField.self),
                     .attribute: string(),
-                ]), [.target, .field], readOnly: true),
+                ]
+            ),
+            [.target, .field],
+            readOnly: true
+        ),
         .init(
-            .readSheetState, "Check whether a Sheet element is visible, enabled, or checked.",
+            .readSheetState,
+            "Check whether a Sheet element is visible, enabled, or checked.",
             merge(
                 sheetTarget,
                 [
                     .target: string(), .state: enumeration(DenMCPReadSheetState.self),
-                ]), [.target, .state], readOnly: true),
+                ]
+            ),
+            [.target, .state],
+            readOnly: true
+        ),
         .init(
-            .clickSheetElement, "Click by target or by role and name; focus_new_board requires open_in_new_board.",
+            .clickSheetElement,
+            "Click by target or by role and name; focus_new_board requires open_in_new_board.",
             merge(
                 sheetTarget,
                 [
                     .target: string(), .role: string(), .name: string(), .exact: bool(),
                     .openInNewBoard: bool(), .focusNewBoard: bool(),
-                ]), destructive: false),
+                ]
+            ),
+            destructive: false
+        ),
         .init(
-            .fillSheetField, "Fill an input, textarea, or editable Sheet element.",
+            .fillSheetField,
+            "Fill an input, textarea, or editable Sheet element.",
             merge(
                 sheetTarget,
                 [
                     .target: string(), .value: string(),
-                ]), [.target, .value], destructive: false),
+                ]
+            ),
+            [.target, .value],
+            destructive: false
+        ),
         .init(
-            .typeSheetText, "Type text into a target or the focused Sheet element.",
+            .typeSheetText,
+            "Type text into a target or the focused Sheet element.",
             merge(
                 sheetTarget,
                 [
                     .text: string(), .target: string(),
-                ]), [.text], destructive: false),
+                ]
+            ),
+            [.text],
+            destructive: false
+        ),
         .init(
-            .pressSheetKey, "Press a supported key in the target Sheet.", merge(sheetTarget, [.key: string()]),
-            [.key], destructive: false),
+            .pressSheetKey,
+            "Press a supported key in the target Sheet.",
+            merge(sheetTarget, [.key: string()]),
+            [.key],
+            destructive: false
+        ),
         .init(
-            .scrollSheet, "Provide direction or target, not both; direction defaults to down.",
+            .scrollSheet,
+            "Provide direction or target, not both; direction defaults to down.",
             merge(
                 sheetTarget,
                 [
                     .direction: enumeration(DenMCPScrollDirection.self), .target: string(),
-                ]), destructive: false),
+                ]
+            ),
+            destructive: false
+        ),
         .init(
             .waitForSheet,
             "Wait for exactly one target, URL, text, or load_state; state requires target; timeout defaults to 10 seconds.",
@@ -286,36 +340,64 @@ private struct DenMCPToolDefinition: Sendable {
                     .url: string(), .text: string(),
                     .loadState: enumeration(DenMCPLoadState.self),
                     .timeoutSeconds: number(),
-                ]), destructive: false),
+                ]
+            ),
+            destructive: false
+        ),
         .init(
-            .navigateSheetHistory, "Move the target Sheet Stack backward or forward.",
+            .navigateSheetHistory,
+            "Move the target Sheet Stack backward or forward.",
             merge(
                 sheetTarget,
                 [
                     .direction: enumeration(DenMCPHistoryDirection.self)
-                ]), [.direction], destructive: false),
+                ]
+            ),
+            [.direction],
+            destructive: false
+        ),
         .init(.reloadSheet, "Reload the target Current Sheet.", sheetTarget, destructive: false),
         .init(
-            .closeBoard, "Remove a Board from its Desk and end its live runtime.",
+            .closeBoard,
+            "Remove a Board from its Desk and end its live runtime.",
             [
                 .boardID: uuid(), .profileID: uuid(),
-            ], [.boardID], destructive: true),
+            ],
+            [.boardID],
+            destructive: true
+        ),
         .init(
-            .listDrawerItems, "List Drawer Items by ID, type, title, and URL or Terminal session details.",
-            profileTarget, readOnly: true),
+            .listDrawerItems,
+            "List Drawer Items by ID, type, title, and URL or Terminal session details.",
+            profileTarget,
+            readOnly: true
+        ),
         .init(
-            .saveURLToDrawer, "Keep a URL in the Den-wide Drawer.",
+            .saveURLToDrawer,
+            "Keep a URL in the Den-wide Drawer.",
             merge(
                 profileTarget,
                 [
                     .url: string(), .title: string(),
-                ]), [.url], destructive: false),
+                ]
+            ),
+            [.url],
+            destructive: false
+        ),
         .init(
-            .placeDrawerItem, "Place a Drawer Item on the active Desk as a Board.",
-            merge(profileTarget, [.itemID: string()]), [.itemID], destructive: false),
+            .placeDrawerItem,
+            "Place a Drawer Item on the active Desk as a Board.",
+            merge(profileTarget, [.itemID: string()]),
+            [.itemID],
+            destructive: false
+        ),
         .init(
-            .discardDrawerItem, "Discard a Drawer Item.", merge(profileTarget, [.itemID: string()]), [.itemID],
-            destructive: true),
+            .discardDrawerItem,
+            "Discard a Drawer Item.",
+            merge(profileTarget, [.itemID: string()]),
+            [.itemID],
+            destructive: true
+        ),
         .init(
             .createTerminalBoard,
             "Create a Terminal Board at an optional working directory; focus defaults to false. Set width to a positive point value.",
@@ -323,16 +405,28 @@ private struct DenMCPToolDefinition: Sendable {
                 profileTarget,
                 [
                     .path: string(), .focus: bool(), .width: boardWidth(),
-                ]), destructive: false),
+                ]
+            ),
+            destructive: false
+        ),
         .init(
-            .readTerminalSession, "Read the visible buffer of a Terminal Session.", terminalTarget, readOnly: true),
+            .readTerminalSession,
+            "Read the visible buffer of a Terminal Session.",
+            terminalTarget,
+            readOnly: true
+        ),
         .init(
-            .runTerminalCommand, "Send a command to the target Terminal Session and press Enter.",
+            .runTerminalCommand,
+            "Send a command to the target Terminal Session and press Enter.",
             merge(
                 terminalTarget,
                 [
                     .command: string()
-                ]), [.command], destructive: true),
+                ]
+            ),
+            [.command],
+            destructive: true
+        ),
     ]
 
     private static let profileTarget: [DenMCPArgument: Value] = [.profileID: uuid()]
@@ -510,11 +604,14 @@ private struct DenMCPToolRunner: Sendable {
             )
         case .openSheet:
             return try sheetOperation(
-                .navigate(DenSheetNavigatePayload(url: try input.requiredString(.url))), input: input)
+                .navigate(DenSheetNavigatePayload(url: try input.requiredString(.url))),
+                input: input
+            )
         case .inspectSheet:
             return try sheetOperation(
                 .inspect(
-                    DenSheetSnapshotPayload(full: try input.boolean(.full), within: try input.string(.within))),
+                    DenSheetSnapshotPayload(full: try input.boolean(.full), within: try input.string(.within))
+                ),
                 input: input
             )
         case .readSheetText:
@@ -530,7 +627,8 @@ private struct DenMCPToolRunner: Sendable {
                         visible: try input.boolean(.visible),
                         all: try input.boolean(.all),
                         fields: fields.isEmpty ? nil : fields.joined(separator: ",")
-                    )),
+                    )
+                ),
                 input: input
             )
         case .readSheetElement:
@@ -547,7 +645,9 @@ private struct DenMCPToolRunner: Sendable {
                             try DenSheetGetAttributePayload(
                                 target: target,
                                 attribute: try input.requiredString(.attribute)
-                            ))),
+                            )
+                        )
+                    ),
                     input: input
                 )
             case .count:
@@ -582,21 +682,25 @@ private struct DenMCPToolRunner: Sendable {
                         exact: try input.boolean(.exact),
                         newBoard: openInNewBoard,
                         focus: focusNewBoard
-                    )),
+                    )
+                ),
                 input: input
             )
         case .fillSheetField:
             return try sheetOperation(
                 .fill(
                     DenSheetFillPayload(
-                        target: try input.requiredString(.target), value: try input.requiredString(.value)
-                    )),
+                        target: try input.requiredString(.target),
+                        value: try input.requiredString(.value)
+                    )
+                ),
                 input: input
             )
         case .typeSheetText:
             return try sheetOperation(
                 .type(
-                    DenSheetTypePayload(target: try input.string(.target), text: try input.requiredString(.text))),
+                    DenSheetTypePayload(target: try input.string(.target), text: try input.requiredString(.text))
+                ),
                 input: input
             )
         case .pressSheetKey:
@@ -610,7 +714,9 @@ private struct DenMCPToolRunner: Sendable {
             return try sheetOperation(
                 .scroll(
                     DenSheetScrollPayload(
-                        directionOrTarget: direction?.rawValue ?? target ?? DenMCPScrollDirection.down.rawValue)),
+                        directionOrTarget: direction?.rawValue ?? target ?? DenMCPScrollDirection.down.rawValue
+                    )
+                ),
                 input: input
             )
         case .waitForSheet:
@@ -636,7 +742,8 @@ private struct DenMCPToolRunner: Sendable {
                         loadState: loadState?.rawValue,
                         function: nil,
                         timeout: try input.number(.timeoutSeconds, default: 10)
-                    )),
+                    )
+                ),
                 input: input
             )
         case .navigateSheetHistory:
@@ -653,7 +760,8 @@ private struct DenMCPToolRunner: Sendable {
         case .saveURLToDrawer:
             return .drawer(
                 command: .keep(
-                    DenDrawerKeepPayload(url: try input.requiredString(.url), title: try input.string(.title))),
+                    DenDrawerKeepPayload(url: try input.requiredString(.url), title: try input.string(.title))
+                ),
                 target: .automatic
             )
         case .placeDrawerItem:

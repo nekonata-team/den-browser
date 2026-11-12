@@ -12,9 +12,18 @@ func keyEvent(
 ) throws -> NSEvent {
     try #require(
         NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0,
-            windowNumber: windowNumber, context: nil, characters: characters,
-            charactersIgnoringModifiers: charactersIgnoringModifiers, isARepeat: isARepeat, keyCode: keyCode))
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: modifiers,
+            timestamp: 0,
+            windowNumber: windowNumber,
+            context: nil,
+            characters: characters,
+            charactersIgnoringModifiers: charactersIgnoringModifiers,
+            isARepeat: isARepeat,
+            keyCode: keyCode
+        )
+    )
 }
 
 @MainActor
@@ -26,8 +35,12 @@ func keyEvent(
     windowNumber: Int = 0
 ) throws -> NSEvent {
     try keyEvent(
-        characters: character, charactersIgnoringModifiers: charactersIgnoringModifiers ?? character,
-        modifiers: modifiers, keyCode: keyCode, windowNumber: windowNumber)
+        characters: character,
+        charactersIgnoringModifiers: charactersIgnoringModifiers ?? character,
+        modifiers: modifiers,
+        keyCode: keyCode,
+        windowNumber: windowNumber
+    )
 }
 
 @MainActor
@@ -52,6 +65,10 @@ func arrowEvent(
         }
     let scalar = try #require(UnicodeScalar(specialKey.rawValue))
     return try keyEvent(
-        characters: String(scalar), charactersIgnoringModifiers: String(scalar),
-        modifiers: modifiers, isARepeat: isARepeat, keyCode: keyCode)
+        characters: String(scalar),
+        charactersIgnoringModifiers: String(scalar),
+        modifiers: modifiers,
+        isARepeat: isARepeat,
+        keyCode: keyCode
+    )
 }

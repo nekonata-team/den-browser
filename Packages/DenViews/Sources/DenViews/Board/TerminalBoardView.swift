@@ -34,12 +34,25 @@ public struct TerminalBoardView: View {
     @State private var appliedFontSizeSteps = 0
 
     public init(
-        model: BoardSurfaceModel, board: BoardState, isFocused: Bool, focusRequest: BoardFocusRequest?,
-        isDragging: Bool, profileColor: Color, width: Double, height: Double, isPointerFocusEnabled: Bool,
-        isVisibleInViewport: Bool, onFocus: @escaping () -> Void, onRemove: @escaping () -> Void,
-        onDragChanged: @escaping (DragGesture.Value) -> Void, onDragEnded: @escaping (DragGesture.Value) -> Void,
-        surface: NSView, onSurfaceReady: @escaping (NSWindow) -> Bool, onBeforeHide: @escaping () -> Void,
-        onSurfaceVisibilityChange: @escaping (Bool) -> Void, onAdjustFontSize: @escaping (Int) -> Int
+        model: BoardSurfaceModel,
+        board: BoardState,
+        isFocused: Bool,
+        focusRequest: BoardFocusRequest?,
+        isDragging: Bool,
+        profileColor: Color,
+        width: Double,
+        height: Double,
+        isPointerFocusEnabled: Bool,
+        isVisibleInViewport: Bool,
+        onFocus: @escaping () -> Void,
+        onRemove: @escaping () -> Void,
+        onDragChanged: @escaping (DragGesture.Value) -> Void,
+        onDragEnded: @escaping (DragGesture.Value) -> Void,
+        surface: NSView,
+        onSurfaceReady: @escaping (NSWindow) -> Bool,
+        onBeforeHide: @escaping () -> Void,
+        onSurfaceVisibilityChange: @escaping (Bool) -> Void,
+        onAdjustFontSize: @escaping (Int) -> Int
     ) {
         self.model = model
         self.board = board
@@ -66,8 +79,12 @@ public struct TerminalBoardView: View {
         VStack(spacing: 0) {
             header
             TerminalBoardSurface(
-                terminalView: surface, onSurfaceVisibilityChange: onSurfaceVisibilityChange, onBeforeHide: onBeforeHide,
-                isHidden: !isSurfaceVisible, focusRequest: focusRequest, onSurfaceReady: onSurfaceReady
+                terminalView: surface,
+                onSurfaceVisibilityChange: onSurfaceVisibilityChange,
+                onBeforeHide: onBeforeHide,
+                isHidden: !isSurfaceVisible,
+                focusRequest: focusRequest,
+                onSurfaceReady: onSurfaceReady
             )
             .simultaneousGesture(
                 DragGesture(minimumDistance: 0)
@@ -194,7 +211,8 @@ public struct TerminalBoardView: View {
                 board.isZellij
                     ? "Duplicate Zellij Board"
                     : (board.isZmx ? "Duplicate zmx Board…" : "Duplicate Terminal Board"),
-                systemSymbol: .plusSquareOnSquare)
+                systemSymbol: .plusSquareOnSquare
+            )
         }
         Button {
             model.perform(.moveToDrawer)
@@ -220,7 +238,8 @@ public struct TerminalBoardView: View {
             Label(
                 windowModel.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board",
                 systemSymbol: windowModel.maximizedBoardID == board.id
-                    ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight)
+                    ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight
+            )
         }
         Button {
             model.perform(.focus)
@@ -307,6 +326,7 @@ public struct TerminalBoardView: View {
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
             preference: model.motionPreference,
-            systemReduceMotion: systemReduceMotion)
+            systemReduceMotion: systemReduceMotion
+        )
     }
 }

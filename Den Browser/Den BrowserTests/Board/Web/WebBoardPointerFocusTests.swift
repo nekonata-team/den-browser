@@ -16,7 +16,8 @@ struct WebBoardPointerFocusTests {
         let desk = DeskState(label: "Desk", boards: [current, target], focusedBoardID: current.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, _ in
             let webView = session.runtimes.webRuntime(for: target).webView
             let event = try #require(
@@ -29,7 +30,9 @@ struct WebBoardPointerFocusTests {
                     context: nil,
                     eventNumber: 0,
                     clickCount: 1,
-                    pressure: 1.0))
+                    pressure: 1.0
+                )
+            )
 
             // Act
             switch eventType {

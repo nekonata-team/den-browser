@@ -93,10 +93,15 @@ struct InspectionBoardCapabilityTests {
         )
 
         let webView = WKWebView(
-            frame: NSRect(x: 0, y: 0, width: 640, height: 480), configuration: configuration)
+            frame: NSRect(x: 0, y: 0, width: 640, height: 480),
+            configuration: configuration
+        )
         let window = NSWindow(
             contentRect: NSRect(x: 40, y: 40, width: 640, height: 480),
-            styleMask: [.titled], backing: .buffered, defer: false)
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
         window.contentView?.addSubview(webView)
         webView.frame = window.contentView?.bounds ?? .zero
         return (webView, window, probe)
@@ -137,7 +142,8 @@ struct InspectionBoardCapabilityTests {
         #expect(
             events.contains {
                 $0["kind"] == "unhandledrejection" && $0["data"]?.contains("fixture-unhandled-rejection") == true
-            })
+            }
+        )
     }
 
     @Test func inspectionHooksCanStopAndRestartOnTheSameDocument() async throws {
@@ -246,12 +252,14 @@ struct InspectionBoardCapabilityTests {
         // Act
         try await startPicking(webView)
         let pickingJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         _ = try await webView.evaluateJavaScript(
             "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
         )
         let selectedJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         let pickingSnapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(pickingJSON.utf8))
         let selectedSnapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(selectedJSON.utf8))
 
@@ -314,17 +322,20 @@ struct InspectionBoardCapabilityTests {
         _ = try await webView.evaluateJavaScript(InspectionPageScript.collect)
         _ = try await webView.evaluateJavaScript("console.log('once-after-restart')")
         let repeatedStartJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         _ = try await webView.evaluateJavaScript("window.dispatchEvent(new Event('pagehide'))")
         try await startCollection(webView)
         _ = try await webView.evaluateJavaScript("console.log('after-pagehide')")
         let pagehideJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         await probe.load("<!doctype html><html><body>Second document</body></html>", in: webView)
         try await startCollection(webView)
         _ = try await webView.evaluateJavaScript("console.log('second-document-event')")
         let navigationJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         let repeatedStart = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(repeatedStartJSON.utf8))
         let afterPagehide = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(pagehideJSON.utf8))
         let afterNavigation = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(navigationJSON.utf8))
@@ -402,16 +413,19 @@ struct InspectionBoardCapabilityTests {
         let section = try #require(snapshot.treePath.first(where: { $0.tag == "section" }))
         let button = try #require(snapshot.treePath.last)
         let childrenJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readChildren(section.id)) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readChildren(section.id)) as? String
+        )
         let children = try JSONDecoder().decode([InspectionDOMNode].self, from: Data(childrenJSON.utf8))
         _ = try await webView.evaluateJavaScript(InspectionPageScript.selectNode(children[1].id))
         let selectedJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         let selectedSnapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(selectedJSON.utf8))
         _ = try await webView.evaluateJavaScript(InspectionPageScript.highlightNode(button.id))
         let highlightExists =
             try await webView.evaluateJavaScript(
-                "!!document.querySelector('[data-den-inspection-highlight]')") as? Bool
+                "!!document.querySelector('[data-den-inspection-highlight]')"
+            ) as? Bool
 
         // Assert
         #expect(snapshot.treePath.map(\.tag) == ["html", "body", "main", "section", "button"])
@@ -432,7 +446,8 @@ struct InspectionBoardCapabilityTests {
             "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
         )
         let snapshotJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(snapshotJSON.utf8))
         let nodeID = try #require(snapshot.selection?.nodeID)
 
@@ -461,14 +476,16 @@ struct InspectionBoardCapabilityTests {
             "document.querySelector('#parent button').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
         )
         let snapshotJSON = try #require(
-            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String
+        )
         let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(snapshotJSON.utf8))
         let parent = try #require(snapshot.treePath.first(where: { $0.tag == "section" }))
 
         // Act
         func readChildren() async throws -> [InspectionDOMNode] {
             let json = try #require(
-                try await webView.evaluateJavaScript(InspectionPageScript.readChildren([parent.id])) as? String)
+                try await webView.evaluateJavaScript(InspectionPageScript.readChildren([parent.id])) as? String
+            )
             let children = try JSONDecoder().decode([String: [InspectionDOMNode]].self, from: Data(json.utf8))
             return try #require(children[parent.id])
         }

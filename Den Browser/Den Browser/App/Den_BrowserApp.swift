@@ -31,11 +31,17 @@ struct Den_BrowserApp: App {
         _preferences = State(initialValue: preferences)
         _inputMethodSettingsModel = State(
             initialValue: InputMethodSettingsModel(
-                read: { preferences.rememberBoardInputMethod }, write: { preferences.setRememberBoardInputMethod($0) }))
+                read: { preferences.rememberBoardInputMethod },
+                write: { preferences.setRememberBoardInputMethod($0) }
+            )
+        )
         _terminalSettingsModel = State(initialValue: TerminalSettingsModel(preferences: preferences))
         _essentialsSettingsModel = State(
             initialValue: EssentialsSettingsModel(
-                read: { preferences.essentials }, persist: { preferences.setEssentials($0) }))
+                read: { preferences.essentials },
+                persist: { preferences.setEssentials($0) }
+            )
+        )
         _appearanceModel = State(initialValue: AppearanceModel(preferences: preferences))
         _shortcutSettingsModel = State(initialValue: ShortcutSettingsModel(preferences: preferences))
         _sheetNavigation = State(initialValue: sheetNavigation)
@@ -48,7 +54,8 @@ struct Den_BrowserApp: App {
             initialProfile: configuration.initialProfile,
             isEphemeral: configuration.isEphemeral,
             websiteDataStore: configuration.websiteDataStore,
-            ipcSocketPath: configuration.ipcSocketPath)
+            ipcSocketPath: configuration.ipcSocketPath
+        )
         _profileManager = State(initialValue: manager)
         _profileSettingsModel = State(initialValue: ProfileSettingsModel(manager: manager))
         appDelegate.profileManager = manager
@@ -86,12 +93,14 @@ struct Den_BrowserApp: App {
                     controller: keyboardController,
                     profileManager: profileManager,
                     preferences: preferences,
-                    openSettingsCoordinator: openSettingsCoordinator)
+                    openSettingsCoordinator: openSettingsCoordinator
+                )
             }
         } defaultValue: {
             ProfileWindowRoute(
                 windowID: profileManager.personalProfileID.rawValue,
-                profileID: profileManager.personalProfileID)
+                profileID: profileManager.personalProfileID
+            )
         }
         .restorationBehavior(profileManager.isPrivateDen ? .disabled : .automatic)
         .handlesExternalEvents(matching: ["*"])
@@ -99,7 +108,8 @@ struct Den_BrowserApp: App {
             DenCommands(
                 profileManager: profileManager,
                 updaterController: updaterController,
-                openSettingsCoordinator: openSettingsCoordinator)
+                openSettingsCoordinator: openSettingsCoordinator
+            )
         }
 
         Settings {
@@ -134,7 +144,8 @@ private struct KeyboardControllerBridge: View {
                 controller.start(
                     profileManager: profileManager,
                     preferences: preferences,
-                    openSettings: { openSettingsCoordinator.open() })
+                    openSettings: { openSettingsCoordinator.open() }
+                )
             }
     }
 }
@@ -157,7 +168,8 @@ private final class UpdaterControllerCoordinator {
         controller = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
-            userDriverDelegate: nil)
+            userDriverDelegate: nil
+        )
         PerformanceTrace.mark("UpdaterController initialized after window presentation", category: "Launch")
     }
 
@@ -215,7 +227,8 @@ private struct DenCommands: Commands {
                 .disabled(
                     session == nil
                         || windowModel?.pendingConfirmation != nil
-                        || windowModel?.isFullscreenActive == true)
+                        || windowModel?.isFullscreenActive == true
+                )
         }
 
         CommandMenu("Profile") {
@@ -228,7 +241,8 @@ private struct DenCommands: Commands {
                 }
                 .keyboardShortcut(
                     ProcessInfo.processInfo.arguments.contains("--ui-testing")
-                        ? KeyboardShortcut("u", modifiers: [.command, .option, .shift]) : nil)
+                        ? KeyboardShortcut("u", modifiers: [.command, .option, .shift]) : nil
+                )
             }
 
             Divider()
@@ -333,7 +347,8 @@ private struct DenCommands: Commands {
                     .keyboardShortcut("w", modifiers: [.command])
                     .disabled(
                         windowModel?.focusedDesk?.focusedBoardID == nil
-                            || windowModel?.pendingConfirmation != nil)
+                            || windowModel?.pendingConfirmation != nil
+                    )
                 Button("Undo Board Operation") { perform(.board(.undo)) }
                     .disabled(session?.resources.store.snapshot.boardUndoHistory.isEmpty ?? true)
             }
@@ -406,7 +421,8 @@ private struct DenCommands: Commands {
                         set: { isPresented in
                             guard isPresented != (windowModel?.isFocusModePresented ?? false) else { return }
                             perform(.application(.toggleFocusMode))
-                        })
+                        }
+                    )
                 )
                 .disabled(session == nil || windowModel?.temporaryContext != nil)
                 Button("Toggle Drawer") { perform(.drawer(.toggle)) }
@@ -420,7 +436,8 @@ private struct DenCommands: Commands {
                     .application(.openSettings),
                     session: session,
                     windowModel: windowModel,
-                    openSettings: { openSettingsCoordinator.open() })
+                    openSettings: { openSettingsCoordinator.open() }
+                )
             }
             .keyboardShortcut(",", modifiers: [])
             .disabled(windowModel?.isDenMode != true || windowModel?.temporaryContext != nil)
@@ -445,7 +462,8 @@ private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
         let privateDenItem = NSMenuItem(
             title: "Open Private Den",
             action: #selector(openPrivateDen),
-            keyEquivalent: "")
+            keyEquivalent: ""
+        )
         privateDenItem.target = self
         menu.addItem(privateDenItem)
 
@@ -456,7 +474,8 @@ private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
             let item = NSMenuItem(
                 title: profile.name,
                 action: #selector(openProfile(_:)),
-                keyEquivalent: "")
+                keyEquivalent: ""
+            )
             item.target = self
             item.representedObject = profile.id.rawValue.uuidString
             menu.addItem(item)
@@ -485,6 +504,7 @@ private enum PrivateDenLauncher {
         configuration.createsNewApplicationInstance = true
         NSWorkspace.shared.openApplication(
             at: Bundle.main.bundleURL,
-            configuration: configuration)
+            configuration: configuration
+        )
     }
 }

@@ -62,7 +62,8 @@ final class TerminalRuntime: NSObject, ObservableObject {
         let resolution = TerminalConfigurationSource.make(commandOverride: command)
         let controller = TerminalController(
             configSource: resolution.configSource,
-            theme: resolution.theme)
+            theme: resolution.theme
+        )
         self.controller = controller
         terminalView.delegate = self
 
@@ -78,7 +79,8 @@ final class TerminalRuntime: NSObject, ObservableObject {
         terminalView.configuration = TerminalSurfaceOptions(
             workingDirectory: workingDirectory,
             envVars: envVars,
-            context: .window)
+            context: .window
+        )
         terminalView.controller = controller
     }
 
@@ -96,7 +98,10 @@ final class TerminalRuntime: NSObject, ObservableObject {
         setSurfaceVisible(false)
         let host = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-            styleMask: .borderless, backing: .buffered, defer: false)
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
         host.isReleasedWhenClosed = false
         host.isRestorable = false
         terminalView.frame = host.contentLayoutRect
@@ -229,8 +234,13 @@ final class TerminalRuntime: NSObject, ObservableObject {
         terminalView.controller = nil
         controller = nil
         events = .init(
-            onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in }, onTitleChange: { _ in }, onOpenURL: { _ in },
-            onNotification: { _, _ in })
+            onClose: {},
+            onFocus: {},
+            onWorkingDirectoryChange: { _ in },
+            onTitleChange: { _ in },
+            onOpenURL: { _ in },
+            onNotification: { _, _ in }
+        )
     }
 
     private func startHiddenTicking() {

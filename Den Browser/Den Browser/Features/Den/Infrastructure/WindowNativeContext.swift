@@ -47,7 +47,9 @@ final class WindowFeedbackOutput {
     }
 
     func publish(
-        title: String?, body: String, severity: DenFeedback.Severity = .info,
+        title: String?,
+        body: String,
+        severity: DenFeedback.Severity = .info,
         target: DenFeedback.Target? = nil
     ) {
         guard let feedback = publishValue(title, body, severity, target) else { return }
@@ -77,11 +79,17 @@ final class WindowNativeContext {
     let onWillResetDen: (() -> Void)?
 
     init(
-        storage: DenProfileResources, configuration: BoardRuntimeConfiguration,
-        windowResources: DenWindowResources, connection: RuntimeWindowConnection,
-        runtimes: BoardRuntimeAccess, navigation: WindowNavigationBindings,
-        feedback: WindowFeedbackOutput, pasteboard: NSPasteboard, inputSourceTracker: BoardInputSourceTracker,
-        canPresentDesk: ((DeskID) -> Bool)?, onDeskPresentationRequest: ((DeskID) -> Bool)?,
+        storage: DenProfileResources,
+        configuration: BoardRuntimeConfiguration,
+        windowResources: DenWindowResources,
+        connection: RuntimeWindowConnection,
+        runtimes: BoardRuntimeAccess,
+        navigation: WindowNavigationBindings,
+        feedback: WindowFeedbackOutput,
+        pasteboard: NSPasteboard,
+        inputSourceTracker: BoardInputSourceTracker,
+        canPresentDesk: ((DeskID) -> Bool)?,
+        onDeskPresentationRequest: ((DeskID) -> Bool)?,
         onWillResetDen: (() -> Void)?
     ) {
         self.storage = storage
@@ -98,7 +106,9 @@ final class WindowNativeContext {
         self.onWillResetDen = onWillResetDen
         let preferences = configuration.preferences
         essentialEditing = EssentialEditing(
-            read: { preferences.essentials }, persist: { preferences.setEssentials($0) })
+            read: { preferences.essentials },
+            persist: { preferences.setEssentials($0) }
+        )
     }
 
     var canCaptureFacing: Bool { storage.activeDrag == nil }
@@ -139,7 +149,8 @@ final class WindowNativeContext {
     var zmxClient: ZmxClient {
         ZmxClient(
             executablePath: configuration.preferences.zmxPath,
-            commandRunner: configuration.terminalCommandRunner)
+            commandRunner: configuration.terminalCommandRunner
+        )
     }
 
     var zellijClient: ZellijClient {

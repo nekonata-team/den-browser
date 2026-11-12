@@ -17,7 +17,8 @@ func observe(peekaboo: String, pid: pid_t, environment: [String: String]) throws
             "see", "--pid", String(pid), "--tree", "--no-screenshot", "--fresh", "--no-remote",
             "--json",
         ],
-        environment: environment)
+        environment: environment
+    )
     let response = try parseJSONObject(output)
     guard response["success"] as? Bool == true,
         let data = response["data"] as? [String: Any]
@@ -111,13 +112,17 @@ func click(
     let frame = try bounds(candidates[0])
     let position = "\(Int(frame.midX)),\(Int(frame.midY))"
     try peek(
-        ["move", "--at=\(position)", "--global", "--smooth", "--duration", "550ms"], peekaboo: peekaboo,
+        ["move", "--at=\(position)", "--global", "--smooth", "--duration", "550ms"],
+        peekaboo: peekaboo,
         target: target,
-        environment: environment)
+        environment: environment
+    )
     try peek(
         ["click", "--at=\(position)", "--global"] + (twice ? ["--double"] : right ? ["--right"] : []),
         peekaboo: peekaboo,
-        target: target, environment: environment)
+        target: target,
+        environment: environment
+    )
 }
 
 func boardHeaders(peekaboo: String, pid: pid_t, environment: [String: String]) throws -> [String: CGRect] {
@@ -147,8 +152,11 @@ func openBoard(
     }
     try click("open-board-input", peekaboo: peekaboo, pid: pid, target: target, environment: environment)
     try peek(
-        ["type", input, "--delay", "15", "--accept-dispatched"], peekaboo: peekaboo, target: target,
-        environment: environment)
+        ["type", input, "--delay", "15", "--accept-dispatched"],
+        peekaboo: peekaboo,
+        target: target,
+        environment: environment
+    )
     try wait("the Open Board input") {
         try tree(peekaboo: peekaboo, pid: pid, environment: environment).contains(input)
     }

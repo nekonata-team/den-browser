@@ -20,7 +20,12 @@ struct NativeBoardActivityTests {
                 state: DenStateNormalization.normalize(
                     DenState(
                         desks: [firstDesk, secondDesk],
-                        focusedDeskID: firstDesk.id))), configuration: makeTestBoardRuntimeConfiguration())
+                        focusedDeskID: firstDesk.id
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()

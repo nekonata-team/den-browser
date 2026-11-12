@@ -6,7 +6,9 @@ import Foundation
 extension IPCWindowBindings {
     init(id: UUID, profileID: ProfileID, session: ProfileWindowSession) {
         self.init(
-            id: id, profileID: profileID, resources: session.resources,
+            id: id,
+            profileID: profileID,
+            resources: session.resources,
             presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
             searchEngine: { [preferences = session.configuration.preferences] in preferences.searchEngine },
             availableBoardWidth: { session.connection.availableBoardWidth() },
@@ -25,15 +27,19 @@ extension IPCWindowBindings {
                 createInspection: { session.sideBoards.createInspectionBoard(targetBoardID: $0, focus: $1) },
                 sendSignal: { try await session.runtimes.sendSignal($0, to: $1) },
                 creationNotice: session.boardOpening.boardCreationNotifications(),
-                removalNotice: session.boardRemoval.boardRemovalNotifications()),
+                removalNotice: session.boardRemoval.boardRemovalNotifications()
+            ),
             desk: Desk(
                 isAvailable: { session.context.canPresentDesk?($0) ?? true },
-                lifecycleNotice: session.desks.deskLifecycleNotifications()),
+                lifecycleNotice: session.desks.deskLifecycleNotifications()
+            ),
             drawer: Drawer(
                 keepNotice: session.drawer.drawerItemNotifications(opensDrawer: false, selectsItem: false),
                 itemNotice: session.drawer.drawerItemNotifications(),
                 placementNotice: { session.drawer.drawerBoardCreationNotifications($0) },
                 didKeep: { session.context.feedback.publish("Kept in Drawer.", severity: .success) },
-                didPlace: { session.connection.onWindowEffect?(.dismissTemporaryPresentation) }))
+                didPlace: { session.connection.onWindowEffect?(.dismissTemporaryPresentation) }
+            )
+        )
     }
 }

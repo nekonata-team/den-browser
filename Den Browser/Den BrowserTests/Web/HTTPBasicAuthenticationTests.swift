@@ -47,7 +47,8 @@ struct HTTPBasicAuthenticationTests {
         #expect(runtime.failureCounts == [0])
         #expect(
             try await runtime.webView.evaluateJavaScript("document.body.innerText") as? String
-                == "Authentication required")
+                == "Authentication required"
+        )
     }
 
     @Test(arguments: [NSURLAuthenticationMethodServerTrust, NSURLAuthenticationMethodHTTPDigest])
@@ -56,10 +57,20 @@ struct HTTPBasicAuthenticationTests {
         let runtime = makeRuntime()
         defer { runtime.dispose() }
         let space = URLProtectionSpace(
-            host: "example.com", port: 443, protocol: "https", realm: nil, authenticationMethod: method)
+            host: "example.com",
+            port: 443,
+            protocol: "https",
+            realm: nil,
+            authenticationMethod: method
+        )
         let challenge = URLAuthenticationChallenge(
-            protectionSpace: space, proposedCredential: nil, previousFailureCount: 0,
-            failureResponse: nil, error: nil, sender: AuthenticationChallengeSender())
+            protectionSpace: space,
+            proposedCredential: nil,
+            previousFailureCount: 0,
+            failureResponse: nil,
+            error: nil,
+            sender: AuthenticationChallengeSender()
+        )
         var dispositions: [URLSession.AuthChallengeDisposition] = []
 
         // Act
@@ -77,14 +88,27 @@ struct HTTPBasicAuthenticationTests {
     func endingTheWebPresentationCancelsQueuedChallengesOnce(event: String) {
         // Arrange
         let runtime = BaseWebRuntime(
-            id: UUID(), initialURL: nil, websiteDataStore: .nonPersistent(),
-            userContentController: nil, sheetScale: 100)
+            id: UUID(),
+            initialURL: nil,
+            websiteDataStore: .nonPersistent(),
+            userContentController: nil,
+            sheetScale: 100
+        )
         let space = URLProtectionSpace(
-            host: "example.com", port: 443, protocol: "https", realm: nil,
-            authenticationMethod: NSURLAuthenticationMethodHTTPBasic)
+            host: "example.com",
+            port: 443,
+            protocol: "https",
+            realm: nil,
+            authenticationMethod: NSURLAuthenticationMethodHTTPBasic
+        )
         let challenge = URLAuthenticationChallenge(
-            protectionSpace: space, proposedCredential: nil, previousFailureCount: 0,
-            failureResponse: nil, error: nil, sender: AuthenticationChallengeSender())
+            protectionSpace: space,
+            proposedCredential: nil,
+            previousFailureCount: 0,
+            failureResponse: nil,
+            error: nil,
+            sender: AuthenticationChallengeSender()
+        )
         var dispositions: [URLSession.AuthChallengeDisposition] = []
         for _ in 0..<2 {
             runtime.webView(runtime.webView, didReceive: challenge) { disposition, credential in
@@ -108,8 +132,12 @@ struct HTTPBasicAuthenticationTests {
 
     private func makeRuntime() -> AuthenticationRuntime {
         AuthenticationRuntime(
-            id: UUID(), initialURL: nil, websiteDataStore: .nonPersistent(),
-            userContentController: nil, sheetScale: 100)
+            id: UUID(),
+            initialURL: nil,
+            websiteDataStore: .nonPersistent(),
+            userContentController: nil,
+            sheetScale: 100
+        )
     }
 }
 
@@ -127,7 +155,8 @@ private final class AuthenticationRuntime: BaseWebRuntime {
     }
 
     override func requestHTTPBasicCredential(
-        for challenge: URLAuthenticationChallenge, in webView: WKWebView,
+        for challenge: URLAuthenticationChallenge,
+        in webView: WKWebView,
         completion: @escaping @MainActor (URLCredential?) -> Void
     ) {
         failureCounts.append(challenge.previousFailureCount)
@@ -143,7 +172,9 @@ private final class AuthenticationRuntime: BaseWebRuntime {
     }
 
     override func webView(
-        _ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
     ) {
         complete(.failure(error))
     }

@@ -25,7 +25,9 @@ public enum PersistedProfileDocumentDecoder {
             throw DecodingError.dataCorrupted(
                 .init(
                     codingPath: [],
-                    debugDescription: "Persisted Profile document must be a JSON object."))
+                    debugDescription: "Persisted Profile document must be a JSON object."
+                )
+            )
         }
 
         if version < 3 {

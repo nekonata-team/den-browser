@@ -14,11 +14,13 @@ struct ShortcutConfiguration {
             bindings = Dictionary(
                 uniqueKeysWithValues: ConfigurableShortcut.allCases.compactMap { shortcut in
                     preferences.shortcut(for: shortcut).map { (shortcut, $0) }
-                })
+                }
+            )
             deskNumberBinding = preferences.deskNumberBinding
         } else {
             bindings = Dictionary(
-                uniqueKeysWithValues: ConfigurableShortcut.allCases.map { ($0, $0.defaultBinding) })
+                uniqueKeysWithValues: ConfigurableShortcut.allCases.map { ($0, $0.defaultBinding) }
+            )
             deskNumberBinding = AppPreferences.defaultDeskNumberBinding
         }
     }
@@ -139,7 +141,8 @@ enum KeyboardRouter {
                 mode: context.mode,
                 filterPhase: filterPhase,
                 peekFirstResponder: peekFirstResponder,
-                choosingPlacementDesk: choosingPlacementDesk)
+                choosingPlacementDesk: choosingPlacementDesk
+            )
         case .zmxSessions(let filterPhase, let hasQuery, let hasSelection):
             return routeZmxSessions(event, filterPhase: filterPhase, hasQuery: hasQuery, hasSelection: hasSelection)
         case .textInput:
@@ -275,7 +278,8 @@ enum KeyboardRouter {
             return .perform(.essentials(.showNotFound(character)))
         }
         return .perform(
-            .essentials(event.modifiers.contains(.option) ? .launchInDrawer(essential.id) : .launch(essential.id)))
+            .essentials(event.modifiers.contains(.option) ? .launchInDrawer(essential.id) : .launch(essential.id))
+        )
     }
 
     private static func routeDenMode(_ event: KeyEvent) -> InputDecision {
@@ -496,7 +500,8 @@ enum KeyboardRouter {
         {
             if event.isRepeat { return .consume(.ignoredRepeat) }
             return .perform(
-                .overview(character == "u" ? .undoBoardOperation : .removeSelection(focusNext: character == "d")))
+                .overview(character == "u" ? .undoBoardOperation : .removeSelection(focusNext: character == "d"))
+            )
         }
         if activeDrag == nil, let action = overviewZoomAction(event) {
             return .perform(.overview(action))
@@ -621,7 +626,9 @@ enum KeyboardRouter {
         binding(" "): KeyboardCommand(action: .board(.showOpenPanel)),
         binding("v"): KeyboardCommand(action: .board(.openFromClipboard), repeatPolicy: .ignore),
         binding("v", modifiers: [.option]): KeyboardCommand(
-            action: .board(.openClipboardInDrawer), repeatPolicy: .ignore),
+            action: .board(.openClipboardInDrawer),
+            repeatPolicy: .ignore
+        ),
         binding("n", modifiers: [.shift]): KeyboardCommand(action: .desk(.showNewPanel)),
         binding("p"): KeyboardCommand(action: .desk(.showSavePresetPanel), repeatPolicy: .ignore),
         binding("p", modifiers: [.shift]): KeyboardCommand(action: .desk(.showReplacePanel), repeatPolicy: .ignore),
@@ -640,12 +647,16 @@ enum KeyboardRouter {
         binding("+", modifiers: [.shift]): KeyboardCommand(action: .board(.adjustWidth(80))),
         binding("f"): KeyboardCommand(action: .board(.toggleMaximized), repeatPolicy: .ignore),
         binding("f", modifiers: [.shift]): KeyboardCommand(
-            action: .application(.toggleFocusMode), repeatPolicy: .ignore),
+            action: .application(.toggleFocusMode),
+            repeatPolicy: .ignore
+        ),
         binding("c"): KeyboardCommand(action: .board(.center), repeatPolicy: .ignore),
         binding("t"): KeyboardCommand(action: .board(.toggleSheetNavigationPause), repeatPolicy: .ignore),
         binding("s"): KeyboardCommand(action: .board(.captureSheet), repeatPolicy: .ignore),
         binding("s", modifiers: [.control]): KeyboardCommand(
-            action: .board(.copySheetScreenshot), repeatPolicy: .ignore),
+            action: .board(.copySheetScreenshot),
+            repeatPolicy: .ignore
+        ),
         binding("y"): KeyboardCommand(action: .board(.copyLocation), repeatPolicy: .ignore),
         binding("y", modifiers: [.shift]): KeyboardCommand(action: .board(.copyID), repeatPolicy: .ignore),
         binding("a"): KeyboardCommand(action: .board(.moveBoardToDrawer), repeatPolicy: .ignore),
@@ -662,9 +673,13 @@ enum KeyboardRouter {
         binding("b"): KeyboardCommand(action: .essentials(.saveFocusedBoardAsEssential), repeatPolicy: .ignore),
         binding("e"): KeyboardCommand(action: .board(.showEditLinkPanel), repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: [.shift]): KeyboardCommand(
-            action: .board(.duplicateFirstSheet), repeatPolicy: .ignore),
+            action: .board(.duplicateFirstSheet),
+            repeatPolicy: .ignore
+        ),
         ShortcutBinding(key: .returnKey, modifiers: []): KeyboardCommand(
-            action: .board(.duplicate), repeatPolicy: .ignore),
+            action: .board(.duplicate),
+            repeatPolicy: .ignore
+        ),
     ]
 
     private static func binding(

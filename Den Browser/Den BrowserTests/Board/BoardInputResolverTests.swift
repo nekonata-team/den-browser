@@ -29,7 +29,8 @@ struct BoardInputResolverTests {
         #expect(BoardInputResolver.resolveZmxInput(":zmx 'unfinished") == .invalid)
         let name = "my project's session"
         #expect(
-            BoardInputResolver.resolveZellijInput(RecentItem.zellij(sessionName: name).displayText) == .session(name))
+            BoardInputResolver.resolveZellijInput(RecentItem.zellij(sessionName: name).displayText) == .session(name)
+        )
         #expect(BoardInputResolver.resolveZmxInput(RecentItem.zmx(sessionName: name).displayText) == .session(name))
     }
 
@@ -38,20 +39,35 @@ struct BoardInputResolverTests {
 
         #expect(
             try BoardInputResolver.resolveTerminalInput(
-                ":terminal", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
-                == temp.standardizedFileURL.path)
+                ":terminal",
+                homeDirectory: temp,
+                directoryExists: { $0 == temp.standardizedFileURL.path }
+            )?.get()
+                == temp.standardizedFileURL.path
+        )
         #expect(
             try BoardInputResolver.resolveTerminalInput(
-                ":terminal .", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
-                == temp.standardizedFileURL.path)
+                ":terminal .",
+                homeDirectory: temp,
+                directoryExists: { $0 == temp.standardizedFileURL.path }
+            )?.get()
+                == temp.standardizedFileURL.path
+        )
         #expect(
             try BoardInputResolver.resolveTerminalInput(
-                ":terminal \(temp.path)", homeDirectory: URL(fileURLWithPath: "/"),
-                directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
-                == temp.standardizedFileURL.path)
+                ":terminal \(temp.path)",
+                homeDirectory: URL(fileURLWithPath: "/"),
+                directoryExists: { $0 == temp.standardizedFileURL.path }
+            )?.get()
+                == temp.standardizedFileURL.path
+        )
         #expect(
             BoardInputResolver.resolveTerminalInput(
-                ":terminalnot", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path }) == nil)
+                ":terminalnot",
+                homeDirectory: temp,
+                directoryExists: { $0 == temp.standardizedFileURL.path }
+            ) == nil
+        )
     }
 
     @Test func rejectsMissingTerminalDirectory() {
@@ -60,7 +76,10 @@ struct BoardInputResolverTests {
 
         // Act
         let resolved = BoardInputResolver.resolveTerminalInput(
-            ":terminal missing", homeDirectory: home, directoryExists: { _ in false })
+            ":terminal missing",
+            homeDirectory: home,
+            directoryExists: { _ in false }
+        )
 
         // Assert
         #expect(throws: TerminalInputError.self) { try resolved?.get() }
@@ -98,7 +117,8 @@ struct BoardInputResolverTests {
         let fileInput = "file://localhost/tmp/Den%20Browser/index.html"
         #expect(
             BoardInputResolver.normalizedURL(from: fileInput, searchEngine: .google)
-                == URL(string: "file:///tmp/Den%20Browser/index.html"))
+                == URL(string: "file:///tmp/Den%20Browser/index.html")
+        )
         #expect(BoardInputResolver.resolveOpenBoardInput("ftp://example.com", searchEngine: .google) == nil)
         #expect(BoardInputResolver.resolveOpenBoardInput("mailto:user@example.com", searchEngine: .google) == nil)
         #expect(BoardInputResolver.resolveOpenBoardInput("https://", searchEngine: .google) == nil)
@@ -125,10 +145,12 @@ struct BoardInputResolverTests {
     @Test func stripsNewlinesWithoutChangingOtherCharacters() {
         #expect(
             WebURLPolicy.stripNewlines("https://example.com/long-\npath/to/\r\npage")
-                == "https://example.com/long-path/to/page")
+                == "https://example.com/long-path/to/page"
+        )
         #expect(
             WebURLPolicy.stripNewlines("  search query  ")
-                == "  search query  ")
+                == "  search query  "
+        )
         #expect(WebURLPolicy.stripNewlines("single line text") == "single line text")
     }
 }

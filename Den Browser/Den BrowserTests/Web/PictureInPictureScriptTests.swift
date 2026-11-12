@@ -11,14 +11,20 @@ struct PictureInPictureScriptTests {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
-            "<html><body>No videos</body></html>", baseURL: URL(string: "https://example.com/")!, in: webView)
+            "<html><body>No videos</body></html>",
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
         let url = try #require(Bundle.main.url(forResource: "PictureInPicture", withExtension: "js"))
         let source = try String(contentsOf: url, encoding: .utf8)
 
         // Act
         let result = try await webView.callAsyncJavaScript(
-            "\(source)\nreturn await denPictureInPicture.run(mode);", arguments: ["mode": "enter"], in: nil,
-            contentWorld: .page)
+            "\(source)\nreturn await denPictureInPicture.run(mode);",
+            arguments: ["mode": "enter"],
+            in: nil,
+            contentWorld: .page
+        )
 
         // Assert
         #expect(result as? String == "no-playing-video")

@@ -259,7 +259,8 @@ final class BoardNavigation {
         else { return }
 
         moveFocusedBoard(
-            toDeskAt: DeskIndex(rawValue: wrappedIndex(sourceDeskIndex.rawValue + delta, count: state.desks.count)))
+            toDeskAt: DeskIndex(rawValue: wrappedIndex(sourceDeskIndex.rawValue + delta, count: state.desks.count))
+        )
     }
 
     private func moveFocusedBoard(toDeskAt targetDeskIndex: DeskIndex) {

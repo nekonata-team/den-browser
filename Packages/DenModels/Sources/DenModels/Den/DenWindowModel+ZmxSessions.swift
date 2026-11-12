@@ -23,8 +23,10 @@ public extension DenWindowModel {
 
     func openZmxSession(_ sessionName: String) {
         if case .focusedExistingBoard = zmxActions.openSession(
-            sessionName, defaultBoardWidth, zmxSessionsReturnToOpenBoard)
-        {
+            sessionName,
+            defaultBoardWidth,
+            zmxSessionsReturnToOpenBoard
+        ) {
             hideZmxSessions(returnToSource: false)
         }
     }

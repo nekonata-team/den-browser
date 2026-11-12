@@ -29,7 +29,8 @@ struct InspectionBoardKeyTraversalTests {
                 charactersIgnoringModifiers: characters,
                 isARepeat: false,
                 keyCode: 48
-            ))
+            )
+        )
 
         // Act
         let direction = InspectionBoardKeyTraversal.movesBackward(for: event)
@@ -52,7 +53,8 @@ struct InspectionBoardKeyTraversalTests {
                 charactersIgnoringModifiers: "a",
                 isARepeat: false,
                 keyCode: 0
-            ))
+            )
+        )
 
         // Act
         let direction = InspectionBoardKeyTraversal.movesBackward(for: event)

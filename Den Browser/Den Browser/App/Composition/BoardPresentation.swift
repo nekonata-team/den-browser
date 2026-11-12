@@ -39,6 +39,7 @@ extension BoardSurfaceModel {
                 case .resetSize: session.runtimes.resetFocusedSheetSize()
                 case .moveToDesk(let number): session.boardNavigation.moveFocusedBoard(toDeskNumber: number)
                 }
-            })
+            }
+        )
     }
 }

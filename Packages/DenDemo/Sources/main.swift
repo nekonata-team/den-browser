@@ -49,7 +49,8 @@ func main() throws {
     guard let scenario = scenarios[scenarioName] else {
         throw DemoError(
             description:
-                "Unknown scenario: \"\(scenarioName)\". Available: \(scenarios.keys.sorted().joined(separator: ", "))")
+                "Unknown scenario: \"\(scenarioName)\". Available: \(scenarios.keys.sorted().joined(separator: ", "))"
+        )
     }
 
     let output = outputPath.map { URL(fileURLWithPath: $0) }

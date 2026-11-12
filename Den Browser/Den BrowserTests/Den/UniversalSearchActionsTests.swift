@@ -16,15 +16,20 @@ struct UniversalSearchActionsTests {
         let second = DeskState(label: "Second", boards: [target], focusedBoardID: target.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second]))
+            )
         ) { session, model in
             model.isDenMode = true
             model.showUniversalSearch()
 
             // Act
             let error = UniversalSearchActions.perform(
-                .board(target.id), session: session, windowModel: model,
-                openProfile: { _ in false }, openSettings: {})
+                .board(target.id),
+                session: session,
+                windowModel: model,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
 
             // Assert
             #expect(error == nil)
@@ -42,7 +47,8 @@ struct UniversalSearchActionsTests {
         let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             #expect(session.essentials.saveEssential(name: "Example", key: "e", input: input))
             let essential = try #require(session.configuration.preferences.essentials.first)
@@ -50,8 +56,12 @@ struct UniversalSearchActionsTests {
 
             // Act
             let error = UniversalSearchActions.perform(
-                .essential(essential.id), session: session, windowModel: model,
-                openProfile: { _ in false }, openSettings: {})
+                .essential(essential.id),
+                session: session,
+                windowModel: model,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
 
             // Assert
             #expect(error == nil)
@@ -68,14 +78,19 @@ struct UniversalSearchActionsTests {
         let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             model.showUniversalSearch()
 
             // Act
             let error = UniversalSearchActions.perform(
-                .createBoard("unsupported://example"), session: session, windowModel: model,
-                openProfile: { _ in false }, openSettings: {})
+                .createBoard("unsupported://example"),
+                session: session,
+                windowModel: model,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
 
             // Assert
             #expect(error != nil)
@@ -87,11 +102,15 @@ struct UniversalSearchActionsTests {
     func webInputOpensInDrawerWithoutCreatingBoard(fromEssential: Bool) throws {
         // Arrange
         let existing = BoardState(
-            label: "Existing", width: 520, currentSheetURL: URL(string: "https://existing.example/"))
+            label: "Existing",
+            width: 520,
+            currentSheetURL: URL(string: "https://existing.example/")
+        )
         let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             let input = "Swift concurrency"
             let essential = Essential(name: "Search", key: "s", input: input)
@@ -102,8 +121,13 @@ struct UniversalSearchActionsTests {
 
             // Act
             let error = UniversalSearchActions.perform(
-                target, session: session, windowModel: model, inDrawer: true,
-                openProfile: { _ in false }, openSettings: {})
+                target,
+                session: session,
+                windowModel: model,
+                inDrawer: true,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
 
             // Assert
             #expect(error == nil)
@@ -111,7 +135,10 @@ struct UniversalSearchActionsTests {
             #expect(
                 item.url
                     == BoardInputResolver.normalizedURL(
-                        from: input, searchEngine: session.configuration.preferences.searchEngine))
+                        from: input,
+                        searchEngine: session.configuration.preferences.searchEngine
+                    )
+            )
             #expect(session.navigation.focusedDesk?.boards.map(\.id) == [existing.id])
             #expect(model.isDrawerOpen)
             #expect(model.drawer.expandedItemID == item.id)
@@ -127,7 +154,8 @@ struct UniversalSearchActionsTests {
         let desk = DeskState(label: "Desk", boards: [])
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             ({
                 model.showUniversalSearch()
@@ -136,11 +164,16 @@ struct UniversalSearchActionsTests {
 
                 // Act
                 let error = UniversalSearchActions.perform(
-                    target, session: session, windowModel: model, inDrawer: true,
+                    target,
+                    session: session,
+                    windowModel: model,
+                    inDrawer: true,
                     openProfile: { _ in
                         openedProfile = true
                         return true
-                    }, openSettings: { openedSettings = true })
+                    },
+                    openSettings: { openedSettings = true }
+                )
 
                 // Assert
                 #expect(error != nil)
@@ -160,7 +193,8 @@ struct UniversalSearchActionsTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(makeNativeTestState(boards: [existing])),
-                recentItems: [.search("other"), item])
+                recentItems: [.search("other"), item]
+            )
         ) { session in
             do {
                 let denWindowComposition = DenWindowComposition(session: session)
@@ -172,8 +206,12 @@ struct UniversalSearchActionsTests {
 
                 // Act
                 let error = UniversalSearchActions.perform(
-                    .recent(item), session: session, windowModel: model,
-                    openProfile: { _ in false }, openSettings: {})
+                    .recent(item),
+                    session: session,
+                    windowModel: model,
+                    openProfile: { _ in false },
+                    openSettings: {}
+                )
 
                 // Assert
                 #expect(error == nil)
@@ -181,7 +219,8 @@ struct UniversalSearchActionsTests {
                 #expect(session.navigation.focusedBoard?.id != existing.id)
                 #expect(
                     session.navigation.focusedBoard?.currentSheetURL?.absoluteString
-                        == item.displayText)
+                        == item.displayText
+                )
                 #expect(session.resources.recentItems.first == item)
                 #expect(model.temporaryContext == nil)
             }

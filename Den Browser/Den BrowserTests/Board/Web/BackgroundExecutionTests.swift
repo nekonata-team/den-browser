@@ -13,7 +13,11 @@ struct BackgroundExecutionTests {
         // Arrange
         let normal = BoardState(label: "Normal", width: 520, currentSheetURL: nil)
         let enabled = BoardState(
-            label: "Background", width: 520, currentSheetURL: nil, backgroundExecutionEnabled: true)
+            label: "Background",
+            width: 520,
+            currentSheetURL: nil,
+            backgroundExecutionEnabled: true
+        )
         let shown = DeskState(label: "Shown", boards: [normal], focusedBoardID: normal.id)
         let hidden = DeskState(label: "Hidden", boards: [enabled], focusedBoardID: enabled.id)
         var saved: DenState?
@@ -22,7 +26,8 @@ struct BackgroundExecutionTests {
             onSave: {
                 saved = $0
                 return true
-            })
+            }
+        )
         try withTestSession(resources: resources) { session in
             defer { session.runtimes.releaseRuntimes() }
             // Assert restored execution
@@ -60,7 +65,9 @@ struct BackgroundExecutionTests {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
         let webView = RuntimeWKWebView(
-            frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: configuration)
+            frame: NSRect(x: 0, y: 0, width: 800, height: 600),
+            configuration: configuration
+        )
         let originalPolicy = webView.configuration.preferences.inactiveSchedulingPolicy
         let originalOcclusion = webView._windowOcclusionDetectionEnabled
         defer {
@@ -78,7 +85,9 @@ struct BackgroundExecutionTests {
                 requestAnimationFrame(() => rendered++);
             };
             </script>
-            """, baseURL: nil)
+            """,
+            baseURL: nil
+        )
         try await wait(webView, for: "typeof window.clicks === 'number'")
         webView.setBackgroundExecutionEnabled(false)
         try await wait(webView, for: "document.visibilityState === 'hidden'")

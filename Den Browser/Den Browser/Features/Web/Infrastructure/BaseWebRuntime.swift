@@ -164,7 +164,8 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     }
 
     func requestHTTPBasicCredential(
-        for challenge: URLAuthenticationChallenge, in webView: WKWebView,
+        for challenge: URLAuthenticationChallenge,
+        in webView: WKWebView,
         completion: @escaping @MainActor (URLCredential?) -> Void
     ) {
         let id = UUID()

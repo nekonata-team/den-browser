@@ -8,7 +8,8 @@ public func profileDisplayColor(for rgb: ProfileRGB) -> Color {
         red: Double(rgb.red) / 255,
         green: Double(rgb.green) / 255,
         blue: Double(rgb.blue) / 255,
-        opacity: 1)
+        opacity: 1
+    )
 }
 
 public func profileRGB(from color: Color) -> ProfileRGB? {
@@ -16,7 +17,8 @@ public func profileRGB(from color: Color) -> ProfileRGB? {
     return ProfileRGB(
         red: profileColorComponent(color.redComponent),
         green: profileColorComponent(color.greenComponent),
-        blue: profileColorComponent(color.blueComponent))
+        blue: profileColorComponent(color.blueComponent)
+    )
 }
 
 private func profileColorComponent(_ value: CGFloat) -> UInt8 {

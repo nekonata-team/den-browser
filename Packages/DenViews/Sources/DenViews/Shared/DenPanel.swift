@@ -61,7 +61,8 @@ extension View {
                 isSelected: isSelected,
                 profileColor: profileColor,
                 showsInactiveBackground: showsInactiveBackground
-            ))
+            )
+        )
     }
 }
 
@@ -85,7 +86,9 @@ private struct DenSelectionHighlight: ViewModifier {
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                     .strokeBorder(
-                        isSelected ? selectionColor.opacity(DenSurfaceColors.emphasisOpacity) : .clear, lineWidth: 1)
+                        isSelected ? selectionColor.opacity(DenSurfaceColors.emphasisOpacity) : .clear,
+                        lineWidth: 1
+                    )
             }
     }
 }

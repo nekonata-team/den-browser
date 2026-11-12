@@ -40,7 +40,11 @@ struct ProfileManagerTests {
         source.desks.createDesk(label: "Detached", preset: .empty)
         let route = try #require(
             manager.routeForOpeningDesk(
-                source.navigation.presentedDeskID, profileID: profileID, sourceWindowID: sourceRoute.windowID))
+                source.navigation.presentedDeskID,
+                profileID: profileID,
+                sourceWindowID: sourceRoute.windowID
+            )
+        )
         let detached = try #require(manager.session(for: route))
         let shared = source.resources
         let otherProfile = try #require(manager.createProfile(name: "Other", color: .blue))
@@ -58,7 +62,11 @@ struct ProfileManagerTests {
         #expect(manager.sessions(for: profileID).first === source)
         #expect(
             !manager.isDeskPresentedInAnotherWindow(
-                detached.navigation.presentedDeskID, profileID: profileID, excludingWindowID: sourceRoute.windowID))
+                detached.navigation.presentedDeskID,
+                profileID: profileID,
+                excludingWindowID: sourceRoute.windowID
+            )
+        )
         #expect(source.resources.state.desks.count == 1)
         #expect(source.navigation.presentedDeskID == source.resources.state.desks[0].id)
         #expect(source.resources.state.desks[0].boards.isEmpty)
@@ -87,7 +95,8 @@ struct ProfileManagerTests {
             ProfileColor.presets.allSatisfy {
                 let rgb = profileRGB(for: $0)
                 return rgb.red > 0 || rgb.green > 0 || rgb.blue > 0
-            })
+            }
+        )
     }
 
     @Test func ephemeralProfileManagerKeepsProfileAndDenStateInMemory() throws {
@@ -97,17 +106,21 @@ struct ProfileManagerTests {
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
                 defaults: makeTestDefaults(),
-                scriptSource: ""),
+                scriptSource: ""
+            ),
             preferences: AppPreferences(defaults: makeTestDefaults()),
             initialProfile: PersistedProfile(
                 profile: ProfileState(
                     id: ProfileID(),
                     name: "Private Den",
                     color: .gray,
-                    webProfileStore: .default),
-                den: .sample),
+                    webProfileStore: .default
+                ),
+                den: .sample
+            ),
             isEphemeral: true,
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let profile = try #require(manager.profiles.first)
         let session = try #require(manager.session(for: profile.id))
 
@@ -135,9 +148,18 @@ struct ProfileManagerTests {
         #expect(session.resources.save())
         let bitmap = try #require(
             NSBitmapImageRep(
-                bitmapDataPlanes: nil, pixelsWide: 16, pixelsHigh: 12, bitsPerSample: 8,
-                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-                bytesPerRow: 0, bitsPerPixel: 0))
+                bitmapDataPlanes: nil,
+                pixelsWide: 16,
+                pixelsHigh: 12,
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            )
+        )
         let image = NSImage(size: CGSize(width: 16, height: 12))
         image.addRepresentation(bitmap)
 
@@ -165,7 +187,8 @@ struct ProfileManagerTests {
             directory: directory,
             isEphemeral: true,
             webExtensionDescriptors: [extensionFixtureDescriptor()],
-            uBOLiteEnabled: true)
+            uBOLiteEnabled: true
+        )
         defer { manager.setUBOLiteEnabled(false) }
         let profileID = manager.personalProfileID
         let session = try #require(manager.session(for: profileID))
@@ -174,7 +197,8 @@ struct ProfileManagerTests {
         let desk = DeskState(label: "Terminal", boards: [terminal], focusedBoardID: terminal.id)
         session.resources.state = DenState(
             desks: [desk],
-            focusedDeskID: desk.id)
+            focusedDeskID: desk.id
+        )
         let window = NSWindow()
         let route = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
         defer { manager.unregister(window: window, for: route) }
@@ -197,7 +221,8 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(
             directory: directory,
             isEphemeral: true,
-            webExtensionDescriptors: [extensionFixtureDescriptor()])
+            webExtensionDescriptors: [extensionFixtureDescriptor()]
+        )
         defer { manager.setUBOLiteEnabled(false) }
         let profileID = manager.personalProfileID
         let firstRoute = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
@@ -205,7 +230,8 @@ struct ProfileManagerTests {
         manager.setUBOLiteEnabled(true)
         let sourceDeskID = first.navigation.presentedDeskID
         let boardID = try #require(
-            first.boardOpening.createBoard(urlString: URL(fileURLWithPath: #filePath).absoluteString))
+            first.boardOpening.createBoard(urlString: URL(fileURLWithPath: #filePath).absoluteString)
+        )
         let board = try #require(first.resources.state.board(for: boardID))
         let firstRuntime = first.runtimes.webRuntime(for: board)
         first.desks.createDesk(label: "Second", preset: .empty)
@@ -213,7 +239,9 @@ struct ProfileManagerTests {
             manager.routeForOpeningDesk(
                 sourceDeskID,
                 profileID: profileID,
-                sourceWindowID: firstRoute.windowID))
+                sourceWindowID: firstRoute.windowID
+            )
+        )
         let second = try #require(manager.session(for: secondRoute))
 
         #expect(first.runtimes.webExtensionHost != nil)
@@ -237,7 +265,8 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(
             directory: directory,
             isEphemeral: true,
-            webExtensionDescriptors: [extensionFixtureDescriptor()])
+            webExtensionDescriptors: [extensionFixtureDescriptor()]
+        )
         let profileID = manager.personalProfileID
         let session = try #require(manager.session(for: profileID))
         let fileURL = URL(fileURLWithPath: #filePath)
@@ -262,7 +291,8 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(
             directory: directory,
             isEphemeral: true,
-            webExtensionDescriptors: [extensionFixtureDescriptor()])
+            webExtensionDescriptors: [extensionFixtureDescriptor()]
+        )
         let session = try #require(manager.session(for: manager.personalProfileID))
         let itemID = try #require(session.drawer.keepInDrawer(URL(fileURLWithPath: #filePath), opensDrawer: false))
         let item = try #require(session.resources.state.drawerItems.first { $0.id == itemID })
@@ -286,7 +316,8 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(
             directory: directory,
             isEphemeral: true,
-            webExtensionDescriptors: [extensionFixtureDescriptor()])
+            webExtensionDescriptors: [extensionFixtureDescriptor()]
+        )
         let session = try #require(manager.session(for: manager.personalProfileID))
         let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
@@ -361,7 +392,9 @@ struct ProfileManagerTests {
             manager.routeForOpeningDesk(
                 detachedDeskID,
                 profileID: profileID,
-                sourceWindowID: sourceRoute.windowID))
+                sourceWindowID: sourceRoute.windowID
+            )
+        )
         let detached = try #require(manager.session(for: detachedRoute))
 
         // Assert - shared storage, distinct presented desk
@@ -372,7 +405,9 @@ struct ProfileManagerTests {
             manager.isDeskPresentedInAnotherWindow(
                 detachedDeskID,
                 profileID: profileID,
-                excludingWindowID: sourceRoute.windowID))
+                excludingWindowID: sourceRoute.windowID
+            )
+        )
 
         // Act - rename in one window reflects in shared state
         detached.desks.renameFocusedDesk(to: "Detached")
@@ -390,7 +425,9 @@ struct ProfileManagerTests {
             !manager.canOpenDeskInNewWindow(
                 sourceDeskID,
                 profileID: profileID,
-                sourceWindowID: sourceRoute.windowID))
+                sourceWindowID: sourceRoute.windowID
+            )
+        )
 
         // Act - closing detached window allows source to focus that desk again
         let detachedWindow = NSWindow()
@@ -403,7 +440,9 @@ struct ProfileManagerTests {
             !manager.isDeskPresentedInAnotherWindow(
                 detachedDeskID,
                 profileID: profileID,
-                excludingWindowID: sourceRoute.windowID))
+                excludingWindowID: sourceRoute.windowID
+            )
+        )
         #expect(source.navigation.presentedDeskID == detachedDeskID)
     }
 
@@ -414,16 +453,24 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let profile = try #require(manager.profiles.first)
         let persistence = ProfilePersistence(
-            directoryURL: directory, isEphemeral: false, quarantineFile: ProfilePersistence.moveFileToQuarantine)
+            directoryURL: directory,
+            isEphemeral: false,
+            quarantineFile: ProfilePersistence.moveFileToQuarantine
+        )
         try persistence.save(
             PersistedProfile(
-                profile: profile, den: DenState(desks: [], focusedDeskID: DeskID())))
+                profile: profile,
+                den: DenState(desks: [], focusedDeskID: DeskID())
+            )
+        )
 
         // Act
         let restored = makeProfileManager(directory: directory)
         let session = try #require(restored.session(for: profile.id))
         let saved = try JSONDecoder().decode(
-            PersistedProfile.self, from: Data(contentsOf: profileURL(profile.id, in: directory)))
+            PersistedProfile.self,
+            from: Data(contentsOf: profileURL(profile.id, in: directory))
+        )
 
         // Assert
         #expect(session.resources.state.desks.count == 1)
@@ -438,7 +485,8 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let profileURL = profileURL(manager.personalProfileID, in: directory)
         var object = try #require(
-            JSONSerialization.jsonObject(with: Data(contentsOf: profileURL)) as? [String: Any])
+            JSONSerialization.jsonObject(with: Data(contentsOf: profileURL)) as? [String: Any]
+        )
         object["futureField"] = "preserved"
         let originalData = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
         try originalData.write(to: profileURL)
@@ -527,7 +575,8 @@ struct ProfileManagerTests {
             preferences: AppPreferences(defaults: makeTestDefaults()),
             removeDataStore: { _ in removedWebsiteData = true },
             removeExtensionData: { _ in removedExtensionData = true },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
         let route = ProfileWindowRoute(profileID: work.id)
         let window = NSWindow()
@@ -590,7 +639,8 @@ struct ProfileManagerTests {
                 if fails { throw ExpectedError() }
             },
             removeExtensionData: { _ in },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
         var openedProfiles: [ProfileID] = []
         manager.openWindowAction = { openedProfiles.append($0.profileID) }
@@ -636,7 +686,8 @@ struct ProfileManagerTests {
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(defaults: makeTestDefaults(), scriptSource: ""),
             preferences: AppPreferences(defaults: makeTestDefaults()),
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
 
         // Assert
         #expect(manager.canOpenWindow(for: manager.personalProfileID))
@@ -654,7 +705,8 @@ struct ProfileManagerTests {
             preferences: AppPreferences(defaults: makeTestDefaults()),
             removeDataStore: { _ in },
             removeExtensionData: { _ in throw ExpectedError() },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
 
         // Act
@@ -674,13 +726,15 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let navigation = SheetNavigationManager(
             defaults: makeTestDefaults(),
-            scriptSource: "")
+            scriptSource: ""
+        )
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: AppPreferences(defaults: makeTestDefaults()),
             removeDataStore: { _ in throw ExpectedError() },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
 
         // Act
@@ -782,7 +836,8 @@ struct ProfileManagerTests {
         // Assert
         #expect(session.resources.recentlyRemovedBoards.first?.board.id == boardID)
         #expect(
-            restored.session(for: personalID)?.navigation.focusedDesk?.boards.contains { $0.id == boardID } == false)
+            restored.session(for: personalID)?.navigation.focusedDesk?.boards.contains { $0.id == boardID } == false
+        )
         #expect(restored.session(for: personalID)?.resources.recentlyRemovedBoards.isEmpty == true)
     }
 
@@ -801,26 +856,35 @@ struct ProfileManagerTests {
             sheetNavigation: navigation,
             preferences: preferences,
             removeDataStore: { _ in },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let second = try #require(manager.createProfile(name: "Second", color: .pink))
         let firstSession = try #require(manager.session(for: manager.personalProfileID))
         let secondSession = try #require(manager.session(for: second.id))
         let firstBoard = board("First")
         let secondBoard = board("Second")
         firstSession.resources.state = DenState(
-            desks: [desk("First", boards: [firstBoard])], focusedDeskID: DeskID())
+            desks: [desk("First", boards: [firstBoard])],
+            focusedDeskID: DeskID()
+        )
         firstSession.boardNavigation.focusDesk(firstSession.resources.state.desks[0].id)
         secondSession.resources.state = DenState(
-            desks: [desk("Second", boards: [secondBoard])], focusedDeskID: DeskID())
+            desks: [desk("Second", boards: [secondBoard])],
+            focusedDeskID: DeskID()
+        )
         secondSession.boardNavigation.focusDesk(secondSession.resources.state.desks[0].id)
         let firstWebView = firstSession.runtimes.webRuntime(for: firstBoard).webView
         let secondWebView = secondSession.runtimes.webRuntime(for: secondBoard).webView
 
         // Act
         let firstHandled = navigation.handleScriptMessage(
-            ["action": "openBoard", "url": "https://first.example/"], from: firstWebView)
+            ["action": "openBoard", "url": "https://first.example/"],
+            from: firstWebView
+        )
         let secondHandled = navigation.handleScriptMessage(
-            ["action": "openBoard", "url": "https://second.example/"], from: secondWebView)
+            ["action": "openBoard", "url": "https://second.example/"],
+            from: secondWebView
+        )
 
         // Assert
         #expect(firstWebView.configuration.websiteDataStore !== secondWebView.configuration.websiteDataStore)
@@ -829,15 +893,18 @@ struct ProfileManagerTests {
         #expect(
             firstSession.navigation.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://first.example/")
-            } == true)
+            } == true
+        )
         #expect(
             secondSession.navigation.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://second.example/")
-            } == true)
+            } == true
+        )
         #expect(
             firstSession.navigation.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://second.example/")
-            } == false)
+            } == false
+        )
     }
 
     @Test func corruptIndexIsQuarantinedAndRebuiltFromProfiles() throws {
@@ -868,7 +935,8 @@ struct ProfileManagerTests {
         let work = try #require(manager.createProfile(name: "Work", color: .purple))
         let profileURL = profileURL(work.id, in: directory)
         var object = try #require(
-            JSONSerialization.jsonObject(with: Data(contentsOf: profileURL)) as? [String: Any])
+            JSONSerialization.jsonObject(with: Data(contentsOf: profileURL)) as? [String: Any]
+        )
         object["schemaVersion"] = PersistedProfile.currentSchemaVersion + 1
         let unsupportedData = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
         try unsupportedData.write(to: profileURL)
@@ -920,7 +988,8 @@ struct ProfileManagerTests {
         // Act
         let restored = makeProfileManager(
             directory: directory,
-            quarantineFile: { _, _ in throw ExpectedError() })
+            quarantineFile: { _, _ in throw ExpectedError() }
+        )
 
         // Assert
         #expect(restored.profile(id: work.id) == nil)
@@ -937,7 +1006,8 @@ struct ProfileManagerTests {
         let work = try #require(manager.createProfile(name: "Work", color: .purple))
         let indexURL = directory.appending(path: "profile-index.json")
         var object = try #require(
-            JSONSerialization.jsonObject(with: Data(contentsOf: indexURL)) as? [String: Any])
+            JSONSerialization.jsonObject(with: Data(contentsOf: indexURL)) as? [String: Any]
+        )
         object["profileIDs"] = [
             manager.personalProfileID.rawValue.uuidString,
             manager.personalProfileID.rawValue.uuidString,
@@ -961,7 +1031,8 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let navigation = SheetNavigationManager(
             defaults: makeTestDefaults(),
-            scriptSource: "")
+            scriptSource: ""
+        )
         var removedTypes: Set<String>?
         let manager = ProfileManager(
             directoryURL: directory,
@@ -970,12 +1041,15 @@ struct ProfileManagerTests {
             removeWebsiteDataTypes: { _, types in
                 removedTypes = types
             },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let personalID = manager.personalProfileID
 
         // Act
         let success = await manager.clearBrowsingData(
-            categories: [.cookies, .cache], profileID: personalID)
+            categories: [.cookies, .cache],
+            profileID: personalID
+        )
 
         // Assert
         #expect(success)
@@ -985,7 +1059,8 @@ struct ProfileManagerTests {
                     WKWebsiteDataTypeCookies,
                     WKWebsiteDataTypeDiskCache,
                     WKWebsiteDataTypeMemoryCache,
-                ]))
+                ])
+        )
     }
 
     @Test func failedSaveRetainsLatestStateForSubsequentWrite() throws {
@@ -1013,7 +1088,8 @@ struct ProfileManagerTests {
         let restored = makeProfileManager(directory: directory)
         let restoredSession = try #require(restored.session(for: manager.personalProfileID))
         #expect(
-            restoredSession.navigation.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true)
+            restoredSession.navigation.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true
+        )
     }
 
     @Test func boardAndRecentArePersistedInOneProfileWrite() throws {
@@ -1104,7 +1180,8 @@ struct ProfileManagerTests {
         #expect(
             restored.resources.state.desks[0].boards.map(\.width) == [
                 BoardState.maximumWidth - 10, BoardState.maximumWidth,
-            ])
+            ]
+        )
     }
 
     @Test func successfulImmediateSaveCancelsPendingDeferredSave() async throws {
@@ -1169,7 +1246,10 @@ struct ProfileManagerTests {
         session.boardNavigation.focusBoard(secondBoard.id)
         #expect(session.boardNavigation.beginBoardDrag(firstBoard.id))
         session.resources.boardMovement.preview(
-            secondBoard.id, to: BoardIndex(rawValue: 0), in: session.navigation.presentedDeskID)
+            secondBoard.id,
+            to: BoardIndex(rawValue: 0),
+            in: session.navigation.presentedDeskID
+        )
         manager.flushPendingDeferredSaves()
 
         // Assert
@@ -1196,7 +1276,10 @@ struct ProfileManagerTests {
         session.boardNavigation.focusBoard(secondBoard.id)
         #expect(session.boardNavigation.beginBoardDrag(firstBoard.id))
         session.resources.boardMovement.preview(
-            secondBoard.id, to: BoardIndex(rawValue: 0), in: session.navigation.presentedDeskID)
+            secondBoard.id,
+            to: BoardIndex(rawValue: 0),
+            in: session.navigation.presentedDeskID
+        )
         #expect(session.resources.saveDeskPresets())
 
         // Assert
@@ -1290,7 +1373,9 @@ struct ProfileManagerTests {
             manager.routeForOpeningDesk(
                 secondDeskID,
                 profileID: profileID,
-                sourceWindowID: route1.windowID))
+                sourceWindowID: route1.windowID
+            )
+        )
         let session2 = try #require(manager.session(for: route2))
         manager.register(window: window2, for: route2)
 
@@ -1329,7 +1414,9 @@ struct ProfileManagerTests {
                 manager.routeForOpeningDesk(
                     secondDeskID,
                     profileID: profileID,
-                    sourceWindowID: route1.windowID))
+                    sourceWindowID: route1.windowID
+                )
+            )
             let otherWindowSession = try #require(manager.session(for: route2))
             manager.register(window: window2, for: route2)
 
@@ -1424,10 +1511,12 @@ struct ProfileManagerTests {
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
                 defaults: makeTestDefaults(),
-                scriptSource: ""),
+                scriptSource: ""
+            ),
             preferences: AppPreferences(defaults: makeTestDefaults()),
             removeDataStore: { _ in throw RemovalError() },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
 
@@ -1449,10 +1538,12 @@ struct ProfileManagerTests {
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
                 defaults: makeTestDefaults(),
-                scriptSource: ""),
+                scriptSource: ""
+            ),
             preferences: AppPreferences(defaults: makeTestDefaults()),
             removeDataStore: { _ in throw RemovalError() },
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
         _ = await manager.deleteProfile(profile.id)
@@ -1486,7 +1577,8 @@ struct ProfileManagerTests {
         if uBOLiteEnabled { preferences.setUBOLiteEnabled(true) }
         let navigation = SheetNavigationManager(
             defaults: defaults,
-            scriptSource: "")
+            scriptSource: ""
+        )
         return ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
@@ -1494,14 +1586,17 @@ struct ProfileManagerTests {
             removeDataStore: { _ in },
             removeExtensionData: { profileID in
                 try ProfileExtensionDataStore.remove(
-                    profileID, directoryURL: directory.appending(path: "WebExtensions"))
+                    profileID,
+                    directoryURL: directory.appending(path: "WebExtensions")
+                )
             },
             isEphemeral: isEphemeral,
             websiteDataStore: { _ in .nonPersistent() },
             webExtensionDescriptors: webExtensionDescriptors,
             quarantineFile: quarantineFile ?? { source, destination in
                 try FileManager.default.moveItem(at: source, to: destination)
-            })
+            }
+        )
     }
 
     private func extensionFixtureDescriptor() -> WebExtensionDescriptor {
@@ -1510,7 +1605,8 @@ struct ProfileManagerTests {
             directoryURL: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent()
                 .deletingLastPathComponent()
-                .appending(path: "Fixtures/MV3Extension", directoryHint: .isDirectory))
+                .appending(path: "Fixtures/MV3Extension", directoryHint: .isDirectory)
+        )
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {

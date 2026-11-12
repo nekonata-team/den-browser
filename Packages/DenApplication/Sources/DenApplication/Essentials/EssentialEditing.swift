@@ -24,7 +24,11 @@ public struct EssentialEditing {
         let current = read()
         if let existing = current.first(where: { $0.key == essential.key }) {
             let replacement = Essential(
-                id: existing.id, name: essential.name, key: essential.key, input: essential.input)
+                id: existing.id,
+                name: essential.name,
+                key: essential.key,
+                input: essential.input
+            )
             return .confirmation(existing: existing, replacement: replacement)
         }
         return persist(current + [essential]) ? .saved(essential) : .persistenceFailed

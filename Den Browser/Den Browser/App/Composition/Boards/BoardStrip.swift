@@ -16,8 +16,10 @@ struct BoardStrip: View {
     var body: some View {
         DenViews.BoardStrip(
             model: BoardStripModel(
-                state: session.resources.store, movement: session.resources.boardMovement,
-                sizing: session.resources.boardSizing, deskUpdates: session.resources.deskUpdates,
+                state: session.resources.store,
+                movement: session.resources.boardMovement,
+                sizing: session.resources.boardSizing,
+                deskUpdates: session.resources.deskUpdates,
                 presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
                 prepareDrag: { session.connection.onWindowEffect?(.clearMaximizedBoard) },
                 focus: { session.boardNavigation.focusBoard($0, exitsDenMode: true) },
@@ -25,18 +27,28 @@ struct BoardStrip: View {
                 hasWebRuntime: { session.resources.webRuntimes[$0] != nil },
                 activateWebRuntime: { _ = session.runtimes.webRuntime(for: $0) },
                 centering: { session.configuration.preferences.boardCentering },
-                motion: { session.configuration.preferences.motionPreference }),
-            size: size, shouldShowHeader: shouldShowHeader, profileColor: profileColor,
-            boardSpacing: boardSpacing, boardHorizontalPadding: boardHorizontalPadding,
+                motion: { session.configuration.preferences.motionPreference }
+            ),
+            size: size,
+            shouldShowHeader: shouldShowHeader,
+            profileColor: profileColor,
+            boardSpacing: boardSpacing,
+            boardHorizontalPadding: boardHorizontalPadding,
             onOpenBoardAtEnd: onOpenBoardAtEnd
         ) { presentation in
             ActivatedBoardView(
-                board: presentation.board, isFocused: presentation.isFocused,
-                focusRequest: presentation.focusRequest, isDragging: presentation.isDragging,
+                board: presentation.board,
+                isFocused: presentation.isFocused,
+                focusRequest: presentation.focusRequest,
+                isDragging: presentation.isDragging,
                 isPointerFocusEnabled: presentation.isPointerFocusEnabled,
-                profileColor: presentation.profileColor, size: presentation.size,
-                isVisible: presentation.isVisible, onFocus: presentation.onFocus,
-                onDragChanged: presentation.onDragChanged, onDragEnded: presentation.onDragEnded)
+                profileColor: presentation.profileColor,
+                size: presentation.size,
+                isVisible: presentation.isVisible,
+                onFocus: presentation.onFocus,
+                onDragChanged: presentation.onDragChanged,
+                onDragEnded: presentation.onDragEnded
+            )
         }
     }
 }

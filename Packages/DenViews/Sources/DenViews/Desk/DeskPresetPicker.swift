@@ -214,7 +214,11 @@ struct DeskPresetPicker: View {
     private var personalChoices: [DeskPresetChoice] {
         windowModel.desks.deskPresets.filter { allowsEmptyPreset || !$0.boards.isEmpty }.map {
             DeskPresetChoice(
-                selection: .personal($0.id), label: $0.label, boards: $0.boards, sourceLabel: "My Preset")
+                selection: .personal($0.id),
+                label: $0.label,
+                boards: $0.boards,
+                sourceLabel: "My Preset"
+            )
         }
     }
 

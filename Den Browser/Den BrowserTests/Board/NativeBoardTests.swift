@@ -17,7 +17,8 @@ struct NativeBoardTests {
         let source = desk("Desk")
         try withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.configuration.preferences.setZellijPath("/opt/homebrew/bin/zellij")
 
@@ -37,7 +38,8 @@ struct NativeBoardTests {
         let source = desk("Desk")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             windowModel.showOpenBoardPanel()
             session.boardOpening.openBoard(input: ":zellij")
@@ -55,7 +57,8 @@ struct NativeBoardTests {
         ])
         try await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: runner
         ) { session, windowModel in
             session.configuration.preferences.setZmxPath("/opt/homebrew/bin/zmx")
@@ -92,14 +95,17 @@ struct NativeBoardTests {
             responses: [
                 ["list"]: TerminalCommandResult(
                     terminationStatus: 0,
-                    standardOutput: "name=den\nname=den-vi\tden.root=den\nname=old-root-debug\tden.root=old-root\n"),
+                    standardOutput: "name=den\nname=den-vi\tden.root=den\nname=old-root-debug\tden.root=old-root\n"
+                ),
                 ["kill", "den-vi", "--force"]: TerminalCommandResult(
                     terminationStatus: 0,
-                    standardOutput: ""),
+                    standardOutput: ""
+                ),
             ])
         await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: commandRunner
         ) { session, windowModel in
             session.configuration.preferences.setZmxPath("/opt/homebrew/bin/zmx")
@@ -110,19 +116,27 @@ struct NativeBoardTests {
             #expect(
                 windowModel.zmxSessions.groups == [
                     ZmxSessionGroup(
-                        rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"]),
+                        rootSessionName: "den",
+                        isRootActive: true,
+                        childSessionNames: ["den-vi"]
+                    ),
                     ZmxSessionGroup(
                         rootSessionName: "old-root",
                         isRootActive: false,
-                        childSessionNames: ["old-root-debug"]),
-                ])
+                        childSessionNames: ["old-root-debug"]
+                    ),
+                ]
+            )
             #expect(windowModel.zmxSessions.selectedSessionName == "den-vi")
             windowModel.zmxSessions.setQuery("vi")
             #expect(
                 windowModel.zmxSessions.filteredGroups
                     == [
                         ZmxSessionGroup(
-                            rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"])
+                            rootSessionName: "den",
+                            isRootActive: true,
+                            childSessionNames: ["den-vi"]
+                        )
                     ]
             )
             windowModel.clearZmxSessionFilter()
@@ -153,13 +167,16 @@ struct NativeBoardTests {
             responses: [
                 ["list"]: TerminalCommandResult(
                     terminationStatus: 0,
-                    standardOutput: "name=den\nname=den-vi\tden.root=den\n")
+                    standardOutput: "name=den\nname=den-vi\tden.root=den\n"
+                )
             ])
         await withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [existing], focusedBoardID: existing.id)]))
-            ), terminalCommandRunner: commandRunner
+                    makeNativeTestState(desks: [desk("Desk", boards: [existing], focusedBoardID: existing.id)])
+                )
+            ),
+            terminalCommandRunner: commandRunner
         ) { session, windowModel in
             session.configuration.preferences.setZmxPath("/opt/homebrew/bin/zmx")
             windowModel.showZmxSessions(selectedSessionName: "den-vi")
@@ -180,16 +197,21 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id)), onSave: nil
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id)),
+                onSave: nil
             ),
             configuration: makeTestBoardRuntimeConfiguration(
-                websiteDataStore: .nonPersistent(), sheetNavigation: makeTestSheetNavigationManager(),
-                preferences: AppPreferences(defaults: makeTestDefaults())))
+                websiteDataStore: .nonPersistent(),
+                sheetNavigation: makeTestSheetNavigationManager(),
+                preferences: AppPreferences(defaults: makeTestDefaults())
+            )
+        )
         let runtime = session.runtimes.terminalRuntime(for: terminal)
         let host = MV3WebExtensionHost(
             profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
-            userContentController: WKUserContentController())
+            userContentController: WKUserContentController()
+        )
         let window = host.window(for: UUID())
         defer {
             session.runtimes.releaseRuntimes()
@@ -206,7 +228,8 @@ struct NativeBoardTests {
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den",
-            workingDirectory: "/tmp/project")
+            workingDirectory: "/tmp/project"
+        )
         var side = BoardState(width: 360, zmxSessionName: "other", workingDirectory: "/tmp/side")
         side.role = .sideBoard(targetBoardID: sourceBoard.id)
         let boards = focusSide ? [sourceBoard, side] : [sourceBoard]
@@ -215,11 +238,13 @@ struct NativeBoardTests {
             responses: [
                 ["list", "--short"]: TerminalCommandResult(
                     terminationStatus: 0,
-                    standardOutput: "")
+                    standardOutput: ""
+                )
             ])
         try await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: runner
         ) { session, windowModel in
             session.configuration.preferences.setZmxPath("/usr/bin/zmx")
@@ -271,20 +296,24 @@ struct NativeBoardTests {
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den-vi",
-            workingDirectory: "/tmp/project")
+            workingDirectory: "/tmp/project"
+        )
         let source = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
         let commandRunner = StubTerminalCommandRunner(
             responses: [
                 ["list", "--short"]: TerminalCommandResult(
                     terminationStatus: 0,
-                    standardOutput: "den-vi\n"),
+                    standardOutput: "den-vi\n"
+                ),
                 ["get", "den-vi", "den.root"]: TerminalCommandResult(
                     terminationStatus: 0,
-                    standardOutput: "den\n"),
+                    standardOutput: "den\n"
+                ),
             ])
         await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: commandRunner
         ) { session, windowModel in
             session.configuration.preferences.setZmxPath("/usr/bin/zmx")
@@ -303,19 +332,27 @@ struct NativeBoardTests {
     func zmxSideBoardCreatesIndependentSessionInTheSameRoot(_ focus: Bool) async throws {
         // Arrange
         let primary = BoardState(
-            width: 640, zmxSessionName: "project-editor", workingDirectory: "/tmp/project",
-            rootSessionName: "old-root")
+            width: 640,
+            zmxSessionName: "project-editor",
+            workingDirectory: "/tmp/project",
+            rootSessionName: "old-root"
+        )
         let occupied = BoardState(width: 520, zmxSessionName: "project-3")
         let source = desk("Desk", boards: [primary, occupied], focusedBoardID: primary.id)
         let runner = StubTerminalCommandRunner(responses: [
             ["list", "--short"]: TerminalCommandResult(
-                terminationStatus: 0, standardOutput: "project-editor\nproject-2\n"),
+                terminationStatus: 0,
+                standardOutput: "project-editor\nproject-2\n"
+            ),
             ["get", "project-editor", "den.root"]: TerminalCommandResult(
-                terminationStatus: 0, standardOutput: "project\n"),
+                terminationStatus: 0,
+                standardOutput: "project\n"
+            ),
         ])
         try await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: runner
         ) { session, _ in
             session.configuration.preferences.setZmxPath("/usr/bin/zmx")
@@ -348,7 +385,8 @@ struct NativeBoardTests {
         ])
         await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: runner
         ) { session, _ in
             session.configuration.preferences.setZmxPath("/usr/bin/zmx")
@@ -369,11 +407,15 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [primary], focusedBoardID: primary.id)
         let runner = StubTerminalCommandRunner(responses: [
             ["list", "--short"]: TerminalCommandResult(
-                terminationStatus: 1, standardOutput: "", standardError: "Session lookup failed")
+                terminationStatus: 1,
+                standardOutput: "",
+                standardError: "Session lookup failed"
+            )
         ])
         await withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))),
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            ),
             terminalCommandRunner: runner
         ) { session, _ in
             session.configuration.preferences.setZmxPath("/usr/bin/zmx")
@@ -391,8 +433,10 @@ struct NativeBoardTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.boardOpening.openBoard(input: ":terminal /missing/den-browser-\(UUID().uuidString)")
 
@@ -415,7 +459,9 @@ struct NativeBoardTests {
                 backgroundPopup,
                 requestedURL: popupURL,
                 fromBoardID: sourceBoard.id,
-                modifierFlags: .command))
+                modifierFlags: .command
+            )
+        )
         let backgroundBoard = try #require(session.resources.state.desks[0].boards.first { $0.id != sourceBoard.id })
 
         // Assert
@@ -439,7 +485,9 @@ struct NativeBoardTests {
                 popup,
                 requestedURL: nil,
                 fromBoardID: sourceBoard.id,
-                modifierFlags: [.command, .shift]))
+                modifierFlags: [.command, .shift]
+            )
+        )
 
         // Assert
         let focusedBoard = try #require(session.navigation.focusedBoard)
@@ -462,7 +510,9 @@ struct NativeBoardTests {
                 popup,
                 requestedURL: nil,
                 fromBoardID: sourceBoard.id,
-                modifierFlags: []))
+                modifierFlags: []
+            )
+        )
 
         // Assert
         let focusedBoard = try #require(session.navigation.focusedBoard)
@@ -481,7 +531,9 @@ struct NativeBoardTests {
                 popup,
                 requestedURL: nil,
                 fromBoardID: sourceBoard.id,
-                modifierFlags: []))
+                modifierFlags: []
+            )
+        )
         let popupBoard = try #require(session.navigation.focusedBoard)
 
         // Act
@@ -514,20 +566,24 @@ struct NativeBoardTests {
             </script>
             """,
             baseURL: URL(string: "file:///tmp/window-open-popup-test.html")!,
-            in: sourceRuntime.webView)
+            in: sourceRuntime.webView
+        )
         sourceRuntime.webView.navigationDelegate = sourceRuntime
 
         // Act
         _ = try await sourceRuntime.webView.evaluateJavaScript(
-            "window.open('about:blank', '_blank'); true")
+            "window.open('about:blank', '_blank'); true"
+        )
         let popupBoard = try #require(session.resources.state.desks[0].boards.first { $0.id != sourceBoard.id })
         let popupRuntime = try #require(session.resources.webRuntimes[popupBoard.id])
         _ = try await popupRuntime.webView.evaluateJavaScript(
-            "window.opener.postMessage('popup-message', '*')")
+            "window.opener.postMessage('popup-message', '*')"
+        )
         try await SheetInteraction.waitForFunction(
             expression: "document.title === 'popup-message'",
             in: sourceRuntime.webView,
-            timeout: 5)
+            timeout: 5
+        )
 
         // Assert
         #expect(popupRuntime.webView !== sourceRuntime.webView)
@@ -554,14 +610,16 @@ struct NativeBoardTests {
             </script>
             """,
             baseURL: URL(string: "file:///tmp/timer-popup-test.html")!,
-            in: sourceRuntime.webView)
+            in: sourceRuntime.webView
+        )
         sourceRuntime.webView.navigationDelegate = sourceRuntime
 
         // Act
         try await SheetInteraction.waitForFunction(
             expression: "document.title === 'Opened'",
             in: sourceRuntime.webView,
-            timeout: 5)
+            timeout: 5
+        )
 
         // Assert
         #expect(session.resources.state.desks[0].boards.count == 2)
@@ -572,8 +630,10 @@ struct NativeBoardTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
 
         session.boardOpening.openBoard(input: ":terminal \(directory)", preferredWidth: 640)
@@ -600,8 +660,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -620,7 +682,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             ({
                 session.boardNavigation.prepareBoardLinkFocus(firstBoard.id)
@@ -645,12 +708,16 @@ struct NativeBoardTests {
         let desk = desk("Desk", boards: [source], focusedBoardID: source.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, windowModel in
             session.boardNavigation.prepareBoardLinkFocus(source.id)
             #expect(
                 session.boardOpening.createBoard(
-                    urlString: "https://focused.example", afterBoardID: source.id) != nil)
+                    urlString: "https://focused.example",
+                    afterBoardID: source.id
+                ) != nil
+            )
 
             #expect(windowModel.pendingBoardLinkFocus == nil)
             #expect(session.navigation.focusedBoard?.currentSheetURL?.host == "focused.example")
@@ -662,8 +729,10 @@ struct NativeBoardTests {
         let sourceDesk = desk("Desk", boards: [target], focusedBoardID: target.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         let inspectionID = try #require(session.sideBoards.createInspectionBoard(targetBoardID: target.id))
         let inspection = try #require(session.resources.state.board(for: inspectionID))
@@ -699,8 +768,10 @@ struct NativeBoardTests {
         let sourceDesk = desk("Desk", boards: [target, side], focusedBoardID: side.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         if fromFirstSheet {
@@ -718,7 +789,8 @@ struct NativeBoardTests {
         #expect(copy.label == target.label)
         #expect(copy.terminalWorkingDirectory == target.terminalWorkingDirectory)
         #expect(
-            copy.currentSheetURL == (fromFirstSheet && target.isWeb ? target.firstSheetURL : target.currentSheetURL))
+            copy.currentSheetURL == (fromFirstSheet && target.isWeb ? target.firstSheetURL : target.currentSheetURL)
+        )
     }
 
     @Test(arguments: [0, 1])
@@ -731,11 +803,14 @@ struct NativeBoardTests {
         let sourceDesk = desk(
             "Desk",
             boards: [target, side, following],
-            focusedBoardID: [target.id, side.id][focusedIndex])
+            focusedBoardID: [target.id, side.id][focusedIndex]
+        )
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let insertedID = try #require(session.boardOpening.createBoard(urlString: "https://new.example"))
@@ -748,12 +823,17 @@ struct NativeBoardTests {
     func inspectionBoardStartsAtCompactWidthRegardlessOfTargetWidth(targetWidth: Double) throws {
         // Arrange
         let target = BoardState(
-            label: "Target", width: targetWidth, currentSheetURL: URL(string: "https://example.com"))
+            label: "Target",
+            width: targetWidth,
+            currentSheetURL: URL(string: "https://example.com")
+        )
         let sourceDesk = desk("Desk", boards: [target], focusedBoardID: target.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let inspectionID = try #require(session.sideBoards.createInspectionBoard(targetBoardID: target.id))
@@ -768,7 +848,8 @@ struct NativeBoardTests {
         let data = Data(
             """
             {"id":"\(boardID.uuidString)","label":"Inspection Board","width":390,"content":{"kind":"inspection"}}
-            """.utf8)
+            """.utf8
+        )
 
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(BoardState.self, from: data)
@@ -780,7 +861,8 @@ struct NativeBoardTests {
         let data = Data(
             """
             {"id":"\(boardID.uuidString)","label":"Web","width":520,"content":{"kind":"web"}}
-            """.utf8)
+            """.utf8
+        )
 
         let board = try JSONDecoder().decode(BoardState.self, from: data)
 
@@ -813,13 +895,16 @@ struct NativeBoardTests {
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, windowModel in
             #expect(
                 session.boardOpening.createBoard(
                     urlString: "https://background.example",
                     afterBoardID: source.id,
-                    focus: false) != nil)
+                    focus: false
+                ) != nil
+            )
             let intent = try #require(windowModel.pendingBoardLinkFocus)
             #expect(intent.origin == .interactive)
             #expect(session.navigation.focusedBoard?.id == source.id)
@@ -838,14 +923,17 @@ struct NativeBoardTests {
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, windowModel in
             #expect(
                 session.boardOpening.createBoard(
                     urlString: "https://cli.example",
                     afterBoardID: source.id,
                     focus: false,
-                    origin: .cli) != nil)
+                    origin: .cli
+                ) != nil
+            )
             let intent = try #require(windowModel.pendingBoardLinkFocus)
 
             #expect(intent.origin == .cli)
@@ -858,7 +946,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [left, focused], focusedBoardID: focused.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             session.boardRemoval.removeBoard(left.id, origin: .cli)
 
@@ -874,8 +963,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let url = try #require(URL(string: "https://terminal-link.example/path"))
         defer { session.runtimes.releaseRuntimes() }
 
@@ -913,7 +1004,8 @@ struct NativeBoardTests {
             #expect(session.boardOpening.navigateFocusedBoard(urlString: "example.com/path?q=literal"))
             #expect(
                 session.navigation.focusedBoard?.currentSheetURL
-                    == URL(string: "https://example.com/path?q=literal"))
+                    == URL(string: "https://example.com/path?q=literal")
+            )
             #expect(session.boardOpening.navigateFocusedBoard(urlString: query))
             #expect(session.navigation.focusedBoard?.currentSheetURL?.host == "duckduckgo.com")
         }
@@ -932,7 +1024,8 @@ struct NativeBoardTests {
             _ = session.boardOpening.createBoard(urlString: "swift: concurrency")
             let searchURL = try #require(
                 session.navigation.focusedDesk?.boards.last?.currentSheetURL
-                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
+                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+            )
             #expect(searchURL.host == "www.google.com")
             #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
 
@@ -947,8 +1040,10 @@ struct NativeBoardTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/index.html#notes"))
 
         session.boardOpening.openBoard(input: fileURL.absoluteString)
@@ -969,8 +1064,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -989,8 +1086,10 @@ struct NativeBoardTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         _ = session.boardOpening.createBoard(urlString: "https://start.example/")
         let firstSheetURL = try #require(session.navigation.focusedBoard?.firstSheetURL)
@@ -1005,8 +1104,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.boardOpening.openBoard(input: "example.com", afterBoardID: boards.last?.id)
 
@@ -1019,8 +1120,10 @@ struct NativeBoardTests {
             let source = desk("Desk")
             let session = ProfileWindowSession(
                 resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-                configuration: makeTestBoardRuntimeConfiguration())
+                    state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+                ),
+                configuration: makeTestBoardRuntimeConfiguration()
+            )
 
             _ = session.boardOpening.createBoard(urlString: "https://example.com", preferredWidth: width)
 
@@ -1033,8 +1136,10 @@ struct NativeBoardTests {
         let focusedDesk = desk("Focused", boards: [source], focusedBoardID: source.id)
         let focusedSession = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         _ = focusedSession.boardOpening.createBoard(urlString: "https://example.com")
         #expect(focusedSession.navigation.focusedBoard?.width == 760)
     }
@@ -1047,8 +1152,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [primary, side], focusedBoardID: side.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let inheritedWidth = session.boardOpening.inheritedBoardWidth
@@ -1064,7 +1171,8 @@ struct NativeBoardTests {
         let emptyDesk = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [emptyDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [emptyDesk]))
+            )
         ) { session, windowModel in
             #expect(session.boardOpening.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
 
@@ -1072,7 +1180,9 @@ struct NativeBoardTests {
             #expect(windowModel.defaultBoardWidth == 682)
 
             _ = session.boardOpening.createBoard(
-                urlString: "https://example.com", preferredWidth: windowModel.defaultBoardWidth)
+                urlString: "https://example.com",
+                preferredWidth: windowModel.defaultBoardWidth
+            )
             #expect(session.navigation.focusedBoard?.width == 682)
         }
     }
@@ -1082,7 +1192,8 @@ struct NativeBoardTests {
         let essential = Essential(name: "Search", key: "s", input: "https://example.com")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [emptyDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [emptyDesk]))
+            )
         ) { session, windowModel in
             #expect(session.configuration.preferences.setEssentials([essential]))
             windowModel.updateBoardLayout(availableWidth: 1000, spacing: 12)
@@ -1095,7 +1206,9 @@ struct NativeBoardTests {
             pasteboard.clearContents()
             pasteboard.setString("https://clipboard.example.com", forType: .string)
             session.input.openBoardFromClipboard(
-                pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
+                pasteboard: pasteboard,
+                preferredWidth: windowModel.defaultBoardWidth
+            )
             #expect(session.navigation.focusedBoard?.width == 494)
         }
     }
@@ -1106,13 +1219,17 @@ struct NativeBoardTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [firstDesk, emptyDesk], focusedDeskID: firstDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [firstDesk, emptyDesk], focusedDeskID: firstDesk.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Open board on emptyDesk without focus
         _ = session.boardOpening.createBoard(
             urlString: "https://example.com",
-            focus: false)
+            focus: false
+        )
         #expect(session.resources.state.desks[0].boards.count == 2)
 
         // Focus empty desk and open in background
@@ -1120,7 +1237,8 @@ struct NativeBoardTests {
         #expect(session.resources.state.desks[1].focusedBoardID == nil)
         _ = session.boardOpening.createBoard(
             urlString: "https://example.com",
-            focus: false)
+            focus: false
+        )
 
         #expect(session.resources.state.desks[1].boards.count == 1)
         #expect(session.resources.state.desks[1].focusedBoardID == session.resources.state.desks[1].boards[0].id)
@@ -1137,12 +1255,16 @@ struct NativeBoardTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.runtimes.updateBoard(
             boardID: board.id,
             url: URL(string: "mailto:user@example.com"),
-            title: "Updated title")
+            title: "Updated title"
+        )
 
         #expect(session.navigation.focusedBoard?.currentSheetURL == URL(string: "https://before.example/"))
         #expect(session.navigation.focusedBoard?.label == "Updated title")
@@ -1160,7 +1282,10 @@ struct NativeBoardTests {
                     let callback: (DenState) -> Void = { _ in saveCount += 1 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.runtimes.updateBoard(boardID: board.id, url: nil, title: "New Title")
         #expect(session.navigation.focusedBoard?.label == "New Title")
@@ -1176,7 +1301,9 @@ struct NativeBoardTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])
+                )
+            )
         ) { session in
             session.boardNavigation.focusNextBoard()
             #expect(session.navigation.focusedDesk?.focusedBoardID == boards[1].id)
@@ -1196,8 +1323,10 @@ struct NativeBoardTests {
         let sourceDesk = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         do {
             let denWindowSession = session
             let denWindowComposition = DenWindowComposition(session: denWindowSession)
@@ -1217,7 +1346,8 @@ struct NativeBoardTests {
             #expect(
                 session.navigation.focusedDesk?.boards.contains {
                     $0.tutorialCompletedSteps?.contains(.navigateBoards) == true
-                } == true)
+                } == true
+            )
         }
     }
 
@@ -1225,7 +1355,8 @@ struct NativeBoardTests {
     func showingKeyboardShortcutsCompletesOptionalTutorialStepOnlyInDenMode(inDenMode: Bool) {
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         do {
             let denWindowSession = session
             let denWindowComposition = DenWindowComposition(session: denWindowSession)
@@ -1241,8 +1372,10 @@ struct NativeBoardTests {
             #expect(windowModel.isKeyboardShortcutsPresented)
             #expect(
                 session.resources.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(
-                    .keyboardShortcuts)
-                    == inDenMode)
+                    .keyboardShortcuts
+                )
+                    == inDenMode
+            )
         }
     }
 
@@ -1256,7 +1389,8 @@ struct NativeBoardTests {
                 onSave: { _ in
                     saveCount += 1
                     return true
-                })
+                }
+            )
         ) { session in
             session.boardNavigation.focusNextDesk()
             session.boardNavigation.focusPreviousDesk()
@@ -1280,7 +1414,8 @@ struct NativeBoardTests {
                 onSave: { _ in
                     saveCount += 1
                     return true
-                })
+                }
+            )
         ) { session, windowModel in
             windowModel.deskFilter.enter()
             windowModel.deskFilter.setQuery("board")
@@ -1302,8 +1437,10 @@ struct NativeBoardTests {
         let deskState = desk("Desk", boards: boards)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.resources.state.desks[0].focusedBoardID = nil
         #expect(session.navigation.focusedDesk?.focusedBoardID == nil)
 
@@ -1322,8 +1459,11 @@ struct NativeBoardTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [sourceDesk, otherDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [sourceDesk, otherDesk], focusedDeskID: sourceDesk.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.boardNavigation.focusFirstBoardInDesk(containing: boards[1].id)
         #expect(session.navigation.focusedDesk?.id == sourceDesk.id)
@@ -1343,7 +1483,8 @@ struct NativeBoardTests {
                 onSave: { _ in
                     saveCount += 1
                     return true
-                }),
+                }
+            ),
             configuration: makeTestBoardRuntimeConfiguration()
         )
 
@@ -1356,7 +1497,8 @@ struct NativeBoardTests {
         let boards = [board("A"), board("B"), board("C")]
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk", boards: boards)])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk", boards: boards)]))
+            )
         ) { session in
             #expect(!session.resources.boardMovement.canMove(boards[0].id, by: -1))
             #expect(session.resources.boardMovement.canMove(boards[0].id, by: 1))
@@ -1372,7 +1514,9 @@ struct NativeBoardTests {
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)])
+                )
+            )
         ) { session, windowModel in
             session.boardNavigation.moveFocusedBoardLeft()
             session.boardNavigation.moveFocusedBoardLeft()
@@ -1380,7 +1524,8 @@ struct NativeBoardTests {
             #expect(
                 session.navigation.focusedDesk?.boards.map(\.id) == [
                     boards[1].id, boards[0].id, boards[2].id,
-                ])
+                ]
+            )
             #expect(session.navigation.focusedDesk?.focusedBoardID == boards[1].id)
             #expect(windowModel.centerFocusedBoardRequest == 1)
         }
@@ -1396,12 +1541,16 @@ struct NativeBoardTests {
                 onSave: {
                     persistedState = $0
                     return true
-                }),
+                }
+            ),
             configuration: makeTestBoardRuntimeConfiguration()
         )
 
         session.resources.boardMovement.preview(
-            boards[0].id, to: BoardIndex(rawValue: 2), in: session.navigation.presentedDeskID)
+            boards[0].id,
+            to: BoardIndex(rawValue: 2),
+            in: session.navigation.presentedDeskID
+        )
         session.resources.save()
 
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id])
@@ -1418,7 +1567,9 @@ struct NativeBoardTests {
                 state: DenStateNormalization.normalize(
                     makeNativeTestState(desks: [
                         desk("Desk", boards: [target, side, after], focusedBoardID: target.id)
-                    ])))
+                    ])
+                )
+            )
         ) { session in
             session.boardNavigation.moveFocusedBoardRight()
             #expect(session.navigation.focusedDesk?.boards.map(\.id) == [after.id, target.id, side.id])
@@ -1441,7 +1592,8 @@ struct NativeBoardTests {
         let destination = desk("Destination")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, destination])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, destination]))
+            )
         ) { session in
             session.boardRemoval.removeBoard(side.id)
             session.boardNavigation.focusBoard(target.id)
@@ -1463,7 +1615,8 @@ struct NativeBoardTests {
         let destination = desk("Destination", boards: [destinationBoard], focusedBoardID: destinationBoard.id)
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, destination])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, destination]))
+            )
         ) { session in
             session.boardNavigation.moveFocusedBoardToNextDesk()
 
@@ -1471,7 +1624,8 @@ struct NativeBoardTests {
             #expect(
                 session.resources.state.desks[1].boards.map(\.id) == [
                     destinationBoard.id, target.id, side.id,
-                ])
+                ]
+            )
             #expect(session.navigation.focusedDesk?.focusedBoardID == side.id)
             #expect(session.navigation.focusedBoard?.width == 390)
         }
@@ -1489,7 +1643,8 @@ struct NativeBoardTests {
                 onSave: { _ in
                     saveCount += 1
                     return true
-                })
+                }
+            )
         ) { session, windowModel in
             session.boardNavigation.moveFocusedBoardRight()
 
@@ -1505,14 +1660,17 @@ struct NativeBoardTests {
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])
+                )
+            )
         ) { session, windowModel in
             session.boardNavigation.moveFocusedBoardRight()
             #expect(session.navigation.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(
                 session.navigation.focusedDesk?.boards.map(\.id) == [
                     boards[1].id, boards[0].id, boards[2].id, boards[3].id,
-                ])
+                ]
+            )
             #expect(windowModel.centerFocusedBoardRequest == 1)
 
             session.boardNavigation.moveFocusedBoardRight()
@@ -1520,7 +1678,8 @@ struct NativeBoardTests {
             #expect(
                 session.navigation.focusedDesk?.boards.map(\.id) == [
                     boards[1].id, boards[2].id, boards[0].id, boards[3].id,
-                ])
+                ]
+            )
             #expect(windowModel.centerFocusedBoardRequest == 2)
 
             session.boardNavigation.moveFocusedBoardRight()
@@ -1528,7 +1687,8 @@ struct NativeBoardTests {
             #expect(
                 session.navigation.focusedDesk?.boards.map(\.id) == [
                     boards[1].id, boards[2].id, boards[3].id, boards[0].id,
-                ])
+                ]
+            )
             #expect(windowModel.centerFocusedBoardRequest == 3)
         }
     }
@@ -1543,13 +1703,17 @@ struct NativeBoardTests {
                 onSave: {
                     savedStates.append($0)
                     return true
-                }),
+                }
+            ),
             configuration: makeTestBoardRuntimeConfiguration()
         )
 
         #expect(session.boardNavigation.beginBoardDrag(boards[0].id))
         session.resources.boardMovement.preview(
-            boards[0].id, to: BoardIndex(rawValue: 2), in: session.navigation.presentedDeskID)
+            boards[0].id,
+            to: BoardIndex(rawValue: 2),
+            in: session.navigation.presentedDeskID
+        )
         #expect(savedStates.isEmpty)
 
         session.resources.boardMovement.finishDrag()
@@ -1566,12 +1730,17 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: boards)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         #expect(session.boardNavigation.beginBoardDrag(target.id))
         session.resources.boardMovement.preview(
-            target.id, to: BoardIndex(rawValue: 3), in: session.navigation.presentedDeskID)
+            target.id,
+            to: BoardIndex(rawValue: 3),
+            in: session.navigation.presentedDeskID
+        )
 
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [middle.id, last.id, target.id, side.id])
         session.resources.boardMovement.finishDrag()
@@ -1583,8 +1752,10 @@ struct NativeBoardTests {
         let second = desk("Second")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         #expect(session.resources.deskMovement.beginDrag(second.id))
         #expect(session.resources.activeDrag == .desk(second.id))
@@ -1610,13 +1781,17 @@ struct NativeBoardTests {
                 onSave: {
                     persistedState = $0
                     return true
-                }),
+                }
+            ),
             configuration: makeTestBoardRuntimeConfiguration()
         )
 
         #expect(session.boardNavigation.beginBoardDrag(boards[0].id))
         session.resources.boardMovement.preview(
-            boards[0].id, to: BoardIndex(rawValue: 2), in: session.navigation.presentedDeskID)
+            boards[0].id,
+            to: BoardIndex(rawValue: 2),
+            in: session.navigation.presentedDeskID
+        )
         session.resources.boardMovement.restoreOrder(boards.map(\.id), in: source.id)
         session.resources.boardMovement.finishDrag()
 
@@ -1631,7 +1806,8 @@ struct NativeBoardTests {
         let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target]))
+            )
         ) { session in
             session.boardNavigation.moveFocusedBoardToNextDesk()
 
@@ -1640,7 +1816,8 @@ struct NativeBoardTests {
             #expect(
                 session.resources.state.desks[1].boards.map(\.id) == [
                     targetBoards[0].id, targetBoards[1].id, moved.id, targetBoards[2].id,
-                ])
+                ]
+            )
             #expect(session.navigation.focusedDesk?.id == target.id)
             #expect(session.navigation.focusedDesk?.focusedBoardID == moved.id)
         }
@@ -1653,14 +1830,18 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: makeNativeTestState(desks: [source])),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
         AppActionHandler.perform(
-            .board(focusNext ? .removeAndFocusNext : .remove), session: session, windowModel: composition.model)
+            .board(focusNext ? .removeAndFocusNext : .remove),
+            session: session,
+            windowModel: composition.model
+        )
 
         // Assert
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
@@ -1673,13 +1854,19 @@ struct NativeBoardTests {
             label: "Paused",
             width: 520,
             currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true)
+            sheetNavigationPaused: true
+        )
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
                     DenState(
                         desks: [desk("Desk", boards: [board], focusedBoardID: board.id)],
-                        focusedDeskID: DeskID()))), configuration: makeTestBoardRuntimeConfiguration())
+                        focusedDeskID: DeskID()
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.boardRemoval.removeFocusedBoard()
 
         #expect(session.resources.recentlyRemovedBoards.first?.board.sheetNavigationPaused == true)
@@ -1695,8 +1882,10 @@ struct NativeBoardTests {
         deskState.scrollOffsetX = 250.0
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.resources.state.desks[0].scrollOffsetX == 250.0)
 
         session.boardRemoval.removeBoard(onlyBoard.id)
@@ -1711,8 +1900,10 @@ struct NativeBoardTests {
         deskState.scrollOffsetX = 350.0
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.resources.state.desks[0].scrollOffsetX == 350.0)
 
         session.boardRemoval.removeBoard(boardB.id)
@@ -1727,8 +1918,10 @@ struct NativeBoardTests {
         deskState.scrollOffsetX = 350.0
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.resources.state.desks[0].scrollOffsetX == 350.0)
 
         session.zmx.duplicateFocusedBoard()
@@ -1742,8 +1935,10 @@ struct NativeBoardTests {
         deskState.scrollOffsetX = 200.0
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.resources.state.desks[0].scrollOffsetX == 200.0)
 
         _ = session.boardOpening.createBoard(urlString: "https://example.com", focus: true)
@@ -1777,7 +1972,8 @@ struct NativeBoardTests {
                 onSave: {
                     persistedState = $0
                     return true
-                }),
+                }
+            ),
             configuration: makeTestBoardRuntimeConfiguration()
         )
 
@@ -1788,7 +1984,8 @@ struct NativeBoardTests {
         #expect(session.resources.recentlyRemovedBoards.map { $0.board.id } == [boards[1].id, boards[0].id])
         #expect(persisted.desks[0].boards.isEmpty)
         #expect(
-            DenProfileResources(state: DenStateNormalization.normalize(persisted)).recentlyRemovedBoards.isEmpty)
+            DenProfileResources(state: DenStateNormalization.normalize(persisted)).recentlyRemovedBoards.isEmpty
+        )
     }
 
     @Test func removalHistoryKeepsAtMostTenBoardsAndRestoresNewestFirst() {
@@ -1796,7 +1993,9 @@ struct NativeBoardTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])
+                )
+            )
         ) { session in
             for _ in 0..<11 {
                 session.boardRemoval.removeFocusedBoard()
@@ -1805,7 +2004,8 @@ struct NativeBoardTests {
             #expect(session.resources.recentlyRemovedBoards.count == BoardRemoval.maximumHistoryCount)
             #expect(
                 session.resources.recentlyRemovedBoards.map { $0.board.id }
-                    == Array((1...10).reversed()).map { boards[$0].id })
+                    == Array((1...10).reversed()).map { boards[$0].id }
+            )
 
             for _ in 0..<BoardRemoval.maximumHistoryCount {
                 session.boardRemoval.restoreRecentlyRemovedBoard()
@@ -1821,7 +2021,8 @@ struct NativeBoardTests {
         let source = desk("Source", boards: boards, focusedBoardID: boards[1].id)
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.boardRemoval.removeFocusedBoard()
             session.boardRemoval.restoreRecentlyRemovedBoard()
@@ -1837,7 +2038,9 @@ struct NativeBoardTests {
         try withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [removed])])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [removed])])
+                )
+            )
         ) { session in
             let originalRuntime = session.runtimes.webRuntime(for: removed)
 
@@ -1856,7 +2059,9 @@ struct NativeBoardTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [removed])])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [removed])])
+                )
+            )
         ) { session in
             let runtime = session.runtimes.webRuntime(for: removed)
 
@@ -1875,7 +2080,8 @@ struct NativeBoardTests {
         let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target]))
+            )
         ) { session in
             session.boardRemoval.removeFocusedBoard()
             session.desks.deleteFocusedDesk()
@@ -1885,7 +2091,8 @@ struct NativeBoardTests {
             #expect(
                 session.navigation.focusedDesk?.boards.map(\.id) == [
                     targetBoards[0].id, targetBoards[1].id, removed.id, targetBoards[2].id,
-                ])
+                ]
+            )
             #expect(session.navigation.focusedDesk?.focusedBoardID == removed.id)
         }
     }
@@ -1899,7 +2106,8 @@ struct NativeBoardTests {
         let secondDesk = desk("Second", boards: [otherBoard])
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [firstDesk, secondDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [firstDesk, secondDesk]))
+            )
         ) { session, windowModel in
             windowModel.toggleFocusedBoardMaximized()
 
@@ -1927,7 +2135,8 @@ struct NativeBoardTests {
                 onSave: { _ in
                     saveCount += 1
                     return true
-                })
+                }
+            )
         ) { session, windowModel in
             windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
             windowModel.toggleFocusedBoardMaximized()
@@ -1939,7 +2148,8 @@ struct NativeBoardTests {
             #expect(
                 session.navigation.focusedDesk?.boards.filter { !$0.isSideBoard }.allSatisfy {
                     abs($0.width - 386.666_666_666_666_7) < 0.001
-                } == true)
+                } == true
+            )
             #expect(session.navigation.focusedDesk?.boards[1].width == 360)
             #expect(session.resources.state.desks[1].boards[0].width == 980)
             #expect(session.resources.state.desks[0].scrollOffsetX == nil)
@@ -1953,7 +2163,8 @@ struct NativeBoardTests {
         let boards = [board("First"), board("Second")]
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk", boards: boards)])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk", boards: boards)]))
+            )
         ) { session, windowModel in
             #expect(windowModel.boardLayoutMetrics == nil)
             #expect(windowModel.boardWidth(toFit: 3) == nil)
@@ -1962,7 +2173,8 @@ struct NativeBoardTests {
 
             #expect(
                 windowModel.boardLayoutMetrics
-                    == BoardLayoutMetrics(availableWidth: 1_080, spacing: 10))
+                    == BoardLayoutMetrics(availableWidth: 1_080, spacing: 10)
+            )
             #expect(windowModel.boardWidth(toFit: 3) != nil)
             #expect(windowModel.boardWidth(toFit: 4) == nil)
             #expect(!windowModel.resizeFocusedDeskBoards(toFit: 4))
@@ -1974,7 +2186,9 @@ struct NativeBoardTests {
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [board("Wide")])])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [board("Wide")])])
+                )
+            )
         ) { session, windowModel in
             windowModel.updateBoardLayout(availableWidth: 2_480, spacing: 10)
 
@@ -1988,7 +2202,9 @@ struct NativeBoardTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [current])])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [current])])
+                )
+            )
         ) { session in
             let stateBeforeReload = session.resources.state
 
@@ -2004,7 +2220,9 @@ struct NativeBoardTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)])
+                )
+            )
         ) { session in
             session.boardOpening.goBackInBoard(second.id)
 
@@ -2020,10 +2238,14 @@ struct NativeBoardTests {
         let sourceDesk = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
         return ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
             configuration: makeTestBoardRuntimeConfiguration(
-                websiteDataStore: .nonPersistent(), sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-                preferences: AppPreferences(defaults: makeTestDefaults())))
+                websiteDataStore: .nonPersistent(),
+                sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
+                preferences: AppPreferences(defaults: makeTestDefaults())
+            )
+        )
     }
 
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
@@ -2038,8 +2260,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -2064,8 +2288,10 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -2087,8 +2313,10 @@ struct NativeBoardTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.setString(":zmx test-session", forType: .string)
 
@@ -2104,11 +2332,13 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [board("First")])
         try withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             let dir = FileManager.default.temporaryDirectory.path
             let boardID = try #require(
-                session.boardOpening.createTerminalBoard(workingDirectory: dir, focus: true))
+                session.boardOpening.createTerminalBoard(workingDirectory: dir, focus: true)
+            )
 
             let createdBoard = try #require(session.resources.state.board(for: boardID))
             #expect(createdBoard.isTerminal)
@@ -2129,7 +2359,10 @@ struct NativeBoardTests {
                     let callback: (DenState) -> Void = { _ in saveCount += 1 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         let runtime = session.runtimes.terminalRuntime(for: terminalBoard)
         defer { runtime.dispose() }
@@ -2148,7 +2381,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [firstBoard])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             let pasteboard = NSPasteboard.withUniqueName()
             session.boardNavigation.copyBoardID(firstBoard.id, pasteboard: pasteboard)
@@ -2163,7 +2397,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [board("First")])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             let pasteboard = NSPasteboard.withUniqueName()
             session.boardNavigation.copyBoardID(BoardID(), pasteboard: pasteboard)
@@ -2203,7 +2438,8 @@ struct NativeBoardTests {
             let pasteboard = NSPasteboard.withUniqueName()
             withTestSession(
                 resources: DenProfileResources(
-                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                    state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+                )
             ) { session in
                 // Act
                 session.boardNavigation.copyBoardLocation(pasteboard: pasteboard)
@@ -2222,7 +2458,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [firstBoard, secondBoard])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.boardNavigation.focusBoard(firstBoard.id)
 
@@ -2249,20 +2486,23 @@ struct NativeBoardTests {
 
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [focusedDesk, targetDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [focusedDesk, targetDesk]))
+            )
         ) { session in
             session.boardNavigation.focusBoard(focusedBoard.id)
 
             session.boardNavigation.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
             #expect(
                 session.resources.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID
-                    == targetBoard.id)
+                    == targetBoard.id
+            )
             #expect(session.navigation.focusedDesk?.id == focusedDesk.id)
             #expect(session.navigation.focusedBoard?.id == focusedBoard.id)
 
             session.boardNavigation.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
             #expect(
-                session.resources.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == nil)
+                session.resources.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == nil
+            )
             #expect(session.navigation.focusedDesk?.id == focusedDesk.id)
             #expect(session.navigation.focusedBoard?.id == focusedBoard.id)
         }
@@ -2274,7 +2514,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [firstBoard, secondBoard])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.boardNavigation.focusBoard(firstBoard.id)
             session.boardNavigation.toggleAnchorBoard()
@@ -2294,7 +2535,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [board("First")])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.boardNavigation.jumpToAnchorBoard()
             #expect(session.feedback.latest?.message == "No Anchor Board in Desk")
@@ -2308,7 +2550,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [firstBoard, secondBoard])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.boardNavigation.focusBoard(firstBoard.id)
             session.boardNavigation.toggleAnchorBoard()
@@ -2329,7 +2572,8 @@ struct NativeBoardTests {
         let source = desk("Desk", boards: [first, second], focusedBoardID: first.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             windowModel.setTemporaryContext(.openBoard)
             session.zmx.duplicateFocusedBoard()
@@ -2350,7 +2594,8 @@ struct NativeBoardTests {
         let source = desk("Desk")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session in
             session.configuration.preferences.setZmxPath("/usr/bin/zmx")
             session.configuration.preferences.setZellijPath("/usr/bin/zellij")

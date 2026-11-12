@@ -11,7 +11,9 @@ public struct WebSettingsView: View {
     @State private var uBOLitePopupAnchorView: NSView?
 
     public init(
-        model: WebSettingsModel, defaultBrowser: DefaultBrowserSettingsModel, openPopup: @escaping (NSView?) -> Void
+        model: WebSettingsModel,
+        defaultBrowser: DefaultBrowserSettingsModel,
+        openPopup: @escaping (NSView?) -> Void
     ) {
         self.model = model
         self.defaultBrowser = defaultBrowser
@@ -41,7 +43,8 @@ public struct WebSettingsView: View {
             Section("Picture in Picture") {
                 Toggle(
                     "Automatic Picture in Picture",
-                    isOn: automaticPIPOnDeskSwitchBinding)
+                    isOn: automaticPIPOnDeskSwitchBinding
+                )
                 SettingsHelpText {
                     Text(
                         "When switching Desks, move a playing video from the Focused Board into Picture in Picture."

@@ -14,9 +14,12 @@ public struct DenHeader<ProfileMenu: View>: View {
     @Environment(DenWindowModel.self) private var windowModel
 
     public init(
-        profileColor: Color, canOpenInNewWindow: @escaping (DeskID) -> Bool,
-        isPresentedInAnotherWindow: @escaping (DeskID) -> Bool, onOpenInNewWindow: @escaping (DeskID) -> Void,
-        onNotificationKeyPress: @escaping (KeyPress) -> KeyPress.Result, restoreInput: @escaping () -> Void,
+        profileColor: Color,
+        canOpenInNewWindow: @escaping (DeskID) -> Bool,
+        isPresentedInAnotherWindow: @escaping (DeskID) -> Bool,
+        onOpenInNewWindow: @escaping (DeskID) -> Void,
+        onNotificationKeyPress: @escaping (KeyPress) -> KeyPress.Result,
+        restoreInput: @escaping () -> Void,
         @ViewBuilder profileMenu: () -> ProfileMenu
     ) {
         self.profileColor = profileColor
@@ -30,8 +33,10 @@ public struct DenHeader<ProfileMenu: View>: View {
 
     public var body: some View {
         DeskSwitcher(
-            profileColor: profileColor, canOpenInNewWindow: canOpenInNewWindow,
-            isPresentedInAnotherWindow: isPresentedInAnotherWindow, onOpenInNewWindow: onOpenInNewWindow
+            profileColor: profileColor,
+            canOpenInNewWindow: canOpenInNewWindow,
+            isPresentedInAnotherWindow: isPresentedInAnotherWindow,
+            onOpenInNewWindow: onOpenInNewWindow
         )
         .frame(maxWidth: .infinity)
         .allowsHitTesting(windowModel.temporaryContext == nil)
@@ -40,8 +45,11 @@ public struct DenHeader<ProfileMenu: View>: View {
         // Declare controls from the detail-column header so native toolbar layout follows that column.
         .toolbar {
             DenHeaderControls(
-                profileColor: profileColor, onNotificationKeyPress: onNotificationKeyPress,
-                restoreInput: restoreInput, profileMenu: profileMenu)
+                profileColor: profileColor,
+                onNotificationKeyPress: onNotificationKeyPress,
+                restoreInput: restoreInput,
+                profileMenu: profileMenu
+            )
         }
     }
 }
@@ -69,14 +77,18 @@ private struct DenHeaderControls<ProfileMenu: View>: ToolbarContent {
             ToolbarSpacer(.fixed)
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton(
-                    profileColor: profileColor, onKeyPress: onNotificationKeyPress, restoreInput: restoreInput)
+                    profileColor: profileColor,
+                    onKeyPress: onNotificationKeyPress,
+                    restoreInput: restoreInput
+                )
 
                 SaveDeskPresetButton {
                     windowModel.showSaveDeskPresetPanel()
                 }
                 .disabled(
                     windowModel.focusedDesk == nil
-                        || windowModel.temporaryContext != nil)
+                        || windowModel.temporaryContext != nil
+                )
 
                 profileMenu
             }
@@ -237,7 +249,9 @@ public struct ProfileMenu: View {
     let clearBrowsingData: () -> Void
 
     public init(
-        profile: ProfileState, profiles: [ProfileState], openProfile: @escaping (ProfileID) -> Void,
+        profile: ProfileState,
+        profiles: [ProfileState],
+        openProfile: @escaping (ProfileID) -> Void,
         clearBrowsingData: @escaping () -> Void
     ) {
         self.profile = profile

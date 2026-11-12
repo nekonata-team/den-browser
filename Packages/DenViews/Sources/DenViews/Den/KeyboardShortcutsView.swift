@@ -99,7 +99,8 @@ public struct KeyboardShortcutsView: View {
                     customItem(.moveFocusedBoardRight),
                     item(["m"], "Set / clear Anchor Board"),
                     item(["⇧", "M"], "Jump to Anchor Board / return to origin"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "Board",
                 items: [
@@ -113,7 +114,8 @@ public struct KeyboardShortcutsView: View {
                     item(["Return"], "Den Mode: Duplicate Focused Board"),
                     item(
                         ["Shift", "+", "Return"],
-                        "Den Mode: Duplicate Shell, Zellij, or zmx; Web starts from First Sheet"),
+                        "Den Mode: Duplicate Shell, Zellij, or zmx; Web starts from First Sheet"
+                    ),
                     item(["r"], "Den Mode: Rename Board"),
                     item(["-", "/", "="], "Den Mode: Narrow / widen Board"),
                     item(["w", "then", "- / = / 1–9"], "Den Mode: Resize all Boards"),
@@ -127,7 +129,8 @@ public struct KeyboardShortcutsView: View {
                     item(["d"], "Den Mode: Remove Focused Board and focus next Board"),
                     item(["x"], "Den Mode: Remove Focused Board and focus previous Board"),
                     item(["u"], "Den Mode: Undo Board Operation"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "Desk",
                 items: [
@@ -137,7 +140,8 @@ public struct KeyboardShortcutsView: View {
                     item(["⌃", "P"], "Den Mode: Manage Desk Presets"),
                     item(["⇧", "R"], "Den Mode: Rename Desk"),
                     item(["⇧", "D"], "Den Mode: Delete Focused Desk"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "Sheet",
                 items: [
@@ -151,7 +155,8 @@ public struct KeyboardShortcutsView: View {
                     item(["⌃", "s"], "Den Mode: Copy Current Sheet screenshot to clipboard"),
                     item(["s"], "Den Mode: Capture Current Sheet Screenshot"),
                     item(["⌘", "⌥", "I"], "Inspect Current Sheet"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "Drawer",
                 items: [
@@ -175,7 +180,8 @@ public struct KeyboardShortcutsView: View {
                     item(["Tab"], "Close Drawer in Den Mode"),
                     item(["⌃", "Escape"], "Close Drawer"),
                     item(["Escape"], "Exit Den Mode / close Drawer"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "Overview",
                 items: [
@@ -192,7 +198,8 @@ public struct KeyboardShortcutsView: View {
                     item(["Shift", "+", "movement"], "Move selected Board"),
                     item(["Return"], "Enter selection"),
                     item(["Escape"], "Return to Den Mode"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "zmx Sessions",
                 items: [
@@ -204,7 +211,8 @@ public struct KeyboardShortcutsView: View {
                     item(["x", "/", "Delete"], "End marked or Focused Sessions"),
                     item(["r"], "Refresh Sessions"),
                     item(["Escape"], "Exit filtering, clear marks or query, then close"),
-                ]),
+                ]
+            ),
             ShortcutGuideSection(
                 title: "App and Presentation",
                 items: [
@@ -219,7 +227,8 @@ public struct KeyboardShortcutsView: View {
                     item(["⇧", "Escape"], "Board Activity"),
                     item(["⇧", "⌘", "W"], "Close Profile Window"),
                     item(["⌘", "Q"], "Quit Den Browser"),
-                ]),
+                ]
+            ),
         ]
     }
 
@@ -230,7 +239,8 @@ public struct KeyboardShortcutsView: View {
         return ShortcutGuideItem(
             keys: binding.displayTokens,
             label: action.label,
-            accessibilityKeys: binding.accessibilityLabel)
+            accessibilityKeys: binding.accessibilityLabel
+        )
     }
 
     private var deskNumberShortcutTokens: [String] {

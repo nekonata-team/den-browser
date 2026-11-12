@@ -22,7 +22,8 @@ struct NativePersistenceTests {
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
             configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: sheetNavigation, preferences: preferences)
         )
 
@@ -70,7 +71,10 @@ struct NativePersistenceTests {
                     }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         #expect(session.boardOpening.openTutorialBoard())
@@ -80,13 +84,15 @@ struct NativePersistenceTests {
         // Assert
         #expect(session.resources.state.desks[0].boards.first?.isTutorial == true)
         #expect(
-            session.resources.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true)
+            session.resources.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true
+        )
         #expect(saveCount == saveCountAfterOpening)
         #expect(session.resources.save())
         #expect(savedState?.desks[0].boards.isEmpty == true)
 
         let encodedContent = try JSONEncoder().encode(
-            BoardKind.tutorial(TutorialBoardState(completedSteps: [.openBoard])))
+            BoardKind.tutorial(TutorialBoardState(completedSteps: [.openBoard]))
+        )
         let content = try JSONSerialization.jsonObject(with: encodedContent) as? [String: String]
         #expect(content == ["kind": "tutorial"])
 
@@ -97,10 +103,12 @@ struct NativePersistenceTests {
               "selectedTutorialID": "getting-started",
               "completedStepIDs": ["getting-started.open-board"]
             }
-            """#.utf8)
+            """#.utf8
+        )
         #expect(
             try JSONDecoder().decode(BoardKind.self, from: oldContent)
-                == .tutorial(TutorialBoardState()))
+                == .tutorial(TutorialBoardState())
+        )
     }
 
     @Test func persistedStateRestoresDeskAndBoardDataAndFocus() throws {
@@ -119,8 +127,10 @@ struct NativePersistenceTests {
                 onSave: { state in
                     persistedState = state
                     return true
-                }),
-            configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         writer.boardNavigation.focusDesk(first.id)
@@ -136,7 +146,8 @@ struct NativePersistenceTests {
         #expect(
             restored.desks[0].boards.map(\.currentSheetURL) == [
                 URL(string: "https://one.example/path"), URL(string: "https://two.example/"),
-            ])
+            ]
+        )
         #expect(restored.focusedDeskID == first.id)
         #expect(restored.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
@@ -150,7 +161,8 @@ struct NativePersistenceTests {
             onSave: { state in
                 persistedState = state
                 return true
-            })
+            }
+        )
 
         // Act
         writer.deskUpdates.saveScrollOffset(350.0, for: first.id)
@@ -169,7 +181,8 @@ struct NativePersistenceTests {
             onSave: { state in
                 persistedState = state
                 return true
-            })
+            }
+        )
         writer.deskUpdates.saveScrollOffset(350.0, for: first.id)
 
         // Act
@@ -192,13 +205,15 @@ struct NativePersistenceTests {
             id: boardID,
             label: "Board",
             width: 520,
-            currentSheetURL: nil)
+            currentSheetURL: nil
+        )
         let desk = DeskState(
             id: deskID,
             label: "Desk",
             boards: [persistedBoard],
             focusedBoardID: boardID,
-            anchorBoardID: boardID)
+            anchorBoardID: boardID
+        )
         let state = DenState(desks: [desk], focusedDeskID: deskID)
 
         // Act

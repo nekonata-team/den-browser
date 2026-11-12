@@ -15,8 +15,13 @@ struct BoardInsertionTests {
         // Act
         let result = try #require(
             BoardInsertion.insert(
-                inserted, in: [desk], presentedDeskID: desk.id,
-                beforeBoardID: anchorsToSide ? side.id : primary.id, focus: false))
+                inserted,
+                in: [desk],
+                presentedDeskID: desk.id,
+                beforeBoardID: anchorsToSide ? side.id : primary.id,
+                focus: false
+            )
+        )
 
         // Assert
         #expect(result.desk.boards.map(\.id) == [inserted.id, primary.id, side.id])
@@ -37,7 +42,8 @@ struct BoardInsertionTests {
 
         // Act
         let destination = try #require(
-            BoardInsertion.insert(inserted, in: [desk], presentedDeskID: desk.id, afterBoardID: anchorID))
+            BoardInsertion.insert(inserted, in: [desk], presentedDeskID: desk.id, afterBoardID: anchorID)
+        )
 
         // Assert
         #expect(destination.deskIndex.rawValue == 0)
@@ -56,7 +62,8 @@ struct BoardInsertionTests {
 
         // Act
         let destination = try #require(
-            BoardInsertion.insert(inserted, in: [other, presented], presentedDeskID: presented.id))
+            BoardInsertion.insert(inserted, in: [other, presented], presentedDeskID: presented.id)
+        )
 
         // Assert
         #expect(destination.deskIndex.rawValue == 1)
@@ -75,7 +82,12 @@ struct BoardInsertionTests {
         // Act
         let destination = try #require(
             BoardInsertion.insert(
-                inserted, in: [presented, owning], presentedDeskID: presented.id, afterBoardID: anchor.id))
+                inserted,
+                in: [presented, owning],
+                presentedDeskID: presented.id,
+                afterBoardID: anchor.id
+            )
+        )
 
         // Assert
         #expect(destination.deskIndex.rawValue == 1)
@@ -97,8 +109,13 @@ struct BoardInsertionTests {
         // Act
         let destination = try #require(
             BoardInsertion.insert(
-                inserted, in: [first, target], presentedDeskID: first.id, deskID: target.id,
-                afterBoardID: missingAnchor ? BoardID() : outside.id))
+                inserted,
+                in: [first, target],
+                presentedDeskID: first.id,
+                deskID: target.id,
+                afterBoardID: missingAnchor ? BoardID() : outside.id
+            )
+        )
 
         // Assert
         #expect(destination.deskIndex.rawValue == 1)
@@ -121,7 +138,8 @@ struct BoardInsertionTests {
 
         // Act
         let insertion = try #require(
-            BoardInsertion.insert(inserted, in: [desk], presentedDeskID: desk.id, focus: focus))
+            BoardInsertion.insert(inserted, in: [desk], presentedDeskID: desk.id, focus: focus)
+        )
 
         // Assert
         #expect(insertion.desk.boards.map(\.id) == (isEmpty ? [inserted.id] : [existing.id, inserted.id]))
@@ -141,7 +159,12 @@ struct BoardInsertionTests {
 
         // Act
         let destination = BoardInsertion.insert(
-            inserted, in: [desk], presentedDeskID: presentedDeskID, deskID: deskID, afterBoardID: afterBoardID)
+            inserted,
+            in: [desk],
+            presentedDeskID: presentedDeskID,
+            deskID: deskID,
+            afterBoardID: afterBoardID
+        )
 
         // Assert
         #expect(destination == nil)

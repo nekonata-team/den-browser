@@ -6,7 +6,8 @@ struct WebDialogCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "dialog",
         abstract: "Inspect and respond to pending download save dialogs",
-        subcommands: [WebDialogListCommand.self, WebDialogSaveCommand.self, WebDialogCancelCommand.self])
+        subcommands: [WebDialogListCommand.self, WebDialogSaveCommand.self, WebDialogCancelCommand.self]
+    )
 }
 
 struct WebDialogListCommand: ParsableCommand {
@@ -16,7 +17,8 @@ struct WebDialogListCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .sheet(command: .dialog(.list), target: try DenIPCClient.boardTarget(target.boardID)),
-            options: target.common)
+            options: target.common
+        )
     }
 }
 
@@ -33,10 +35,15 @@ struct WebDialogSaveCommand: ParsableCommand {
             operation: .sheet(
                 command: .dialog(
                     .save(
-                        id: try dialogID(id), path: URL(fileURLWithPath: path).standardizedFileURL.path,
-                        overwrite: overwrite)),
-                target: try DenIPCClient.boardTarget(target.boardID)),
-            options: target.common)
+                        id: try dialogID(id),
+                        path: URL(fileURLWithPath: path).standardizedFileURL.path,
+                        overwrite: overwrite
+                    )
+                ),
+                target: try DenIPCClient.boardTarget(target.boardID)
+            ),
+            options: target.common
+        )
     }
 }
 
@@ -49,8 +56,10 @@ struct WebDialogCancelCommand: ParsableCommand {
         try DenIPCClient.execute(
             operation: .sheet(
                 command: .dialog(.cancel(id: try dialogID(id))),
-                target: try DenIPCClient.boardTarget(target.boardID)),
-            options: target.common)
+                target: try DenIPCClient.boardTarget(target.boardID)
+            ),
+            options: target.common
+        )
     }
 }
 

@@ -11,7 +11,9 @@ final class HTTPBasicAuthenticationPrompt {
     private var hostingView: NSView?
 
     init(
-        id: UUID, challenge: URLAuthenticationChallenge, webView: WKWebView,
+        id: UUID,
+        challenge: URLAuthenticationChallenge,
+        webView: WKWebView,
         completion: @escaping @MainActor (URLCredential?) -> Void
     ) {
         self.id = id
@@ -28,7 +30,8 @@ final class HTTPBasicAuthenticationPrompt {
         }
         // Anchor the SwiftUI alert to the WebView's current window, including auxiliary windows.
         let host = NSHostingView(
-            rootView: HTTPBasicAuthenticationAlert(challenge: challenge) { [weak self] in self?.finish($0) })
+            rootView: HTTPBasicAuthenticationAlert(challenge: challenge) { [weak self] in self?.finish($0) }
+        )
         hostingView = host
         webView.addSubview(host)
     }

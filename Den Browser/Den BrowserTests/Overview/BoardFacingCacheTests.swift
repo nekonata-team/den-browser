@@ -12,9 +12,17 @@ import WebKit
 struct BoardFacingCacheTests {
     private func image(pixels: Int = 100, logicalSize: CGFloat = 100) -> NSImage {
         let bitmap = NSBitmapImageRep(
-            bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels, bitsPerSample: 8,
-            samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-            bytesPerRow: 0, bitsPerPixel: 0)!
+            bitmapDataPlanes: nil,
+            pixelsWide: pixels,
+            pixelsHigh: pixels,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        )!
         return NSImage(cgImage: bitmap.cgImage!, size: NSSize(width: logicalSize, height: logicalSize))
     }
 
@@ -100,7 +108,10 @@ struct BoardFacingCacheTests {
         let old = BoardID()
         cache.setFacing(image(), for: fresh)
         cache.setFacing(
-            image(), for: old, at: .now - BoardFacingCapture.recaptureSuppressionDuration - .seconds(1))
+            image(),
+            for: old,
+            at: .now - BoardFacingCapture.recaptureSuppressionDuration - .seconds(1)
+        )
 
         // Act
         let freshAllowed = capture.shouldCapture(boardID: fresh)
@@ -139,7 +150,9 @@ struct BoardFacingCacheTests {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
         let web = DeferredFacingWebView(
-            frame: NSRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
+            frame: NSRect(x: 0, y: 0, width: 100, height: 100),
+            configuration: configuration
+        )
         let task = Task { await capture.captureWeb(boardID: boardID, webView: web) }
         let deadline = ContinuousClock.now + .seconds(3)
         while web.pending == nil && ContinuousClock.now < deadline { await Task.yield() }

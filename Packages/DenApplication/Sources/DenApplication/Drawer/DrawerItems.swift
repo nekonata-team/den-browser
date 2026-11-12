@@ -55,7 +55,11 @@ public struct DrawerItems {
     }
 
     private func remove(
-        _ id: UUID, recordsHistory: Bool, advancesPeek: Bool, focusNext: Bool, notify: (Notice) -> Void
+        _ id: UUID,
+        recordsHistory: Bool,
+        advancesPeek: Bool,
+        focusNext: Bool,
+        notify: (Notice) -> Void
     ) -> Bool {
         guard let index = reader.snapshot.den.drawerItems.firstIndex(where: { $0.id == id }) else { return false }
         let previousItems = reader.snapshot.den.drawerItems

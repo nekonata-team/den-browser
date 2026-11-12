@@ -57,7 +57,8 @@ final class BoardActivitySampling {
                 let key = "web:\(processID)"
                 activeSamplerKeys.insert(key)
                 return sampler.usage(key: key, pids: [processID]).map { (processID, $0) }
-            })
+            }
+        )
 
         terminalUsage = Dictionary(
             uniqueKeysWithValues: resources.terminalRuntimes.compactMap { boardID, runtime in
@@ -66,7 +67,8 @@ final class BoardActivitySampling {
                 let key = "terminal:\(boardID)"
                 activeSamplerKeys.insert(key)
                 return sampler.usage(key: key, pids: pids).map { (boardID, $0) }
-            })
+            }
+        )
         sampler.removeSamples(keeping: activeSamplerKeys)
     }
 }

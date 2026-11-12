@@ -12,7 +12,9 @@ public struct DenActivePanelOverlay<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     public init(
-        size: CGSize, shouldShowHeader: Bool, motionPreference: MotionPreference,
+        size: CGSize,
+        shouldShowHeader: Bool,
+        motionPreference: MotionPreference,
         restoreInput: @escaping () -> Void,
         @ViewBuilder content: @escaping (TemporaryContext, CGFloat, CGFloat) -> Content
     ) {
@@ -34,15 +36,18 @@ public struct DenActivePanelOverlay<Content: View>: View {
             }
             .zIndex(
                 windowModel.isAddingToDrawer || windowModel.drawer.isChoosingPlacementDesk
-                    ? DenOverlayLayer.drawerInput : DenOverlayLayer.activePanel)
+                    ? DenOverlayLayer.drawerInput : DenOverlayLayer.activePanel
+            )
         }
     }
 
     @ViewBuilder
     private func panel(_ context: TemporaryContext) -> some View {
         let content = content(
-            context, DenLayout.newBoardWidth(in: size, focusedBoardWidth: windowModel.navigation.inheritedBoardWidth),
-            DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader))
+            context,
+            DenLayout.newBoardWidth(in: size, focusedBoardWidth: windowModel.navigation.inheritedBoardWidth),
+            DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
+        )
         switch context {
         case .overview, .boardActivity:
             content

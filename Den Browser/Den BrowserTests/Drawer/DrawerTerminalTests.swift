@@ -95,7 +95,8 @@ struct DrawerTerminalTests {
         // Arrange
         let item = DrawerItem(
             terminal: .zmx(ZmxBoardState(sessionName: "project", workingDirectory: "/work", rootSessionName: nil)),
-            title: "Build")
+            title: "Build"
+        )
         let (session, _) = sessions(item)
         let model = DenWindowComposition(session: session).model.drawer
 
@@ -259,8 +260,13 @@ struct DrawerTerminalTests {
 
     private func surface(_ runtime: TerminalRuntime) -> TerminalBoardSurface {
         TerminalBoardSurface(
-            terminalView: runtime.terminalView, onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
-            onBeforeHide: {}, isHidden: false, focusRequest: nil, onSurfaceReady: { _ in true })
+            terminalView: runtime.terminalView,
+            onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
+            onBeforeHide: {},
+            isHidden: false,
+            focusRequest: nil,
+            onSurfaceReady: { _ in true }
+        )
     }
 
     private func waitForText(_ text: String, runtime: TerminalRuntime) async throws {
@@ -274,12 +280,18 @@ struct DrawerTerminalTests {
     private func sessions(_ item: DrawerItem) -> (ProfileWindowSession, ProfileWindowSession) {
         let desks = [DeskState(label: "First", boards: []), DeskState(label: "Second", boards: [])]
         let resources = DenProfileResources(
-            state: DenState(desks: desks, focusedDeskID: desks[0].id, drawerItems: [item]))
+            state: DenState(desks: desks, focusedDeskID: desks[0].id, drawerItems: [item])
+        )
         let configuration = makeTestBoardRuntimeConfiguration()
         let make = { (desk: DeskState) in
             ProfileWindowSession(
-                resources: resources, configuration: configuration, presentedDeskID: desk.id,
-                canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true }, onWillResetDen: {})
+                resources: resources,
+                configuration: configuration,
+                presentedDeskID: desk.id,
+                canPresentDesk: { _ in true },
+                onDeskPresentationRequest: { _ in true },
+                onWillResetDen: {}
+            )
         }
         return (make(desks[0]), make(desks[1]))
     }

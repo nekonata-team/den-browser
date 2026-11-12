@@ -15,8 +15,11 @@ struct WindowFeatureModelsTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let model = composition.model
         composition.connect()

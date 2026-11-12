@@ -14,7 +14,8 @@ extension AppearanceModel {
             setDeskSwitcherAlignment: { preferences.setDeskSwitcherAlignment($0) },
             setBoardCentering: { preferences.setBoardCentering($0) },
             setSheetScale: { preferences.setSheetScale($0) },
-            setDrawerStyle: { preferences.setDrawerStyle($0) })
+            setDrawerStyle: { preferences.setDrawerStyle($0) }
+        )
     }
 }
 
@@ -32,30 +33,38 @@ extension ShortcutSettingsModel {
             hasDeskNumberBindingOverride: { preferences.hasDeskNumberBindingOverride() },
             resetDeskNumberBinding: { preferences.resetDeskNumberBinding() },
             clearDeskNumberBinding: { preferences.clearDeskNumberBinding() },
-            resetAllShortcuts: { preferences.resetAllShortcuts() })
+            resetAllShortcuts: { preferences.resetAllShortcuts() }
+        )
     }
 }
 extension TerminalSettingsModel {
     convenience init(preferences: AppPreferences) {
         self.init(
-            zellijPath: { preferences.zellijPath }, zmxPath: { preferences.zmxPath },
-            saveZellijPath: { preferences.setZellijPath($0) }, saveZmxPath: { preferences.setZmxPath($0) },
+            zellijPath: { preferences.zellijPath },
+            zmxPath: { preferences.zmxPath },
+            saveZellijPath: { preferences.setZellijPath($0) },
+            saveZmxPath: { preferences.setZmxPath($0) },
             openPermissions: {
                 guard
                     let url = URL(
                         string:
-                            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles")
+                            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"
+                    )
                 else { return }
                 NSWorkspace.shared.open(url)
-            })
+            }
+        )
     }
 }
 extension ProfileSettingsModel {
     convenience init(manager: ProfileManager) {
         self.init(
-            profiles: { manager.profiles }, error: { manager.errorMessage },
-            canDelete: { manager.canDeleteProfile($0) }, create: { manager.createProfile(name: $0, color: $1) },
-            update: { manager.updateProfile($0, name: $1, color: $2) }, delete: { await manager.deleteProfile($0) },
+            profiles: { manager.profiles },
+            error: { manager.errorMessage },
+            canDelete: { manager.canDeleteProfile($0) },
+            create: { manager.createProfile(name: $0, color: $1) },
+            update: { manager.updateProfile($0, name: $1, color: $2) },
+            delete: { await manager.deleteProfile($0) },
             dismissError: { manager.clearError() },
             clearSelection: {
                 manager.clearBrowsingDataWindowID == nil ? manager.clearBrowsingDataProfileID : nil
@@ -67,17 +76,23 @@ extension ProfileSettingsModel {
             dismissClear: {
                 manager.clearBrowsingDataProfileID = nil
                 manager.clearBrowsingDataWindowID = nil
-            }, clear: { await manager.clearBrowsingData(categories: $0, profileID: $1) })
+            },
+            clear: { await manager.clearBrowsingData(categories: $0, profileID: $1) }
+        )
     }
 }
 extension SheetNavigationSettingsModel {
     convenience init(manager: SheetNavigationManager) {
         self.init(
-            isEnabled: { manager.isEnabled }, hintAlphabet: { manager.hintAlphabet },
-            ignoredHosts: { manager.ignoredHosts }, setEnabled: { manager.setEnabled($0) },
-            setHintAlphabet: { manager.setHintAlphabet($0) }, setIgnoredSites: { manager.setIgnoredSites($0) },
+            isEnabled: { manager.isEnabled },
+            hintAlphabet: { manager.hintAlphabet },
+            ignoredHosts: { manager.ignoredHosts },
+            setEnabled: { manager.setEnabled($0) },
+            setHintAlphabet: { manager.setHintAlphabet($0) },
+            setIgnoredSites: { manager.setIgnoredSites($0) },
             normalizeAlphabet: { SheetNavigationManager.normalizeHintAlphabet($0) },
-            normalizeHosts: { SheetNavigationManager.normalizeIgnoredSites($0) })
+            normalizeHosts: { SheetNavigationManager.normalizeIgnoredSites($0) }
+        )
     }
 }
 extension DefaultBrowserSettingsModel {
@@ -86,7 +101,8 @@ extension DefaultBrowserSettingsModel {
             destination: { preferences.externalLinkDestination },
             setDestination: { preferences.setExternalLinkDestination($0) },
             loadStatus: { await Task.detached(priority: .userInitiated) { DefaultBrowserSystem.status() }.value },
-            setDefault: { await DefaultBrowserSystem.makeDefault() })
+            setDefault: { await DefaultBrowserSystem.makeDefault() }
+        )
     }
 }
 
@@ -95,7 +111,8 @@ extension WebSettingsModel {
         self.init(
             searchEngine: { preferences.searchEngine },
             automaticPIPOnDeskSwitch: { preferences.automaticPIPOnDeskSwitch },
-            uBOLiteEnabled: { preferences.uBOLiteEnabled }, isInstalled: { manager.uboliteInstaller.isInstalled },
+            uBOLiteEnabled: { preferences.uBOLiteEnabled },
+            isInstalled: { manager.uboliteInstaller.isInstalled },
             installedVersion: { manager.uboliteInstaller.installedVersion },
             isBusy: { manager.uboliteInstaller.isBusy },
             errorMessage: {
@@ -104,12 +121,14 @@ extension WebSettingsModel {
             },
             setSearchEngine: { preferences.setSearchEngine($0) },
             setAutomaticPIPOnDeskSwitch: { preferences.setAutomaticPIPOnDeskSwitch($0) },
-            setUBOLiteEnabled: { manager.setUBOLiteEnabled($0) }, openOptions: { manager.presentUBOLiteOptions() },
+            setUBOLiteEnabled: { manager.setUBOLiteEnabled($0) },
+            openOptions: { manager.presentUBOLiteOptions() },
             update: { await manager.updateUBOLite() },
             install: { if await manager.uboliteInstaller.install() { manager.setUBOLiteEnabled(true) } },
             uninstall: {
                 manager.setUBOLiteEnabled(false)
                 manager.uboliteInstaller.uninstall()
-            })
+            }
+        )
     }
 }

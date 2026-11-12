@@ -91,8 +91,11 @@ public final class UniversalSearchModel {
         if !commandsOnly, !trimmed.isEmpty {
             results.append(
                 UniversalSearchItem(
-                    target: .createBoard(trimmed), title: trimmed,
-                    detail: "Create Board in the current Desk"))
+                    target: .createBoard(trimmed),
+                    title: trimmed,
+                    detail: "Create Board in the current Desk"
+                )
+            )
         }
         return results
     }
@@ -101,8 +104,10 @@ public final class UniversalSearchModel {
         let matches = matchingRecentItems(query: query)
         return matches.prefix(5).map {
             UniversalSearchItem(
-                target: .recent($0), title: $0.title ?? $0.displayText,
-                detail: "Create Board from Recent · \($0.displayText)")
+                target: .recent($0),
+                title: $0.title ?? $0.displayText,
+                detail: "Create Board from Recent · \($0.displayText)"
+            )
         }
     }
 

@@ -13,10 +13,14 @@ public final class SheetNavigationSettingsModel {
     @ObservationIgnored private let normalizeHosts: (String) -> [String]?
 
     public init(
-        isEnabled: @escaping () -> Bool, hintAlphabet: @escaping () -> String,
-        ignoredHosts: @escaping () -> [String], setEnabled: @escaping (Bool) -> Void,
-        setHintAlphabet: @escaping (String) -> Bool, setIgnoredSites: @escaping (String) -> Bool,
-        normalizeAlphabet: @escaping (String) -> String?, normalizeHosts: @escaping (String) -> [String]?
+        isEnabled: @escaping () -> Bool,
+        hintAlphabet: @escaping () -> String,
+        ignoredHosts: @escaping () -> [String],
+        setEnabled: @escaping (Bool) -> Void,
+        setHintAlphabet: @escaping (String) -> Bool,
+        setIgnoredSites: @escaping (String) -> Bool,
+        normalizeAlphabet: @escaping (String) -> String?,
+        normalizeHosts: @escaping (String) -> [String]?
     ) {
         self.readEnabled = isEnabled
         self.readAlphabet = hintAlphabet

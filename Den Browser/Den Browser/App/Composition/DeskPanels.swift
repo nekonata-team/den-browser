@@ -10,9 +10,11 @@ struct NewDeskPanel: View {
     @Environment(ProfileWindowSession.self) private var session
     var body: some View {
         DenViews.NewDeskPanel(
-            profileColor: profileColor, boardHeight: boardHeight,
+            profileColor: profileColor,
+            boardHeight: boardHeight,
             facing: { session.resources.presetFacingStore.image(for: $0, at: $1) },
-            loadFacings: { await session.resources.presetFacingStore.loadFacings(for: $0, boardCount: $1) })
+            loadFacings: { await session.resources.presetFacingStore.loadFacings(for: $0, boardCount: $1) }
+        )
     }
 }
 
@@ -25,13 +27,19 @@ struct SaveDeskPresetPanel: View {
     @Environment(ProfileWindowSession.self) private var session
     var body: some View {
         DenViews.SaveDeskPresetPanel(
-            initialLabel: initialLabel, previewBoards: previewBoards, boardHeight: boardHeight, savePreset: savePreset,
+            initialLabel: initialLabel,
+            previewBoards: previewBoards,
+            boardHeight: boardHeight,
+            savePreset: savePreset,
             facing: { index in
                 guard let boards = session.navigation.focusedDesk?.boards, boards.indices.contains(index) else {
                     return nil
                 }
                 return session.resources.facingCache.image(for: boards[index].id)
-            }, captureFacings: { await session.facings.captureFocusedDeskFacings() }, onClose: onClose)
+            },
+            captureFacings: { await session.facings.captureFocusedDeskFacings() },
+            onClose: onClose
+        )
     }
 }
 
@@ -46,10 +54,15 @@ struct DeskPresetManagementPanel: View {
     @Environment(ProfileWindowSession.self) private var session
     var body: some View {
         DenViews.DeskPresetManagementPanel(
-            isStandalone: isStandalone, profileColor: profileColor, presets: presets, boardHeight: boardHeight,
-            renamePreset: renamePreset, requestDeletion: requestDeletion,
+            isStandalone: isStandalone,
+            profileColor: profileColor,
+            presets: presets,
+            boardHeight: boardHeight,
+            renamePreset: renamePreset,
+            requestDeletion: requestDeletion,
             facing: { session.resources.presetFacingStore.image(for: $0, at: $1) },
             loadFacings: { await session.resources.presetFacingStore.loadFacings(for: $0, boardCount: $1) },
-            onClose: onClose)
+            onClose: onClose
+        )
     }
 }

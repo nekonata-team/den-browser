@@ -41,7 +41,8 @@ public struct SheetNavigationSettingsSection: View {
                 SettingsActionRow {
                     Button("Save Hint Alphabet", action: saveHintAlphabet)
                         .disabled(
-                            hintAlphabetIsInvalid || normalizedHintAlphabet == sheetNavigation.hintAlphabet)
+                            hintAlphabetIsInvalid || normalizedHintAlphabet == sheetNavigation.hintAlphabet
+                        )
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -62,7 +63,8 @@ public struct SheetNavigationSettingsSection: View {
                 SettingsActionRow {
                     Button("Save Ignored Sites", action: saveIgnoredSites)
                         .disabled(
-                            ignoredSitesAreInvalid || normalizedIgnoredSites == sheetNavigation.ignoredHosts)
+                            ignoredSitesAreInvalid || normalizedIgnoredSites == sheetNavigation.ignoredHosts
+                        )
                 }
             }
         }

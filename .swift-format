@@ -3,6 +3,7 @@
     "spaces" : 4
   },
   "lineLength" : 120,
+  "lineBreakBeforeEachArgument" : true,
   "rules" : {
     "AlwaysUseLiteralForEmptyCollectionInit" : true,
     "AlwaysUseLowerCamelCase" : true,

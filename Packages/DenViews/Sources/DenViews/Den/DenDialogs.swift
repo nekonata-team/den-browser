@@ -23,7 +23,8 @@ public struct DenDialogs: ViewModifier {
                 "End \(windowModel.zmxSessionPendingEnd ?? "zmx Session")?",
                 isPresented: Binding(
                     get: { windowModel.zmxSessionPendingEnd != nil },
-                    set: { if !$0 { windowModel.cancelConfirmation() } })
+                    set: { if !$0 { windowModel.cancelConfirmation() } }
+                )
             ) {
                 Button("End Session", role: .destructive) {
                     windowModel.confirmZmxSessionEnd()
@@ -39,7 +40,8 @@ public struct DenDialogs: ViewModifier {
                 "Delete \(pendingDeskDeletion?.label ?? "Desk")?",
                 isPresented: Binding(
                     get: { pendingDeskDeletion != nil },
-                    set: { if !$0 { windowModel.cancelConfirmation() } })
+                    set: { if !$0 { windowModel.cancelConfirmation() } }
+                )
             ) {
                 Button("Delete Desk", role: .destructive) {
                     windowModel.confirmDeskDeletion()
@@ -60,7 +62,8 @@ public struct DenDialogs: ViewModifier {
                 "Replace \(pendingDeskReplacement?.originalLabel ?? "Desk")?",
                 isPresented: Binding(
                     get: { pendingDeskReplacement != nil },
-                    set: { if !$0 { windowModel.cancelConfirmation() } })
+                    set: { if !$0 { windowModel.cancelConfirmation() } }
+                )
             ) {
                 Button("Replace Desk", role: .destructive) {
                     windowModel.confirmDeskReplacement()
@@ -82,7 +85,8 @@ public struct DenDialogs: ViewModifier {
                 "Replace \(windowModel.deskPresetPendingReplacement?.label ?? "Desk Preset")?",
                 isPresented: Binding(
                     get: { windowModel.deskPresetPendingReplacement != nil },
-                    set: { if !$0 { windowModel.cancelDeskPresetReplacement() } })
+                    set: { if !$0 { windowModel.cancelDeskPresetReplacement() } }
+                )
             ) {
                 Button("Replace Preset") {
                     windowModel.confirmDeskPresetReplacement()
@@ -97,7 +101,8 @@ public struct DenDialogs: ViewModifier {
                 "Replace \(windowModel.essentialPendingReplacement?.name ?? "Essential")?",
                 isPresented: Binding(
                     get: { windowModel.essentialPendingReplacement != nil },
-                    set: { if !$0 { windowModel.cancelEssentialReplacement() } })
+                    set: { if !$0 { windowModel.cancelEssentialReplacement() } }
+                )
             ) {
                 Button("Replace Essential") {
                     windowModel.confirmEssentialReplacement()
@@ -114,7 +119,8 @@ public struct DenDialogs: ViewModifier {
                 "Reset Den?",
                 isPresented: Binding(
                     get: { windowModel.isResetDenPending },
-                    set: { if !$0 { windowModel.cancelResetDen() } })
+                    set: { if !$0 { windowModel.cancelResetDen() } }
+                )
             ) {
                 Button("Reset Den", role: .destructive) {
                     windowModel.confirmResetDen()
@@ -130,7 +136,8 @@ public struct DenDialogs: ViewModifier {
                 "Delete \(windowModel.deskPresetPendingDeletion?.label ?? "Desk Preset")?",
                 isPresented: Binding(
                     get: { windowModel.deskPresetPendingDeletion != nil },
-                    set: { if !$0 { windowModel.cancelDeskPresetDeletion() } })
+                    set: { if !$0 { windowModel.cancelDeskPresetDeletion() } }
+                )
             ) {
                 Button("Delete Preset", role: .destructive) {
                     windowModel.confirmDeskPresetDeletion()
@@ -144,7 +151,8 @@ public struct DenDialogs: ViewModifier {
                 "Discard all Drawer items?",
                 isPresented: Binding(
                     get: { windowModel.drawerPendingDiscardCount != nil },
-                    set: { if !$0 { windowModel.cancelDrawerClear() } })
+                    set: { if !$0 { windowModel.cancelDrawerClear() } }
+                )
             ) {
                 Button("Discard All", role: .destructive) {
                     windowModel.confirmDrawerClear()
@@ -161,7 +169,8 @@ public struct DenDialogs: ViewModifier {
                 "Clear all Notifications?",
                 isPresented: Binding(
                     get: { windowModel.notificationPendingDeletionCount != nil },
-                    set: { if !$0 { windowModel.cancelNotificationClear() } })
+                    set: { if !$0 { windowModel.cancelNotificationClear() } }
+                )
             ) {
                 Button("Clear All", role: .destructive) {
                     windowModel.confirmNotificationClear()

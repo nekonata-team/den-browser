@@ -36,8 +36,10 @@ struct ZmxBoards {
     let updates: BoardUpdates
 
     func open(
-        _ sessionName: String, request: InputOpening.Context,
-        rootSessionName: (String) -> String?, notify: (Notice) -> Void
+        _ sessionName: String,
+        request: InputOpening.Context,
+        rootSessionName: (String) -> String?,
+        notify: (Notice) -> Void
     ) -> ZmxSessionOpenResult {
         if let board = state.snapshot.den.desks.lazy.flatMap(\.boards).first(where: { $0.zmxSessionName == sessionName }
         ) {
@@ -49,9 +51,14 @@ struct ZmxBoards {
         guard !trimmed.isEmpty else { return .rejected }
         let result = creation.open(
             .init(
-                input: ":zmx \(trimmed)", width: request.width, target: request.target,
-                configuration: request.configuration, zmxRootSessionName: rootSessionName(trimmed)),
-            notify: { notify(.creation($0)) })
+                input: ":zmx \(trimmed)",
+                width: request.width,
+                target: request.target,
+                configuration: request.configuration,
+                zmxRootSessionName: rootSessionName(trimmed)
+            ),
+            notify: { notify(.creation($0)) }
+        )
         switch result {
         case .accepted: return .openedBoard
         case .rejected(let message):
@@ -66,25 +73,35 @@ struct ZmxBoards {
     }
 
     func prepareDuplication(
-        _ source: BoardState, client: ZmxClient, window: () -> Window?, notify: (Notice) -> Void
+        _ source: BoardState,
+        client: ZmxClient,
+        window: () -> Window?,
+        notify: (Notice) -> Void
     ) async {
         guard let name = source.zmxSessionName else { return }
         do {
             let root = try await client.resolvedRootSessionName(
-                for: name, savedRootSessionName: source.zmxRootSessionName)
+                for: name,
+                savedRootSessionName: source.zmxRootSessionName
+            )
             guard !Task.isCancelled, focusedPrimaryBoardID(window()) == source.id else { return }
             notify(.duplicationPanel(root))
         } catch { return }
     }
 
     func duplicate(
-        _ request: Duplication, client: ZmxClient, window: () -> Window?, notify: (Notice) -> Void
+        _ request: Duplication,
+        client: ZmxClient,
+        window: () -> Window?,
+        notify: (Notice) -> Void
     ) async {
         let source = request.source
         guard let name = source.zmxSessionName else { return }
         do {
             let context = try await client.duplicationContext(
-                for: name, savedRootSessionName: source.zmxRootSessionName)
+                for: name,
+                savedRootSessionName: source.zmxRootSessionName
+            )
             guard !Task.isCancelled, let current = window() else { return }
             if request.asSideBoard {
                 guard
@@ -98,19 +115,29 @@ struct ZmxBoards {
             }
             let names = state.snapshot.den.desks.flatMap { $0.boards.compactMap(\.zmxSessionName) }
             let session = ZmxSessionNameGenerator.nextName(
-                rootSessionName: context.rootSessionName, suffix: request.suffix,
-                occupiedNames: context.activeSessionNames.union(names))
+                rootSessionName: context.rootSessionName,
+                suffix: request.suffix,
+                occupiedNames: context.activeSessionNames.union(names)
+            )
             var board = BoardState(
-                label: request.asSideBoard ? "Terminal Side Board" : source.label, width: request.width,
-                zmxSessionName: session, workingDirectory: request.workingDirectory,
-                rootSessionName: context.rootSessionName, customLabel: request.asSideBoard ? nil : source.customLabel)
+                label: request.asSideBoard ? "Terminal Side Board" : source.label,
+                width: request.width,
+                zmxSessionName: session,
+                workingDirectory: request.workingDirectory,
+                rootSessionName: context.rootSessionName,
+                customLabel: request.asSideBoard ? nil : source.customLabel
+            )
             if request.asSideBoard { board.role = .sideBoard(targetBoardID: source.id) }
             creation.insert(
                 board,
                 target: .init(
-                    presentedDeskID: current.presentedDeskID, afterBoardID: source.id,
-                    focus: request.focus, origin: request.focus ? .interactive : .cli),
-                notify: { notify(.creation($0)) })
+                    presentedDeskID: current.presentedDeskID,
+                    afterBoardID: source.id,
+                    focus: request.focus,
+                    origin: request.focus ? .interactive : .cli
+                ),
+                notify: { notify(.creation($0)) }
+            )
         } catch is CancellationError {
             return
         } catch {

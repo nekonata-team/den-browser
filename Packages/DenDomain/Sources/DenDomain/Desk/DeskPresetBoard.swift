@@ -36,7 +36,8 @@ public struct DeskPresetBoard: Codable, Equatable {
             label: label,
             width: width,
             kind: .terminal(.shell(workingDirectory: workingDirectory)),
-            customLabel: customLabel)
+            customLabel: customLabel
+        )
     }
 
     public nonisolated init(label: String, width: Double, zellijSessionName: String?, customLabel: String? = nil) {
@@ -44,7 +45,8 @@ public struct DeskPresetBoard: Codable, Equatable {
             label: label,
             width: width,
             kind: .terminal(.zellij(sessionName: zellijSessionName)),
-            customLabel: customLabel)
+            customLabel: customLabel
+        )
     }
 
     public nonisolated init(label: String, width: Double, zmxSessionName: String, customLabel: String? = nil) {
@@ -52,7 +54,8 @@ public struct DeskPresetBoard: Codable, Equatable {
             label: label,
             width: width,
             kind: .terminal(.zmx(sessionName: zmxSessionName, rootSessionName: nil)),
-            customLabel: customLabel)
+            customLabel: customLabel
+        )
     }
 
     public nonisolated init(
@@ -90,7 +93,8 @@ public struct DeskPresetBoard: Codable, Equatable {
             width: board.width,
             kind: kind,
             customLabel: board.customLabel,
-            targetBoardIndex: targetBoardIndex)
+            targetBoardIndex: targetBoardIndex
+        )
     }
 
     public static func capture(from boards: [BoardState]) -> [DeskPresetBoard] {
@@ -112,7 +116,8 @@ public struct DeskPresetBoard: Codable, Equatable {
                 width: width,
                 currentSheetURL: initialSheetURL,
                 firstSheetURL: initialSheetURL,
-                customLabel: customLabel)
+                customLabel: customLabel
+            )
         case .inspection:
             return nil
         case .terminal(.shell(let workingDirectory)):
@@ -121,14 +126,16 @@ public struct DeskPresetBoard: Codable, Equatable {
                 label: label,
                 width: width,
                 workingDirectory: workingDirectory,
-                customLabel: customLabel)
+                customLabel: customLabel
+            )
         case .terminal(.zellij(let sessionName)):
             return BoardState(
                 id: id,
                 label: label,
                 width: width,
                 zellijSessionName: sessionName,
-                customLabel: customLabel)
+                customLabel: customLabel
+            )
         case .terminal(.zmx(let sessionName, let rootSessionName)):
             return BoardState(
                 id: id,
@@ -136,7 +143,8 @@ public struct DeskPresetBoard: Codable, Equatable {
                 width: width,
                 zmxSessionName: sessionName,
                 rootSessionName: rootSessionName,
-                customLabel: customLabel)
+                customLabel: customLabel
+            )
         }
     }
 
@@ -157,7 +165,9 @@ public struct DeskPresetBoard: Codable, Equatable {
                         id: boardIDs[index],
                         label: presetBoard.label,
                         width: presetBoard.width,
-                        targetBoardID: boardIDs[targetBoardIndex]))
+                        targetBoardID: boardIDs[targetBoardIndex]
+                    )
+                )
             } else {
                 guard var board = presetBoard.makeBoard(id: boardIDs[index]) else { return nil }
                 if case .terminal = presetBoard.kind,

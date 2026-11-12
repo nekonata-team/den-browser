@@ -14,11 +14,13 @@ struct MV3WebExtensionHostTests {
         let first = MV3WebExtensionHost(
             profileID: firstProfileID,
             websiteDataStore: .nonPersistent(),
-            userContentController: WKUserContentController())
+            userContentController: WKUserContentController()
+        )
         let second = MV3WebExtensionHost(
             profileID: secondProfileID,
             websiteDataStore: .nonPersistent(),
-            userContentController: WKUserContentController())
+            userContentController: WKUserContentController()
+        )
 
         #expect(first.controller !== second.controller)
         #expect(first.controller.configuration.identifier == firstProfileID.rawValue)
@@ -36,7 +38,8 @@ struct MV3WebExtensionHostTests {
             profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
             userContentController: WKUserContentController(),
-            isEphemeral: true)
+            isEphemeral: true
+        )
         defer { host.dispose() }
 
         // Act
@@ -51,7 +54,8 @@ struct MV3WebExtensionHostTests {
         let host = MV3WebExtensionHost(
             profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
-            userContentController: WKUserContentController())
+            userContentController: WKUserContentController()
+        )
         let webView = WKWebView(frame: .zero)
         let firstWindow = host.window(for: UUID())
         let secondWindow = host.window(for: UUID())
@@ -74,7 +78,8 @@ struct MV3WebExtensionHostTests {
         let descriptor = BundledWebExtensionDescriptor(
             identifier: "example.extension",
             resourceName: "Extension",
-            resourceSubdirectory: "Bundled")
+            resourceSubdirectory: "Bundled"
+        )
 
         #expect(descriptor.identifier == "example.extension")
         #expect(descriptor.resourceName == "Extension")
@@ -99,7 +104,8 @@ struct MV3WebExtensionHostTests {
         let descriptor = WebExtensionDescriptor(
             identifier: "custom.extension",
             directoryURL: tempDir,
-            preapproveRequestedAccess: true)
+            preapproveRequestedAccess: true
+        )
 
         #expect(descriptor.identifier == "custom.extension")
         #expect(descriptor.directoryURL == tempDir)

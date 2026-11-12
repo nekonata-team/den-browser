@@ -15,7 +15,10 @@ struct NativeBoardMoveTests {
         let first = BoardState(label: "First", width: 520, currentSheetURL: nil)
         let last = BoardState(label: "Last", width: 520, currentSheetURL: nil)
         let source = DeskState(
-            label: "Source", boards: atEnd ? [moved, side, first] : [first, moved, side], focusedBoardID: side.id)
+            label: "Source",
+            boards: atEnd ? [moved, side, first] : [first, moved, side],
+            focusedBoardID: side.id
+        )
         let target = DeskState(label: "Target", boards: [last])
         var saved: DenState?
         let recordSave: (DenState) -> Bool = {
@@ -25,7 +28,8 @@ struct NativeBoardMoveTests {
         try withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])),
-                onSave: recordSave)
+                onSave: recordSave
+            )
         ) { session in
             let deskID = sameDesk ? source.id : target.id
             let anchorID = atEnd ? nil : (sameDesk ? first.id : last.id)
@@ -37,11 +41,13 @@ struct NativeBoardMoveTests {
             #expect(result)
             #expect(session.navigation.presentedDeskID == source.id)
             let destination = try #require(
-                session.resources.state.desks.first(where: { $0.id == deskID }))
+                session.resources.state.desks.first(where: { $0.id == deskID })
+            )
             let otherIDs = sameDesk ? [first.id] : [last.id]
             #expect(
                 destination.boards.map(\.id)
-                    == (atEnd ? otherIDs + [moved.id, side.id] : [moved.id, side.id] + otherIDs))
+                    == (atEnd ? otherIDs + [moved.id, side.id] : [moved.id, side.id] + otherIDs)
+            )
             #expect(destination.focusedBoardID == (sameDesk ? side.id : last.id))
             #expect(session.resources.state.desks[0].focusedBoardID == (sameDesk ? side.id : first.id))
             #expect(saved?.desks == session.resources.state.desks)
@@ -55,7 +61,8 @@ struct NativeBoardMoveTests {
         let target = DeskState(label: "Target", boards: [])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target]))
+            )
         ) { session in
             // Act
             let result = session.resources.boardMovement.place(board.id, in: target.id, before: nil)

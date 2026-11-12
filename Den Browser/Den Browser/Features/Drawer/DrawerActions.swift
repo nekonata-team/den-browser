@@ -37,7 +37,10 @@ final class DrawerActions {
     ) -> UUID? {
         guard
             let itemID = storage.drawerItems.keep(
-                url, title: title, notify: drawerItemNotifications(opensDrawer: opensDrawer, selectsItem: selectsItem))
+                url,
+                title: title,
+                notify: drawerItemNotifications(opensDrawer: opensDrawer, selectsItem: selectsItem)
+            )
         else {
             context.feedback.publish("Only HTTP, HTTPS, and local file URLs are supported.", severity: .warning)
             return nil
@@ -56,7 +59,8 @@ final class DrawerActions {
         context.feedback.publish(
             result == nil
                 ? "Only Web or Terminal Primary Boards without a Side Board can move to Drawer." : "Moved to Drawer.",
-            severity: result == nil ? .warning : .success)
+            severity: result == nil ? .warning : .success
+        )
     }
 
     func drawerTransferNotifications() -> (DrawerTransfer.Notice) -> Void {
@@ -75,7 +79,11 @@ final class DrawerActions {
                     runtime.terminalView.removeFromSuperview()
                     runtime.updateOwner(
                         events: TerminalRuntime.drawerEvents(
-                            itemID: item.id, storage: storage, connection: context.connection))
+                            itemID: item.id,
+                            storage: storage,
+                            connection: context.connection
+                        )
+                    )
                     storage.drawerRuntimes.terminal[item.id] = runtime
                 }
                 storage.boardRuntimes.receivers.removeValue(forKey: board.id)
@@ -85,7 +93,11 @@ final class DrawerActions {
                 context.inputSourceTracker.boardWillRemove(boardID)
                 onWindowEffect?(
                     .overviewBoardRemoved(
-                        boardID: boardID, deskID: source.id, oldIndex: plan.historyEntry.sourceBoardIndex))
+                        boardID: boardID,
+                        deskID: source.id,
+                        oldIndex: plan.historyEntry.sourceBoardIndex
+                    )
+                )
                 storage.invalidateReferences(toRemovedBoardIDs: [boardID])
                 onWindowEffect?(.drawerItemKept(item.id, opensDrawer: false, selectsItem: true))
             }
@@ -121,10 +133,14 @@ final class DrawerActions {
         guard
             let boardID = storage.drawerPlacement.place(
                 .init(
-                    itemID: itemID, width: preferredWidth ?? boardOpening.inheritedBoardWidth,
+                    itemID: itemID,
+                    width: preferredWidth ?? boardOpening.inheritedBoardWidth,
                     searchEngine: preferences.searchEngine,
-                    target: boardOpening.boardCreationTarget(deskID: deskID)),
-                notifyBoard: drawerBoardCreationNotifications(itemID), notifyDrawer: drawerItemNotifications())
+                    target: boardOpening.boardCreationTarget(deskID: deskID)
+                ),
+                notifyBoard: drawerBoardCreationNotifications(itemID),
+                notifyDrawer: drawerItemNotifications()
+            )
         else { return nil }
         onWindowEffect?(.dismissTemporaryPresentation)
         return boardID
@@ -155,7 +171,8 @@ final class DrawerActions {
             webExtensionWindow: webExtensionWindow,
             sheetScale: preferences.sheetScale,
             storage: storage,
-            connection: context.connection)
+            connection: context.connection
+        )
         storage.drawerRuntimes.web[item.id] = runtime
         webExtensionHost?.activate(webView: runtime.webView)
         drawerPeekRuntime = runtime
@@ -176,9 +193,15 @@ final class DrawerActions {
             runtime = TerminalRuntime(
                 workingDirectory: session.workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
                 command: TerminalLaunchCommand.make(
-                    for: .terminal(session), zellijClient: context.zellijClient, zmxClient: context.zmxClient),
-                boardID: BoardID(item.id), profileID: context.configuration.profileID,
-                socketPath: context.configuration.ipcSocketPath, events: events)
+                    for: .terminal(session),
+                    zellijClient: context.zellijClient,
+                    zmxClient: context.zmxClient
+                ),
+                boardID: BoardID(item.id),
+                profileID: context.configuration.profileID,
+                socketPath: context.configuration.ipcSocketPath,
+                events: events
+            )
             runtime.setSurfaceVisible(false)
             storage.drawerRuntimes.terminal[item.id] = runtime
         }
@@ -246,7 +269,12 @@ final class DrawerActions {
                     if presentation.windowResources?.drawerItemID == id { presentation.runtimes?.releaseDrawerPeek() }
                     presentation.onWindowEffect?(
                         .drawerItemRemoved(
-                            id, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
+                            id,
+                            previousItems: previousItems,
+                            advancesPeek: advancesPeek,
+                            focusNext: focusNext
+                        )
+                    )
                 }
             case .didClear:
                 storage.drawerRuntimes.releaseAll()

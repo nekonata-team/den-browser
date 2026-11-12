@@ -118,7 +118,8 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
     let peekaboo = try tool("peekaboo", environment: environment)
     let openscreen = try output.map { _ in try tool("openscreen", environment: environment) }
     let permissions = try parseJSONObject(
-        run(peekaboo, ["permissions", "status", "--no-remote", "--json"], environment: environment))
+        run(peekaboo, ["permissions", "status", "--no-remote", "--json"], environment: environment)
+    )
     let permissionData = permissions["data"] as? [String: Any]
     let missing = (permissionData?["permissions"] as? [[String: Any]] ?? []).filter {
         ($0["isRequired"] as? Bool == true) && ($0["isGranted"] as? Bool != true)
@@ -131,7 +132,8 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
     }
     guard let previousInputSource = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue(),
         let sources = TISCreateInputSourceList(
-            [kTISPropertyInputSourceID: "com.apple.keylayout.ABC"] as CFDictionary, false
+            [kTISPropertyInputSourceID: "com.apple.keylayout.ABC"] as CFDictionary,
+            false
         )?.takeRetainedValue() as? [TISInputSource],
         let abcInputSource = sources.first
     else { throw DemoError(description: "The ABC keyboard input source must be available before running the demo") }
@@ -160,14 +162,17 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
     let target = ["--pid", String(app.processIdentifier), "--foreground", "--no-remote"]
     try wait("the Demo profile menu") {
         let menu = try? run(
-            peekaboo, ["menu", "list", "--pid", String(app.processIdentifier), "--no-remote", "--json"],
-            environment: environment)
+            peekaboo,
+            ["menu", "list", "--pid", String(app.processIdentifier), "--no-remote", "--json"],
+            environment: environment
+        )
         return menu?.contains("Demo") == true
     }
     _ = try run(
         peekaboo,
         ["menu", "click", "--path", "Profile > Demo", "--pid", String(app.processIdentifier), "--no-remote"],
-        environment: environment)
+        environment: environment
+    )
     var lastObservation = "No window observation yet"
     do {
         try wait("the demo window") {
@@ -220,7 +225,10 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
         let handle = try FileHandle(forWritingTo: log)
         defer { try? handle.close() }
         let task = process(
-            openscreen, ["record", "--window", "Demo", "--project", project.path, "--json"], environment: environment)
+            openscreen,
+            ["record", "--window", "Demo", "--project", project.path, "--json"],
+            environment: environment
+        )
         task.standardInput = recorderInput
         task.standardOutput = handle
         task.standardError = handle
@@ -263,7 +271,11 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
         print("Exporting demo video…")
         print(
             try run(
-                openscreen, ["export", projectOutput.path, "-o", output.path, "--auto-zoom"], environment: environment))
+                openscreen,
+                ["export", projectOutput.path, "-o", output.path, "--auto-zoom"],
+                environment: environment
+            )
+        )
         guard (try output.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) > 0 else {
             throw DemoError(description: "Export produced an empty video")
         }

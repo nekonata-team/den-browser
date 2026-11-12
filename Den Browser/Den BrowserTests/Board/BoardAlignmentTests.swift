@@ -14,22 +14,36 @@ struct BoardAlignmentTests {
             var resized = boards
             for index in resized.indices { resized[index].width = width }
             return BoardLayout.Parameters(
-                centering: .always, boards: resized, maximizedBoardID: nil,
-                windowWidth: 1_000, horizontalPadding: 10, spacing: 8)
+                centering: .always,
+                boards: resized,
+                maximizedBoardID: nil,
+                windowWidth: 1_000,
+                horizontalPadding: 10,
+                spacing: 8
+            )
         }
         let original = parameters(width: 520)
         let focusedIndex = 2
         let origin = BoardLayout.scrollTargetAfterLayoutChange(
-            for: boards[focusedIndex].id, in: original, currentScrollX: 0)!
+            for: boards[focusedIndex].id,
+            in: original,
+            currentScrollX: 0
+        )!
         let preview = BoardWidthPreview(
-            deskID: DeskID(), scrollOffsetX: origin,
-            contentWidth: BoardLayout.contentWidth(for: original), centeringRequest: 0)
+            deskID: DeskID(),
+            scrollOffsetX: origin,
+            contentWidth: BoardLayout.contentWidth(for: original),
+            centeringRequest: 0
+        )
 
         for width in [600.0, 680, 600, 360] {
             // Act
             let resized = parameters(width: width)
             let target = BoardLayout.scrollTargetAfterLayoutChange(
-                for: boards[focusedIndex].id, in: resized, currentScrollX: origin)!
+                for: boards[focusedIndex].id,
+                in: resized,
+                currentScrollX: origin
+            )!
             let range = BoardLayout.boardContentRange(for: focusedIndex, in: resized)!
             let displayedCenter = (range.minX + range.maxX) / 2 + preview.translation(to: target) - origin
 
@@ -37,7 +51,8 @@ struct BoardAlignmentTests {
             #expect(abs(displayedCenter - original.windowWidth / 2) < 0.001)
             let nativeContentWidth = max(
                 preview.minimumContentWidth(containerWidth: original.windowWidth),
-                BoardLayout.contentWidth(for: resized))
+                BoardLayout.contentWidth(for: resized)
+            )
             #expect(nativeContentWidth - original.windowWidth >= origin)
         }
         for containerWidth in [500.0, 1_000, 3_000] {
@@ -52,19 +67,22 @@ struct BoardAlignmentTests {
             ids: [boardID],
             widths: [520],
             maximizedBoardID: nil,
-            windowWidth: 1_000)
+            windowWidth: 1_000
+        )
         let older = PendingBoardAlignment(
             deskID: deskID,
             boardID: boardID,
             kind: .resting(120),
             animated: false,
-            layoutKey: layoutKey)
+            layoutKey: layoutKey
+        )
         let newer = PendingBoardAlignment(
             deskID: deskID,
             boardID: boardID,
             kind: .center,
             animated: true,
-            layoutKey: layoutKey)
+            layoutKey: layoutKey
+        )
 
         #expect(!PendingBoardAlignment.isCurrent(older, in: newer))
         #expect(PendingBoardAlignment.isCurrent(newer, in: newer))
@@ -81,12 +99,14 @@ struct BoardAlignmentTests {
             ids: [leftBoard, focusedBoard],
             widths: [400, 600],
             maximizedBoardID: nil,
-            windowWidth: 1_000)
+            windowWidth: 1_000
+        )
         let current = BoardStripLayoutKey(
             ids: [leftBoard, insertedBoard, focusedBoard],
             widths: [400, 320, 600],
             maximizedBoardID: nil,
-            windowWidth: 1_000)
+            windowWidth: 1_000
+        )
 
         #expect(current.insertedWidth(before: focusedBoard, comparedTo: previous, spacing: 12) == 332)
         #expect(current.insertedWidth(before: leftBoard, comparedTo: previous, spacing: 12) == 0)
@@ -101,12 +121,14 @@ struct BoardAlignmentTests {
             ids: [leftBoard, removedBoard, focusedBoard],
             widths: [400, 320, 600],
             maximizedBoardID: nil,
-            windowWidth: 1_000)
+            windowWidth: 1_000
+        )
         let current = BoardStripLayoutKey(
             ids: [leftBoard, focusedBoard],
             widths: [400, 600],
             maximizedBoardID: nil,
-            windowWidth: 1_000)
+            windowWidth: 1_000
+        )
 
         #expect(previous.removedWidth(before: focusedBoard, comparedTo: current, spacing: 12) == 332)
         #expect(previous.removedWidth(before: leftBoard, comparedTo: current, spacing: 12) == 0)

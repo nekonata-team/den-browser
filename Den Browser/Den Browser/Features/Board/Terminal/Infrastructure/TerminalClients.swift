@@ -45,7 +45,8 @@ nonisolated extension TerminalCommandRunning {
         try await run(
             executablePath: executablePath,
             arguments: arguments,
-            timeout: .seconds(5))
+            timeout: .seconds(5)
+        )
     }
 }
 
@@ -91,11 +92,13 @@ nonisolated struct SubprocessCommandRunner: TerminalCommandRunning {
             arguments: Arguments(arguments),
             platformOptions: platformOptions,
             output: .string(limit: Self.outputLimit),
-            error: .string(limit: Self.outputLimit))
+            error: .string(limit: Self.outputLimit)
+        )
         return TerminalCommandResult(
             terminationStatus: Self.terminationStatus(from: result.terminationStatus),
             standardOutput: result.standardOutput,
-            standardError: result.standardError)
+            standardError: result.standardError
+        )
     }
 
     private static func terminationStatus(from status: TerminationStatus) -> Int32 {
@@ -174,7 +177,8 @@ nonisolated struct ZmxClient: Sendable {
                 }
                 let name = String(line.split(separator: "\t").first ?? "")
                 return name.isEmpty ? nil : name
-            })
+            }
+        )
     }
 
     func rootSessionName(for sessionName: String) async throws -> String? {
@@ -205,17 +209,20 @@ nonisolated struct ZmxClient: Sendable {
         let activeSessionNames = try await activeSessionNames()
         let rootSessionName = try await resolvedRootSessionName(
             for: sessionName,
-            savedRootSessionName: savedRootSessionName)
+            savedRootSessionName: savedRootSessionName
+        )
         return ZmxDuplicationContext(
             activeSessionNames: activeSessionNames,
-            rootSessionName: rootSessionName)
+            rootSessionName: rootSessionName
+        )
     }
 
     func sessionSnapshot() async throws -> ZmxSessionSnapshot {
         let sessions = try await sessionsWithRootLabels()
         return ZmxSessionSnapshot(
             groups: makeSessionGroups(from: sessions),
-            processNames: try await processNames(for: sessions))
+            processNames: try await processNames(for: sessions)
+        )
     }
 
     func foregroundProcessGroupID(for sessionName: String) async throws -> pid_t? {
@@ -251,13 +258,15 @@ nonisolated struct ZmxClient: Sendable {
             ZmxSessionGroup(
                 rootSessionName: rootSessionName,
                 isRootActive: activeSessionNames.contains(rootSessionName),
-                childSessionNames: childrenByRoot[rootSessionName, default: []].sorted())
+                childSessionNames: childrenByRoot[rootSessionName, default: []].sorted()
+            )
         }
     }
 
     private func processNames(for sessions: [ZmxSessionInfo]) async throws -> [String: String] {
         var processNames = Dictionary(
-            uniqueKeysWithValues: sessions.map { ($0.name, "Unknown") })
+            uniqueKeysWithValues: sessions.map { ($0.name, "Unknown") }
+        )
         let processes: [Int32: ProcessInfo]
         do {
             processes = try await processSnapshot()
@@ -273,8 +282,8 @@ nonisolated struct ZmxClient: Sendable {
             if let processName = foregroundProcessName(
                 for: session,
                 sessionProcess: sessionProcess,
-                processes: processes)
-            {
+                processes: processes
+            ) {
                 processNames[session.name] = processName
             }
         }
@@ -284,14 +293,16 @@ nonisolated struct ZmxClient: Sendable {
     private func processSnapshot() async throws -> [Int32: ProcessInfo] {
         let result = try await run(
             executablePath: "/bin/ps",
-            arguments: ["-axo", "pid=,ppid=,pgid=,tpgid=,command="])
+            arguments: ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]
+        )
 
         var processes: [Int32: ProcessInfo] = [:]
         for rawLine in result.standardOutput.split(whereSeparator: \.isNewline) {
             let fields = rawLine.split(
                 maxSplits: 4,
                 omittingEmptySubsequences: true,
-                whereSeparator: \.isWhitespace)
+                whereSeparator: \.isWhitespace
+            )
             guard fields.count == 5,
                 let pid = Int32(fields[0]),
                 let parentPID = Int32(fields[1]),
@@ -304,7 +315,8 @@ nonisolated struct ZmxClient: Sendable {
                 parentPID: parentPID,
                 processGroupID: processGroupID,
                 terminalProcessGroupID: terminalProcessGroupID,
-                executableName: executableName)
+                executableName: executableName
+            )
         }
         return processes
     }
@@ -365,7 +377,8 @@ nonisolated struct ZmxClient: Sendable {
             return ZmxSessionInfo(
                 name: String(name),
                 pid: pid,
-                rootSessionName: rootSessionName?.isEmpty == false ? rootSessionName : nil)
+                rootSessionName: rootSessionName?.isEmpty == false ? rootSessionName : nil
+            )
         }
     }
 
@@ -387,12 +400,14 @@ nonisolated struct ZmxClient: Sendable {
         }
         let result = try await commandRunner.run(
             executablePath: executablePath,
-            arguments: arguments)
+            arguments: arguments
+        )
         guard result.terminationStatus == 0 else {
             let diagnostic = result.standardError.trimmingCharacters(in: .whitespacesAndNewlines)
             let suffix = diagnostic.isEmpty ? "" : ": \(diagnostic)"
             throw TerminalCommandError(
-                message: "Command exited with status \(result.terminationStatus)\(suffix)")
+                message: "Command exited with status \(result.terminationStatus)\(suffix)"
+            )
         }
         return result
     }

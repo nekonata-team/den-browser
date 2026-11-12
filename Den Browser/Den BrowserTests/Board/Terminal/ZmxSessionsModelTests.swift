@@ -17,8 +17,11 @@ struct ZmxSessionsModelTests {
                             terminationStatus: 0,
                             standardOutput: "name=den\n"
                                 + "name=den-vi\tden.root=den\n"
-                                + "name=old-root-debug\tden.root=old-root\n")
-                    ])))
+                                + "name=old-root-debug\tden.root=old-root\n"
+                        )
+                    ])
+            )
+        )
 
         model.refresh()
         await model.waitForRefresh()
@@ -32,8 +35,10 @@ struct ZmxSessionsModelTests {
                     ZmxSessionGroup(
                         rootSessionName: "den",
                         isRootActive: true,
-                        childSessionNames: ["den-vi"])
-                ])
+                        childSessionNames: ["den-vi"]
+                    )
+                ]
+        )
         #expect(model.selectedSessionName == "den")
         model.clearFilter()
         model.select(by: 1)
@@ -59,8 +64,11 @@ struct ZmxSessionsModelTests {
                     responses: [
                         ["list"]: TerminalCommandResult(
                             terminationStatus: 0,
-                            standardOutput: "name=den\nname=den-vi\n")
-                    ])))
+                            standardOutput: "name=den\nname=den-vi\n"
+                        )
+                    ])
+            )
+        )
 
         model.refresh()
         await model.waitForRefresh()
@@ -79,8 +87,11 @@ struct ZmxSessionsModelTests {
                     responses: [
                         ["list"]: TerminalCommandResult(
                             terminationStatus: 1,
-                            standardOutput: "")
-                    ])))
+                            standardOutput: ""
+                        )
+                    ])
+            )
+        )
 
         model.refresh()
         await model.waitForRefresh()
@@ -99,11 +110,15 @@ struct ZmxSessionsModelTests {
                     responses: [
                         ["list"]: TerminalCommandResult(
                             terminationStatus: 0,
-                            standardOutput: "name=den\nname=den-vi\tden.root=den\n"),
+                            standardOutput: "name=den\nname=den-vi\tden.root=den\n"
+                        ),
                         ["kill", "den", "--force"]: TerminalCommandResult(
                             terminationStatus: 0,
-                            standardOutput: ""),
-                    ])))
+                            standardOutput: ""
+                        ),
+                    ])
+            )
+        )
 
         model.refresh()
         await model.waitForRefresh()
@@ -125,8 +140,10 @@ struct ZmxSessionsModelTests {
                         terminationStatus: 0,
                         standardOutput: "name=den\n"
                             + "name=den-vi\tden.root=den\n"
-                            + "name=den-nvim\tden.root=den\n")
-                ]))
+                            + "name=den-nvim\tden.root=den\n"
+                    )
+                ])
+        )
         let model = ZmxSessionsModel(operations: { zmxOperations(client) })
 
         model.refresh()
@@ -139,11 +156,14 @@ struct ZmxSessionsModelTests {
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "name=den\nname=den-nvim\tden.root=den\n"),
+                        standardOutput: "name=den\nname=den-nvim\tden.root=den\n"
+                    ),
                     ["kill", "den-vi", "--force"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: ""),
-                ]))
+                        standardOutput: ""
+                    ),
+                ])
+        )
         model.kill(model.pendingDeletion)
         await model.waitForRefresh()
         #expect(model.selectedSessionName == "den-nvim")
@@ -156,11 +176,14 @@ struct ZmxSessionsModelTests {
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "name=den\n"),
+                        standardOutput: "name=den\n"
+                    ),
                     ["kill", "den-nvim", "--force"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: ""),
-                ]))
+                        standardOutput: ""
+                    ),
+                ])
+        )
         model.kill(model.pendingDeletion)
         await model.waitForRefresh()
         #expect(model.selectedSessionName == "den")
@@ -172,7 +195,8 @@ struct ZmxSessionsModelTests {
         let deferred = DeferredZmxOperation<ZmxSessionSnapshot>()
         let current = ZmxSessionSnapshot(
             groups: [ZmxSessionGroup(rootSessionName: "current", isRootActive: true, childSessionNames: [])],
-            processNames: ["current": "shell"])
+            processNames: ["current": "shell"]
+        )
         var operations = ZmxSessionsModel.Operations(load: { try await deferred.run() }, kill: { _ in })
         let model = ZmxSessionsModel(operations: { operations })
         model.start(selectedSessionName: nil)
@@ -192,7 +216,10 @@ struct ZmxSessionsModelTests {
                 : .success(
                     ZmxSessionSnapshot(
                         groups: [ZmxSessionGroup(rootSessionName: "old", isRootActive: true, childSessionNames: [])],
-                        processNames: ["old": "editor"])))
+                        processNames: ["old": "editor"]
+                    )
+                )
+        )
         await completion.value
 
         // Assert
@@ -209,10 +236,12 @@ struct ZmxSessionsModelTests {
         let deferred = DeferredZmxOperation<Void>()
         let old = ZmxSessionSnapshot(
             groups: [ZmxSessionGroup(rootSessionName: "old", isRootActive: true, childSessionNames: [])],
-            processNames: [:])
+            processNames: [:]
+        )
         let current = ZmxSessionSnapshot(
             groups: [ZmxSessionGroup(rootSessionName: "current", isRootActive: true, childSessionNames: [])],
-            processNames: ["current": "shell"])
+            processNames: ["current": "shell"]
+        )
         var operations = ZmxSessionsModel.Operations(load: { old }, kill: { _ in try await deferred.run() })
         let model = ZmxSessionsModel(operations: { operations })
         model.start(selectedSessionName: "old")
@@ -229,7 +258,8 @@ struct ZmxSessionsModelTests {
             await model.waitForRefresh()
         }
         deferred.complete(
-            fails ? .failure(TerminalCommandError(message: "Old kill failed")) : .success(()))
+            fails ? .failure(TerminalCommandError(message: "Old kill failed")) : .success(())
+        )
         await completion.value
         await model.waitForRefresh()
 
@@ -245,7 +275,8 @@ struct ZmxSessionsModelTests {
 private func zmxOperations(_ client: ZmxClient) -> ZmxSessionsModel.Operations {
     ZmxSessionsModel.Operations(
         load: { try await client.sessionSnapshot() },
-        kill: { try await client.killSession($0) })
+        kill: { try await client.killSession($0) }
+    )
 }
 
 private extension ZmxSessionsModel {

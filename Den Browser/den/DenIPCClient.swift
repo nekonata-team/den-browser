@@ -136,7 +136,12 @@ enum DenIPCClient {
             let result = DenIPCOperationResult.failure(message)
             let responseData = (try? JSONEncoder().encode(result.publicJSON)) ?? Data()
             try writeResult(
-                result, data: responseData, output: output, isHealth: false, failureExitCode: exitCode(for: error))
+                result,
+                data: responseData,
+                output: output,
+                isHealth: false,
+                failureExitCode: exitCode(for: error)
+            )
             return
         }
 
@@ -459,7 +464,8 @@ enum DenIPCClient {
     static func requiredDeskID(_ rawID: String) throws -> UUID {
         guard let id = UUID(uuidString: rawID) else {
             throw DenIPCClientError.usage(
-                "Invalid Desk ID: \(rawID). Expected a UUID; run 'den desk list' to find Desk IDs.")
+                "Invalid Desk ID: \(rawID). Expected a UUID; run 'den desk list' to find Desk IDs."
+            )
         }
         return id
     }

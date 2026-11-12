@@ -19,9 +19,17 @@ public struct UnactivatedBoardView: View {
     let onDragEnded: (DragGesture.Value) -> Void
 
     public init(
-        board: BoardState, isFocused: Bool, isDragging: Bool, profileColor: Color, width: Double, height: Double,
-        isPointerFocusEnabled: Bool, onFocus: @escaping () -> Void, onRemove: @escaping () -> Void,
-        onDragChanged: @escaping (DragGesture.Value) -> Void, onDragEnded: @escaping (DragGesture.Value) -> Void
+        board: BoardState,
+        isFocused: Bool,
+        isDragging: Bool,
+        profileColor: Color,
+        width: Double,
+        height: Double,
+        isPointerFocusEnabled: Bool,
+        onFocus: @escaping () -> Void,
+        onRemove: @escaping () -> Void,
+        onDragChanged: @escaping (DragGesture.Value) -> Void,
+        onDragEnded: @escaping (DragGesture.Value) -> Void
     ) {
         self.board = board
         self.isFocused = isFocused
@@ -50,7 +58,9 @@ public struct UnactivatedBoardView: View {
         }
         .shadow(
             color: DenSurfaceColors.boardShadow(isFocused: isFocused, isDragging: isDragging),
-            radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
+            radius: isDragging ? 42 : (isFocused ? 34 : 24),
+            x: 0,
+            y: isDragging ? 28 : 22
         )
     }
 

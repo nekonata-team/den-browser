@@ -10,7 +10,10 @@ enum UITestFixtureFactory {
                     "id": "00000000-0000-0000-0000-000000000501",
                     "name": "Drawer Essential Fixture", "key": "e", "input": url.absoluteString,
                 ]
-            ], format: .binary, options: 0)
+            ],
+            format: .binary,
+            options: 0
+        )
     }
 
     static func makeProfileSeed(

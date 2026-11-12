@@ -67,13 +67,20 @@ enum UniversalSearchActions {
             case .undoBoardOperation: action = .board(.undo)
             }
             AppActionHandler.perform(
-                action, session: session, windowModel: windowModel, openSettings: openSettings)
+                action,
+                session: session,
+                windowModel: windowModel,
+                openSettings: openSettings
+            )
         }
         return nil
     }
 
     private static func open(
-        _ input: String, session: ProfileWindowSession, windowModel: DenWindowModel, inDrawer: Bool
+        _ input: String,
+        session: ProfileWindowSession,
+        windowModel: DenWindowModel,
+        inDrawer: Bool
     ) -> String? {
         if inDrawer { return session.input.openInDrawer(input: input) }
         switch session.boardOpening.requestOpenBoard(input: input, preferredWidth: windowModel.defaultBoardWidth) {

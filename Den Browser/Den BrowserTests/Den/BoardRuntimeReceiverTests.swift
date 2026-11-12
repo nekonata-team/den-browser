@@ -14,8 +14,10 @@ struct BoardRuntimeReceiverTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let runtime = session.runtimes.terminalRuntime(for: board)
         weak let receiver = session.resources.boardRuntimes.receivers[board.id]
 
@@ -40,8 +42,11 @@ struct BoardRuntimeReceiverTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [backgroundDesk, presentedDesk], focusedDeskID: presentedDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [backgroundDesk, presentedDesk], focusedDeskID: presentedDesk.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let receiver = BoardRuntimeReceiver(storage: session.resources, boardID: terminal.id)
         let disconnected = RuntimeWindowConnection()
         let events = receiver.terminalEvents(for: terminal, connection: disconnected)
@@ -59,7 +64,8 @@ struct BoardRuntimeReceiverTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.reset.resetDen()
         let board = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
@@ -86,8 +92,11 @@ struct BoardRuntimeReceiverTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [pipDesk, activeDesk], focusedDeskID: activeDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [pipDesk, activeDesk], focusedDeskID: activeDesk.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let runtime = session.runtimes.webRuntime(for: pipBoard)
         let selector = NSSelectorFromString("_webViewFullscreenMayReturnToInline:")
         var effects: [DenWindowEffect] = []

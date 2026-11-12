@@ -19,7 +19,8 @@ struct DenWebCommandTests {
                     return try encodeResponse(.failure("Expected read command with explicit Board"))
                 }
                 return try encodeResponse(
-                    .success(.reading(title: "Guide", url: "https://example.com/", markdown: "# Guide")))
+                    .success(.reading(title: "Guide", url: "https://example.com/", markdown: "# Guide"))
+                )
             } catch {
                 return Data()
             }
@@ -113,7 +114,8 @@ struct DenWebCommandTests {
                     DenIPCOperationResult.success(
                         includesSnapshot ? .url("https://example.com/") : .empty,
                         snapshot: includesSnapshot ? "@e1 button \"Continue\"" : nil
-                    ))
+                    )
+                )
             } catch {
                 return Data()
             }
@@ -267,7 +269,8 @@ struct DenWebCommandTests {
                     DenIPCOperationResult.success(
                         includeSnapshot ? .empty : .interaction(completedActions: 1, failedActionIndex: nil),
                         snapshot: includeSnapshot ? "unexpected" : nil,
-                    ))
+                    )
+                )
             } catch {
                 return Data()
             }

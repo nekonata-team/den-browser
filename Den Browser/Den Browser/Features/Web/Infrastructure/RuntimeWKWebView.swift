@@ -57,10 +57,14 @@ final class RuntimeWKWebView: WKWebView {
         if backgroundWindow == nil {
             let size = NSSize(
                 width: frame.width > 0 ? frame.width : 800,
-                height: frame.height > 0 ? frame.height : 600)
+                height: frame.height > 0 ? frame.height : 600
+            )
             let host = WebBackgroundWindow(
-                contentRect: NSRect(origin: .zero, size: size), styleMask: .borderless,
-                backing: .buffered, defer: false)
+                contentRect: NSRect(origin: .zero, size: size),
+                styleMask: .borderless,
+                backing: .buffered,
+                defer: false
+            )
             host.isReleasedWhenClosed = false
             host.isExcludedFromWindowsMenu = true
             backgroundWindow = host

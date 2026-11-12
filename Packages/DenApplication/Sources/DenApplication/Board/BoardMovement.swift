@@ -26,7 +26,10 @@ public struct BoardMovement {
     }
 
     public func transfer(
-        _ boardID: BoardID, from sourceDeskID: DeskID, to targetDeskID: DeskID, at index: BoardIndex,
+        _ boardID: BoardID,
+        from sourceDeskID: DeskID,
+        to targetDeskID: DeskID,
+        at index: BoardIndex,
         recordsUndo: Bool = true
     ) {
         writer.update { snapshot in
@@ -41,8 +44,11 @@ public struct BoardMovement {
             if sourceIndex != targetIndex && recordsUndo {
                 snapshot.rememberBoardOperation(
                     .movedToDesk(
-                        boardID: groupBoards[0].id, sourceDeskID: sourceDeskID,
-                        sourceIndex: .init(rawValue: removedIndex)))
+                        boardID: groupBoards[0].id,
+                        sourceDeskID: sourceDeskID,
+                        sourceIndex: .init(rawValue: removedIndex)
+                    )
+                )
             }
             let sourceWasFocused = snapshot.den.desks[sourceIndex].focusedBoardID.map(ids.contains) ?? false
             snapshot.den.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
@@ -151,8 +157,11 @@ public struct BoardMovement {
         guard reader.snapshot.activeDrag == nil, count > 1, let source = deskIndex(containing: boardID) else { return }
         let target = ((source + delta) % count + count) % count
         transfer(
-            boardID, from: reader.snapshot.den.desks[source].id, to: reader.snapshot.den.desks[target].id,
-            at: insertionAfterFocus(in: target))
+            boardID,
+            from: reader.snapshot.den.desks[source].id,
+            to: reader.snapshot.den.desks[target].id,
+            at: insertionAfterFocus(in: target)
+        )
         focusIfEmpty(boardID, in: target)
         save()
     }

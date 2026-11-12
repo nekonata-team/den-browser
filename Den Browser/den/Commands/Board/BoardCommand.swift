@@ -17,7 +17,9 @@ struct BoardCreationOptions: ParsableArguments {
     @Option(name: .customLong("left-of"), help: ArgumentHelp("Create left of this Board Group", valueName: "board-id"))
     var leftOf: String?
     @Option(
-        name: .customLong("right-of"), help: ArgumentHelp("Create right of this Board Group", valueName: "board-id"))
+        name: .customLong("right-of"),
+        help: ArgumentHelp("Create right of this Board Group", valueName: "board-id")
+    )
     var rightOf: String?
 
     func destination() throws -> DenBoardCreationDestination {
@@ -54,13 +56,15 @@ struct BoardInspectionCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "inspection",
         abstract: "Create Inspection Boards and read their selected elements",
-        subcommands: [BoardInspectionNewCommand.self, BoardInspectionReadCommand.self])
+        subcommands: [BoardInspectionNewCommand.self, BoardInspectionReadCommand.self]
+    )
 }
 
 struct BoardInspectionNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
-        abstract: "Create or reuse an Inspection Board for a Web Board")
+        abstract: "Create or reuse an Inspection Board for a Web Board"
+    )
 
     @OptionGroup var common: CLIOptions
 
@@ -87,7 +91,8 @@ struct BoardInspectionNewCommand: ParsableCommand {
 struct BoardListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List all Boards on the selected Desk")
+        abstract: "List all Boards on the selected Desk"
+    )
 
     @OptionGroup var options: BoardListOptions
     @Option(name: .customLong("desk"), help: "Target Desk UUID (defaults to the ambient Desk)") var deskID: String?
@@ -96,7 +101,8 @@ struct BoardListCommand: ParsableCommand {
         try DenIPCClient.execute(
             operation: .boardList(target: try DenIPCClient.deskTarget(deskID)),
             options: options.common,
-            showBoardIDs: options.showBoardIDs)
+            showBoardIDs: options.showBoardIDs
+        )
     }
 }
 
@@ -114,7 +120,8 @@ struct BoardExistsCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .boardExists(boardID: try DenIPCClient.requiredBoardID(boardID)),
-            options: common)
+            options: common
+        )
     }
 }
 
@@ -123,14 +130,16 @@ struct BoardListOptions: ParsableArguments {
 
     @Flag(
         name: [.customShort("l"), .customLong("long")],
-        help: "Show full Board IDs in human-readable output")
+        help: "Show full Board IDs in human-readable output"
+    )
     var showBoardIDs = false
 }
 
 struct BoardFocusedCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "focused",
-        abstract: "Show the currently focused Board on the active Desk")
+        abstract: "Show the currently focused Board on the active Desk"
+    )
 
     @OptionGroup var options: BoardFocusedOptions
 
@@ -138,14 +147,16 @@ struct BoardFocusedCommand: ParsableCommand {
         try DenIPCClient.execute(
             operation: .boardFocused(target: .automatic),
             options: options.common,
-            showBoardIDs: options.showBoardIDs)
+            showBoardIDs: options.showBoardIDs
+        )
     }
 }
 
 struct BoardFocusCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "focus",
-        abstract: "Focus an existing Board and bring it into view without activating the window")
+        abstract: "Focus an existing Board and bring it into view without activating the window"
+    )
 
     @OptionGroup var common: CLIOptions
 
@@ -165,7 +176,8 @@ struct BoardFocusedOptions: ParsableArguments {
 
     @Flag(
         name: [.customShort("l"), .customLong("long")],
-        help: "Show full Board ID in human-readable output")
+        help: "Show full Board ID in human-readable output"
+    )
     var showBoardIDs = false
 }
 
@@ -210,7 +222,8 @@ struct BoardWebNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
         abstract: "Open a new Web Board with a URL or search query",
-        discussion: BoardCreationOptions.discussion)
+        discussion: BoardCreationOptions.discussion
+    )
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "URL or search query for the new board") var url: String
@@ -220,7 +233,8 @@ struct BoardWebNewCommand: ParsableCommand {
     var focus: Bool = false
     @Flag(
         name: .customLong("den-api"),
-        help: "Enable and persist the Den JavaScript API on this Board for local HTML files")
+        help: "Enable and persist the Den JavaScript API on this Board for local HTML files"
+    )
     var denAPI = false
     @Flag(name: .long, help: "Keep this Board running and updating while hidden, and save the setting")
     var background = false
@@ -233,8 +247,12 @@ struct BoardWebNewCommand: ParsableCommand {
         try DenIPCClient.execute(
             operation: .createWebBoard(
                 payload: DenBoardWebNewPayload(
-                    url: url, focus: focus, width: width, denAPI: denAPI ? true : nil,
-                    backgroundExecution: background ? true : nil),
+                    url: url,
+                    focus: focus,
+                    width: width,
+                    denAPI: denAPI ? true : nil,
+                    backgroundExecution: background ? true : nil
+                ),
                 destination: try placement.destination()
             ),
             options: options
@@ -261,7 +279,8 @@ struct BoardTerminalNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
         abstract: "Open a new Terminal Board",
-        discussion: BoardCreationOptions.discussion)
+        discussion: BoardCreationOptions.discussion
+    )
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "Working directory for the terminal board") var path: String?
@@ -294,7 +313,8 @@ struct BoardTerminalNewCommand: ParsableCommand {
 struct BoardCloseCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "close",
-        abstract: "Close the specified Board or target Web Board")
+        abstract: "Close the specified Board or target Web Board"
+    )
 
     @OptionGroup var options: BoardTargetOptions
 
@@ -308,7 +328,8 @@ struct BoardCloseCommand: ParsableCommand {
 
 struct BoardMoveCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "move", abstract: "Move a Board Group beside another Board or to the end of a Desk",
+        commandName: "move",
+        abstract: "Move a Board Group beside another Board or to the end of a Desk",
         discussion:
             "Placement options are mutually exclusive: specify exactly one of --left-of, --right-of, or --end-of."
     )
@@ -344,13 +365,16 @@ struct BoardMoveCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .moveBoard(boardID: try DenIPCClient.requiredBoardID(boardID), destination: try destination()),
-            options: common)
+            options: common
+        )
     }
 }
 
 struct BoardResizeCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "resize", abstract: "Set Board width, constrained to the target window's available width")
+        commandName: "resize",
+        abstract: "Set Board width, constrained to the target window's available width"
+    )
 
     @OptionGroup var common: CLIOptions
     @Option(name: .customLong("board"), help: "Board ID to resize") var boardID: String
@@ -363,6 +387,7 @@ struct BoardResizeCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .resizeBoard(boardID: try DenIPCClient.requiredBoardID(boardID), width: width),
-            options: common)
+            options: common
+        )
     }
 }

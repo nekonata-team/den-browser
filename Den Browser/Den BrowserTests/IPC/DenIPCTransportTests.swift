@@ -11,7 +11,9 @@ struct DenIPCTransportTests {
             DenSocketPath.temporary(
                 prefix: "den-test",
                 identifier: "unit",
-                temporaryDirectory: temporaryDirectory) == "/tmp/den-test/den-test-unit.sock")
+                temporaryDirectory: temporaryDirectory
+            ) == "/tmp/den-test/den-test-unit.sock"
+        )
     }
 
     @Test func socketPathResolutionUsesExplicitEnvironmentThenDefault() {
@@ -21,19 +23,26 @@ struct DenIPCTransportTests {
             DenSocketPath.resolve(
                 explicit: "/tmp/explicit.sock",
                 environment: ["DEN_SOCKET": "/tmp/environment.sock"],
-                homeDirectory: home) == "/tmp/explicit.sock")
+                homeDirectory: home
+            ) == "/tmp/explicit.sock"
+        )
         #expect(
             DenSocketPath.resolve(
                 environment: ["DEN_SOCKET": "/tmp/environment.sock"],
                 defaultPath: "/tmp/private.sock",
-                homeDirectory: home) == "/tmp/environment.sock")
+                homeDirectory: home
+            ) == "/tmp/environment.sock"
+        )
         #expect(
             DenSocketPath.resolve(
                 environment: [:],
                 defaultPath: "/tmp/private.sock",
-                homeDirectory: home) == "/tmp/private.sock")
+                homeDirectory: home
+            ) == "/tmp/private.sock"
+        )
         #expect(
-            DenSocketPath.resolve(environment: [:], homeDirectory: home) == "/tmp/den-home/.den/den.sock")
+            DenSocketPath.resolve(environment: [:], homeDirectory: home) == "/tmp/den-home/.den/den.sock"
+        )
     }
 
     @Test func emptyEnvironmentSocketFallsBackToDefault() {
@@ -41,6 +50,7 @@ struct DenIPCTransportTests {
 
         #expect(
             DenSocketPath.resolve(environment: ["DEN_SOCKET": ""], homeDirectory: home)
-                == "/tmp/den-home/.den/den.sock")
+                == "/tmp/den-home/.den/den.sock"
+        )
     }
 }

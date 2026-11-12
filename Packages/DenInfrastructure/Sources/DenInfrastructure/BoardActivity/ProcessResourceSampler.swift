@@ -56,7 +56,8 @@ public struct ProcessResourceSampler {
         return ProcessResourceUsage(
             cpuPercent: cpuPercent,
             memoryBytes: sample.memoryBytes,
-            processCount: sample.processCount)
+            processCount: sample.processCount
+        )
     }
 
     public mutating func removeSamples(keeping keys: Set<String>) {
@@ -82,7 +83,8 @@ public struct ProcessResourceSampler {
         return ProcessResourceSample(
             cpuTimeNanos: values.reduce(0) { $0 + $1.cpuTimeNanos },
             memoryBytes: values.reduce(0) { $0 + $1.memoryBytes },
-            processCount: values.count)
+            processCount: values.count
+        )
     }
 
     private static func processUsage(pid: pid_t) -> ProcessResourceSample? {
@@ -96,6 +98,7 @@ public struct ProcessResourceSampler {
         return ProcessResourceSample(
             cpuTimeNanos: info.ri_user_time + info.ri_system_time,
             memoryBytes: info.ri_phys_footprint,
-            processCount: 1)
+            processCount: 1
+        )
     }
 }

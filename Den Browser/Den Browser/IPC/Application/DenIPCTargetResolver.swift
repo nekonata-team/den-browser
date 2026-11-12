@@ -222,7 +222,8 @@ enum DenIPCTargetResolver {
             return .failure(.profileHasNoActiveWindow(rawProfileID.uuidString))
         }
         return .success(
-            WindowScope(windows: profileManager.ipcWindows.filter { $0.profileID == profileID }, profileID: profileID))
+            WindowScope(windows: profileManager.ipcWindows.filter { $0.profileID == profileID }, profileID: profileID)
+        )
     }
 
     private static func resolvedDesk(
@@ -246,7 +247,8 @@ enum DenIPCTargetResolver {
             return .failure(.targetProfileUnavailable)
         }
         return .success(
-            ResolvedBoardTarget(window: resolved.window, board: board, profileID: resolved.profileID))
+            ResolvedBoardTarget(window: resolved.window, board: board, profileID: resolved.profileID)
+        )
     }
 
     private static func resolvedWindow(

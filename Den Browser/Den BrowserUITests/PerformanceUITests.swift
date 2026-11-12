@@ -32,7 +32,8 @@ final class PerformanceUITests: UITestCase {
             XCTAssertTrue(app.textFields["Sheet input"].firstMatch.waitUntilExists(timeout: 10))
             app.typeKey(",", modifierFlags: .control)
             XCTAssertTrue(
-                app.windows.matching(identifier: "UI Testing · DEN MODE").firstMatch.waitUntilExists(timeout: 5))
+                app.windows.matching(identifier: "UI Testing · DEN MODE").firstMatch.waitUntilExists(timeout: 5)
+            )
         }
 
         // Swipe in the Strip's top inset so a Web Sheet cannot consume the gesture.
@@ -47,7 +48,9 @@ final class PerformanceUITests: UITestCase {
             identifier: "board-surface.\(FixtureBoard.charlie.rawValue)"
         ).firstMatch
         let centered = XCTNSPredicateExpectation(
-            predicate: NSPredicate { _, _ in abs(surface.frame.midX - strip.frame.midX) <= 3 }, object: nil)
+            predicate: NSPredicate { _, _ in abs(surface.frame.midX - strip.frame.midX) <= 3 },
+            object: nil
+        )
         XCTAssertEqual(XCTWaiter.wait(for: [centered], timeout: 5), .completed)
         let startingX = charlie.frame.minX
         let windowSize = window.frame.size
@@ -73,7 +76,9 @@ final class PerformanceUITests: UITestCase {
                 then("the next iteration starts at the same position and window size") {
                     XCTAssertEqual(window.frame.size, windowSize)
                     let aligned = XCTNSPredicateExpectation(
-                        predicate: NSPredicate { _, _ in abs(charlie.frame.minX - startingX) <= 3 }, object: nil)
+                        predicate: NSPredicate { _, _ in abs(charlie.frame.minX - startingX) <= 3 },
+                        object: nil
+                    )
                     XCTAssertEqual(XCTWaiter.wait(for: [aligned], timeout: 5), .completed)
                 }
             }

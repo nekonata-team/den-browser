@@ -23,7 +23,8 @@ public struct Essential: Codable, Equatable, Hashable, Identifiable {
             id: try container.decode(UUID.self, forKey: .id),
             name: try container.decode(String.self, forKey: .name),
             key: try container.decode(String.self, forKey: .key),
-            input: try container.decode(String.self, forKey: .input))
+            input: try container.decode(String.self, forKey: .input)
+        )
     }
 
     public var displayKey: String {

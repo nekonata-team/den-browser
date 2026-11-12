@@ -11,8 +11,12 @@ public final class BoardCreation {
         public let origin: BoardOperationOrigin
 
         public init(
-            presentedDeskID: DeskID, deskID: DeskID? = nil, afterBoardID: BoardID? = nil, beforeBoardID: BoardID? = nil,
-            focus: Bool = true, origin: BoardOperationOrigin = .interactive
+            presentedDeskID: DeskID,
+            deskID: DeskID? = nil,
+            afterBoardID: BoardID? = nil,
+            beforeBoardID: BoardID? = nil,
+            focus: Bool = true,
+            origin: BoardOperationOrigin = .interactive
         ) {
             self.presentedDeskID = presentedDeskID
             self.deskID = deskID
@@ -31,7 +35,10 @@ public final class BoardCreation {
         public let zmxRootSessionName: String?
 
         public init(
-            input: String, width: Double, target: Target, configuration: BoardOpening.Configuration,
+            input: String,
+            width: Double,
+            target: Target,
+            configuration: BoardOpening.Configuration,
             zmxRootSessionName: String? = nil
         ) {
             self.input = input
@@ -62,7 +69,9 @@ public final class BoardCreation {
     private let directoryExists: (String) -> Bool
 
     public init(
-        reader: DenStateReader, writer: DenStateWriter, recents: Recents,
+        reader: DenStateReader,
+        writer: DenStateWriter,
+        recents: Recents,
         persist: ((DenState) -> Bool)? = nil,
         directoryExists: @escaping (String) -> Bool
     ) {
@@ -75,8 +84,12 @@ public final class BoardCreation {
 
     public func resolve(_ request: OpenRequest) -> BoardOpening.Decision {
         BoardOpening.resolve(
-            input: request.input, width: request.width, zmxRootSessionName: request.zmxRootSessionName,
-            configuration: request.configuration, directoryExists: directoryExists)
+            input: request.input,
+            width: request.width,
+            zmxRootSessionName: request.zmxRootSessionName,
+            configuration: request.configuration,
+            directoryExists: directoryExists
+        )
     }
 
     public func open(_ request: OpenRequest, notify: (Notice) -> Void) -> BoardOpenResult {
@@ -114,8 +127,13 @@ public final class BoardCreation {
 
     @discardableResult
     public func createWeb(
-        urlString: String, width: Double, searchEngine: SearchEngine, target: Target,
-        recentItem: RecentItem? = nil, denAPI: Bool = false, backgroundExecution: Bool = false,
+        urlString: String,
+        width: Double,
+        searchEngine: SearchEngine,
+        target: Target,
+        recentItem: RecentItem? = nil,
+        denAPI: Bool = false,
+        backgroundExecution: Bool = false,
         notify: (Notice) -> Void
     ) -> BoardID? {
         guard let url = BoardInputResolver.normalizedURL(from: urlString, searchEngine: searchEngine) else {
@@ -123,7 +141,10 @@ public final class BoardCreation {
         }
         guard !denAPI || DenAPIPolicy.isLocalHTML(url) else { return nil }
         var board = BoardState(
-            label: url.host(percentEncoded: false) ?? url.absoluteString, width: width, currentSheetURL: url)
+            label: url.host(percentEncoded: false) ?? url.absoluteString,
+            width: width,
+            currentSheetURL: url
+        )
         board.denAPIEnabled = denAPI
         board.backgroundExecutionEnabled = backgroundExecution
         return insert(board, target: target, recentItem: recentItem, notify: notify)
@@ -131,23 +152,37 @@ public final class BoardCreation {
 
     @discardableResult
     public func createTerminal(
-        workingDirectory: String, width: Double, target: Target,
-        recentItem: RecentItem? = nil, notify: (Notice) -> Void
+        workingDirectory: String,
+        width: Double,
+        target: Target,
+        recentItem: RecentItem? = nil,
+        notify: (Notice) -> Void
     ) -> BoardID? {
         insert(
             BoardState(width: width, workingDirectory: workingDirectory),
-            target: target, recentItem: recentItem, notify: notify)
+            target: target,
+            recentItem: recentItem,
+            notify: notify
+        )
     }
 
     @discardableResult
     public func insert(
-        _ board: BoardState, target: Target, recentItem: RecentItem? = nil, notify: (Notice) -> Void
+        _ board: BoardState,
+        target: Target,
+        recentItem: RecentItem? = nil,
+        notify: (Notice) -> Void
     ) -> BoardID? {
         guard
             let insertion = BoardInsertion.insert(
-                board, in: reader.snapshot.den.desks, presentedDeskID: target.presentedDeskID,
-                deskID: target.deskID, afterBoardID: target.afterBoardID, beforeBoardID: target.beforeBoardID,
-                focus: target.focus)
+                board,
+                in: reader.snapshot.den.desks,
+                presentedDeskID: target.presentedDeskID,
+                deskID: target.deskID,
+                afterBoardID: target.afterBoardID,
+                beforeBoardID: target.beforeBoardID,
+                focus: target.focus
+            )
         else { return nil }
 
         notify(.willInsert(board))

@@ -21,7 +21,8 @@ struct UBOLiteInstallerTests {
         let installer = UBOLiteInstaller(
             directoryURL: fixtureURL,
             releaseAPIURL: apiURL,
-            session: session)
+            session: session
+        )
 
         let success = await installer.install()
 
@@ -34,7 +35,8 @@ struct UBOLiteInstallerTests {
             directoryURL: FileManager.default.temporaryDirectory
                 .appending(path: "ubolite-missing-\(UUID().uuidString)", directoryHint: .isDirectory),
             releaseAPIURL: apiURL,
-            session: session)
+            session: session
+        )
         let newInstallSuccess = await newInstaller.install()
 
         #expect(!newInstallSuccess)
@@ -54,7 +56,8 @@ struct UBOLiteInstallerTests {
                 "manifest_version": 2,
                 "name": "uBlock Origin Lite",
                 "version": "2026.920.1710",
-            ])
+            ]
+        )
 
         let success = await installer.install()
 
@@ -70,7 +73,8 @@ struct UBOLiteInstallerTests {
 
         let installer = try makeInstaller(
             directoryURL: directoryURL,
-            candidateManifest: validManifest(version: "2026.901.1442"))
+            candidateManifest: validManifest(version: "2026.901.1442")
+        )
 
         let success = await installer.install()
 
@@ -85,7 +89,8 @@ struct UBOLiteInstallerTests {
 
         let installer = try makeInstaller(
             directoryURL: directoryURL,
-            candidateManifest: validManifest(version: "2026.920.1710"))
+            candidateManifest: validManifest(version: "2026.920.1710")
+        )
 
         let success = await installer.install()
 
@@ -120,7 +125,8 @@ struct UBOLiteInstallerTests {
             directoryURL: directoryURL,
             releaseAPIURL: apiURL,
             session: URLSession(configuration: configuration),
-            commandRunner: ArchiveCommandRunner(manifest: candidateManifestData))
+            commandRunner: ArchiveCommandRunner(manifest: candidateManifestData)
+        )
     }
 
     private func makeTemporaryDirectory() throws -> URL {
@@ -190,7 +196,8 @@ private class StubURLProtocol: URLProtocol {
             url: url,
             statusCode: isAPI ? Self.apiStatusCode : Self.downloadStatusCode,
             httpVersion: nil,
-            headerFields: nil)
+            headerFields: nil
+        )
         guard let response else {
             client?.urlProtocol(self, didFailWithError: URLError(.badURL))
             return

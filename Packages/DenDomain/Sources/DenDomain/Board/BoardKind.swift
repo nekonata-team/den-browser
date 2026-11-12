@@ -22,10 +22,15 @@ public enum BoardKind: Codable, Equatable {
                     firstSheetURL: try container.decodeIfPresent(URL.self, forKey: .firstSheetURL),
                     sheetNavigationPaused: try container.decodeIfPresent(
                         Bool.self,
-                        forKey: .sheetNavigationPaused) ?? false,
+                        forKey: .sheetNavigationPaused
+                    ) ?? false,
                     denAPIEnabled: try container.decodeIfPresent(Bool.self, forKey: .denAPIEnabled) ?? false,
                     backgroundExecutionEnabled: try container.decodeIfPresent(
-                        Bool.self, forKey: .backgroundExecutionEnabled) ?? false))
+                        Bool.self,
+                        forKey: .backgroundExecutionEnabled
+                    ) ?? false
+                )
+            )
         case .inspection:
             self = .inspection
         case .terminal:

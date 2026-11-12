@@ -23,10 +23,16 @@ public struct DrawerView<Peek: View>: View {
     @FocusState private var focusedDrawerItemID: UUID?
 
     public init(
-        availableHeight: CGFloat, availableWidth: CGFloat, profileColor: Color,
-        shouldShowHeader: Bool = true, isDenMode: @escaping () -> Bool, isInputActive: @escaping () -> Bool,
-        motionPreference: MotionPreference, @ViewBuilder peek: @escaping (DrawerItem, Bool) -> Peek,
-        placeFromContextMenu: @escaping (UUID) -> Void, placeAsBoard: @escaping (UUID) -> Void
+        availableHeight: CGFloat,
+        availableWidth: CGFloat,
+        profileColor: Color,
+        shouldShowHeader: Bool = true,
+        isDenMode: @escaping () -> Bool,
+        isInputActive: @escaping () -> Bool,
+        motionPreference: MotionPreference,
+        @ViewBuilder peek: @escaping (DrawerItem, Bool) -> Peek,
+        placeFromContextMenu: @escaping (UUID) -> Void,
+        placeAsBoard: @escaping (UUID) -> Void
     ) {
         self.availableHeight = availableHeight
         self.availableWidth = availableWidth

@@ -45,7 +45,8 @@ struct DenWindowModelPresentationTests {
         let source = desk("Desk", boards: [target], focusedBoardID: target.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             let changed = Mutex(false)
             withObservationTracking {
@@ -72,12 +73,16 @@ struct DenWindowModelPresentationTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [populated, empty], focusedDeskID: populated.id)),
+                    DenState(desks: [populated, empty], focusedDeskID: populated.id)
+                ),
                 onSave: { state in
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -89,7 +94,10 @@ struct DenWindowModelPresentationTests {
         #expect(session.boardNavigation.beginBoardDrag(board.id))
         session.resources.recentlyRemovedBoards = [
             RecentlyRemovedBoard(
-                board: board, sourceDeskID: populated.id, sourceBoardIndex: BoardIndex(rawValue: 0))
+                board: board,
+                sourceDeskID: populated.id,
+                sourceBoardIndex: BoardIndex(rawValue: 0)
+            )
         ]
         session.resources.recentlyDiscardedDrawerItems = [
             DrawerItem(url: URL(string: "https://discarded.example/")!)
@@ -133,8 +141,10 @@ struct DenWindowModelPresentationTests {
         let focusedDesk = desk("Desk", boards: [first, second], focusedBoardID: first.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -154,7 +164,8 @@ struct DenWindowModelPresentationTests {
     @Test func restoreRecentlyRemovedBoardReportsFeedbackWhenNoneExists() {
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.boardRemoval.restoreRecentlyRemovedBoard()
         #expect(session.feedback.latest?.message == "No removed board to restore.")
         #expect(session.feedback.latest?.severity == .warning)
@@ -163,7 +174,8 @@ struct DenWindowModelPresentationTests {
     @Test func invalidDeskNumberReportsFeedback() {
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.boardNavigation.focusDesk(number: 5)
         #expect(session.feedback.latest?.message == "Desk 5 does not exist.")
         #expect(session.feedback.latest?.severity == .warning)
@@ -172,7 +184,8 @@ struct DenWindowModelPresentationTests {
     @Test func reportFeedbackSetsLatestFeedbackWithSeverity() {
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.feedback.latest == nil)
 
         session.context.feedback.publish("Test Toast", severity: .warning)
@@ -184,7 +197,8 @@ struct DenWindowModelPresentationTests {
     @Test func reportFeedbackPreservesTitleAndBody() {
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.context.feedback.publish(title: "Build", body: "Finished")
 
@@ -201,7 +215,12 @@ struct DenWindowModelPresentationTests {
                 state: DenStateNormalization.normalize(
                     DenState(
                         desks: [focusedDesk],
-                        focusedDeskID: focusedDesk.id))), configuration: makeTestBoardRuntimeConfiguration())
+                        focusedDeskID: focusedDesk.id
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -240,7 +259,8 @@ struct DenWindowModelPresentationTests {
         let source = desk("Desk")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             windowModel.showOpenBoardPanel()
             windowModel.openBoard.input = ":zmx project"
@@ -252,7 +272,8 @@ struct DenWindowModelPresentationTests {
             #expect(windowModel.isOpenBoardPanelPresented)
             #expect(windowModel.openBoard.input == ":zmx project")
             #expect(
-                windowModel.openBoard.message == "Set an absolute zmx executable path in Settings > Terminal.")
+                windowModel.openBoard.message == "Set an absolute zmx executable path in Settings > Terminal."
+            )
             #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
         }
     }
@@ -264,7 +285,8 @@ struct DenWindowModelPresentationTests {
         let source = desk("Desk", boards: [first, second], focusedBoardID: second.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             let item = RecentItem.url(URL(string: "https://example.com/recent")!)
             windowModel.showOpenBoardPanel(afterBoardID: first.id)
@@ -277,7 +299,8 @@ struct DenWindowModelPresentationTests {
             #expect(opened.currentSheetURL == URL(string: item.displayText))
             #expect(opened.width == 640)
             #expect(
-                session.navigation.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id])
+                session.navigation.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id]
+            )
             #expect(session.resources.recentItems.first == item)
             #expect(!windowModel.isOpenBoardPanelPresented)
             #expect(windowModel.openBoard.message == nil)
@@ -291,7 +314,8 @@ struct DenWindowModelPresentationTests {
         let source = desk("Desk", boards: [first], focusedBoardID: first.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             windowModel.showOpenBoardPanel(afterBoardID: first.id)
             windowModel.openBoard.input = input
@@ -302,7 +326,9 @@ struct DenWindowModelPresentationTests {
             // Assert
             let item = try #require(session.resources.state.drawerItems.first)
             let expected = BoardInputResolver.normalizedURL(
-                from: input, searchEngine: session.configuration.preferences.searchEngine)
+                from: input,
+                searchEngine: session.configuration.preferences.searchEngine
+            )
             #expect(WebURLPolicy.canonicalSheetURL(try #require(item.url)) == expected)
             #expect(session.navigation.focusedDesk?.boards.map(\.id) == [first.id])
             #expect(windowModel.isDrawerOpen)
@@ -317,7 +343,8 @@ struct DenWindowModelPresentationTests {
         let source = desk("Desk")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             windowModel.showOpenBoardPanel()
             windowModel.openBoard.input = input
@@ -340,8 +367,10 @@ struct DenWindowModelPresentationTests {
         let second = desk("Second", boards: [target])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -365,7 +394,12 @@ struct DenWindowModelPresentationTests {
                     DenState(
                         desks: [drawerDesk],
                         focusedDeskID: drawerDesk.id,
-                        drawerItems: [item]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [item]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -374,7 +408,8 @@ struct DenWindowModelPresentationTests {
         session.context.feedback.publish(
             title: nil,
             body: "Open item",
-            target: DenFeedback.Target.drawerItem(item.id))
+            target: DenFeedback.Target.drawerItem(item.id)
+        )
         session.notifications.openFeedbackTarget(session.feedback.latest?.target)
 
         #expect(windowModel.isDrawerOpen)
@@ -393,7 +428,10 @@ struct DenWindowModelPresentationTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -420,8 +458,11 @@ struct DenWindowModelPresentationTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [populated, empty], focusedDeskID: populated.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [populated, empty], focusedDeskID: populated.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -452,7 +493,10 @@ struct DenWindowModelPresentationTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -474,7 +518,8 @@ struct DenWindowModelPresentationTests {
         // Arrange
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))
+            )
         ) { session, windowModel in
             windowModel.isDenMode = inDenMode
             let event = try keyEvent("\u{1B}", keyCode: 53)
@@ -494,7 +539,8 @@ struct DenWindowModelPresentationTests {
         let third = desk("Third")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second, third])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second, third]))
+            )
         ) { session, windowModel in
             // 1. focusDesk(number:) exits DenMode on actual switch
             windowModel.isDenMode = true
@@ -550,7 +596,9 @@ struct DenWindowModelPresentationTests {
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Main", boards: [googleBoard])])))
+                    makeNativeTestState(desks: [desk("Main", boards: [googleBoard])])
+                )
+            )
         ) { session, windowModel in
             ({
                 // 1. Initially, customLabel is nil, displayName returns page title
@@ -570,9 +618,11 @@ struct DenWindowModelPresentationTests {
                 // 2. Rename the board to a custom name
                 session.boardOpening.renameFocusedBoard(to: "Search Tasks")
                 #expect(
-                    session.resources.state.desks[deskOffset].boards[boardOffset].customLabel == "Search Tasks")
+                    session.resources.state.desks[deskOffset].boards[boardOffset].customLabel == "Search Tasks"
+                )
                 #expect(
-                    session.resources.state.desks[deskOffset].boards[boardOffset].displayName == "Search Tasks")
+                    session.resources.state.desks[deskOffset].boards[boardOffset].displayName == "Search Tasks"
+                )
                 #expect(!windowModel.isDenMode)
 
                 // 3. Navigation doesn't overwrite customLabel, but updates label
@@ -587,10 +637,12 @@ struct DenWindowModelPresentationTests {
                 )
                 // customLabel is untouched
                 #expect(
-                    session.resources.state.desks[deskOffset].boards[boardOffset].customLabel == "Search Tasks")
+                    session.resources.state.desks[deskOffset].boards[boardOffset].customLabel == "Search Tasks"
+                )
                 // displayName still shows custom label
                 #expect(
-                    session.resources.state.desks[deskOffset].boards[boardOffset].displayName == "Search Tasks")
+                    session.resources.state.desks[deskOffset].boards[boardOffset].displayName == "Search Tasks"
+                )
 
                 // 4. Duplicate the board (duplicate should copy customLabel)
                 session.boardNavigation.toggleBoardSheetNavigationPause(boardID)
@@ -610,7 +662,8 @@ struct DenWindowModelPresentationTests {
                 #expect(session.resources.state.desks[deskOffset].boards[boardOffset].customLabel == nil)
                 #expect(
                     session.resources.state.desks[deskOffset].boards[boardOffset].displayName
-                        == "Google Search Result")
+                        == "Google Search Result"
+                )
                 #expect(!session.resources.state.desks[deskOffset].boards[boardOffset].sheetNavigationPaused)
             })()
         }
@@ -619,7 +672,8 @@ struct DenWindowModelPresentationTests {
     @Test func controlCommaTogglesDenMode() throws {
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))
+            )
         ) { session, windowModel in
             let event = try #require(
                 NSEvent.keyEvent(
@@ -633,7 +687,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: ",",
                     isARepeat: false,
                     keyCode: 43
-                ))
+                )
+            )
 
             #expect(KeyboardController.handle(event, session: session, windowModel: windowModel))
             #expect(windowModel.isDenMode)
@@ -645,7 +700,8 @@ struct DenWindowModelPresentationTests {
     @Test func controlPeriodPassesThroughToSheetInput() throws {
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))
+            )
         ) { session, windowModel in
             let event = try #require(
                 NSEvent.keyEvent(
@@ -659,7 +715,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: ".",
                     isARepeat: false,
                     keyCode: 47
-                ))
+                )
+            )
 
             #expect(!KeyboardController.handle(event, session: session, windowModel: windowModel))
             #expect(!windowModel.isDenMode)
@@ -671,7 +728,9 @@ struct DenWindowModelPresentationTests {
         try withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])
+                )
+            )
         ) { session, windowModel in
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option])
@@ -691,7 +750,9 @@ struct DenWindowModelPresentationTests {
         try withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)])
+                )
+            )
         ) { session, windowModel in
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option, .shift])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option, .shift])
@@ -709,7 +770,8 @@ struct DenWindowModelPresentationTests {
     @Test func commandQPassesThroughFromDenMode() throws {
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Desk")]))
+            )
         ) { session, windowModel in
             windowModel.isDenMode = true
             let event = try #require(
@@ -724,7 +786,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "q",
                     isARepeat: false,
                     keyCode: 12
-                ))
+                )
+            )
 
             #expect(!KeyboardController.handle(event, session: session, windowModel: windowModel))
             #expect(windowModel.isDenMode)
@@ -736,7 +799,9 @@ struct DenWindowModelPresentationTests {
         try withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [current])])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [current])])
+                )
+            )
         ) { session, windowModel in
             windowModel.isDenMode = true
             let stateBeforeCommands = session.resources.state
@@ -752,7 +817,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "f",
                     isARepeat: false,
                     keyCode: 3
-                ))
+                )
+            )
             let center = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -765,7 +831,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "c",
                     isARepeat: false,
                     keyCode: 8
-                ))
+                )
+            )
 
             #expect(KeyboardController.handle(maximize, session: session, windowModel: windowModel))
             #expect(windowModel.maximizedBoardID == current.id)
@@ -790,7 +857,10 @@ struct DenWindowModelPresentationTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -809,7 +879,9 @@ struct DenWindowModelPresentationTests {
                 characters: "F",
                 charactersIgnoringModifiers: "f",
                 isARepeat: false,
-                keyCode: 3))
+                keyCode: 3
+            )
+        )
         let repeatedToggle = try #require(
             NSEvent.keyEvent(
                 with: .keyDown,
@@ -821,7 +893,9 @@ struct DenWindowModelPresentationTests {
                 characters: "F",
                 charactersIgnoringModifiers: "f",
                 isARepeat: true,
-                keyCode: 3))
+                keyCode: 3
+            )
+        )
 
         #expect(KeyboardController.handle(toggle, session: session, windowModel: windowModel))
         #expect(windowModel.isFocusModePresented)
@@ -842,7 +916,9 @@ struct DenWindowModelPresentationTests {
         try withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: boards)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: boards)])
+                )
+            )
         ) { session, windowModel in
             windowModel.isDenMode = true
             windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
@@ -858,7 +934,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "w",
                     isARepeat: false,
                     keyCode: 13
-                ))
+                )
+            )
             let ignoredMovement = try arrowEvent(.rightArrow, modifiers: [])
             let narrow = try #require(
                 NSEvent.keyEvent(
@@ -872,7 +949,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "-",
                     isARepeat: false,
                     keyCode: 27
-                ))
+                )
+            )
             let widen = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -885,7 +963,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "=",
                     isARepeat: false,
                     keyCode: 24
-                ))
+                )
+            )
             let select = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -898,7 +977,8 @@ struct DenWindowModelPresentationTests {
                     charactersIgnoringModifiers: "3",
                     isARepeat: false,
                     keyCode: 20
-                ))
+                )
+            )
 
             #expect(KeyboardController.handle(open, session: session, windowModel: windowModel))
             #expect(windowModel.isBoardWidthPanelPresented)
@@ -918,7 +998,8 @@ struct DenWindowModelPresentationTests {
             #expect(
                 session.navigation.focusedDesk?.boards.allSatisfy {
                     abs($0.width - 386.666_666_666_666_7) < 0.001
-                } == true)
+                } == true
+            )
         }
     }
 
@@ -931,8 +1012,10 @@ struct DenWindowModelPresentationTests {
         let desk = DeskState(label: "Work", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -947,7 +1030,8 @@ struct DenWindowModelPresentationTests {
                     name: "Example Docs",
                     key: "",
                     input: "https://docs.example.com/api"
-                ))
+                )
+        )
 
         windowModel.hideSaveEssentialPanel()
         #expect(!windowModel.isSaveEssentialPanelPresented)
@@ -963,8 +1047,10 @@ struct DenWindowModelPresentationTests {
         let desk = DeskState(label: "Terminal", boards: [terminalBoard], focusedBoardID: terminalBoard.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -980,7 +1066,8 @@ struct DenWindowModelPresentationTests {
     @Test func showSaveEssentialPanelForRecentItemPopulatesDraft() {
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1020,15 +1107,20 @@ struct DenWindowModelPresentationTests {
                 #expect(
                     session.configuration.preferences.essentials.contains {
                         $0.key == "t" && $0.name == "Test"
-                    })
+                    }
+                )
                 #expect(session.feedback.latest?.message == "Saved Essential 'Test'.")
                 #expect(session.feedback.latest?.severity == .success)
 
                 // Duplicate key waits for confirmation without changing preferences.
                 windowModel.showSaveEssentialPanel(
-                    name: "Another", key: "t", input: "https://another.com")
+                    name: "Another",
+                    key: "t",
+                    input: "https://another.com"
+                )
                 #expect(
-                    windowModel.saveEssential(name: "Another", key: "t", input: "https://another.com"))
+                    windowModel.saveEssential(name: "Another", key: "t", input: "https://another.com")
+                )
                 #expect(windowModel.isSaveEssentialPanelPresented)
                 #expect(windowModel.essentialPendingReplacement?.name == "Test")
                 #expect(session.configuration.preferences.essentials.first?.name == "Test")
@@ -1050,18 +1142,36 @@ struct DenWindowModelPresentationTests {
                 // Arrange
                 #expect(
                     session.essentials.saveEssential(
-                        name: "Original", key: "e", input: "https://example.com/original"))
+                        name: "Original",
+                        key: "e",
+                        input: "https://example.com/original"
+                    )
+                )
                 #expect(
                     session.essentials.saveEssential(
-                        name: "Other", key: "E", input: "https://example.com/other"))
+                        name: "Other",
+                        key: "E",
+                        input: "https://example.com/other"
+                    )
+                )
                 let original = session.configuration.preferences.essentials
                 let draft = SaveEssentialDraft(
-                    name: "Updated", key: "e", input: "https://example.com/updated")
+                    name: "Updated",
+                    key: "e",
+                    input: "https://example.com/updated"
+                )
                 windowModel.showSaveEssentialPanel(
-                    name: draft.name, key: draft.key, input: draft.input)
+                    name: draft.name,
+                    key: draft.key,
+                    input: draft.input
+                )
                 #expect(
                     windowModel.saveEssential(
-                        name: draft.name, key: draft.key, input: draft.input))
+                        name: draft.name,
+                        key: draft.key,
+                        input: draft.input
+                    )
+                )
 
                 // Act
                 if confirm {
@@ -1075,11 +1185,13 @@ struct DenWindowModelPresentationTests {
                 #expect(windowModel.isSaveEssentialPanelPresented == !confirm)
                 #expect(
                     session.configuration.preferences.essentials.map(\.id)
-                        == original.map(\.id))
+                        == original.map(\.id)
+                )
                 #expect(session.configuration.preferences.essentials.last == original.last)
                 if confirm {
                     let replaced = try #require(
-                        session.configuration.preferences.essentials.first)
+                        session.configuration.preferences.essentials.first
+                    )
                     #expect(replaced.name == draft.name)
                     #expect(replaced.key == draft.key)
                     #expect(replaced.input == draft.input)
@@ -1104,12 +1216,23 @@ struct DenWindowModelPresentationTests {
                 // Arrange
                 #expect(
                     session.essentials.saveEssential(
-                        name: "Original", key: "e", input: "https://example.com/original"))
+                        name: "Original",
+                        key: "e",
+                        input: "https://example.com/original"
+                    )
+                )
                 windowModel.showSaveEssentialPanel(
-                    name: "Updated", key: "e", input: "https://example.com/updated")
+                    name: "Updated",
+                    key: "e",
+                    input: "https://example.com/updated"
+                )
                 #expect(
                     windowModel.saveEssential(
-                        name: "Updated", key: "e", input: "https://example.com/updated"))
+                        name: "Updated",
+                        key: "e",
+                        input: "https://example.com/updated"
+                    )
+                )
                 let other = Essential(name: "Other", key: "e", input: "https://example.com/other")
                 #expect(session.configuration.preferences.setEssentials([other]))
 
@@ -1128,7 +1251,8 @@ struct DenWindowModelPresentationTests {
     @Test func saveFocusedBoardAsEssentialShowsToastWhenNoBoardFocused() {
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Empty")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("Empty")]))
+            )
         ) { session, windowModel in
             windowModel.saveFocusedBoardAsEssential()
             #expect(!windowModel.isSaveEssentialPanelPresented)
@@ -1143,7 +1267,8 @@ struct DenWindowModelPresentationTests {
         currentDesk.scrollOffsetX = 180
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk]))
+            )
         ) { session, windowModel in
             let initialCenterRequests = windowModel.centerFocusedBoardRequest
 
@@ -1164,7 +1289,8 @@ struct DenWindowModelPresentationTests {
         let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [sourceDesk, targetDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [sourceDesk, targetDesk]))
+            )
         ) { session, _ in
             let existingSession = session
 
@@ -1173,8 +1299,13 @@ struct DenWindowModelPresentationTests {
                 configuration: makeTestBoardRuntimeConfiguration(
                     websiteDataStore: .nonPersistent(),
                     sheetNavigation: existingSession.configuration.sheetNavigation,
-                    preferences: existingSession.configuration.preferences), presentedDeskID: sourceDesk.id,
-                canPresentDesk: { _ in false }, onDeskPresentationRequest: { _ in false }, onWillResetDen: {})
+                    preferences: existingSession.configuration.preferences
+                ),
+                presentedDeskID: sourceDesk.id,
+                canPresentDesk: { _ in false },
+                onDeskPresentationRequest: { _ in false },
+                onWillResetDen: {}
+            )
 
             session.notifications.openFeedbackTarget(.board(targetBoard.id))
 

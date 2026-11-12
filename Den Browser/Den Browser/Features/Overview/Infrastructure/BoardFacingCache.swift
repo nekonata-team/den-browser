@@ -43,7 +43,10 @@ final class BoardFacingCache {
     }
 
     func setFacing(
-        _ image: NSImage, for boardID: BoardID, at instant: ContinuousClock.Instant? = .now, persist: Bool = true
+        _ image: NSImage,
+        for boardID: BoardID,
+        at instant: ContinuousClock.Instant? = .now,
+        persist: Bool = true
     ) {
         guard let raster = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
         let cost = raster.bytesPerRow * raster.height
@@ -77,8 +80,11 @@ final class BoardFacingCache {
         let raster = await disk.image(for: boardID)
         guard !Task.isCancelled, loads[boardID] == token, facings[boardID] == nil, let raster else { return }
         setFacing(
-            NSImage(cgImage: raster, size: CGSize(width: raster.width, height: raster.height)), for: boardID, at: nil,
-            persist: false)
+            NSImage(cgImage: raster, size: CGSize(width: raster.width, height: raster.height)),
+            for: boardID,
+            at: nil,
+            persist: false
+        )
     }
 
     func flushPendingWrites() async { await pendingWrite?.value }

@@ -10,7 +10,10 @@ public final class FeedbackModel {
 
     @discardableResult
     public func publish(
-        title: String?, body: String, severity: DenFeedback.Severity = .info, target: DenFeedback.Target? = nil
+        title: String?,
+        body: String,
+        severity: DenFeedback.Severity = .info,
+        target: DenFeedback.Target? = nil
     ) -> DenFeedback? {
         guard title?.isEmpty == false || !body.isEmpty else { return nil }
         let feedback = DenFeedback(title: title, body: body, severity: severity, target: target)

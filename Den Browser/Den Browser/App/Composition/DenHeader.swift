@@ -24,21 +24,28 @@ struct DenHeader: View {
             onOpenInNewWindow: { deskID in
                 guard
                     let route = profileManager.routeForOpeningDesk(
-                        deskID, profileID: profile.id, sourceWindowID: windowID)
+                        deskID,
+                        profileID: profile.id,
+                        sourceWindowID: windowID
+                    )
                 else { return }
                 openWindow(value: route)
             },
             onNotificationKeyPress: {
                 KeyboardController.handleNotificationKeyPress($0, session: session, windowModel: windowModel)
-            }, restoreInput: { session.runtimes.restoreFocusedFirstResponder() },
+            },
+            restoreInput: { session.runtimes.restoreFocusedFirstResponder() },
             profileMenu: {
                 ProfileMenu(
-                    profile: profile, profiles: profileManager.profiles,
+                    profile: profile,
+                    profiles: profileManager.profiles,
                     openProfile: { _ = profileManager.openWindow(for: $0) },
                     clearBrowsingData: {
                         profileManager.clearBrowsingDataProfileID = profile.id
                         profileManager.clearBrowsingDataWindowID = windowID
-                    })
-            })
+                    }
+                )
+            }
+        )
     }
 }

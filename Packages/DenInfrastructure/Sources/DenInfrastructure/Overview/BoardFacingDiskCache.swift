@@ -67,8 +67,10 @@ public actor BoardFacingDiskCache {
 
     private func files() -> [URL] {
         ((try? FileManager.default.contentsOfDirectory(
-            at: directoryURL, includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey])) ?? [])
-            .filter { $0.pathExtension == "png" }
+            at: directoryURL,
+            includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey]
+        )) ?? [])
+        .filter { $0.pathExtension == "png" }
     }
 
     private func trimToCost() {

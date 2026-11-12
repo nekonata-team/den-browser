@@ -18,10 +18,14 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
         let session = try #require(manager.session(for: manager.personalProfileID))
         let terminalBoardID = try #require(
-            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true)
+        )
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
-            target: .explicit(terminalBoardID.rawValue), context: DenIPCCallerContext(), kind: .terminal, in: manager
+            target: .explicit(terminalBoardID.rawValue),
+            context: DenIPCCallerContext(),
+            kind: .terminal,
+            in: manager
         ).get()
 
         // Assert
@@ -38,7 +42,10 @@ struct DenIPCTargetResolverTests {
         _ = try #require(session.sideBoards.createInspectionBoard(targetBoardID: webBoardID))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
-            target: .automatic, context: DenIPCCallerContext(), kind: .any, in: manager
+            target: .automatic,
+            context: DenIPCCallerContext(),
+            kind: .any,
+            in: manager
         ).get()
 
         // Assert
@@ -56,7 +63,10 @@ struct DenIPCTargetResolverTests {
         let inspectionBoardID = try #require(session.sideBoards.createInspectionBoard(targetBoardID: webBoardID))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
-            target: .explicit(inspectionBoardID.rawValue), context: DenIPCCallerContext(), kind: .any, in: manager
+            target: .explicit(inspectionBoardID.rawValue),
+            context: DenIPCCallerContext(),
+            kind: .any,
+            in: manager
         ).get()
 
         // Assert
@@ -74,7 +84,9 @@ struct DenIPCTargetResolverTests {
         let inspectionBoardID = try #require(session.sideBoards.createInspectionBoard(targetBoardID: webBoardID))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
-            target: .explicit(inspectionBoardID.rawValue), context: DenIPCCallerContext(), kind: .inspection,
+            target: .explicit(inspectionBoardID.rawValue),
+            context: DenIPCCallerContext(),
+            kind: .inspection,
             in: manager
         ).get()
 
@@ -90,7 +102,8 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
         let session = try #require(manager.session(for: manager.personalProfileID))
         let terminalBoardID = try #require(
-            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true)
+        )
         let webBoardID = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
@@ -111,7 +124,8 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
         let session = try #require(manager.session(for: manager.personalProfileID))
         let terminalBoardID = try #require(
-            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true)
+        )
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .automatic,
@@ -136,7 +150,10 @@ struct DenIPCTargetResolverTests {
 
         // Act
         let resolved = DenIPCTargetResolver.resolveBoard(
-            target: .explicit(nonExistentID), context: DenIPCCallerContext(), kind: .terminal, in: manager
+            target: .explicit(nonExistentID),
+            context: DenIPCCallerContext(),
+            kind: .terminal,
+            in: manager
         )
 
         // Assert: MUST NOT fall back to the active terminal board
@@ -159,7 +176,10 @@ struct DenIPCTargetResolverTests {
 
         // Act
         let resolved = DenIPCTargetResolver.resolveBoard(
-            target: .explicit(nonExistentID), context: DenIPCCallerContext(), kind: .web, in: manager
+            target: .explicit(nonExistentID),
+            context: DenIPCCallerContext(),
+            kind: .web,
+            in: manager
         )
 
         // Assert: MUST NOT fall back to the active web board
@@ -188,7 +208,8 @@ struct DenIPCTargetResolverTests {
         }
         _ = session.boardNavigation.setFocusedDesk(desk2.id)
         let terminalBoardID = try #require(
-            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true)
+        )
 
         // Act
         let resolved = DenIPCTargetResolver.resolveBoard(
@@ -340,14 +361,17 @@ struct DenIPCTargetResolverTests {
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
         let session2 = try #require(manager.session(for: profile2.id))
         let terminalBoardID = try #require(
-            session2.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+            session2.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true)
+        )
         let webBoardID = try #require(session2.boardOpening.createBoard(urlString: "https://profile2.example.com/"))
 
         // Act
         let result = DenIPCTargetResolver.resolveBoard(
             target: .automatic,
             context: DenIPCCallerContext(
-                profileID: profile2.id.rawValue, callerBoardID: terminalBoardID.rawValue),
+                profileID: profile2.id.rawValue,
+                callerBoardID: terminalBoardID.rawValue
+            ),
             kind: .web,
             in: manager
         )
@@ -369,7 +393,8 @@ struct DenIPCTargetResolverTests {
         let otherProfile = try #require(manager.createProfile(name: "Work", color: .purple))
         let otherSession = try #require(manager.session(for: otherProfile.id))
         let otherBoardID = try #require(
-            otherSession.boardOpening.createBoard(urlString: "https://example.com/target"))
+            otherSession.boardOpening.createBoard(urlString: "https://example.com/target")
+        )
         let before = session.resources.state
         let otherBefore = otherSession.resources.state
         let destination: DenBoardMoveDestination
@@ -381,8 +406,11 @@ struct DenIPCTargetResolverTests {
         }
         let request = DenIPCRequest(
             operation: .moveBoard(
-                boardID: target == "source" ? otherBoardID.rawValue : boardID.rawValue, destination: destination),
-            context: DenIPCCallerContext(profileID: manager.personalProfileID.rawValue))
+                boardID: target == "source" ? otherBoardID.rawValue : boardID.rawValue,
+                destination: destination
+            ),
+            context: DenIPCCallerContext(profileID: manager.personalProfileID.rawValue)
+        )
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -456,7 +484,8 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
         let session = try #require(manager.session(for: manager.personalProfileID))
         let terminalBoardID = try #require(
-            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+            session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: true)
+        )
         let service = DenIPCService(profileManager: manager)
 
         let request = DenIPCRequest(operation: .boardClose(target: .explicit(terminalBoardID.rawValue)))
@@ -541,7 +570,11 @@ struct DenIPCTargetResolverTests {
 
         // Act: Target board1 without explicit profileID
         let result1 = DenIPCTargetResolver.resolveBoard(
-            target: .explicit(board1ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
+            target: .explicit(board1ID.rawValue),
+            context: DenIPCCallerContext(),
+            kind: .web,
+            in: manager
+        )
 
         // Assert: Resolved resources must belong to Profile 1, which owns Board 1
         let resolved1 = try #require(try? result1.get())
@@ -551,7 +584,11 @@ struct DenIPCTargetResolverTests {
 
         // Act: Target board2 without explicit profileID
         let result2 = DenIPCTargetResolver.resolveBoard(
-            target: .explicit(board2ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
+            target: .explicit(board2ID.rawValue),
+            context: DenIPCCallerContext(),
+            kind: .web,
+            in: manager
+        )
 
         // Assert: Resolved resources must belong to Profile 2, which owns Board 2
         let resolved2 = try #require(try? result2.get())
@@ -571,7 +608,8 @@ struct DenIPCTargetResolverTests {
         let window2ID = UUID()
 
         let sessionWindow1 = try #require(
-            manager.session(for: ProfileWindowRoute(windowID: window1ID, profileID: profileID)))
+            manager.session(for: ProfileWindowRoute(windowID: window1ID, profileID: profileID))
+        )
         let desk1ID = sessionWindow1.navigation.presentedDeskID
 
         sessionWindow1.desks.createDesk(label: "Desk 2", preset: .empty)
@@ -580,9 +618,11 @@ struct DenIPCTargetResolverTests {
         sessionWindow1.boardNavigation.setFocusedDesk(desk1ID)
 
         let sessionWindow2 = try #require(
-            manager.session(for: ProfileWindowRoute(windowID: window2ID, profileID: profileID, deskID: desk2ID)))
+            manager.session(for: ProfileWindowRoute(windowID: window2ID, profileID: profileID, deskID: desk2ID))
+        )
         let board2ID = try #require(
-            sessionWindow2.boardOpening.createBoard(urlString: "https://window2.example.com/"))
+            sessionWindow2.boardOpening.createBoard(urlString: "https://window2.example.com/")
+        )
 
         // Act 1: Resolve with explicit profileID
         let scopedResult = DenIPCTargetResolver.resolveBoard(
@@ -594,7 +634,11 @@ struct DenIPCTargetResolverTests {
 
         // Act 2: Resolve without profileID
         let unscopedResult = DenIPCTargetResolver.resolveBoard(
-            target: .explicit(board2ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
+            target: .explicit(board2ID.rawValue),
+            context: DenIPCCallerContext(),
+            kind: .web,
+            in: manager
+        )
 
         // Assert: Both must return the same window identity and its current presented Desk
         let scoped = try #require(try? scopedResult.get())
@@ -619,7 +663,10 @@ struct DenIPCTargetResolverTests {
 
         // Act 1: Explicit non-existent deskID without profileID
         let result1 = DenIPCTargetResolver.resolveDesk(
-            target: .explicit(nonExistentDeskID), context: DenIPCCallerContext(), in: manager)
+            target: .explicit(nonExistentDeskID),
+            context: DenIPCCallerContext(),
+            in: manager
+        )
 
         // Assert 1: Must fail, must NOT fall back to presented desk
         switch result1 {
@@ -657,7 +704,8 @@ struct DenIPCTargetResolverTests {
         let otherDeskID = first.navigation.presentedDeskID
         #expect(first.boardNavigation.setFocusedDesk(firstDeskID))
         let second = try #require(
-            manager.session(for: ProfileWindowRoute(windowID: UUID(), profileID: profileID, deskID: otherDeskID)))
+            manager.session(for: ProfileWindowRoute(windowID: UUID(), profileID: profileID, deskID: otherDeskID))
+        )
         let boardID = try #require(second.boardOpening.createBoard(urlString: "https://example.com/"))
         var firstWindowEffectCount = 0
         var centeredSecondWindow = false
@@ -717,13 +765,15 @@ struct DenIPCTargetResolverTests {
         let preferences = AppPreferences(defaults: makeTestDefaults(suiteName: suiteName))
         let navigation = SheetNavigationManager(
             defaults: makeTestDefaults(suiteName: suiteName),
-            scriptSource: "")
+            scriptSource: ""
+        )
         return ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: preferences,
             removeDataStore: { _ in },
             initialProfile: initialProfile,
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
     }
 }

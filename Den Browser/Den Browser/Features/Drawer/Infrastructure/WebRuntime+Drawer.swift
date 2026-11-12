@@ -25,19 +25,22 @@ extension WebRuntime {
             webExtensionWindow: webExtensionWindow,
             sheetScale: sheetScale,
             sheetNavigationActions: Self.drawerNavigationActions(itemID: item.id, connection: connection),
-            events: Self.drawerEvents(itemID: item.id, storage: storage, connection: connection))
+            events: Self.drawerEvents(itemID: item.id, storage: storage, connection: connection)
+        )
     }
 
     func updateDrawerOwner(itemID: UUID, storage: DenProfileResources, connection: RuntimeWindowConnection) {
         updateOwner(
             sheetNavigationActions: Self.drawerNavigationActions(itemID: itemID, connection: connection),
-            events: Self.drawerEvents(itemID: itemID, storage: storage, connection: connection))
+            events: Self.drawerEvents(itemID: itemID, storage: storage, connection: connection)
+        )
     }
 
     func attachToDrawer(itemID: UUID, storage: DenProfileResources, connection: RuntimeWindowConnection) {
         presentInDrawer(
             sheetNavigationActions: Self.drawerNavigationActions(itemID: itemID, connection: connection),
-            events: Self.drawerEvents(itemID: itemID, storage: storage, connection: connection))
+            events: Self.drawerEvents(itemID: itemID, storage: storage, connection: connection)
+        )
     }
 
     private static func drawerNavigationActions(itemID: UUID, connection: RuntimeWindowConnection)
@@ -68,11 +71,14 @@ extension WebRuntime {
                 connection.feedback?.publish("Clipboard does not contain a supported URL.", severity: .warning)
             },
             onRemoveBoard: { [connection] in connection.drawer?.discardDrawerItem(itemID) },
-            isSupportedSheetURL: WebURLPolicy.isSupported)
+            isSupportedSheetURL: WebURLPolicy.isSupported
+        )
     }
 
     private static func drawerEvents(
-        itemID: UUID, storage: DenProfileResources, connection: RuntimeWindowConnection
+        itemID: UUID,
+        storage: DenProfileResources,
+        connection: RuntimeWindowConnection
     ) -> Events {
         .init(
             onChange: { [weak storage] _, url, title in
@@ -86,6 +92,7 @@ extension WebRuntime {
             onDownloadFailed: { [connection] filename in
                 connection.feedback?.publish("Failed to download '\(filename)'", severity: .warning)
             },
-            isFocused: { [connection] in connection.windowResources?.drawerPeek?.id == itemID })
+            isFocused: { [connection] in connection.windowResources?.drawerPeek?.id == itemID }
+        )
     }
 }

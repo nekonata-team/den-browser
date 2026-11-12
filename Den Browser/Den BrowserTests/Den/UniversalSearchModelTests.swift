@@ -11,7 +11,11 @@ struct UniversalSearchModelTests {
         let id = UUID()
         let query = id.uuidString.lowercased()
         let metadataMatch = UniversalSearchItem(
-            target: .board(BoardID()), title: "Reference", detail: "Board", keywords: query)
+            target: .board(BoardID()),
+            title: "Reference",
+            detail: "Board",
+            keywords: query
+        )
         let board = UniversalSearchItem(target: .board(BoardID(id)), title: query, detail: "Board")
         let desk = UniversalSearchItem(target: .desk(DeskID(id)), title: "Work", detail: "Desk")
         let profile = UniversalSearchItem(target: .profile(ProfileID(id)), title: "Personal", detail: "Profile")
@@ -25,7 +29,8 @@ struct UniversalSearchModelTests {
         #expect(
             search.results.map(\.target) == [
                 board.target, desk.target, profile.target, metadataMatch.target, .createBoard(query),
-            ])
+            ]
+        )
         #expect(search.selectedItem == board)
     }
 
@@ -72,7 +77,10 @@ struct UniversalSearchModelTests {
         search.items = [
             UniversalSearchItem(target: .board(boardID), title: "GitHub", detail: "Switch to Board"),
             UniversalSearchItem(
-                target: .essential(essentialID), title: "GitHub", detail: "Create Board from Essential"),
+                target: .essential(essentialID),
+                title: "GitHub",
+                detail: "Create Board from Essential"
+            ),
         ]
 
         // Act
@@ -103,7 +111,11 @@ struct UniversalSearchModelTests {
         // Arrange
         let search = UniversalSearchModel()
         let item = UniversalSearchItem(
-            target: .board(BoardID()), title: "Design", detail: "Work / Planning", keywords: "https://example.com")
+            target: .board(BoardID()),
+            title: "Design",
+            detail: "Work / Planning",
+            keywords: "https://example.com"
+        )
         search.items = [item]
 
         // Act
@@ -135,7 +147,8 @@ struct UniversalSearchModelTests {
                 + [
                     essential.target, firstBoard.target, secondBoard.target, desk.target, profile.target,
                     command.target,
-                ])
+                ]
+        )
     }
 
     @Test func recentSearchFindsOlderMatchesAndPrioritizesExactMatchesWithoutHidingOtherTargets() {

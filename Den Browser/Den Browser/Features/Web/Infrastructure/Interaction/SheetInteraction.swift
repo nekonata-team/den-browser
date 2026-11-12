@@ -160,7 +160,8 @@ enum SheetInteraction {
         let hasSemanticTarget = role != nil || name != nil
         guard hasSemanticTarget ? target == nil && role != nil && name != nil : target != nil else {
             throw SheetInteractionError.invalidArgument(
-                "Click requires either a selector/ref or both --role and --name.")
+                "Click requires either a selector/ref or both --role and --name."
+            )
         }
 
         let targetLiteral = try javascriptLiteral(target)

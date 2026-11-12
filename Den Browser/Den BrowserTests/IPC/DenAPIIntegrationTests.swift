@@ -18,13 +18,18 @@ struct DenAPIIntegrationTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let html = directory.appendingPathComponent("sketch.html")
         try "<script>window.apiAtStart = typeof den;</script><p>Sketch</p>".write(
-            to: html, atomically: true, encoding: .utf8)
+            to: html,
+            atomically: true,
+            encoding: .utf8
+        )
         let defaults = makeTestDefaults()
         let manager = ProfileManager(
             directoryURL: directory.appendingPathComponent("profiles"),
             sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
-            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
-            websiteDataStore: { _ in .nonPersistent() })
+            preferences: AppPreferences(defaults: defaults),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let session = try #require(manager.session(for: manager.personalProfileID))
         defer { session.runtimes.releaseRuntimes() }
         let destination = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
@@ -34,7 +39,11 @@ struct DenAPIIntegrationTests {
         let response = await service.handleRequest(
             .init(
                 operation: .createWebBoard(
-                    payload: .init(url: html.absoluteString, focus: false, denAPI: true), destination: .automatic)))
+                    payload: .init(url: html.absoluteString, focus: false, denAPI: true),
+                    destination: .automatic
+                )
+            )
+        )
         guard case .createdBoard(let rawID, _, _) = response.result.payload, let uuid = UUID(uuidString: rawID) else {
             Issue.record("Expected created Board: \(response.result.error ?? "missing result")")
             return
@@ -43,13 +52,19 @@ struct DenAPIIntegrationTests {
         let runtime = try #require(session.resources.webRuntimes[id])
         try await SheetInteraction.waitForFunction(expression: "window.apiAtStart === 'object'", in: runtime.webView)
         _ = try await runtime.webView.callAsyncJavaScript(
-            "await den.boards.focus(id);", arguments: ["id": destination.rawValue.uuidString], in: nil,
-            contentWorld: .page)
+            "await den.boards.focus(id);",
+            arguments: ["id": destination.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
 
         // Assert
         #expect(session.connection.focusedBoardID() == destination)
         _ = try await runtime.webView.callAsyncJavaScript(
-            "await den.toast.show('Saved', { severity: 'success' });", in: nil, contentWorld: .page)
+            "await den.toast.show('Saved', { severity: 'success' });",
+            in: nil,
+            contentWorld: .page
+        )
         #expect(session.feedback.latest?.body == "Saved")
         #expect(session.feedback.latest?.severity == .success)
         #expect(session.feedback.latest?.target == .board(id))
@@ -57,7 +72,8 @@ struct DenAPIIntegrationTests {
         session.notifications.openFeedbackTarget(session.feedback.latest?.target)
         #expect(session.connection.focusedBoardID() == id)
         let persisted = ProfilePersistence(
-            directoryURL: directory.appendingPathComponent("profiles"), isEphemeral: false,
+            directoryURL: directory.appendingPathComponent("profiles"),
+            isEphemeral: false,
             quarantineFile: { try FileManager.default.moveItem(at: $0, to: $1) }
         ).load()
         let board = persisted.profiles.first(where: { $0.profile.id == manager.personalProfileID })?.den.board(for: id)
@@ -71,15 +87,21 @@ struct DenAPIIntegrationTests {
         let disabled = await service.handleRequest(
             .init(
                 operation: .sheet(
-                    command: .reloadWithDenAPI(enabled: false), target: target)))
+                    command: .reloadWithDenAPI(enabled: false),
+                    target: target
+                )
+            )
+        )
         #expect(disabled.result.isOk)
         #expect(session.resources.state.board(for: id)?.denAPIEnabled == false)
         let saved = ProfilePersistence(
-            directoryURL: directory.appendingPathComponent("profiles"), isEphemeral: false,
+            directoryURL: directory.appendingPathComponent("profiles"),
+            isEphemeral: false,
             quarantineFile: { try FileManager.default.moveItem(at: $0, to: $1) }
         ).load()
         #expect(
             saved.profiles.first(where: { $0.profile.id == manager.personalProfileID })?.den.board(for: id)?
-                .denAPIEnabled == false)
+                .denAPIEnabled == false
+        )
     }
 }

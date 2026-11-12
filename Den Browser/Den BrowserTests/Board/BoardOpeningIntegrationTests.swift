@@ -22,9 +22,16 @@ struct BoardOpeningIntegrationTests {
                 session: ProfileWindowSession(
                     resources: storage,
                     configuration: makeTestBoardRuntimeConfiguration(
-                        websiteDataStore: .nonPersistent(), sheetNavigation: navigation, preferences: preferences),
-                    presentedDeskID: deskID, canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true },
-                    onWillResetDen: {}))
+                        websiteDataStore: .nonPersistent(),
+                        sheetNavigation: navigation,
+                        preferences: preferences
+                    ),
+                    presentedDeskID: deskID,
+                    canPresentDesk: { _ in true },
+                    onDeskPresentationRequest: { _ in true },
+                    onWillResetDen: {}
+                )
+            )
         }
         let first = window(firstDesk.id)
         let second = window(secondDesk.id)
@@ -80,11 +87,14 @@ struct BoardOpeningIntegrationTests {
                 onRecentItemsSave: { _ in
                     events.append("recent")
                     return true
-                })
+                }
+            )
         ) { session in
             // Act
             let result = session.boardOpening.requestOpenBoard(
-                input: "https://example.com", afterBoardID: targetExists ? anchor.id : BoardID())
+                input: "https://example.com",
+                afterBoardID: targetExists ? anchor.id : BoardID()
+            )
 
             // Assert
             #expect(session.resources.state.desks.flatMap(\.boards).count == (targetExists ? 2 : 1))
@@ -111,7 +121,8 @@ struct BoardOpeningIntegrationTests {
                 onRecentItemsSave: { _ in
                     Issue.record("Oversized input must not be recorded")
                     return true
-                })
+                }
+            )
         ) { session in
             ({
                 // Act

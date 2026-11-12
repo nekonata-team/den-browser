@@ -52,10 +52,15 @@ public final class ProfilePersistence {
         var profiles = scanProfiles(
             issues: &issues,
             canRewriteIndex: &canRewriteIndex,
-            canReadDirectory: &canReadDirectory)
+            canReadDirectory: &canReadDirectory
+        )
         guard canReadDirectory else {
             return LoadResult(
-                profiles: [], issues: issues, canRewriteIndex: false, canReadDirectory: false)
+                profiles: [],
+                issues: issues,
+                canRewriteIndex: false,
+                canReadDirectory: false
+            )
         }
 
         let indexURL = directoryURL.appending(path: "profile-index.json")
@@ -78,7 +83,8 @@ public final class ProfilePersistence {
                 case .read(let error):
                     canRewriteIndex = false
                     issues.append(
-                        "Could not read the Profile index \(indexURL.lastPathComponent): \(error.localizedDescription)")
+                        "Could not read the Profile index \(indexURL.lastPathComponent): \(error.localizedDescription)"
+                    )
                 case .decode(let error):
                     if let message = unsupportedSchemaMessage(for: indexURL, error: error) {
                         canRewriteIndex = false
@@ -90,7 +96,11 @@ public final class ProfilePersistence {
             }
         }
         return LoadResult(
-            profiles: profiles, issues: issues, canRewriteIndex: canRewriteIndex, canReadDirectory: true)
+            profiles: profiles,
+            issues: issues,
+            canRewriteIndex: canRewriteIndex,
+            canReadDirectory: true
+        )
     }
 
     public func save(_ persisted: PersistedProfile) throws {

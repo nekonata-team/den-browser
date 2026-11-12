@@ -27,14 +27,25 @@ struct BoardUndoPresentationTests {
         model.isDenMode = true
         let event = try #require(
             NSEvent.keyEvent(
-                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0,
-                context: nil, characters: "u", charactersIgnoringModifiers: "u", isARepeat: false, keyCode: 32))
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: "u",
+                charactersIgnoringModifiers: "u",
+                isARepeat: false,
+                keyCode: 32
+            )
+        )
 
         // Act
         let decision = KeyboardRouter.route(
             event: KeyEvent(event),
             context: InputContext(session: session, windowModel: model, event: event),
-            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences))
+            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences)
+        )
         if case .perform(let action) = decision {
             AppActionHandler.perform(action, session: session, windowModel: model, openSettings: {})
         }
@@ -132,8 +143,11 @@ struct BoardUndoPresentationTests {
 
         // Act
         AppActionHandler.perform(
-            fromMenu ? .board(.undo) : .overview(.undoBoardOperation), session: session,
-            windowModel: composition.model, openSettings: {})
+            fromMenu ? .board(.undo) : .overview(.undoBoardOperation),
+            session: session,
+            windowModel: composition.model,
+            openSettings: {}
+        )
 
         // Assert
         #expect(session.resources.state.desks[0].boards.map(\.id) == [board.id])
@@ -211,6 +225,7 @@ struct BoardUndoPresentationTests {
     private func makeSession(_ desks: [DeskState]) -> ProfileWindowSession {
         ProfileWindowSession(
             resources: DenProfileResources(state: DenState(desks: desks, focusedDeskID: desks[0].id)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
     }
 }

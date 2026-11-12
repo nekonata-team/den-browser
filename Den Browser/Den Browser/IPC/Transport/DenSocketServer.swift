@@ -23,7 +23,8 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
         try FileManager.default.createDirectory(
             atPath: parentDir,
             withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700])
+            attributes: [.posixPermissions: 0o700]
+        )
 
         unlink(socketPath)
 
@@ -135,7 +136,11 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
             var written = 0
             while written < rawBuffer.count {
                 let bytesWritten = Darwin.send(
-                    clientFD, baseAddress.advanced(by: written), rawBuffer.count - written, MSG_NOSIGNAL)
+                    clientFD,
+                    baseAddress.advanced(by: written),
+                    rawBuffer.count - written,
+                    MSG_NOSIGNAL
+                )
                 guard bytesWritten > 0 else { break }
                 written += bytesWritten
             }

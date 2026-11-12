@@ -16,8 +16,12 @@ public struct BoardResizeHandle: View {
     public let onResizeEnd: () -> Void
 
     public init(
-        board: BoardState, height: Double, width: Double, canResizeWithNextBoard: Bool,
-        onResizeStart: @escaping () -> Void, onResize: @escaping (Double, Bool) -> Void,
+        board: BoardState,
+        height: Double,
+        width: Double,
+        canResizeWithNextBoard: Bool,
+        onResizeStart: @escaping () -> Void,
+        onResize: @escaping (Double, Bool) -> Void,
         onResizeEnd: @escaping () -> Void
     ) {
         self.board = board
@@ -53,7 +57,8 @@ public struct BoardResizeHandle: View {
                         }
                         onResize(
                             (widthAtDragStart ?? board.width) + value.translation.width,
-                            resizeWithNextBoardAtDragStart)
+                            resizeWithNextBoardAtDragStart
+                        )
                     }
                     .onEnded { _ in
                         widthAtDragStart = nil

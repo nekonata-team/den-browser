@@ -14,7 +14,9 @@ public struct OpenProfilePanel: View {
     @FocusState private var isFocused: Bool
 
     public init(
-        profiles: [ProfileState], profileColor: Color, onOpenProfile: @escaping (ProfileID) -> Void,
+        profiles: [ProfileState],
+        profileColor: Color,
+        onOpenProfile: @escaping (ProfileID) -> Void,
         onClose: @escaping () -> Void
     ) {
         self.profiles = profiles

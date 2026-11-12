@@ -39,7 +39,8 @@ public struct ShortcutsSettingsView: View {
                         }
                         .disabled(
                             preferences.shortcutOverrides.isEmpty
-                                && !preferences.hasDeskNumberBindingOverride())
+                                && !preferences.hasDeskNumberBindingOverride()
+                        )
                     }
                 }
             }
@@ -76,7 +77,8 @@ public struct ShortcutsSettingsView: View {
                             ? ["Type shortcut…"]
                             : preferences.deskNumberBinding?.displayTokens ?? ["Unassigned"],
                         width: 124,
-                        isRecording: recordingDeskNumberShortcut)
+                        isRecording: recordingDeskNumberShortcut
+                    )
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(
@@ -282,7 +284,8 @@ public struct ShortcutsSettingsView: View {
             guard !item.keyEquivalent.isEmpty else { return false }
             return ShortcutBinding(
                 keyEquivalent: item.keyEquivalent,
-                modifiers: item.keyEquivalentModifierMask) == binding
+                modifiers: item.keyEquivalentModifierMask
+            ) == binding
         }
     }
 

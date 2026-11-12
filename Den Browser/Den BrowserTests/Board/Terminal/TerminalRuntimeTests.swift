@@ -14,8 +14,14 @@ struct TerminalRuntimeTests {
             command:
                 "/bin/sh -c 'stty raw -echo; printf \"\\033[?2004h\\033[?1lREADY\\r\\n\"; od -An -tx1 -N 13; stty sane; printf \"\\033[?2004lDONE\\n\"; sleep 1'",
             events: .init(
-                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
-                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
         defer { runtime.dispose() }
         #expect(runtime.startForCLI())
         let readyDeadline = ContinuousClock.now + .seconds(5)
@@ -41,10 +47,17 @@ struct TerminalRuntimeTests {
     @Test func cliStartupRunsWithoutPresentationAndSurvivesFirstDisplay() async throws {
         // Arrange
         let runtime = TerminalRuntime(
-            workingDirectory: "/tmp", command: "/bin/zsh -f",
+            workingDirectory: "/tmp",
+            command: "/bin/zsh -f",
             events: .init(
-                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
-                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
         defer { runtime.dispose() }
         #expect(runtime.readText() == nil)
 
@@ -61,7 +74,10 @@ struct TerminalRuntimeTests {
         #expect(runtime.startForCLI())
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
-            styleMask: [.titled], backing: .buffered, defer: false)
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
         window.contentView = runtime.terminalView
         defer { window.contentView = nil }
         runtime.runCommand("printf 'followup-%s\\n' \"$den_cli_value\"")
@@ -80,10 +96,17 @@ struct TerminalRuntimeTests {
         // Arrange
         var closed = false
         let runtime = TerminalRuntime(
-            workingDirectory: "/tmp", command: "/bin/zsh -f",
+            workingDirectory: "/tmp",
+            command: "/bin/zsh -f",
             events: .init(
-                onClose: { closed = true }, onFocus: {}, onWorkingDirectoryChange: { _ in },
-                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+                onClose: { closed = true },
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
         defer { runtime.dispose() }
 
         // Act
@@ -325,11 +348,20 @@ struct TerminalRuntimeTests {
             workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
             command: "/bin/zsh -f",
             events: .init(
-                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
-                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 300),
-            styleMask: [.titled], backing: .buffered, defer: false)
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
         window.contentView = runtime.terminalView
         defer { runtime.dispose() }
 

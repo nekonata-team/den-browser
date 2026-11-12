@@ -19,7 +19,9 @@ struct OverviewModelTests {
                 state: DenStateNormalization.normalize(
                     makeNativeTestState(desks: [
                         desk("Desk", boards: [first, second], focusedBoardID: first.id)
-                    ])))
+                    ])
+                )
+            )
         ) { session, windowModel in
             windowModel.showOverview()
             let openBoard = try keyEvent("t", keyCode: 17)
@@ -28,11 +30,20 @@ struct OverviewModelTests {
 
             // Act
             let openHandled = KeyboardController.handle(
-                openBoard, session: session, windowModel: windowModel)
+                openBoard,
+                session: session,
+                windowModel: windowModel
+            )
             let editHandled = KeyboardController.handle(
-                editLink, session: session, windowModel: windowModel)
+                editLink,
+                session: session,
+                windowModel: windowModel
+            )
             let removeHandled = KeyboardController.handle(
-                removeBoard, session: session, windowModel: windowModel)
+                removeBoard,
+                session: session,
+                windowModel: windowModel
+            )
 
             // Assert
             #expect(openHandled)
@@ -51,7 +62,9 @@ struct OverviewModelTests {
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)])
+                )
+            )
         ) { _, windowModel in
             windowModel.showOverview()
             #expect(windowModel.temporaryContext == .overview)
@@ -76,7 +89,8 @@ struct OverviewModelTests {
         // Act
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
 
@@ -97,7 +111,8 @@ struct OverviewModelTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
 
@@ -119,7 +134,8 @@ struct OverviewModelTests {
         let otherDesk = desk("Other Desk", boards: [otherBoard], focusedBoardID: otherBoard.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk, otherDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [currentDesk, otherDesk]))
+            )
         ) { session, windowModel in
             windowModel.showOverview()
             let overview = windowModel.overview
@@ -152,7 +168,8 @@ struct OverviewModelTests {
         let otherDesk = desk("Other Desk", boards: [first, selected, last], focusedBoardID: first.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [activeDesk, otherDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [activeDesk, otherDesk]))
+            )
         ) { session, model in
             model.showOverview()
             model.overview.selectBoard(selected.id)
@@ -176,7 +193,8 @@ struct OverviewModelTests {
         let otherDesk = desk("Other Desk", boards: [removed], focusedBoardID: removed.id)
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [activeDesk, otherDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [activeDesk, otherDesk]))
+            )
         ) { session, model in
             model.showOverview()
             model.overview.selectBoard(removed.id)
@@ -204,7 +222,8 @@ struct OverviewModelTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
 
@@ -226,7 +245,8 @@ struct OverviewModelTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
 
@@ -246,7 +266,8 @@ struct OverviewModelTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
 
@@ -271,7 +292,8 @@ struct OverviewModelTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1, desk2]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
             windowModel.overview.setQuery("git")
@@ -294,7 +316,8 @@ struct OverviewModelTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))
+            )
         ) { _, windowModel in
             windowModel.showOverview()
             windowModel.overview.enterFilterMode()
@@ -317,7 +340,9 @@ struct OverviewModelTests {
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    makeNativeTestState(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)])))
+                    makeNativeTestState(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)])
+                )
+            )
         ) { _, windowModel in
             windowModel.showOverview()
             let overview = windowModel.overview
@@ -349,7 +374,10 @@ struct OverviewModelTests {
                     let callback: (DenState) -> Void = { _ in saveCount += 1 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -387,8 +415,10 @@ struct OverviewModelTests {
         let empty = desk("Empty")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -414,8 +444,10 @@ struct OverviewModelTests {
         let empty = desk("Empty")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -442,8 +474,11 @@ struct OverviewModelTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source, destination], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source, destination], focusedDeskID: source.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -468,8 +503,11 @@ struct OverviewModelTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source, destination], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source, destination], focusedDeskID: source.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -480,7 +518,10 @@ struct OverviewModelTests {
         // Act
         #expect(windowModel.beginOverviewBoardDrag(side.id))
         windowModel.overview.finishBoardDrag(
-            side.id, toDeskID: destination.id, at: BoardIndex(rawValue: 0))
+            side.id,
+            toDeskID: destination.id,
+            at: BoardIndex(rawValue: 0)
+        )
 
         // Assert
         #expect(session.resources.state.desks[0].boards.isEmpty)
@@ -497,8 +538,10 @@ struct OverviewModelTests {
         let source = desk("Desk", boards: [before, target, side, after])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -527,7 +570,10 @@ struct OverviewModelTests {
                     let callback: (DenState) -> Void = { _ in saveCount += 1 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -561,7 +607,10 @@ struct OverviewModelTests {
                     let callback: (DenState) -> Void = { _ in saveCount += 1 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -585,8 +634,10 @@ struct OverviewModelTests {
         let desk = desk("Desk", boards: [first], focusedBoardID: first.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -611,8 +662,10 @@ struct OverviewModelTests {
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [main, other], focusedDeskID: main.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [main, other], focusedDeskID: main.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -644,8 +697,10 @@ struct OverviewModelTests {
         let empty = desk("Empty")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [main, empty], focusedDeskID: main.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -671,8 +726,10 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second, third], focusedBoardID: second.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -696,8 +753,10 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [main], focusedDeskID: main.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -721,8 +780,10 @@ struct OverviewModelTests {
         let empty = desk("Empty")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, empty], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, empty], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -754,8 +815,10 @@ struct OverviewModelTests {
 
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk1, desk2], focusedDeskID: desk1.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk1, desk2], focusedDeskID: desk1.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()

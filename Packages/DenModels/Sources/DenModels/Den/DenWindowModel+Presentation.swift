@@ -62,7 +62,8 @@ public extension DenWindowModel {
         switch context {
         case .openBoard:
             openBoard.endPresentation(
-                preservingDraft: nextContext == .zmxSessions && zmxSessionsReturnToOpenBoard)
+                preservingDraft: nextContext == .zmxSessions && zmxSessionsReturnToOpenBoard
+            )
         case .overview:
             overview.endPresentation()
         case .boardWidth:

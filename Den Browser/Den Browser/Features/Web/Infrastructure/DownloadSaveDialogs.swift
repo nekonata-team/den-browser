@@ -36,7 +36,11 @@ final class DownloadSaveDialogs {
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = suggestedFilename
         let id = register(
-            panel: panel, suggestedFilename: suggestedFilename, downloadKey: downloadKey, completion: completion)
+            panel: panel,
+            suggestedFilename: suggestedFilename,
+            downloadKey: downloadKey,
+            completion: completion
+        )
         let complete: @MainActor @Sendable (NSApplication.ModalResponse) -> Void = {
             [weak self, weak panel] response in
             self?.resolve(id: id, destination: response == .OK ? panel?.url : nil, overwrite: true)
@@ -57,7 +61,11 @@ final class DownloadSaveDialogs {
     ) -> UUID {
         let id = UUID()
         pending[id] = PendingDownloadSaveDialog(
-            panel: panel, suggestedFilename: suggestedFilename, downloadKey: downloadKey, completion: completion)
+            panel: panel,
+            suggestedFilename: suggestedFilename,
+            downloadKey: downloadKey,
+            completion: completion
+        )
         return id
     }
 

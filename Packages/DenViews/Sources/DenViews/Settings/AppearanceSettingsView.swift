@@ -26,7 +26,8 @@ public struct AppearanceSettingsView: View {
                 SettingsHelpText {
                     Text(
                         "Align the Desk list and New Desk button within the work area when they fit. "
-                            + "Applies immediately across Profiles.")
+                            + "Applies immediately across Profiles."
+                    )
                 }
             }
 
@@ -51,9 +52,12 @@ public struct AppearanceSettingsView: View {
                     Slider(
                         value: sheetScaleBinding,
                         in: Double(
-                            sheetScaleRange.lowerBound)...Double(
-                                sheetScaleRange.upperBound),
-                        step: 1)
+                            sheetScaleRange.lowerBound
+                        )...Double(
+                            sheetScaleRange.upperBound
+                        ),
+                        step: 1
+                    )
                     Text("200%")
                         .font(.caption)
                         .foregroundStyle(.secondary)

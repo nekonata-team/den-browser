@@ -10,7 +10,10 @@ public struct WebBoardSurface: NSViewRepresentable {
     var onBeforeHide: @MainActor () async -> Void = {}
 
     public init(
-        webView: NSView, isHidden: Bool, focusRequest: BoardFocusRequest?, onSurfaceReady: @escaping (NSWindow) -> Bool,
+        webView: NSView,
+        isHidden: Bool,
+        focusRequest: BoardFocusRequest?,
+        onSurfaceReady: @escaping (NSWindow) -> Bool,
         onBeforeHide: @escaping @MainActor () async -> Void = {}
     ) {
         self.webView = webView

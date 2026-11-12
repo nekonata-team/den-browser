@@ -47,8 +47,11 @@ final class BoardRemovalPresentation {
                 }
                 onWindowEffect?(
                     .overviewBoardRemoved(
-                        boardID: result.historyEntry.board.id, deskID: source.id,
-                        oldIndex: result.historyEntry.sourceBoardIndex))
+                        boardID: result.historyEntry.board.id,
+                        deskID: source.id,
+                        oldIndex: result.historyEntry.sourceBoardIndex
+                    )
+                )
                 storage.invalidateReferences(toRemovedBoardIDs: removedIDs)
             case .restored(let board, let deskID, let present):
                 let changedDesk = present && boardNavigation.setFocusedDesk(deskID)
@@ -94,8 +97,12 @@ final class BoardRemovalPresentation {
         origin: BoardOperationOrigin = .interactive
     ) {
         storage.boardRemoval.remove(
-            boardID, presentedDeskID: presentedDeskID, focusNext: focusNext, origin: origin,
-            notify: boardRemovalNotifications())
+            boardID,
+            presentedDeskID: presentedDeskID,
+            focusNext: focusNext,
+            origin: origin,
+            notify: boardRemovalNotifications()
+        )
     }
 
     @discardableResult
@@ -112,7 +119,8 @@ final class BoardRemovalPresentation {
                 }
                 placementNotifications?(notice)
             },
-            notifyDrawer: drawer.drawerItemNotifications(opensDrawer: false))
+            notifyDrawer: drawer.drawerItemNotifications(opensDrawer: false)
+        )
         switch result {
         case .board(let id):
             if present {
@@ -130,7 +138,9 @@ final class BoardRemovalPresentation {
             context.feedback.publish("No Board operation to undo.", severity: .warning)
         case .unavailable:
             context.feedback.publish(
-                "Could not undo. The Board or its original destination is unavailable.", severity: .warning)
+                "Could not undo. The Board or its original destination is unavailable.",
+                severity: .warning
+            )
         case .dragging: break
         }
         return nil
@@ -139,7 +149,10 @@ final class BoardRemovalPresentation {
     @discardableResult
     func restoreRecentlyRemovedBoard(present: Bool = true) -> BoardID? {
         let result = storage.boardRemoval.restore(
-            presentedDeskID: presentedDeskID, present: present, notify: boardRemovalNotifications())
+            presentedDeskID: presentedDeskID,
+            present: present,
+            notify: boardRemovalNotifications()
+        )
         return handleBoardRestorationResult(result, present: present)
     }
 

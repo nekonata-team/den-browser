@@ -50,20 +50,34 @@ struct KeyboardShortcutTests {
         model.showUniversalSearch()
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 100),
-            styleMask: .borderless, backing: .buffered, defer: false)
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
         window.isReleasedWhenClosed = false
         defer { window.close() }
         let editor = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 100))
         window.contentView?.addSubview(editor)
         #expect(window.makeFirstResponder(editor))
         editor.setMarkedText(
-            "検索", selectedRange: NSRange(location: 2, length: 0),
-            replacementRange: NSRange(location: NSNotFound, length: 0))
+            "検索",
+            selectedRange: NSRange(location: 2, length: 0),
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
         let event = try #require(
             NSEvent.keyEvent(
-                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
-                windowNumber: window.windowNumber, context: nil,
-                characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36))
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: window.windowNumber,
+                context: nil,
+                characters: "\r",
+                charactersIgnoringModifiers: "\r",
+                isARepeat: false,
+                keyCode: 36
+            )
+        )
         #expect(KeyEvent(event).hasMarkedText)
 
         // Act
@@ -80,11 +94,23 @@ struct KeyboardShortcutTests {
         let composition = DenWindowComposition(session: session)
         let model = composition.model
         let search = try keyEvent(
-            characters: "p", charactersIgnoringModifiers: "p", modifiers: [.command], keyCode: 35)
+            characters: "p",
+            charactersIgnoringModifiers: "p",
+            modifiers: [.command],
+            keyCode: 35
+        )
         let commands = try keyEvent(
-            characters: "P", charactersIgnoringModifiers: "P", modifiers: [.command, .shift], keyCode: 35)
+            characters: "P",
+            charactersIgnoringModifiers: "P",
+            modifiers: [.command, .shift],
+            keyCode: 35
+        )
         let colon = try keyEvent(
-            characters: ":", charactersIgnoringModifiers: ":", modifiers: [.shift], keyCode: 41)
+            characters: ":",
+            charactersIgnoringModifiers: ":",
+            modifiers: [.shift],
+            keyCode: 41
+        )
 
         // Act
         let searchDecision = KeyboardController.decision(for: search, session: session, windowModel: model)
@@ -148,9 +174,18 @@ struct KeyboardShortcutTests {
         let model = composition.model
         model.showUniversalSearch()
         let enter = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.option],
+            keyCode: 36
+        )
         let repeated = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], isARepeat: true, keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.option],
+            isARepeat: true,
+            keyCode: 36
+        )
 
         // Act
         let decision = KeyboardController.decision(for: enter, session: session, windowModel: model)
@@ -177,9 +212,18 @@ struct KeyboardShortcutTests {
         session.pasteboard.setString(input, forType: .string)
         model.isDenMode = true
         let event = try keyEvent(
-            characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], keyCode: 9)
+            characters: "√",
+            charactersIgnoringModifiers: "v",
+            modifiers: [.option],
+            keyCode: 9
+        )
         let repeated = try keyEvent(
-            characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], isARepeat: true, keyCode: 9)
+            characters: "√",
+            charactersIgnoringModifiers: "v",
+            modifiers: [.option],
+            isARepeat: true,
+            keyCode: 9
+        )
 
         // Act
         let decision = KeyboardController.decision(for: event, session: session, windowModel: model)
@@ -193,7 +237,9 @@ struct KeyboardShortcutTests {
         #expect(
             item.url
                 == BoardInputResolver.normalizedURL(
-                    from: input, searchEngine: session.configuration.preferences.searchEngine)
+                    from: input,
+                    searchEngine: session.configuration.preferences.searchEngine
+                )
         )
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [original.id])
         #expect(model.drawer.expandedItemID == item.id)
@@ -209,24 +255,51 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         windowModel.showKeyboardShortcuts()
         let letterA = try keyEvent(
-            characters: "a", charactersIgnoringModifiers: "a", keyCode: 0)
+            characters: "a",
+            charactersIgnoringModifiers: "a",
+            keyCode: 0
+        )
         let commandA = try keyEvent(
-            characters: "a", charactersIgnoringModifiers: "a", modifiers: [.command], keyCode: 0)
+            characters: "a",
+            charactersIgnoringModifiers: "a",
+            modifiers: [.command],
+            keyCode: 0
+        )
         let commandT = try keyEvent(
-            characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17)
+            characters: "t",
+            charactersIgnoringModifiers: "t",
+            modifiers: [.command],
+            keyCode: 17
+        )
         let questionMark = try keyEvent(
-            characters: "?", charactersIgnoringModifiers: "/", modifiers: [.shift], keyCode: 44)
+            characters: "?",
+            charactersIgnoringModifiers: "/",
+            modifiers: [.shift],
+            keyCode: 44
+        )
         let escape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53
+        )
 
         // Act
         let letterDecision = KeyboardController.decision(for: letterA, session: session, windowModel: windowModel)
         let selectAllDecision = KeyboardController.decision(
-            for: commandA, session: session, windowModel: windowModel)
+            for: commandA,
+            session: session,
+            windowModel: windowModel
+        )
         let commandTDecision = KeyboardController.decision(
-            for: commandT, session: session, windowModel: windowModel)
+            for: commandT,
+            session: session,
+            windowModel: windowModel
+        )
         let questionDecision = KeyboardController.decision(
-            for: questionMark, session: session, windowModel: windowModel)
+            for: questionMark,
+            session: session,
+            windowModel: windowModel
+        )
         let escapeDecision = KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
 
         // Assert
@@ -244,12 +317,15 @@ struct KeyboardShortcutTests {
         let preferences = AppPreferences(defaults: defaults)
         let customToggle = ShortcutBinding(key: .character("."), modifiers: [.control])
         let customDeskNumber = ShortcutBinding(
-            key: .character("1"), modifiers: [.control, .option])
+            key: .character("1"),
+            modifiers: [.control, .option]
+        )
 
         #expect(preferences.shortcut(for: .toggleDenMode) == ConfigurableShortcut.toggleDenMode.defaultBinding)
         #expect(
             preferences.deskNumberBinding
-                == ShortcutBinding(key: .character("1"), modifiers: [.command, .option]))
+                == ShortcutBinding(key: .character("1"), modifiers: [.command, .option])
+        )
         #expect(preferences.setShortcut(customToggle, for: .toggleDenMode) == nil)
         #expect(preferences.setDeskNumberBinding(customDeskNumber) == nil)
         preferences.clearShortcut(for: .focusPreviousBoard)
@@ -261,7 +337,8 @@ struct KeyboardShortcutTests {
                 "preferences.shortcuts.actions.toggle-den-mode",
                 "preferences.shortcuts.actions.focus-previous-board",
                 "preferences.shortcuts.desk-number.binding",
-            ])
+            ]
+        )
         #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.shortcut(for: .toggleDenMode) == customToggle)
         #expect(restored.shortcut(for: .focusPreviousBoard) == nil)
@@ -287,17 +364,25 @@ struct KeyboardShortcutTests {
         #expect(
             preferences.setShortcut(
                 ConfigurableShortcut.focusPreviousBoard.defaultBinding,
-                for: .focusNextBoard) == .conflict(.focusPreviousBoard))
+                for: .focusNextBoard
+            ) == .conflict(.focusPreviousBoard)
+        )
         #expect(
             preferences.setShortcut(
                 ShortcutBinding(key: .character("1"), modifiers: [.command, .option]),
-                for: .focusNextBoard) == .conflictWithDeskNumber)
+                for: .focusNextBoard
+            ) == .conflictWithDeskNumber
+        )
         #expect(
             preferences.setDeskNumberBinding(
-                ShortcutBinding(key: .character("1"), modifiers: [.shift, .command, .option])) == nil)
+                ShortcutBinding(key: .character("1"), modifiers: [.shift, .command, .option])
+            ) == nil
+        )
         #expect(
             preferences.setDeskNumberBinding(
-                ShortcutBinding(key: .character("1"), modifiers: [.shift])) == .invalid)
+                ShortcutBinding(key: .character("1"), modifiers: [.shift])
+            ) == .invalid
+        )
         preferences.clearShortcut(for: .toggleDenMode)
         #expect(preferences.shortcut(for: .toggleDenMode) == ConfigurableShortcut.toggleDenMode.defaultBinding)
     }
@@ -308,10 +393,12 @@ struct KeyboardShortcutTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         defaults.set(
             Data("not a property list".utf8),
-            forKey: "preferences.shortcuts.actions.toggle-den-mode")
+            forKey: "preferences.shortcuts.actions.toggle-den-mode"
+        )
 
         let duplicate = ShortcutOverride.assigned(
-            ShortcutBinding(key: .character("b"), modifiers: [.control]))
+            ShortcutBinding(key: .character("b"), modifiers: [.control])
+        )
         let data = try PropertyListEncoder().encode(duplicate)
         defaults.set(data, forKey: "preferences.shortcuts.actions.focus-previous-board")
         defaults.set(data, forKey: "preferences.shortcuts.actions.focus-next-board")
@@ -327,29 +414,35 @@ struct KeyboardShortcutTests {
             characters: "A",
             charactersIgnoringModifiers: "A",
             modifiers: [.capsLock, .command],
-            keyCode: 0)
+            keyCode: 0
+        )
         #expect(
             ShortcutBinding(event: letter)
-                == ShortcutBinding(key: .character("a"), modifiers: [.command]))
+                == ShortcutBinding(key: .character("a"), modifiers: [.command])
+        )
 
         let shiftedDigit = try keyEvent(
             characters: "!",
             charactersIgnoringModifiers: "!",
             modifiers: [.shift],
-            keyCode: 18)
+            keyCode: 18
+        )
         #expect(
             ShortcutBinding(event: shiftedDigit)
-                == ShortcutBinding(key: .character("1"), modifiers: [.shift]))
+                == ShortcutBinding(key: .character("1"), modifiers: [.shift])
+        )
 
         let functionCharacter = String(try #require(UnicodeScalar(NSEvent.SpecialKey.f12.rawValue)))
         let function = try keyEvent(
             characters: functionCharacter,
             charactersIgnoringModifiers: functionCharacter,
             modifiers: [.control],
-            keyCode: 111)
+            keyCode: 111
+        )
         #expect(
             ShortcutBinding(event: function)
-                == ShortcutBinding(key: .function(12), modifiers: [.control]))
+                == ShortcutBinding(key: .function(12), modifiers: [.control])
+        )
         #expect(ConfigurableShortcut.moveFocusedBoardLeft.defaultBinding.displayTokens == ["⌥", "⇧", "⌘", "←"])
     }
 
@@ -400,7 +493,8 @@ struct KeyboardShortcutTests {
                 onSave: {
                     savedState = $0
                     return true
-                })
+                }
+            )
         ) { session, model in
             session.boardNavigation.focusDesk(middle.id)
             model.isDenMode = true
@@ -408,12 +502,18 @@ struct KeyboardShortcutTests {
                 try arrow
                 ? arrowEvent(movesUp ? .upArrow : .downArrow, modifiers: .shift)
                 : keyEvent(
-                    characters: movesUp ? "K" : "J", charactersIgnoringModifiers: movesUp ? "k" : "j",
-                    modifiers: .shift, keyCode: movesUp ? 40 : 38)
+                    characters: movesUp ? "K" : "J",
+                    charactersIgnoringModifiers: movesUp ? "k" : "j",
+                    modifiers: .shift,
+                    keyCode: movesUp ? 40 : 38
+                )
 
             // Act
             let decision = KeyboardController.decision(
-                for: event, session: session, windowModel: model)
+                for: event,
+                session: session,
+                windowModel: model
+            )
             let handled = KeyboardController.handle(event, session: session, windowModel: model)
 
             // Assert
@@ -421,7 +521,8 @@ struct KeyboardShortcutTests {
             #expect(handled)
             #expect(
                 session.resources.state.desks.map(\.id)
-                    == (movesUp ? [middle.id, first.id, last.id] : [first.id, last.id, middle.id]))
+                    == (movesUp ? [middle.id, first.id, last.id] : [first.id, last.id, middle.id])
+            )
             #expect(session.navigation.focusedDesk?.id == middle.id)
             #expect(session.navigation.focusedDesk?.boards == [focused])
             #expect(session.navigation.focusedBoard?.id == focused.id)
@@ -436,7 +537,8 @@ struct KeyboardShortcutTests {
         let secondDesk = DeskState(
             label: "Second",
             boards: [movedBoard],
-            focusedBoardID: movedBoard.id)
+            focusedBoardID: movedBoard.id
+        )
         let session = try makeSession(desks: [firstDesk, secondDesk])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
@@ -449,7 +551,8 @@ struct KeyboardShortcutTests {
             characters: "!",
             charactersIgnoringModifiers: "!",
             modifiers: [.shift],
-            keyCode: 18)
+            keyCode: 18
+        )
 
         #expect(KeyboardController.handle(shiftOne, session: session, windowModel: windowModel))
         #expect(session.resources.state.focusedDeskID == firstDesk.id)
@@ -470,7 +573,8 @@ struct KeyboardShortcutTests {
                 characters: characters,
                 charactersIgnoringModifiers: "=",
                 modifiers: modifiers,
-                keyCode: 24)
+                keyCode: 24
+            )
 
             #expect(KeyboardController.handle(event, session: session, windowModel: windowModel))
             #expect(session.navigation.focusedBoard?.width == 600)
@@ -490,7 +594,8 @@ struct KeyboardShortcutTests {
             characters: ">",
             charactersIgnoringModifiers: ".",
             modifiers: [.shift],
-            keyCode: 47)
+            keyCode: 47
+        )
 
         #expect(KeyboardController.handle(right, session: session, windowModel: windowModel))
         #expect(windowModel.revealNextBoardRequest == 1)
@@ -500,7 +605,8 @@ struct KeyboardShortcutTests {
             characters: "<",
             charactersIgnoringModifiers: ",",
             modifiers: [.shift],
-            keyCode: 43)
+            keyCode: 43
+        )
 
         #expect(KeyboardController.handle(left, session: session, windowModel: windowModel))
         #expect(windowModel.revealPreviousBoardRequest == 1)
@@ -518,10 +624,12 @@ struct KeyboardShortcutTests {
             characters: "s",
             charactersIgnoringModifiers: "s",
             modifiers: [.control],
-            keyCode: 1)
+            keyCode: 1
+        )
         #expect(
             KeyboardController.decision(for: controlS, session: session, windowModel: windowModel)
-                == .perform(.board(.copySheetScreenshot)))
+                == .perform(.board(.copySheetScreenshot))
+        )
     }
 
     @Test func denModeYCopiesFocusedBoardLocationAndShiftYCopiesBoardID() throws {
@@ -535,24 +643,34 @@ struct KeyboardShortcutTests {
         let locationEvent = try keyEvent(
             characters: "y",
             charactersIgnoringModifiers: "y",
-            keyCode: 16)
+            keyCode: 16
+        )
         let boardIDEvent = try keyEvent(
             characters: "Y",
             charactersIgnoringModifiers: "y",
             modifiers: [.shift],
-            keyCode: 16)
+            keyCode: 16
+        )
 
         // Act
         let locationDecision = KeyboardController.decision(
-            for: locationEvent, session: session, windowModel: windowModel)
+            for: locationEvent,
+            session: session,
+            windowModel: windowModel
+        )
         let boardIDDecision = KeyboardController.decision(
-            for: boardIDEvent, session: session, windowModel: windowModel)
+            for: boardIDEvent,
+            session: session,
+            windowModel: windowModel
+        )
 
         // Assert
         #expect(
-            locationDecision == .perform(.board(.copyLocation)))
+            locationDecision == .perform(.board(.copyLocation))
+        )
         #expect(
-            boardIDDecision == .perform(.board(.copyID)))
+            boardIDDecision == .perform(.board(.copyID))
+        )
     }
 
     @Test func sheetInputCommandOptionDigitFocusesDeskAndLeavesCommandZeroAvailable() throws {
@@ -561,7 +679,8 @@ struct KeyboardShortcutTests {
         let secondDesk = DeskState(
             label: "Second",
             boards: [movedBoard],
-            focusedBoardID: movedBoard.id)
+            focusedBoardID: movedBoard.id
+        )
         let session = try makeSession(desks: [firstDesk, secondDesk])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
@@ -573,21 +692,33 @@ struct KeyboardShortcutTests {
             characters: "1",
             charactersIgnoringModifiers: "1",
             modifiers: [.command, .option],
-            keyCode: 18)
+            keyCode: 18
+        )
         let commandZero = try keyEvent(
             characters: "0",
             charactersIgnoringModifiers: "0",
             modifiers: [.command],
-            keyCode: 29)
+            keyCode: 29
+        )
 
         #expect(
             KeyboardController.handle(
-                commandOptionOne, session: session, windowModel: windowModel, preferences: preferences))
+                commandOptionOne,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(session.resources.state.focusedDeskID == firstDesk.id)
         #expect(!windowModel.isDenMode)
         #expect(
             !KeyboardController.handle(
-                commandZero, session: session, windowModel: windowModel, preferences: preferences))
+                commandZero,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(session.resources.state.focusedDeskID == firstDesk.id)
     }
 
@@ -601,40 +732,49 @@ struct KeyboardShortcutTests {
             characters: "=",
             charactersIgnoringModifiers: "=",
             modifiers: [.command],
-            keyCode: 24)
+            keyCode: 24
+        )
         let plus = try keyEvent(
             characters: "+",
             charactersIgnoringModifiers: "=",
             modifiers: [.command, .shift],
-            keyCode: 24)
+            keyCode: 24
+        )
         let decrease = try keyEvent(
             characters: "-",
             charactersIgnoringModifiers: "-",
             modifiers: [.command],
-            keyCode: 27)
+            keyCode: 27
+        )
         let reset = try keyEvent(
             characters: "0",
             charactersIgnoringModifiers: "0",
             modifiers: [.command],
-            keyCode: 29)
+            keyCode: 29
+        )
 
         #expect(
             KeyboardController.decision(for: increase, session: session, windowModel: windowModel)
-                == .perform(.board(.increaseSheetSize)))
+                == .perform(.board(.increaseSheetSize))
+        )
         #expect(
             KeyboardController.decision(for: plus, session: session, windowModel: windowModel)
-                == .perform(.board(.increaseSheetSize)))
+                == .perform(.board(.increaseSheetSize))
+        )
         #expect(
             KeyboardController.decision(for: decrease, session: session, windowModel: windowModel)
-                == .perform(.board(.decreaseSheetSize)))
+                == .perform(.board(.decreaseSheetSize))
+        )
         #expect(
             KeyboardController.decision(for: reset, session: session, windowModel: windowModel)
-                == .perform(.board(.resetSheetSize)))
+                == .perform(.board(.resetSheetSize))
+        )
 
         windowModel.isDenMode = true
         #expect(
             KeyboardController.decision(for: decrease, session: session, windowModel: windowModel)
-                == .perform(.board(.decreaseSheetSize)))
+                == .perform(.board(.decreaseSheetSize))
+        )
     }
 
     @Test(arguments: [false, true])
@@ -648,7 +788,11 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         windowModel.isDenMode = isDenMode
         let commandD = try keyEvent(
-            characters: "d", charactersIgnoringModifiers: "d", modifiers: [.command], keyCode: 2)
+            characters: "d",
+            charactersIgnoringModifiers: "d",
+            modifiers: [.command],
+            keyCode: 2
+        )
 
         // Act
         let handled = KeyboardController.handle(commandD, session: session, windowModel: windowModel)
@@ -676,7 +820,11 @@ struct KeyboardShortcutTests {
         composition.connect()
         defer { composition.disconnect() }
         let commandD = try keyEvent(
-            characters: "d", charactersIgnoringModifiers: "d", modifiers: [.command], keyCode: 2)
+            characters: "d",
+            charactersIgnoringModifiers: "d",
+            modifiers: [.command],
+            keyCode: 2
+        )
 
         // Act
         let decision = KeyboardController.decision(for: commandD, session: session, windowModel: windowModel)
@@ -703,31 +851,43 @@ struct KeyboardShortcutTests {
             characters: "\t",
             charactersIgnoringModifiers: "\t",
             modifiers: [.control],
-            keyCode: 48)
+            keyCode: 48
+        )
         #expect(
-            KeyboardController.handle(next, session: session, windowModel: windowModel, preferences: preferences))
+            KeyboardController.handle(next, session: session, windowModel: windowModel, preferences: preferences)
+        )
         #expect(session.navigation.focusedDesk?.id == secondDesk.id)
 
         let previous = try keyEvent(
             characters: "\t",
             charactersIgnoringModifiers: "\t",
             modifiers: [.control, .shift],
-            keyCode: 48)
+            keyCode: 48
+        )
         #expect(
             KeyboardController.handle(
-                previous, session: session, windowModel: windowModel, preferences: preferences))
+                previous,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(session.navigation.focusedDesk?.id == firstDesk.id)
 
         let returnToPrevious = try keyEvent(
             characters: "\t",
             charactersIgnoringModifiers: "\t",
             modifiers: [.command, .option],
-            keyCode: 48)
+            keyCode: 48
+        )
         #expect(
             KeyboardController.handle(
                 returnToPrevious,
-                session: session, windowModel: windowModel,
-                preferences: preferences))
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(session.navigation.focusedDesk?.id == secondDesk.id)
     }
 
@@ -741,7 +901,8 @@ struct KeyboardShortcutTests {
         let open = try keyEvent(
             characters: "i",
             charactersIgnoringModifiers: "i",
-            keyCode: 34)
+            keyCode: 34
+        )
 
         #expect(KeyboardController.handle(open, session: session, windowModel: windowModel))
         #expect(windowModel.isNotificationListPresented)
@@ -761,7 +922,8 @@ struct KeyboardShortcutTests {
         let vKey = try keyEvent(
             characters: "v",
             charactersIgnoringModifiers: "v",
-            keyCode: 9)
+            keyCode: 9
+        )
 
         #expect(KeyboardController.handle(vKey, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedDesk?.boards.count == 2)
@@ -778,8 +940,10 @@ struct KeyboardShortcutTests {
         let desk = DeskState(label: "Dev", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -868,21 +1032,26 @@ struct KeyboardShortcutTests {
         let open = try keyEvent(
             characters: "i",
             charactersIgnoringModifiers: "i",
-            keyCode: 34)
+            keyCode: 34
+        )
         let down = try keyEvent(
             characters: "\u{F701}",
             charactersIgnoringModifiers: "\u{F701}",
-            keyCode: 125)
+            keyCode: 125
+        )
         let enter = try keyEvent(
             characters: "\r",
             charactersIgnoringModifiers: "\r",
-            keyCode: 36)
+            keyCode: 36
+        )
 
         #expect(
-            KeyboardController.handle(open, session: session, windowModel: windowModel, preferences: preferences))
+            KeyboardController.handle(open, session: session, windowModel: windowModel, preferences: preferences)
+        )
         #expect(windowModel.notificationList.selectedNotificationID == session.resources.notifications[0].id)
         #expect(
-            KeyboardController.handle(down, session: session, windowModel: windowModel, preferences: preferences))
+            KeyboardController.handle(down, session: session, windowModel: windowModel, preferences: preferences)
+        )
         #expect(windowModel.notificationList.selectedNotificationID == session.resources.notifications[1].id)
         #expect(
             KeyboardController.handle(enter, session: session, windowModel: windowModel, preferences: preferences)
@@ -899,20 +1068,40 @@ struct KeyboardShortcutTests {
         composition.connect()
         defer { composition.disconnect() }
         let toggle = try keyEvent(
-            characters: ".", charactersIgnoringModifiers: ".", modifiers: [.control], keyCode: 47)
+            characters: ".",
+            charactersIgnoringModifiers: ".",
+            modifiers: [.control],
+            keyCode: 47
+        )
         let defaultToggle = try keyEvent(
-            characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
+            characters: ",",
+            charactersIgnoringModifiers: ",",
+            modifiers: [.control],
+            keyCode: 43
+        )
         #expect(
             preferences.setShortcut(
                 ShortcutBinding(key: .character("."), modifiers: [.control]),
-                for: .toggleDenMode) == nil)
+                for: .toggleDenMode
+            ) == nil
+        )
 
         #expect(
             !KeyboardController.handle(
-                defaultToggle, session: session, windowModel: windowModel, preferences: preferences))
+                defaultToggle,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(
             KeyboardController.handle(
-                toggle, session: session, windowModel: windowModel, preferences: preferences))
+                toggle,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.isDenMode)
 
         windowModel.exitDenMode()
@@ -920,9 +1109,15 @@ struct KeyboardShortcutTests {
         let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
         #expect(
             !KeyboardController.handle(
-                right, session: session, windowModel: windowModel, preferences: preferences))
+                right,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(
-            session.navigation.focusedDesk?.focusedBoardID == session.navigation.focusedDesk?.boards.first?.id)
+            session.navigation.focusedDesk?.focusedBoardID == session.navigation.focusedDesk?.boards.first?.id
+        )
     }
 
     @Test func customBindingsAreSuspendedByTemporaryContexts() throws {
@@ -943,7 +1138,8 @@ struct KeyboardShortcutTests {
         windowModel.showOverview()
         let focusedBoardID = session.navigation.focusedDesk?.focusedBoardID
         #expect(
-            KeyboardController.handle(next, session: session, windowModel: windowModel, preferences: preferences))
+            KeyboardController.handle(next, session: session, windowModel: windowModel, preferences: preferences)
+        )
         #expect(session.navigation.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
@@ -957,7 +1153,8 @@ struct KeyboardShortcutTests {
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
             modifiers: [.shift],
-            keyCode: 53)
+            keyCode: 53
+        )
 
         #expect(KeyboardController.handle(shiftEscape, session: session, windowModel: windowModel))
         #expect(windowModel.isBoardActivityPresented)
@@ -972,7 +1169,8 @@ struct KeyboardShortcutTests {
         let escape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
-            keyCode: 53)
+            keyCode: 53
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
         #expect(!windowModel.isBoardActivityPresented)
     }
@@ -991,22 +1189,29 @@ struct KeyboardShortcutTests {
         let keyCode: UInt16 = character == "n" ? 45 : 49
         let event = try keyEvent(characters: character, charactersIgnoringModifiers: character, keyCode: keyCode)
         let repeated = try keyEvent(
-            characters: character, charactersIgnoringModifiers: character, isARepeat: true, keyCode: keyCode)
+            characters: character,
+            charactersIgnoringModifiers: character,
+            isARepeat: true,
+            keyCode: keyCode
+        )
 
         // Act / Assert
         #expect(
             KeyboardController.decision(for: repeated, session: session, windowModel: model)
-                == .consume(.ignoredRepeat))
+                == .consume(.ignoredRepeat)
+        )
         for phase in [FilterPhase.filtering, .selecting] {
             model.drawer.filterPhase = phase
             #expect(
                 KeyboardController.decision(for: event, session: session, windowModel: model)
-                    == (phase == .filtering ? .forward(.filterTextInput) : .consume(.exclusiveContext)))
+                    == (phase == .filtering ? .forward(.filterTextInput) : .consume(.exclusiveContext))
+            )
         }
         model.drawer.filterPhase = .inactive
         #expect(
             KeyboardController.decision(for: event, session: session, windowModel: model)
-                == .perform(.drawer(.addItem)))
+                == .perform(.drawer(.addItem))
+        )
         #expect(KeyboardController.handle(event, session: session, windowModel: model))
         #expect(model.isAddingToDrawer)
         #expect(model.isDrawerPresented)
@@ -1023,17 +1228,31 @@ struct KeyboardShortcutTests {
         session.drawer.keepInDrawer(try #require(URL(string: "https://example.com/")))
         let peekID = windowModel.drawer.expandedItemID
         let toggle = try keyEvent(
-            characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
+            characters: ",",
+            charactersIgnoringModifiers: ",",
+            modifiers: [.control],
+            keyCode: 43
+        )
 
         #expect(
             KeyboardController.handle(
-                toggle, session: session, windowModel: windowModel, preferences: preferences))
+                toggle,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.isDenMode)
         #expect(windowModel.drawer.expandedItemID == peekID)
 
         #expect(
             KeyboardController.handle(
-                toggle, session: session, windowModel: windowModel, preferences: preferences))
+                toggle,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(!windowModel.isDenMode)
         #expect(windowModel.drawer.expandedItemID == peekID)
     }
@@ -1048,10 +1267,19 @@ struct KeyboardShortcutTests {
         session.drawer.keepInDrawer(try #require(URL(string: "https://example.com/")))
         model.isDenMode = true
         let shiftP = try keyEvent(
-            characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], keyCode: 35)
+            characters: "P",
+            charactersIgnoringModifiers: "P",
+            modifiers: [.shift],
+            keyCode: 35
+        )
         let plainP = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
         let repeatedShiftP = try keyEvent(
-            characters: "P", charactersIgnoringModifiers: "P", modifiers: [.shift], isARepeat: true, keyCode: 35)
+            characters: "P",
+            charactersIgnoringModifiers: "P",
+            modifiers: [.shift],
+            isARepeat: true,
+            keyCode: 35
+        )
         let escape = try keyEvent(characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
         let down = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
         let enter = try keyEvent(characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
@@ -1059,27 +1287,33 @@ struct KeyboardShortcutTests {
         // Act / Assert
         #expect(
             KeyboardController.decision(for: plainP, session: session, windowModel: model)
-                == .perform(.drawer(.placeSelectedItemAsBoard)))
+                == .perform(.drawer(.placeSelectedItemAsBoard))
+        )
         #expect(
             KeyboardController.decision(for: repeatedShiftP, session: session, windowModel: model)
-                == .consume(.ignoredRepeat))
+                == .consume(.ignoredRepeat)
+        )
         #expect(
             KeyboardController.decision(for: shiftP, session: session, windowModel: model)
-                == .perform(.drawer(.choosePlacementDesk)))
+                == .perform(.drawer(.choosePlacementDesk))
+        )
         #expect(KeyboardController.handle(shiftP, session: session, windowModel: model))
         #expect(model.drawer.isChoosingPlacementDesk)
         for (digit, number) in [("1", 1), ("9", 9), ("0", 10)] {
             let numeric = try keyEvent(characters: digit, charactersIgnoringModifiers: digit, keyCode: 18)
             #expect(
                 KeyboardController.decision(for: numeric, session: session, windowModel: model)
-                    == .perform(.drawer(.placeInDeskNumber(number))))
+                    == .perform(.drawer(.placeInDeskNumber(number)))
+            )
         }
         #expect(
             KeyboardController.decision(for: enter, session: session, windowModel: model)
-                == .perform(.drawer(.confirmPlacementDesk)))
+                == .perform(.drawer(.confirmPlacementDesk))
+        )
         #expect(
             KeyboardController.decision(for: down, session: session, windowModel: model)
-                == .perform(.drawer(.selectPlacementDesk(1))))
+                == .perform(.drawer(.selectPlacementDesk(1)))
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: model))
         #expect(!model.drawer.isChoosingPlacementDesk)
         #expect(model.isDrawerOpen)
@@ -1106,11 +1340,13 @@ struct KeyboardShortcutTests {
             characters: "w",
             charactersIgnoringModifiers: "w",
             modifiers: [.command],
-            keyCode: 13)
+            keyCode: 13
+        )
 
         #expect(
             KeyboardController.decision(for: commandW, session: session, windowModel: windowModel)
-                == .perform(.drawer(.discardSelectedItem(focusNext: true))))
+                == .perform(.drawer(.discardSelectedItem(focusNext: true)))
+        )
         #expect(KeyboardController.handle(commandW, session: session, windowModel: windowModel))
         #expect(session.resources.state.drawerItems.count == 1)
         #expect(!session.resources.state.drawerItems.contains { $0.id == selectedItemID })
@@ -1122,10 +1358,12 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "w",
             modifiers: [.command],
             isARepeat: true,
-            keyCode: 13)
+            keyCode: 13
+        )
         #expect(
             KeyboardController.decision(for: repeatedCommandW, session: session, windowModel: windowModel)
-                == .consume(.ignoredRepeat))
+                == .consume(.ignoredRepeat)
+        )
         #expect(KeyboardController.handle(repeatedCommandW, session: session, windowModel: windowModel))
         #expect(session.resources.state.drawerItems.count == 1)
     }
@@ -1142,11 +1380,13 @@ struct KeyboardShortcutTests {
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
             modifiers: [.control],
-            keyCode: 53)
+            keyCode: 53
+        )
 
         #expect(
             KeyboardController.decision(for: controlEscape, session: session, windowModel: windowModel)
-                == .perform(.drawer(.close)))
+                == .perform(.drawer(.close))
+        )
         #expect(KeyboardController.handle(controlEscape, session: session, windowModel: windowModel))
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == itemID)
@@ -1174,25 +1414,37 @@ struct KeyboardShortcutTests {
         #expect(windowModel.drawer.expandedItemID == nil)
 
         let letterA = try keyEvent(
-            characters: "a", charactersIgnoringModifiers: "a", keyCode: 0)
+            characters: "a",
+            charactersIgnoringModifiers: "a",
+            keyCode: 0
+        )
         let space = try keyEvent(
-            characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
+            characters: " ",
+            charactersIgnoringModifiers: " ",
+            keyCode: 49
+        )
         let tab = try keyEvent(
-            characters: "\t", charactersIgnoringModifiers: "\t", keyCode: 48)
+            characters: "\t",
+            charactersIgnoringModifiers: "\t",
+            keyCode: 48
+        )
 
         #expect(
             KeyboardController.decision(for: letterA, session: session, windowModel: windowModel)
-                == .consume(.exclusiveContext))
+                == .consume(.exclusiveContext)
+        )
         #expect(KeyboardController.handle(letterA, session: session, windowModel: windowModel))
 
         #expect(
             KeyboardController.decision(for: space, session: session, windowModel: windowModel)
-                == .consume(.exclusiveContext))
+                == .consume(.exclusiveContext)
+        )
         #expect(KeyboardController.handle(space, session: session, windowModel: windowModel))
 
         #expect(
             KeyboardController.decision(for: tab, session: session, windowModel: windowModel)
-                == .consume(.exclusiveContext))
+                == .consume(.exclusiveContext)
+        )
         #expect(KeyboardController.handle(tab, session: session, windowModel: windowModel))
 
         #expect(windowModel.isDrawerOpen)
@@ -1214,7 +1466,8 @@ struct KeyboardShortcutTests {
             characters: "D",
             charactersIgnoringModifiers: "d",
             modifiers: [.shift],
-            keyCode: 2)
+            keyCode: 2
+        )
 
         #expect(KeyboardController.handle(clear, session: session, windowModel: windowModel))
         #expect(windowModel.drawerPendingDiscardCount == 2)
@@ -1258,7 +1511,8 @@ struct KeyboardShortcutTests {
             characters: "D",
             charactersIgnoringModifiers: "d",
             modifiers: [.shift],
-            keyCode: 2)
+            keyCode: 2
+        )
         windowModel.drawer.enterFilterMode()
         #expect(!KeyboardController.handle(clear, session: session, windowModel: windowModel))
         #expect(!windowModel.hasPendingConfirmation)
@@ -1269,7 +1523,8 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "d",
             modifiers: [.shift],
             isARepeat: true,
-            keyCode: 2)
+            keyCode: 2
+        )
         #expect(KeyboardController.handle(repeatClear, session: session, windowModel: windowModel))
         #expect(!windowModel.hasPendingConfirmation)
     }
@@ -1282,19 +1537,25 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         windowModel.isDenMode = true
         let returnKey = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            keyCode: 36
+        )
         let shiftReturn = try keyEvent(
             characters: "\r",
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
-            keyCode: 36)
+            keyCode: 36
+        )
 
         #expect(
             KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
-                == .perform(.board(.duplicate)))
+                == .perform(.board(.duplicate))
+        )
         #expect(
             KeyboardController.decision(for: shiftReturn, session: session, windowModel: windowModel)
-                == .perform(.board(.duplicateFirstSheet)))
+                == .perform(.board(.duplicateFirstSheet))
+        )
     }
 
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
@@ -1312,19 +1573,28 @@ struct KeyboardShortcutTests {
         #expect(!windowModel.isNotificationListPresented)
         let down = try arrowEvent(.downArrow, modifiers: [])
         let returnKey = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            keyCode: 36
+        )
         let escape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53
+        )
 
         #expect(
             KeyboardController.decision(for: down, session: session, windowModel: windowModel)
-                == .forward(.temporaryTextInput))
+                == .forward(.temporaryTextInput)
+        )
         #expect(
             KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
-                == .forward(.temporaryTextInput))
+                == .forward(.temporaryTextInput)
+        )
         #expect(
             KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
-                == .forward(.temporaryTextInput))
+                == .forward(.temporaryTextInput)
+        )
     }
 
     @Test(arguments: [false, true])
@@ -1336,7 +1606,10 @@ struct KeyboardShortcutTests {
         windowModel.showOpenBoardPanel()
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 100),
-            styleMask: .borderless, backing: .buffered, defer: false)
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
         window.isReleasedWhenClosed = false
         defer { window.close() }
         let editor = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 100))
@@ -1344,17 +1617,28 @@ struct KeyboardShortcutTests {
         #expect(window.makeFirstResponder(editor))
         if hasMarkedText {
             editor.setMarkedText(
-                "変換", selectedRange: NSRange(location: 2, length: 0),
-                replacementRange: NSRange(location: NSNotFound, length: 0))
+                "変換",
+                selectedRange: NSRange(location: 2, length: 0),
+                replacementRange: NSRange(location: NSNotFound, length: 0)
+            )
         }
 
         #expect(windowModel.temporaryContext == .openBoard)
         for modifiers: NSEvent.ModifierFlags in [[], [.shift]] {
             let event = try #require(
                 NSEvent.keyEvent(
-                    with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0,
-                    windowNumber: window.windowNumber, context: nil,
-                    characters: "\t", charactersIgnoringModifiers: "\t", isARepeat: false, keyCode: 48))
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: modifiers,
+                    timestamp: 0,
+                    windowNumber: window.windowNumber,
+                    context: nil,
+                    characters: "\t",
+                    charactersIgnoringModifiers: "\t",
+                    isARepeat: false,
+                    keyCode: 48
+                )
+            )
             #expect(KeyEvent(event).hasMarkedText == hasMarkedText)
 
             // Act
@@ -1379,7 +1663,8 @@ struct KeyboardShortcutTests {
             characters: "A",
             charactersIgnoringModifiers: "a",
             modifiers: [.shift],
-            keyCode: 0)
+            keyCode: 0
+        )
 
         #expect(!KeyboardController.handle(uppercase, session: session, windowModel: windowModel))
         #expect(windowModel.drawer.isFilterInputActive)
@@ -1399,17 +1684,20 @@ struct KeyboardShortcutTests {
             characters: "\r",
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
-            keyCode: 36)
+            keyCode: 36
+        )
         let controlEscape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
             modifiers: [.control],
-            keyCode: 53)
+            keyCode: 53
+        )
 
         #expect(!KeyboardController.handle(modifiedReturn, session: session, windowModel: windowModel))
         #expect(
             KeyboardController.decision(for: controlEscape, session: session, windowModel: windowModel)
-                == .perform(.drawer(.close)))
+                == .perform(.drawer(.close))
+        )
         #expect(KeyboardController.handle(controlEscape, session: session, windowModel: windowModel))
         #expect(!windowModel.isDrawerOpen)
     }
@@ -1427,11 +1715,13 @@ struct KeyboardShortcutTests {
         let slash = try keyEvent(
             characters: "/",
             charactersIgnoringModifiers: "/",
-            keyCode: 44)
+            keyCode: 44
+        )
         let returnKey = try keyEvent(
             characters: "\r",
             charactersIgnoringModifiers: "\r",
-            keyCode: 36)
+            keyCode: 36
+        )
 
         #expect(KeyboardController.handle(slash, session: session, windowModel: windowModel))
         #expect(windowModel.overview.filterPhase == .filtering)
@@ -1461,11 +1751,13 @@ struct KeyboardShortcutTests {
         let escape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
-            keyCode: 53)
+            keyCode: 53
+        )
 
         #expect(
             KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
-                == .perform(.board(.requestDragCancellation)))
+                == .perform(.board(.requestDragCancellation))
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
         #expect(windowModel.boardDragCancellationRequest == 1)
         #expect(windowModel.isOverviewPresented)
@@ -1480,7 +1772,10 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         composition.model.isDenMode = true
         let event = try keyEvent(
-            characters: key, charactersIgnoringModifiers: key, keyCode: key == "d" ? 2 : 7)
+            characters: key,
+            charactersIgnoringModifiers: key,
+            keyCode: key == "d" ? 2 : 7
+        )
 
         // Act
         let decision = KeyboardController.decision(for: event, session: session, windowModel: composition.model)
@@ -1499,19 +1794,36 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         let commands = [
             try keyEvent(
-                characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13),
+                characters: "w",
+                charactersIgnoringModifiers: "w",
+                modifiers: [.command],
+                keyCode: 13
+            ),
             try keyEvent(
-                characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17),
+                characters: "t",
+                charactersIgnoringModifiers: "t",
+                modifiers: [.command],
+                keyCode: 17
+            ),
             try keyEvent(
-                characters: "l", charactersIgnoringModifiers: "l", modifiers: [.command], keyCode: 37),
+                characters: "l",
+                charactersIgnoringModifiers: "l",
+                modifiers: [.command],
+                keyCode: 37
+            ),
             try keyEvent(
-                characters: "r", charactersIgnoringModifiers: "r", modifiers: [.command], keyCode: 15),
+                characters: "r",
+                charactersIgnoringModifiers: "r",
+                modifiers: [.command],
+                keyCode: 15
+            ),
         ]
         let closeWindow = try keyEvent(
             characters: "W",
             charactersIgnoringModifiers: "w",
             modifiers: [.command, .shift],
-            keyCode: 13)
+            keyCode: 13
+        )
 
         for command in commands {
             #expect(!KeyboardController.handle(command, session: session, windowModel: windowModel))
@@ -1528,19 +1840,26 @@ struct KeyboardShortcutTests {
         composition.connect()
         defer { composition.disconnect() }
         let comma = try keyEvent(
-            characters: ",", charactersIgnoringModifiers: ",", modifiers: [], keyCode: 43)
+            characters: ",",
+            charactersIgnoringModifiers: ",",
+            modifiers: [],
+            keyCode: 43
+        )
 
         #expect(!KeyboardController.handle(comma, session: session, windowModel: windowModel))
 
         windowModel.isDenMode = true
         #expect(
             KeyboardController.decision(for: comma, session: session, windowModel: windowModel)
-                == .perform(.application(.openSettings)))
+                == .perform(.application(.openSettings))
+        )
         var didOpenSettings = false
         let handled = KeyboardController.handle(
             comma,
-            session: session, windowModel: windowModel,
-            openSettings: { didOpenSettings = true })
+            session: session,
+            windowModel: windowModel,
+            openSettings: { didOpenSettings = true }
+        )
         #expect(handled)
         #expect(didOpenSettings)
 
@@ -1548,7 +1867,8 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(comma, session: session, windowModel: windowModel))
         #expect(
             KeyboardController.decision(for: comma, session: session, windowModel: windowModel)
-                == .consume(.exclusiveContext))
+                == .consume(.exclusiveContext)
+        )
     }
 
     @Test func denModeGPrefixLaunchesMatchingEssential() throws {
@@ -1562,18 +1882,26 @@ struct KeyboardShortcutTests {
         windowModel.isDenMode = true
 
         let prefix = try keyEvent(
-            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+            characters: "g",
+            charactersIgnoringModifiers: "g",
+            keyCode: 5
+        )
         let key = try keyEvent(
-            characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+            characters: "c",
+            charactersIgnoringModifiers: "c",
+            keyCode: 8
+        )
 
         #expect(
             KeyboardController.decision(for: prefix, session: session, windowModel: windowModel)
-                == .perform(.essentials(.enterPrefix)))
+                == .perform(.essentials(.enterPrefix))
+        )
         #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
         #expect(windowModel.temporaryContext == .essentialsPrefix)
         #expect(
             KeyboardController.decision(for: key, session: session, windowModel: windowModel)
-                == .perform(.essentials(.launch(essential.id))))
+                == .perform(.essentials(.launch(essential.id)))
+        )
         #expect(KeyboardController.handle(key, session: session, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(!windowModel.isDenMode)
@@ -1592,11 +1920,15 @@ struct KeyboardShortcutTests {
         windowModel.showEssentialsPrefix()
 
         let key = try keyEvent(
-            characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+            characters: "c",
+            charactersIgnoringModifiers: "c",
+            keyCode: 8
+        )
 
         #expect(
             KeyboardController.decision(for: key, session: session, windowModel: windowModel)
-                == .perform(.essentials(.launch(essential.id))))
+                == .perform(.essentials(.launch(essential.id)))
+        )
         #expect(KeyboardController.handle(key, session: session, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(!windowModel.isDenMode)
@@ -1686,7 +2018,11 @@ struct KeyboardShortcutTests {
         windowModel.showEssentialsPrefix()
         windowModel.moveEssentialSelection(by: 1)
         let event = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.option],
+            keyCode: 36
+        )
 
         // Act
         let handled = KeyboardController.handle(event, session: session, windowModel: windowModel)
@@ -1697,7 +2033,10 @@ struct KeyboardShortcutTests {
         #expect(
             WebURLPolicy.canonicalSheetURL(try #require(item.url))
                 == BoardInputResolver.normalizedURL(
-                    from: input, searchEngine: session.configuration.preferences.searchEngine))
+                    from: input,
+                    searchEngine: session.configuration.preferences.searchEngine
+                )
+        )
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [original.id])
         #expect(windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == item.id)
@@ -1719,8 +2058,11 @@ struct KeyboardShortcutTests {
         #expect(session.configuration.preferences.setEssentials([first, matching, otherCase]))
         windowModel.showEssentialsPrefix()
         let event = try keyEvent(
-            characters: key == " " ? " " : "ç", charactersIgnoringModifiers: key,
-            modifiers: key == "C" ? [.option, .shift] : [.option], keyCode: key == " " ? 49 : 8)
+            characters: key == " " ? " " : "ç",
+            charactersIgnoringModifiers: key,
+            modifiers: key == "C" ? [.option, .shift] : [.option],
+            keyCode: key == " " ? 49 : 8
+        )
 
         // Act
         let decision = KeyboardController.decision(for: event, session: session, windowModel: windowModel)
@@ -1772,9 +2114,16 @@ struct KeyboardShortcutTests {
         let upArrow = try arrowEvent(.upArrow, modifiers: [])
         let down = try arrowEvent(.downArrow, modifiers: [])
         let returnKey = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            keyCode: 36
+        )
         let optionReturn = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.option],
+            keyCode: 36
+        )
         let jKey = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
         let kKey = try keyEvent(characters: "k", charactersIgnoringModifiers: "k", keyCode: 40)
 
@@ -1783,7 +2132,8 @@ struct KeyboardShortcutTests {
             KeyboardRouter.route(
                 event: KeyEvent(event),
                 context: InputContext(session: session, windowModel: windowModel, event: event),
-                shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences))
+                shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences)
+            )
         }
         let upDecision = route(upArrow)
         let downDecision = route(down)
@@ -1815,18 +2165,36 @@ struct KeyboardShortcutTests {
         let repeatedUp = try arrowEvent(.upArrow, modifiers: [], isARepeat: true)
         let repeatedDown = try arrowEvent(.downArrow, modifiers: [], isARepeat: true)
         let repeatedReturn = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: true, keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            isARepeat: true,
+            keyCode: 36
+        )
         let repeatedOptionReturn = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], isARepeat: true, keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.option],
+            isARepeat: true,
+            keyCode: 36
+        )
         let repeatedKey = try keyEvent(
-            characters: "a", charactersIgnoringModifiers: "a", isARepeat: true, keyCode: 0)
+            characters: "a",
+            charactersIgnoringModifiers: "a",
+            isARepeat: true,
+            keyCode: 0
+        )
         let repeatedEscape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", isARepeat: true, keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            isARepeat: true,
+            keyCode: 53
+        )
         func route(_ event: NSEvent) -> InputDecision {
             KeyboardRouter.route(
                 event: KeyEvent(event),
                 context: InputContext(session: session, windowModel: windowModel, event: event),
-                shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences))
+                shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences)
+            )
         }
 
         // Act
@@ -1861,14 +2229,21 @@ struct KeyboardShortcutTests {
         #expect(session.configuration.preferences.setEssentials([essential]))
         windowModel.isDenMode = true
         let prefix = try keyEvent(
-            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+            characters: "g",
+            charactersIgnoringModifiers: "g",
+            keyCode: 5
+        )
         let unknown = try keyEvent(
-            characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
+            characters: "x",
+            charactersIgnoringModifiers: "x",
+            keyCode: 7
+        )
 
         #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
         #expect(
             KeyboardController.decision(for: unknown, session: session, windowModel: windowModel)
-                == .perform(.essentials(.showNotFound("x"))))
+                == .perform(.essentials(.showNotFound("x")))
+        )
         #expect(KeyboardController.handle(unknown, session: session, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.isDenMode)
@@ -1886,14 +2261,25 @@ struct KeyboardShortcutTests {
         #expect(
             session.configuration.preferences.setEssentials([
                 Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
-            ]))
+            ])
+        )
         windowModel.isDenMode = true
         let prefix = try keyEvent(
-            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+            characters: "g",
+            charactersIgnoringModifiers: "g",
+            keyCode: 5
+        )
         let escape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53
+        )
         let modified = try keyEvent(
-            characters: "x", charactersIgnoringModifiers: "x", modifiers: [.command], keyCode: 7)
+            characters: "x",
+            charactersIgnoringModifiers: "x",
+            modifiers: [.command],
+            keyCode: 7
+        )
 
         #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
@@ -1915,14 +2301,18 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         session.configuration.preferences.setZmxPath("/missing/zmx")
         let escape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53
+        )
 
         windowModel.showZmxSessions()
 
         #expect(windowModel.isZmxSessionsPresented)
         #expect(
             KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.hide)))
+                == .perform(.zmxSessions(.hide))
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
         #expect(!windowModel.isZmxSessionsPresented)
     }
@@ -1933,8 +2323,10 @@ struct KeyboardShortcutTests {
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "name=den\nname=den-vi\tden.root=den\n")
-                ]))
+                        standardOutput: "name=den\nname=den-vi\tden.root=den\n"
+                    )
+                ])
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1946,32 +2338,50 @@ struct KeyboardShortcutTests {
         let down = try arrowEvent(.downArrow, modifiers: [])
         let upArrow = try arrowEvent(.upArrow, modifiers: [])
         let returnKey = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            keyCode: 36
+        )
         let delete = try keyEvent(
-            characters: "\u{8}", charactersIgnoringModifiers: "\u{8}", keyCode: 51)
+            characters: "\u{8}",
+            charactersIgnoringModifiers: "\u{8}",
+            keyCode: 51
+        )
         let deleteKey = try keyEvent(
-            characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
+            characters: "x",
+            charactersIgnoringModifiers: "x",
+            keyCode: 7
+        )
         let reload = try keyEvent(characters: "r", charactersIgnoringModifiers: "r", keyCode: 15)
         let jKey = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
         let kKey = try keyEvent(characters: "k", charactersIgnoringModifiers: "k", keyCode: 40)
         let space = try keyEvent(characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
         let selectAll = try keyEvent(
-            characters: "a", charactersIgnoringModifiers: "a", modifiers: [.command], keyCode: 0)
+            characters: "a",
+            charactersIgnoringModifiers: "a",
+            modifiers: [.command],
+            keyCode: 0
+        )
         let filter = try keyEvent(characters: "/", charactersIgnoringModifiers: "/", keyCode: 44)
         let escape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53
+        )
 
         #expect(windowModel.zmxSessions.selectedSessionName == "den")
         #expect(
             KeyboardController.decision(for: down, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.moveSelection(1))))
+                == .perform(.zmxSessions(.moveSelection(1)))
+        )
         #expect(KeyboardController.handle(down, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den-vi")
         #expect(KeyboardController.handle(upArrow, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den")
         #expect(
             KeyboardController.decision(for: jKey, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.moveSelection(1))))
+                == .perform(.zmxSessions(.moveSelection(1)))
+        )
         #expect(KeyboardController.handle(jKey, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den-vi")
         #expect(KeyboardController.handle(kKey, session: session, windowModel: windowModel))
@@ -1980,51 +2390,63 @@ struct KeyboardShortcutTests {
         #expect(windowModel.zmxSessions.markedSessionNames == ["den"])
         #expect(
             KeyboardController.decision(for: selectAll, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.selectAll)))
+                == .perform(.zmxSessions(.selectAll))
+        )
         #expect(KeyboardController.handle(selectAll, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.markedSessionNames == ["den", "den-vi"])
         #expect(
             KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.clearSelection)))
+                == .perform(.zmxSessions(.clearSelection))
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.markedSessionNames.isEmpty)
         #expect(
             KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.openSelected)))
+                == .perform(.zmxSessions(.openSelected))
+        )
         #expect(
             KeyboardController.decision(for: filter, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.enterFilter)))
+                == .perform(.zmxSessions(.enterFilter))
+        )
         #expect(KeyboardController.handle(filter, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.isFilterInputActive)
         #expect(
             KeyboardController.decision(for: selectAll, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.selectAll)))
+                == .perform(.zmxSessions(.selectAll))
+        )
         #expect(
             KeyboardController.decision(for: deleteKey, session: session, windowModel: windowModel)
-                == .forward(.filterTextInput))
+                == .forward(.filterTextInput)
+        )
         #expect(
             KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.openSelected)))
+                == .perform(.zmxSessions(.openSelected))
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
         #expect(!windowModel.zmxSessions.isFilterInputActive)
         #expect(windowModel.zmxSessions.query.isEmpty)
         #expect(
             KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.hide)))
+                == .perform(.zmxSessions(.hide))
+        )
         #expect(
             KeyboardController.decision(for: delete, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.deleteSelected)))
+                == .perform(.zmxSessions(.deleteSelected))
+        )
         #expect(
             KeyboardController.decision(for: deleteKey, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.deleteSelected)))
+                == .perform(.zmxSessions(.deleteSelected))
+        )
         #expect(
             KeyboardController.decision(for: reload, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.refresh)))
+                == .perform(.zmxSessions(.refresh))
+        )
         #expect(KeyboardController.handle(delete, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.pendingDeletion == ["den"])
         #expect(
             KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
-                == .forward(.temporaryTextInput))
+                == .forward(.temporaryTextInput)
+        )
     }
 
     @Test func denModeGPrefixPreservesEssentialKeyCase() throws {
@@ -2039,19 +2461,31 @@ struct KeyboardShortcutTests {
         windowModel.isDenMode = true
 
         let prefix = try keyEvent(
-            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+            characters: "g",
+            charactersIgnoringModifiers: "g",
+            keyCode: 5
+        )
         let lowercaseKey = try keyEvent(
-            characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+            characters: "c",
+            charactersIgnoringModifiers: "c",
+            keyCode: 8
+        )
         let uppercaseKey = try keyEvent(
-            characters: "C", charactersIgnoringModifiers: "c", modifiers: [.shift], keyCode: 8)
+            characters: "C",
+            charactersIgnoringModifiers: "c",
+            modifiers: [.shift],
+            keyCode: 8
+        )
 
         #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
         #expect(
             KeyboardController.decision(for: lowercaseKey, session: session, windowModel: windowModel)
-                == .perform(.essentials(.launch(lowercase.id))))
+                == .perform(.essentials(.launch(lowercase.id)))
+        )
         #expect(
             KeyboardController.decision(for: uppercaseKey, session: session, windowModel: windowModel)
-                == .perform(.essentials(.launch(uppercase.id))))
+                == .perform(.essentials(.launch(uppercase.id)))
+        )
         #expect(KeyboardController.handle(uppercaseKey, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedBoard?.currentSheetURL == URL(string: "https://example.com/upper"))
     }
@@ -2066,13 +2500,20 @@ struct KeyboardShortcutTests {
         #expect(
             session.configuration.preferences.setEssentials([
                 Essential(name: "Terminal", key: "t", input: ":terminal \(directory)")
-            ]))
+            ])
+        )
         windowModel.isDenMode = true
 
         let prefix = try keyEvent(
-            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+            characters: "g",
+            charactersIgnoringModifiers: "g",
+            keyCode: 5
+        )
         let key = try keyEvent(
-            characters: "t", charactersIgnoringModifiers: "t", keyCode: 17)
+            characters: "t",
+            charactersIgnoringModifiers: "t",
+            keyCode: 17
+        )
 
         #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
         #expect(KeyboardController.handle(key, session: session, windowModel: windowModel))
@@ -2090,14 +2531,24 @@ struct KeyboardShortcutTests {
         #expect(
             session.configuration.preferences.setEssentials([
                 Essential(name: "Terminal", key: "t", input: ":terminal")
-            ]))
+            ])
+        )
         windowModel.isDenMode = true
         let commandT = try keyEvent(
-            characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17)
+            characters: "t",
+            charactersIgnoringModifiers: "t",
+            modifiers: [.command],
+            keyCode: 17
+        )
 
         #expect(
             !KeyboardController.handle(
-                commandT, session: session, windowModel: windowModel, preferences: preferences))
+                commandT,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.isDenMode)
     }
@@ -2110,11 +2561,16 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         windowModel.isDenMode = true
         let unmapped = try keyEvent(
-            characters: "\\", charactersIgnoringModifiers: "\\", modifiers: [], keyCode: 42)
+            characters: "\\",
+            charactersIgnoringModifiers: "\\",
+            modifiers: [],
+            keyCode: 42
+        )
 
         #expect(
             KeyboardController.decision(for: unmapped, session: session, windowModel: windowModel)
-                == .consume(.denModeUnmapped))
+                == .consume(.denModeUnmapped)
+        )
     }
 
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {
@@ -2129,7 +2585,8 @@ struct KeyboardShortcutTests {
             characters: "R",
             charactersIgnoringModifiers: "r",
             modifiers: [.command, .shift],
-            keyCode: 15)
+            keyCode: 15
+        )
 
         #expect(KeyboardController.handle(reload, session: session, windowModel: windowModel))
         #expect(Set(session.resources.webRuntimes.keys) == Set([first.id]))
@@ -2143,17 +2600,24 @@ struct KeyboardShortcutTests {
         let firstDesk = DeskState(
             label: "First Desk",
             boards: [first, second],
-            focusedBoardID: first.id)
+            focusedBoardID: first.id
+        )
         let secondDesk = DeskState(
             label: "Second Desk",
             boards: [other],
-            focusedBoardID: other.id)
+            focusedBoardID: other.id
+        )
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
                     DenState(
                         desks: [firstDesk, secondDesk],
-                        focusedDeskID: firstDesk.id))), configuration: makeTestBoardRuntimeConfiguration())
+                        focusedDeskID: firstDesk.id
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -2162,7 +2626,8 @@ struct KeyboardShortcutTests {
             characters: "R",
             charactersIgnoringModifiers: "r",
             modifiers: [.command, .option, .shift],
-            keyCode: 15)
+            keyCode: 15
+        )
 
         #expect(KeyboardController.handle(reload, session: session, windowModel: windowModel))
         #expect(Set(session.resources.webRuntimes.keys) == Set([first.id, second.id]))
@@ -2190,7 +2655,8 @@ struct KeyboardShortcutTests {
             label: "First",
             width: 520,
             currentSheetURL: currentSheetURL,
-            firstSheetURL: firstSheetURL)
+            firstSheetURL: firstSheetURL
+        )
         let session = try makeSession(boards: [source])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
@@ -2201,7 +2667,8 @@ struct KeyboardShortcutTests {
             characters: "\r",
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
-            keyCode: 36)
+            keyCode: 36
+        )
 
         #expect(KeyboardController.handle(shiftReturn, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedDesk?.boards.count == 2)
@@ -2214,7 +2681,8 @@ struct KeyboardShortcutTests {
             label: "Legacy",
             width: 520,
             currentSheetURL: URL(string: "https://example.com/current"),
-            firstSheetURL: nil)
+            firstSheetURL: nil
+        )
         source.firstSheetURL = nil
         let session = try makeSession(boards: [source])
         let composition = DenWindowComposition(session: session)
@@ -2226,7 +2694,8 @@ struct KeyboardShortcutTests {
             characters: "\r",
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
-            keyCode: 36)
+            keyCode: 36
+        )
 
         #expect(KeyboardController.handle(shiftReturn, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedDesk?.boards.count == 1)
@@ -2241,8 +2710,10 @@ struct KeyboardShortcutTests {
         let desk = DeskState(label: "Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: sheetNavigation))
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: sheetNavigation)
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -2253,7 +2724,8 @@ struct KeyboardShortcutTests {
             characters: "t",
             charactersIgnoringModifiers: "t",
             isARepeat: true,
-            keyCode: 17)
+            keyCode: 17
+        )
         #expect(session.navigation.focusedBoard?.sheetNavigationPaused == false)
         #expect(KeyboardController.handle(toggle, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedBoard?.sheetNavigationPaused == true)
@@ -2275,35 +2747,72 @@ struct KeyboardShortcutTests {
 
         let zen = try keyEvent(characters: "z", charactersIgnoringModifiers: "z", keyCode: 6)
         #expect(
-            KeyboardController.handle(zen, session: session, windowModel: windowModel, preferences: preferences))
+            KeyboardController.handle(zen, session: session, windowModel: windowModel, preferences: preferences)
+        )
         #expect(windowModel.isZenViewPresented)
         let repeatedZen = try keyEvent(
-            characters: "z", charactersIgnoringModifiers: "z", isARepeat: true, keyCode: 6)
+            characters: "z",
+            charactersIgnoringModifiers: "z",
+            isARepeat: true,
+            keyCode: 6
+        )
         #expect(
             KeyboardController.handle(
-                repeatedZen, session: session, windowModel: windowModel, preferences: preferences))
+                repeatedZen,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.isZenViewPresented)
 
         let question = try keyEvent(
-            characters: "?", charactersIgnoringModifiers: "/", modifiers: [.shift], keyCode: 44)
+            characters: "?",
+            charactersIgnoringModifiers: "/",
+            modifiers: [.shift],
+            keyCode: 44
+        )
         #expect(
             KeyboardController.handle(
-                question, session: session, windowModel: windowModel, preferences: preferences))
+                question,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.isKeyboardShortcutsPresented)
         let movement = try keyEvent(characters: "h", charactersIgnoringModifiers: "h", keyCode: 4)
         #expect(
             !KeyboardController.handle(
-                movement, session: session, windowModel: windowModel, preferences: preferences))
+                movement,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.isKeyboardShortcutsPresented)
         #expect(
             !KeyboardController.handle(
-                question, session: session, windowModel: windowModel, preferences: preferences))
+                question,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(windowModel.isKeyboardShortcutsPresented)
         let escape = try keyEvent(
-            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53
+        )
         #expect(
             KeyboardController.handle(
-                escape, session: session, windowModel: windowModel, preferences: preferences))
+                escape,
+                session: session,
+                windowModel: windowModel,
+                preferences: preferences
+            )
+        )
         #expect(!windowModel.isKeyboardShortcutsPresented)
 
         let space = try keyEvent(characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
@@ -2322,9 +2831,17 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         windowModel.isDenMode = true
         let first = try keyEvent(
-            characters: "{", charactersIgnoringModifiers: "{", modifiers: [.shift], keyCode: 33)
+            characters: "{",
+            charactersIgnoringModifiers: "{",
+            modifiers: [.shift],
+            keyCode: 33
+        )
         let latest = try keyEvent(
-            characters: "}", charactersIgnoringModifiers: "}", modifiers: [.shift], keyCode: 30)
+            characters: "}",
+            charactersIgnoringModifiers: "}",
+            modifiers: [.shift],
+            keyCode: 30
+        )
 
         #expect(KeyboardController.handle(first, session: session, windowModel: windowModel))
         #expect(KeyboardController.handle(latest, session: session, windowModel: windowModel))
@@ -2352,7 +2869,11 @@ struct KeyboardShortcutTests {
 
     @Test func denModeShiftPOpensDeskReplacement() throws {
         let replace = try keyEvent(
-            characters: "P", charactersIgnoringModifiers: "p", modifiers: [.shift], keyCode: 35)
+            characters: "P",
+            charactersIgnoringModifiers: "p",
+            modifiers: [.shift],
+            keyCode: 35
+        )
         let session = try makeSession(boards: [])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
@@ -2382,7 +2903,11 @@ struct KeyboardShortcutTests {
 
     @Test func presetConfirmationsSuspendBoardRemovalShortcuts() throws {
         let commandW = try keyEvent(
-            characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
+            characters: "w",
+            charactersIgnoringModifiers: "w",
+            modifiers: [.command],
+            keyCode: 13
+        )
         let session = try makeSession(boards: [board("First")])
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
@@ -2414,7 +2939,11 @@ struct KeyboardShortcutTests {
         #expect(windowModel.isFullscreenActive)
 
         let commandW = try keyEvent(
-            characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
+            characters: "w",
+            charactersIgnoringModifiers: "w",
+            modifiers: [.command],
+            keyCode: 13
+        )
         #expect(!KeyboardController.handle(commandW, session: session, windowModel: windowModel))
     }
 
@@ -2430,11 +2959,13 @@ struct KeyboardShortcutTests {
         let keep = try keyEvent(
             characters: "a",
             charactersIgnoringModifiers: "a",
-            keyCode: 0)
+            keyCode: 0
+        )
 
         #expect(
             KeyboardController.decision(for: keep, session: session, windowModel: windowModel)
-                == .perform(.board(.moveBoardToDrawer)))
+                == .perform(.board(.moveBoardToDrawer))
+        )
         #expect(KeyboardController.handle(keep, session: session, windowModel: windowModel))
         #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
         #expect(windowModel.isDenMode)
@@ -2458,14 +2989,21 @@ struct KeyboardShortcutTests {
         return ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: sessionDesks, focusedDeskID: sessionDesks.first?.id ?? DeskID()))),
+                    DenState(desks: sessionDesks, focusedDeskID: sessionDesks.first?.id ?? DeskID())
+                )
+            ),
             configuration: makeTestBoardRuntimeConfiguration(
                 websiteDataStore: .nonPersistent(),
                 sheetNavigation: SheetNavigationManager(
                     defaults: defaults,
                     pasteboard: pasteboard,
-                    scriptSource: ""), preferences: AppPreferences(defaults: defaults),
-                terminalCommandRunner: terminalCommandRunner), pasteboard: pasteboard)
+                    scriptSource: ""
+                ),
+                preferences: AppPreferences(defaults: defaults),
+                terminalCommandRunner: terminalCommandRunner
+            ),
+            pasteboard: pasteboard
+        )
     }
 
     private func board(_ label: String, url: String = "https://example.com/") -> BoardState {

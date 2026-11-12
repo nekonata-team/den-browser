@@ -20,7 +20,8 @@ struct NativeDrawerTests {
         let anchor = board("Anchor")
         let destination = desk("Destination", boards: [anchor], focusedBoardID: anchor.id)
         let resources = DenProfileResources(
-            state: DenState(desks: [source, destination], focusedDeskID: source.id, drawerItems: [item]))
+            state: DenState(desks: [source, destination], focusedDeskID: source.id, drawerItems: [item])
+        )
         let session = ProfileWindowSession(resources: resources, configuration: makeTestBoardRuntimeConfiguration())
         let composition = DenWindowComposition(session: session)
         composition.connect()
@@ -51,10 +52,13 @@ struct NativeDrawerTests {
         let source = desk("Source")
         let unavailable = desk("Unavailable")
         let resources = DenProfileResources(
-            state: DenState(desks: [source, unavailable], focusedDeskID: source.id, drawerItems: [item]))
+            state: DenState(desks: [source, unavailable], focusedDeskID: source.id, drawerItems: [item])
+        )
         let session = ProfileWindowSession(
-            resources: resources, configuration: makeTestBoardRuntimeConfiguration(),
-            canPresentDesk: { $0 != unavailable.id })
+            resources: resources,
+            configuration: makeTestBoardRuntimeConfiguration(),
+            canPresentDesk: { $0 != unavailable.id }
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
@@ -82,8 +86,13 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenState(
-                    desks: [source] + intermediate + [destination], focusedDeskID: source.id, drawerItems: [item])),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    desks: [source] + intermediate + [destination],
+                    focusedDeskID: source.id,
+                    drawerItems: [item]
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
@@ -109,7 +118,8 @@ struct NativeDrawerTests {
         expired.touchedAt = visible.touchedAt
         let source = desk("Desk")
         let resources = DenProfileResources(
-            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [visible, expired]))
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [visible, expired])
+        )
         let configuration = makeTestBoardRuntimeConfiguration()
         let session = ProfileWindowSession(resources: resources, configuration: configuration)
         let other = ProfileWindowSession(resources: resources, configuration: configuration)
@@ -143,8 +153,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [expired])),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [expired])
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
@@ -168,8 +180,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [expired])),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [expired])
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
@@ -190,8 +204,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         let itemChanged = Mutex(false)
@@ -225,7 +242,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [first, last]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [first, last]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -250,7 +272,10 @@ struct NativeDrawerTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -278,9 +303,13 @@ struct NativeDrawerTests {
         preferences.setExternalLinkDestination(.focusedBoard)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
             configuration: makeTestBoardRuntimeConfiguration(
-                sheetNavigation: makeTestSheetNavigationManager(), preferences: preferences))
+                sheetNavigation: makeTestSheetNavigationManager(),
+                preferences: preferences
+            )
+        )
         let url = try #require(URL(string: "https://external.example/path"))
 
         session.input.handleExternalURL(url)
@@ -296,8 +325,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let url = try #require(URL(string: "https://example.com/"))
 
         session.drawer.keepInDrawer(url)
@@ -318,7 +349,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [currentItem]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [currentItem]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -440,14 +476,18 @@ struct NativeDrawerTests {
         let items = [
             DrawerItem(
                 url: try #require(URL(string: "https://example.com/reference")),
-                title: "Swift Guide"),
+                title: "Swift Guide"
+            ),
             DrawerItem(url: try #require(URL(string: "https://news.example.org/releases"))),
         ]
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: items)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -471,8 +511,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -493,8 +536,10 @@ struct NativeDrawerTests {
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -515,8 +560,10 @@ struct NativeDrawerTests {
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -529,7 +576,8 @@ struct NativeDrawerTests {
 
         #expect(session.resources.state.drawerItems.isEmpty)
         #expect(
-            session.navigation.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
+            session.navigation.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url]
+        )
         #expect(session.navigation.focusedBoard?.currentSheetURL == url)
         #expect(session.navigation.focusedBoard?.width == existingBoard.width)
         #expect(session.resources.recentItems == [.url(url)])
@@ -544,15 +592,22 @@ struct NativeDrawerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appending(path: "peek.html")
         try "<html><head><title>Live Peek</title></head><body></body></html>".write(
-            to: url, atomically: true, encoding: .utf8)
+            to: url,
+            atomically: true,
+            encoding: .utf8
+        )
         let item = DrawerItem(url: url)
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
             configuration: makeTestBoardRuntimeConfiguration(
-                sheetNavigation: makeTestSheetNavigationManager(scriptSource: "")))
+                sheetNavigation: makeTestSheetNavigationManager(scriptSource: "")
+            )
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer {
@@ -566,7 +621,8 @@ struct NativeDrawerTests {
         }
         #expect(peek.webView.title == "Live Peek")
         let documentToken = try #require(
-            try await peek.webView.evaluateJavaScript("window.documentToken = crypto.randomUUID()") as? String)
+            try await peek.webView.evaluateJavaScript("window.documentToken = crypto.randomUUID()") as? String
+        )
 
         // Act
         let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))
@@ -592,8 +648,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         defer { session.runtimes.releaseRuntimes() }
         let peek = session.drawer.drawerRuntime(for: item)
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
@@ -605,7 +664,10 @@ struct NativeDrawerTests {
         let download = NSObject()
         let key = ObjectIdentifier(download)
         let downloadID = peek.downloadHandler.registerPendingDownload(
-            for: key, destinationURL: destinationURL, temporaryURL: temporaryURL)
+            for: key,
+            destinationURL: destinationURL,
+            temporaryURL: temporaryURL
+        )
         let nextURL = try #require(URL(string: "https://peek.example/next"))
 
         // Act
@@ -634,8 +696,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         defer { session.runtimes.releaseRuntimes() }
         let peek = session.drawer.drawerRuntime(for: item)
         let destination = try #require(URL(string: "https://board.example/"))
@@ -647,7 +712,8 @@ struct NativeDrawerTests {
             navigationType: .linkActivated,
             modifierFlags: [.command, .shift],
             button: .primary,
-            opensNewContext: false)
+            opensNewContext: false
+        )
         let webView = try #require(peek.webView as? RuntimeWKWebView)
         let focusAllowedAfterLeaving = webView.isFocusAllowed()
         session.boardNavigation.focusBoard(boardID)
@@ -672,8 +738,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         defer { session.runtimes.releaseRuntimes() }
         let peek = session.drawer.drawerRuntime(for: item)
 
@@ -828,8 +897,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let url = try #require(URL(string: "https://drawer.example/item"))
 
         let itemID = session.drawer.keepInDrawer(url, title: "Test Item")
@@ -851,8 +922,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -881,19 +954,24 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])),
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                ),
                 onSave: { state in
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.drawer.discardDrawerItem(item.id)
 
         #expect(session.resources.recentlyDiscardedDrawerItems.map(\.id) == [item.id])
         let restoredSession = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(try #require(savedState))),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(restoredSession.resources.recentlyDiscardedDrawerItems.isEmpty)
 
         session.drawer.restoreRecentlyDiscardedDrawerItem()
@@ -909,8 +987,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: items)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         for item in items.prefix(11) {
             session.drawer.discardDrawerItem(item.id)
@@ -920,7 +1001,8 @@ struct NativeDrawerTests {
         #expect(session.resources.recentlyDiscardedDrawerItems.count == DrawerItems.maximumDiscardHistoryCount)
         #expect(
             session.resources.recentlyDiscardedDrawerItems.map(\.id)
-                == Array(items[1...10].reversed()).map(\.id))
+                == Array(items[1...10].reversed()).map(\.id)
+        )
 
         for _ in 0..<DrawerItems.maximumDiscardHistoryCount {
             session.drawer.restoreRecentlyDiscardedDrawerItem()
@@ -934,8 +1016,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -962,7 +1046,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [first, second, third]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [first, second, third]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -988,7 +1077,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [first, second]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [first, second]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1013,7 +1107,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [first, second]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [first, second]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1032,8 +1131,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1080,7 +1181,10 @@ struct NativeDrawerTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1120,8 +1224,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1132,12 +1238,20 @@ struct NativeDrawerTests {
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.downArrow, keyCode: 125), session: session, windowModel: windowModel))
+                try keyEvent(.downArrow, keyCode: 125),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(windowModel.drawer.selectedItemID == session.resources.state.drawerItems[1].id)
         #expect(windowModel.drawer.expandedItemID == session.resources.state.drawerItems[1].id)
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(windowModel.drawer.expandedItemID == nil)
         #expect(
             KeyboardController.handle(try keyEvent(.tab, keyCode: 48), session: session, windowModel: windowModel)
@@ -1159,7 +1273,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [item]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [item]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1180,17 +1299,24 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let first = DrawerItem(
             url: try #require(URL(string: "https://first.example/")),
-            title: "First")
+            title: "First"
+        )
         let second = DrawerItem(
             url: try #require(URL(string: "https://second.example/")),
-            title: "Second")
+            title: "Second"
+        )
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [first, second]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [first, second]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1199,20 +1325,29 @@ struct NativeDrawerTests {
         windowModel.toggleDrawer()
 
         #expect(
-            KeyboardController.handle(try keyEvent("/", keyCode: 44), session: session, windowModel: windowModel))
+            KeyboardController.handle(try keyEvent("/", keyCode: 44), session: session, windowModel: windowModel)
+        )
         #expect(windowModel.drawer.filterPhase == .filtering)
 
         windowModel.drawer.setQuery("second")
         #expect(windowModel.drawer.selectedItemID == second.id)
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(windowModel.drawer.filterPhase == .selecting)
         #expect(windowModel.drawer.expandedItemID == nil)
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(windowModel.drawer.filterPhase == .inactive)
         #expect(windowModel.drawer.expandedItemID == second.id)
         #expect(windowModel.drawer.query.isEmpty)
@@ -1220,7 +1355,11 @@ struct NativeDrawerTests {
 
         #expect(
             KeyboardController.handle(
-                try keyEvent("\u{1B}", keyCode: 53), session: session, windowModel: windowModel))
+                try keyEvent("\u{1B}", keyCode: 53),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == second.id)
     }
@@ -1234,7 +1373,12 @@ struct NativeDrawerTests {
                     DenState(
                         desks: [source],
                         focusedDeskID: source.id,
-                        drawerItems: [item]))), configuration: makeTestBoardRuntimeConfiguration())
+                        drawerItems: [item]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1260,8 +1404,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1277,11 +1423,13 @@ struct NativeDrawerTests {
         #expect(windowModel.isDrawerOpen)
         #expect(windowModel.drawer.selectedItemID == itemIDs[2])
         #expect(
-            KeyboardController.handle(try keyEvent("x", keyCode: 7), session: session, windowModel: windowModel))
+            KeyboardController.handle(try keyEvent("x", keyCode: 7), session: session, windowModel: windowModel)
+        )
         #expect(session.resources.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[1], itemIDs[3]])
         #expect(windowModel.drawer.selectedItemID == itemIDs[1])
         #expect(
-            KeyboardController.handle(try keyEvent("d", keyCode: 2), session: session, windowModel: windowModel))
+            KeyboardController.handle(try keyEvent("d", keyCode: 2), session: session, windowModel: windowModel)
+        )
         #expect(session.resources.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[3]])
         #expect(windowModel.drawer.selectedItemID == itemIDs[3])
         #expect(windowModel.isDrawerOpen)
@@ -1293,8 +1441,11 @@ struct NativeDrawerTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item])
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         let composition = DenWindowComposition(session: session)
 
@@ -1308,7 +1459,11 @@ struct NativeDrawerTests {
         windowModel.isDenMode = true
 
         AppActionHandler.perform(
-            .drawer(.restoreDiscardedItem), session: session, windowModel: windowModel, openSettings: {})
+            .drawer(.restoreDiscardedItem),
+            session: session,
+            windowModel: windowModel,
+            openSettings: {}
+        )
         #expect(session.resources.state.drawerItems.map(\.id) == [item.id])
         #expect(session.resources.recentlyDiscardedDrawerItems.isEmpty)
         #expect(windowModel.drawer.selectedItemID == item.id)
@@ -1320,8 +1475,10 @@ struct NativeDrawerTests {
         let source = desk("Desk")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1337,13 +1494,15 @@ struct NativeDrawerTests {
             let event = try keyEvent(key, keyCode: UInt16(keyCode))
             #expect(
                 KeyboardController.decision(for: event, session: session, windowModel: windowModel)
-                    == .consume(.exclusiveContext))
+                    == .consume(.exclusiveContext)
+            )
             #expect(KeyboardController.handle(event, session: session, windowModel: windowModel))
         }
         let tab = try keyEvent(.tab, keyCode: 48)
         #expect(
             KeyboardController.decision(for: tab, session: session, windowModel: windowModel)
-                == .consume(.exclusiveContext))
+                == .consume(.exclusiveContext)
+        )
         #expect(KeyboardController.handle(tab, session: session, windowModel: windowModel))
         #expect(session.resources.state.drawerItems.count == 2)
         #expect(windowModel.isDrawerOpen)
@@ -1353,7 +1512,8 @@ struct NativeDrawerTests {
         BoardState(
             label: label,
             width: width,
-            currentSheetURL: url.flatMap(URL.init(string:)))
+            currentSheetURL: url.flatMap(URL.init(string:))
+        )
     }
 
     private func desk(
@@ -1378,7 +1538,9 @@ struct NativeDrawerTests {
             state: DenState(
                 desks: desks,
                 focusedDeskID: desks[0].id,
-                drawerItems: items))
+                drawerItems: items
+            )
+        )
         let websiteDataStore = WKWebsiteDataStore.nonPersistent()
         let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
@@ -1386,9 +1548,15 @@ struct NativeDrawerTests {
             ProfileWindowSession(
                 resources: storage,
                 configuration: makeTestBoardRuntimeConfiguration(
-                    websiteDataStore: websiteDataStore, sheetNavigation: sheetNavigation, preferences: preferences),
-                presentedDeskID: deskID, canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true },
-                onWillResetDen: {})
+                    websiteDataStore: websiteDataStore,
+                    sheetNavigation: sheetNavigation,
+                    preferences: preferences
+                ),
+                presentedDeskID: deskID,
+                canPresentDesk: { _ in true },
+                onDeskPresentationRequest: { _ in true },
+                onWillResetDen: {}
+            )
         }
         return try body(makeSession(desks[0].id), makeSession(desks[1].id))
     }

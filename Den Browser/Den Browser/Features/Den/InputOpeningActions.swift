@@ -22,13 +22,16 @@ final class InputOpeningActions {
     }
 
     func openBoardFromClipboard(
-        pasteboard: NSPasteboard? = nil, preferredWidth: Double? = nil, inDrawer: Bool = false
+        pasteboard: NSPasteboard? = nil,
+        preferredWidth: Double? = nil,
+        inDrawer: Bool = false
     ) {
         if case .rejected(let message) = storage.inputOpening.openClipboard(
             (pasteboard ?? self.pasteboard).string(forType: .string),
             context: boardOpening.inputOpeningContext(preferredWidth: preferredWidth, afterBoardID: focusedBoard?.id),
-            inDrawer: inDrawer, notify: inputOpeningNotifications())
-        {
+            inDrawer: inDrawer,
+            notify: inputOpeningNotifications()
+        ) {
             if let message { context.feedback.publish(message, severity: .warning) }
         }
     }
@@ -50,8 +53,11 @@ final class InputOpeningActions {
 
     func openInDrawer(input: String) -> String? {
         if case .rejected(let message) = storage.inputOpening.open(
-            input, context: boardOpening.inputOpeningContext(), inDrawer: true, notify: inputOpeningNotifications())
-        {
+            input,
+            context: boardOpening.inputOpeningContext(),
+            inDrawer: true,
+            notify: inputOpeningNotifications()
+        ) {
             return message
         }
         return nil
@@ -60,8 +66,11 @@ final class InputOpeningActions {
     func handleExternalURL(_ url: URL) {
         let destination = preferences.externalLinkDestination
         let accepted = storage.inputOpening.openExternalURL(
-            url, destination: destination, context: boardOpening.inputOpeningContext(afterBoardID: focusedBoard?.id),
-            notify: inputOpeningNotifications())
+            url,
+            destination: destination,
+            context: boardOpening.inputOpeningContext(afterBoardID: focusedBoard?.id),
+            notify: inputOpeningNotifications()
+        )
         if !accepted, destination == .drawerPeek {
             context.feedback.publish("Only HTTP, HTTPS, and local file URLs are supported.", severity: .warning)
         }

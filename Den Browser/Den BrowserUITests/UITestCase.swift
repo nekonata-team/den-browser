@@ -183,16 +183,23 @@ class UITestCase: XCTestCase, BDD {
         essentialURL: URL? = nil
     ) -> XCUIApplication {
         let app = prepareApp(
-            fixture: fixture, boardCount: boardCount, terminalBoard: terminalBoard,
-            standardMotion: standardMotion, sheetNavigationEnabled: sheetNavigationEnabled,
-            multipleDrawerItems: multipleDrawerItems, drawerSheetURL: drawerSheetURL, recentURL: recentURL,
-            essentialURL: essentialURL)
+            fixture: fixture,
+            boardCount: boardCount,
+            terminalBoard: terminalBoard,
+            standardMotion: standardMotion,
+            sheetNavigationEnabled: sheetNavigationEnabled,
+            multipleDrawerItems: multipleDrawerItems,
+            drawerSheetURL: drawerSheetURL,
+            recentURL: recentURL,
+            essentialURL: essentialURL
+        )
         app.launch()
         // Each fixture has one Profile; invoke its menu action without navigating the menu.
         app.typeKey("u", modifierFlags: [.command, .option, .shift])
 
         XCTAssertTrue(
-            app.children(matching: .window).firstMatch.waitUntilExists(timeout: 10), "Application window should appear"
+            app.children(matching: .window).firstMatch.waitUntilExists(timeout: 10),
+            "Application window should appear"
         )
         XCTAssertTrue(board(fixture.initialBoard, in: app).waitUntilExists(timeout: 20))
         if fixture == .interactionBasics {
@@ -216,8 +223,10 @@ class UITestCase: XCTestCase, BDD {
     func assertDenMode(in app: XCUIApplication) {
         XCTAssertTrue(
             app.children(matching: .window).matching(identifier: "UI Testing · DEN MODE").firstMatch.waitUntilExists(
-                timeout: 5),
-            "Den should enter Den Mode")
+                timeout: 5
+            ),
+            "Den should enter Den Mode"
+        )
     }
 
     @MainActor
@@ -264,19 +273,28 @@ class UITestCase: XCTestCase, BDD {
         if condition() { return }
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate { _, _ in condition() },
-            object: nil)
+            object: nil
+        )
         XCTAssertEqual(
-            XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message(), file: file, line: line)
+            XCTWaiter.wait(for: [expectation], timeout: timeout),
+            .completed,
+            message(),
+            file: file,
+            line: line
+        )
     }
 
     @MainActor
     func assertValue(
-        _ expected: String, in element: XCUIElement,
-        file: StaticString = #filePath, line: UInt = #line
+        _ expected: String,
+        in element: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
     ) {
         assertEventually(
             "Expected \(element.identifier) value \(expected.debugDescription), got \(String(describing: element.value))",
-            file: file, line: line
+            file: file,
+            line: line
         ) {
             element.value as? String == expected
         }

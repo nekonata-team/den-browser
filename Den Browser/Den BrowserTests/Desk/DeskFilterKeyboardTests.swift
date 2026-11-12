@@ -18,8 +18,10 @@ struct DeskFilterKeyboardTests {
         let source = desk("Desk", boards: [alpha, bravo, charlie], focusedBoardID: alpha.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -27,7 +29,8 @@ struct DeskFilterKeyboardTests {
         windowModel.isDenMode = true
 
         #expect(
-            KeyboardController.handle(try keyEvent("/", keyCode: 44), session: session, windowModel: windowModel))
+            KeyboardController.handle(try keyEvent("/", keyCode: 44), session: session, windowModel: windowModel)
+        )
         #expect(windowModel.deskFilter.isPresented)
         #expect(windowModel.deskFilter.isInputActive)
         #expect(windowModel.deskFilter.phase == .filtering)
@@ -37,20 +40,32 @@ struct DeskFilterKeyboardTests {
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(!windowModel.deskFilter.isInputActive)
         #expect(windowModel.deskFilter.phase == .selecting)
         #expect(session.navigation.focusedBoard?.id == alpha.id)
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.rightArrow, keyCode: 124), session: session, windowModel: windowModel))
+                try keyEvent(.rightArrow, keyCode: 124),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(windowModel.deskFilter.selectionBoardID == bravo.id)
         #expect(session.navigation.focusedBoard?.id == alpha.id)
 
         #expect(
             KeyboardController.handle(
-                try keyEvent(.carriageReturn, keyCode: 36), session: session, windowModel: windowModel))
+                try keyEvent(.carriageReturn, keyCode: 36),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(session.navigation.focusedBoard?.id == bravo.id)
         #expect(!windowModel.deskFilter.isPresented)
         #expect(windowModel.deskFilter.phase == .inactive)
@@ -65,8 +80,10 @@ struct DeskFilterKeyboardTests {
         let source = desk("Desk", boards: [alpha, bravo], focusedBoardID: alpha.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -87,8 +104,10 @@ struct DeskFilterKeyboardTests {
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -100,7 +119,8 @@ struct DeskFilterKeyboardTests {
             "A",
             keyCode: 0,
             modifiers: [.shift],
-            charactersIgnoringModifiers: "a")
+            charactersIgnoringModifiers: "a"
+        )
 
         #expect(!KeyboardController.handle(uppercase, session: session, windowModel: windowModel))
         #expect(windowModel.deskFilter.isInputActive)
@@ -111,8 +131,10 @@ struct DeskFilterKeyboardTests {
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -124,12 +146,14 @@ struct DeskFilterKeyboardTests {
             "\r",
             keyCode: 36,
             modifiers: [.shift],
-            charactersIgnoringModifiers: "\r")
+            charactersIgnoringModifiers: "\r"
+        )
         let modifiedEscape = try keyEvent(
             "\u{1B}",
             keyCode: 53,
             modifiers: [.command],
-            charactersIgnoringModifiers: "\u{1B}")
+            charactersIgnoringModifiers: "\u{1B}"
+        )
 
         #expect(!KeyboardController.handle(modifiedReturn, session: session, windowModel: windowModel))
         #expect(!KeyboardController.handle(modifiedEscape, session: session, windowModel: windowModel))
@@ -142,8 +166,10 @@ struct DeskFilterKeyboardTests {
         let source = desk("Desk", boards: [alpha, bravo], focusedBoardID: alpha.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -154,12 +180,17 @@ struct DeskFilterKeyboardTests {
         windowModel.deskFilter.confirmQuery()
 
         #expect(
-            KeyboardController.handle(try keyEvent("x", keyCode: 7), session: session, windowModel: windowModel))
+            KeyboardController.handle(try keyEvent("x", keyCode: 7), session: session, windowModel: windowModel)
+        )
         #expect(session.navigation.focusedDesk?.boards.map(\.id) == [alpha.id, bravo.id])
 
         #expect(
             KeyboardController.handle(
-                try keyEvent("\u{1B}", keyCode: 53), session: session, windowModel: windowModel))
+                try keyEvent("\u{1B}", keyCode: 53),
+                session: session,
+                windowModel: windowModel
+            )
+        )
         #expect(!windowModel.deskFilter.isPresented)
         #expect(windowModel.deskFilter.query.isEmpty)
         #expect(session.navigation.focusedBoard?.id == alpha.id)
@@ -171,8 +202,10 @@ struct DeskFilterKeyboardTests {
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -184,21 +217,24 @@ struct DeskFilterKeyboardTests {
             contentRect: NSRect(x: 0, y: 0, width: 320, height: 200),
             styleMask: .borderless,
             backing: .buffered,
-            defer: false)
+            defer: false
+        )
         let textView = NSTextView(frame: window.contentView?.bounds ?? .zero)
         window.contentView?.addSubview(textView)
         #expect(window.makeFirstResponder(textView))
         textView.setMarkedText(
             "にほん",
             selectedRange: NSRange(location: 3, length: 0),
-            replacementRange: NSRange(location: NSNotFound, length: 0))
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
         #expect(textView.hasMarkedText())
         #expect(TextInputComposition.isActive(in: window))
 
         let returnEvent = try keyEvent(
             String(try #require(UnicodeScalar(NSEvent.SpecialKey.carriageReturn.rawValue))),
             keyCode: 36,
-            windowNumber: window.windowNumber)
+            windowNumber: window.windowNumber
+        )
         let escapeEvent = try keyEvent("\u{1B}", keyCode: 53, windowNumber: window.windowNumber)
 
         #expect(!KeyboardController.handle(returnEvent, session: session, windowModel: windowModel))

@@ -14,7 +14,8 @@ struct PersonalDeskPresetTests {
         let desk = DeskState(
             label: "Research",
             boards: [other, target, inspection],
-            focusedBoardID: focusInspection ? inspection.id : target.id)
+            focusedBoardID: focusInspection ? inspection.id : target.id
+        )
 
         // Act
         let preset = PersonalDeskPreset(label: "Research", desk: desk)
@@ -43,13 +44,15 @@ struct PersonalDeskPresetTests {
         let tutorial = BoardState(
             label: "Tutorial",
             width: 520,
-            tutorial: TutorialBoardState())
+            tutorial: TutorialBoardState()
+        )
         let target = BoardState(label: "Target", width: 520, currentSheetURL: nil)
         let inspection = BoardState(width: 360, targetBoardID: target.id)
         let desk = DeskState(
             label: "Research",
             boards: [tutorial, target, inspection],
-            focusedBoardID: focusTutorial ? tutorial.id : inspection.id)
+            focusedBoardID: focusTutorial ? tutorial.id : inspection.id
+        )
 
         // Act
         let preset = PersonalDeskPreset(label: "Research", desk: desk)
@@ -66,7 +69,8 @@ struct PersonalDeskPresetTests {
         let data = Data(
             #"""
             {"id":"00000000-0000-0000-0000-000000000001","label":"Old","boards":[{"label":"Target","width":520,"content":{"kind":"web","initialSheetURL":"https://example.com/"}}],"focusedBoardIndex":0}
-            """#.utf8)
+            """#.utf8
+        )
 
         // Act
         let preset = try JSONDecoder().decode(PersonalDeskPreset.self, from: data)

@@ -428,7 +428,11 @@ final class SheetNavigationManager {
 
     private func applyConfiguration(to webView: WKWebView) {
         webView.evaluateJavaScript(
-            configurationJavaScript(for: webView), in: nil, in: Self.contentWorld, completionHandler: nil)
+            configurationJavaScript(for: webView),
+            in: nil,
+            in: Self.contentWorld,
+            completionHandler: nil
+        )
     }
 
     private func ensureScriptInjected(in webView: WKWebView) {

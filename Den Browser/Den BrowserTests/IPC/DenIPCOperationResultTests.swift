@@ -144,7 +144,8 @@ struct DenIPCOperationResultTests {
             attributes: ["type=\"email\""],
             labels: ["Email"],
             capturedAt: "2026-09-26T00:00:00.000Z",
-            isConnected: true)
+            isConnected: true
+        )
         let inspection = DenInspectionReadInfo(
             boardID: "inspection-board",
             targetBoardID: "web-board",
@@ -157,9 +158,14 @@ struct DenIPCOperationResultTests {
             ancestors: [],
             events: [
                 DenInspectionEventInfo(
-                    id: "event-1", time: "2026-09-26T00:00:00.500Z", level: "log", message: "loaded")
+                    id: "event-1",
+                    time: "2026-09-26T00:00:00.500Z",
+                    level: "log",
+                    message: "loaded"
+                )
             ],
-            eventsDropped: 2)
+            eventsDropped: 2
+        )
         // Act
         let result = DenIPCOperationResult.success(.inspection(inspection))
         let data = try JSONEncoder().encode(result.publicJSON)

@@ -20,19 +20,25 @@ struct HorizontalDragGeometryTests {
                 draggedID: first,
                 orderedIDs: [first, second, third],
                 desiredCenterX: secondCenter,
-                frames: frames) == nil)
+                frames: frames
+            ) == nil
+        )
         #expect(
             HorizontalDragInsertion.targetIndex(
                 draggedID: first,
                 orderedIDs: [first, second, third],
                 desiredCenterX: secondCenter + 1,
-                frames: frames) == 1)
+                frames: frames
+            ) == 1
+        )
         #expect(
             HorizontalDragInsertion.targetIndex(
                 draggedID: third,
                 orderedIDs: [first, second, third],
                 desiredCenterX: secondCenter - 1,
-                frames: frames) == 1)
+                frames: frames
+            ) == 1
+        )
     }
 
     @Test func insertionIgnoresMissingGeometryAndUnknownID() {
@@ -41,13 +47,17 @@ struct HorizontalDragGeometryTests {
                 draggedID: first,
                 orderedIDs: [first, second, third],
                 desiredCenterX: -1,
-                frames: [:]) == nil)
+                frames: [:]
+            ) == nil
+        )
         #expect(
             HorizontalDragInsertion.targetIndex(
                 draggedID: BoardID(UUID.fixture(99)),
                 orderedIDs: [first, second, third],
                 desiredCenterX: 1_000,
-                frames: horizontalFrames) == nil)
+                frames: horizontalFrames
+            ) == nil
+        )
     }
 
     @Test func insertionSkipsOtherMembersOfDraggedGroup() throws {
@@ -62,19 +72,22 @@ struct HorizontalDragGeometryTests {
             orderedIDs: [first, second, third],
             desiredCenterX: beyondNextGroup,
             frames: frames,
-            excludingIDs: [first, second])
+            excludingIDs: [first, second]
+        )
         let sideTarget = HorizontalDragInsertion.targetIndex(
             draggedID: third,
             orderedIDs: [first, second, third],
             desiredCenterX: beforePreviousGroup,
             frames: frames,
-            excludingIDs: [second, third])
+            excludingIDs: [second, third]
+        )
         let ownMemberBoundary = HorizontalDragInsertion.targetIndex(
             draggedID: first,
             orderedIDs: [first, second],
             desiredCenterX: try #require(frames[second]).midX + 1,
             frames: frames,
-            excludingIDs: [first, second])
+            excludingIDs: [first, second]
+        )
 
         // Assert
         #expect(primaryTarget == 2)
@@ -102,17 +115,20 @@ struct HorizontalDragGeometryTests {
             draggedID: dragged,
             orderedGroups: orderedGroups,
             desiredCenterX: try #require(frames[primary]).midX + 1,
-            frames: frames)
+            frames: frames
+        )
         let beyondGroupCenter = HorizontalDragInsertion.groupedTargetIndex(
             draggedID: dragged,
             orderedGroups: orderedGroups,
             desiredCenterX: groupCenter + 1,
-            frames: frames)
+            frames: frames
+        )
         let reverseAcrossGroup = HorizontalDragInsertion.groupedTargetIndex(
             draggedID: dragged,
             orderedGroups: [[primary, side], [dragged], [last]],
             desiredCenterX: groupCenter + 1,
-            frames: frames)
+            frames: frames
+        )
 
         // Assert
         #expect(betweenMembers == nil)
@@ -126,7 +142,8 @@ struct HorizontalDragGeometryTests {
             size: CGSize(width: 300, height: 100),
             draggedID: second,
             orderedIDs: [first, second, third],
-            edge: 40)
+            edge: 40
+        )
         #expect(leading?.targetID == first)
         #expect(leading?.direction == .leading)
         #expect(leading?.distanceToEdge == 10)
@@ -137,7 +154,8 @@ struct HorizontalDragGeometryTests {
             size: CGSize(width: 300, height: 100),
             draggedID: second,
             orderedIDs: [first, second, third],
-            edge: 40)
+            edge: 40
+        )
         #expect(trailing?.targetID == third)
         #expect(trailing?.direction == .trailing)
         #expect(trailing?.distanceToEdge == 20)
@@ -150,7 +168,8 @@ struct HorizontalDragGeometryTests {
             size: CGSize(width: 300, height: 100),
             draggedID: second,
             orderedIDs: [first, second, third],
-            edge: 40)
+            edge: 40
+        )
         #expect(outside == nil)
 
         let firstAtLeadingEdge = HorizontalDragAutoScroll.decision(
@@ -158,7 +177,8 @@ struct HorizontalDragGeometryTests {
             size: CGSize(width: 300, height: 100),
             draggedID: first,
             orderedIDs: [first, second, third],
-            edge: 40)
+            edge: 40
+        )
         #expect(firstAtLeadingEdge == nil)
 
         let missingID = HorizontalDragAutoScroll.decision(
@@ -166,7 +186,8 @@ struct HorizontalDragGeometryTests {
             size: CGSize(width: 300, height: 100),
             draggedID: BoardID(UUID.fixture(99)),
             orderedIDs: [first, second, third],
-            edge: 40)
+            edge: 40
+        )
         #expect(missingID == nil)
     }
 
@@ -181,14 +202,16 @@ struct HorizontalDragGeometryTests {
             draggedID: first,
             orderedIDs: [first, second, third],
             edge: 40,
-            excludingIDs: [first, second])
+            excludingIDs: [first, second]
+        )
         let leading = HorizontalDragAutoScroll.decision(
             location: CGPoint(x: 10, y: 50),
             size: size,
             draggedID: third,
             orderedIDs: [first, second, third],
             edge: 40,
-            excludingIDs: [second, third])
+            excludingIDs: [second, third]
+        )
 
         // Assert
         #expect(leading?.targetID == first)
@@ -206,29 +229,39 @@ struct HorizontalDragGeometryTests {
         #expect(
             OverviewDragGeometry.targetDeskID(
                 at: CGPoint(x: 20, y: 40),
-                frames: [desk: CGRect(x: 0, y: 0, width: 240, height: 120)]) == desk)
+                frames: [desk: CGRect(x: 0, y: 0, width: 240, height: 120)]
+            ) == desk
+        )
         #expect(
             OverviewDragGeometry.targetIndex(
                 draggedID: first,
                 orderedIDs: [first, second],
                 locationX: 120,
-                frames: frames) == 0)
+                frames: frames
+            ) == 0
+        )
         #expect(
             OverviewDragGeometry.targetIndex(
                 draggedID: first,
                 orderedIDs: [first, second],
                 locationX: 220,
-                frames: frames) == 1)
+                frames: frames
+            ) == 1
+        )
         #expect(
             OverviewDragGeometry.targetIndex(
                 draggedID: first,
                 orderedIDs: [],
                 locationX: 0,
-                frames: [:]) == 0)
+                frames: [:]
+            ) == 0
+        )
         #expect(
             OverviewDragGeometry.targetDeskID(
                 at: CGPoint(x: 20, y: 200),
-                frames: [emptyDesk: CGRect(x: 0, y: 300, width: 240, height: 120)]) == nil)
+                frames: [emptyDesk: CGRect(x: 0, y: 300, width: 240, height: 120)]
+            ) == nil
+        )
     }
 
     private var horizontalFrames: [BoardID: CGRect] {

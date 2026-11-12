@@ -5,7 +5,8 @@ import Foundation
 struct BoardInspectionReadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "read",
-        abstract: "Read the selected element and recent page events")
+        abstract: "Read the selected element and recent page events"
+    )
 
     @OptionGroup var options: CLIOptions
 

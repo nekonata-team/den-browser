@@ -27,13 +27,21 @@ public final class DeskListModel {
     @ObservationIgnored private let replace: (String, DeskPresetSelection) -> DeskReplacementResult?
 
     public init(
-        state: DenStateStore, lifecycle: DeskLifecycle, movement: DeskMovement, updates: DeskUpdates,
-        navigation: WindowNavigationModel, isAvailable: @escaping (DeskID) -> Bool,
-        select: @escaping (DeskID) -> Void, notify: @escaping (DeskLifecycle.Notice) -> Void,
+        state: DenStateStore,
+        lifecycle: DeskLifecycle,
+        movement: DeskMovement,
+        updates: DeskUpdates,
+        navigation: WindowNavigationModel,
+        isAvailable: @escaping (DeskID) -> Bool,
+        select: @escaping (DeskID) -> Void,
+        notify: @escaping (DeskLifecycle.Notice) -> Void,
         didDuplicate: @escaping (DeskState, DeskState) -> Void,
-        requestDeletion: @escaping (DeskState) -> Void, warn: @escaping (String) -> Void,
-        finishEditing: @escaping () -> Void, copyID: @escaping (DeskID) -> Void,
-        exportLinks: @escaping (DeskID) -> Void, copyLinks: @escaping (DeskID) -> Void,
+        requestDeletion: @escaping (DeskState) -> Void,
+        warn: @escaping (String) -> Void,
+        finishEditing: @escaping () -> Void,
+        copyID: @escaping (DeskID) -> Void,
+        exportLinks: @escaping (DeskID) -> Void,
+        copyLinks: @escaping (DeskID) -> Void,
         copyURLs: @escaping (DeskID) -> Void,
         create: @escaping (String, DeskPresetSelection) -> Void,
         replace: @escaping (String, DeskPresetSelection) -> DeskReplacementResult?

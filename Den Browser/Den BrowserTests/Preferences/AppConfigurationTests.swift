@@ -56,8 +56,13 @@ struct AppConfigurationTests {
     @Test func initialProfileCanBeLoadedFromSeedFile() throws {
         let expected = PersistedProfile(
             profile: ProfileState(
-                id: ProfileID(), name: "Seed", color: .blue, webProfileStore: .default),
-            den: .sample)
+                id: ProfileID(),
+                name: "Seed",
+                color: .blue,
+                webProfileStore: .default
+            ),
+            den: .sample
+        )
         let url = FileManager.default.temporaryDirectory
             .appending(path: "DenBrowserInitialProfile-\(UUID().uuidString).json")
         try JSONEncoder().encode(expected).write(to: url)

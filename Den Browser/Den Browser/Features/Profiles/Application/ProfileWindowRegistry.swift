@@ -103,7 +103,8 @@ final class ProfileWindowRegistry {
         Set(
             sessionProfileIDs.compactMap { windowID, candidateProfileID in
                 candidateProfileID == profileID ? windowID : nil
-            })
+            }
+        )
     }
 
     func windowID(for window: NSWindow) -> UUID? {
@@ -142,7 +143,8 @@ final class ProfileWindowRegistry {
         Set(
             windows.compactMap { windowID, registration in
                 registration.profileID == profileID ? windowID : nil
-            })
+            }
+        )
     }
 }
 

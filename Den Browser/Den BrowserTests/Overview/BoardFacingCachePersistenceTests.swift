@@ -16,7 +16,9 @@ struct BoardFacingCachePersistenceTests {
         let first = BoardFacingCache(disk: BoardFacingDiskCache(directoryURL: directory))
         let raster = try image()
         first.setFacing(
-            NSImage(cgImage: raster, size: CGSize(width: raster.width, height: raster.height)), for: boardID)
+            NSImage(cgImage: raster, size: CGSize(width: raster.width, height: raster.height)),
+            for: boardID
+        )
         await first.flushPendingWrites()
         let restored = BoardFacingCache(disk: BoardFacingDiskCache(directoryURL: directory))
 
@@ -34,8 +36,15 @@ struct BoardFacingCachePersistenceTests {
     private func image() throws -> CGImage {
         let context = try #require(
             CGContext(
-                data: nil, width: 16, height: 12, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: 16,
+                height: 12,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         context.setFillColor(CGColor(red: 0.2, green: 0.5, blue: 0.8, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 16, height: 12))
         return try #require(context.makeImage())

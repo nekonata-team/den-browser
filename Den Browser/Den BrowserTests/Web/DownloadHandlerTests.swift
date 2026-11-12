@@ -15,7 +15,9 @@ struct DownloadHandlerTests {
         defer { handler.dispose() }
         var replies: [URL?] = []
         handler.saveDialogs.register(
-            panel: NSSavePanel(), suggestedFilename: "report.pdf", downloadKey: ObjectIdentifier(handler)
+            panel: NSSavePanel(),
+            suggestedFilename: "report.pdf",
+            downloadKey: ObjectIdentifier(handler)
         ) { url, _ in replies.append(url) }
 
         // Act
@@ -42,7 +44,11 @@ struct DownloadHandlerTests {
         let keyOwner = NSObject()
         let key = ObjectIdentifier(keyOwner)
         handler.registerPendingDownload(
-            for: key, destinationURL: destination, temporaryURL: temporary, allowsOverwrite: false)
+            for: key,
+            destinationURL: destination,
+            temporaryURL: temporary,
+            allowsOverwrite: false
+        )
         try Data("downloaded".utf8).write(to: temporary)
         // A file appears after the destination was accepted.
         try Data("original".utf8).write(to: destination)
@@ -79,7 +85,10 @@ struct DownloadHandlerTests {
         handler.onFinished = { finishedFilename = $0 }
         handler.onFailed = { failedFilename = $0 }
         let activityID = handler.registerPendingDownload(
-            for: key, destinationURL: destination, temporaryURL: temporary)
+            for: key,
+            destinationURL: destination,
+            temporaryURL: temporary
+        )
 
         // Act
         switch event {
@@ -97,6 +106,7 @@ struct DownloadHandlerTests {
             activityEvents == [
                 .started(DownloadActivity(id: activityID, filename: destination.lastPathComponent)),
                 .ended(id: activityID),
-            ])
+            ]
+        )
     }
 }

@@ -12,7 +12,8 @@ struct TerminalConfigurationSourceTests {
         let output = String(repeating: "x", count: 100_000)
         let result = try await SubprocessCommandRunner().run(
             executablePath: "/usr/bin/printf",
-            arguments: [output])
+            arguments: [output]
+        )
 
         #expect(result.terminationStatus == 0)
         #expect(result.standardOutput == output)
@@ -21,7 +22,8 @@ struct TerminalConfigurationSourceTests {
     @Test func terminalCommandRunnerPreservesFailureDiagnostics() async throws {
         let result = try await SubprocessCommandRunner().run(
             executablePath: "/bin/sh",
-            arguments: ["-c", "echo failed >&2; exit 7"])
+            arguments: ["-c", "echo failed >&2; exit 7"]
+        )
 
         #expect(result.terminationStatus == 7)
         #expect(result.standardError == "failed\n")
@@ -34,13 +36,15 @@ struct TerminalConfigurationSourceTests {
             try await runner.run(
                 executablePath: "/bin/sleep",
                 arguments: ["10"],
-                timeout: .milliseconds(10))
+                timeout: .milliseconds(10)
+            )
         }
 
         let task = Task {
             try await runner.run(
                 executablePath: "/bin/sleep",
-                arguments: ["10"])
+                arguments: ["10"]
+            )
         }
         try? await Task.sleep(for: .milliseconds(50))
         task.cancel()
@@ -77,7 +81,8 @@ struct TerminalConfigurationSourceTests {
     @Test func zmxChildLaunchCommandInitializesRootLabel() throws {
         let command = try #require(
             ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
-                .launchCommand(sessionName: "den-vi", rootSessionName: "den"))
+                .launchCommand(sessionName: "den-vi", rootSessionName: "den")
+        )
 
         #expect(command.contains("/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'den-vi' /bin/sh -lc"))
         #expect(command.contains("den.root=den"))
@@ -92,10 +97,12 @@ struct TerminalConfigurationSourceTests {
 
         #expect(
             TerminalLaunchCommand.make(for: zellij.kind, zellijClient: zellijClient, zmxClient: zmxClient)
-                == "'/opt/homebrew/bin/zellij' attach --create 'project'")
+                == "'/opt/homebrew/bin/zellij' attach --create 'project'"
+        )
         #expect(
             TerminalLaunchCommand.make(for: zmx.kind, zellijClient: zellijClient, zmxClient: zmxClient)?
-                .contains("den.root=project") == true)
+                .contains("den.root=project") == true
+        )
         #expect(TerminalLaunchCommand.make(for: shell.kind, zellijClient: zellijClient, zmxClient: zmxClient) == nil)
     }
 
@@ -106,11 +113,14 @@ struct TerminalConfigurationSourceTests {
                 responses: [
                     ["list", "--short"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "name=den-vi\tstatus=running\nplain-session\n"),
+                        standardOutput: "name=den-vi\tstatus=running\nplain-session\n"
+                    ),
                     ["get", "den-vi", "den.root"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: " den \n"),
-                ]))
+                        standardOutput: " den \n"
+                    ),
+                ])
+        )
 
         let context = try await client.duplicationContext(for: "den-vi", savedRootSessionName: nil)
         #expect(context.activeSessionNames == ["den-vi", "plain-session"])
@@ -127,7 +137,8 @@ struct TerminalConfigurationSourceTests {
                         standardOutput: "name=den\tpid=100\n"
                             + "name=den-idle\tpid=300\n"
                             + "name=den-web\tpid=500\n"
-                            + "name=den-unknown\tpid=999\n"),
+                            + "name=den-unknown\tpid=999\n"
+                    ),
                     ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]: TerminalCommandResult(
                         terminationStatus: 0,
                         standardOutput: "100 1 100 200 /bin/zsh\n"
@@ -137,8 +148,10 @@ struct TerminalConfigurationSourceTests {
                             + "500 1 500 600 /bin/zsh\n"
                             + "600 1 600 600 /opt/just web dev\n"
                             + "601 600 600 600 pnpm dev\n"
-                            + "602 601 600 600 node astro dev\n"),
-                ]))
+                            + "602 601 600 600 node astro dev\n"
+                    ),
+                ])
+        )
 
         let snapshot = try await client.sessionSnapshot()
         #expect(
@@ -147,7 +160,8 @@ struct TerminalConfigurationSourceTests {
                 "den-idle": "Idle · zsh",
                 "den-web": "just",
                 "den-unknown": "Unknown",
-            ])
+            ]
+        )
     }
 
     @Test func zmxClientResolvesForegroundProcessGroupID() async throws {
@@ -157,14 +171,17 @@ struct TerminalConfigurationSourceTests {
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "name=den-web\tpid=100\nname=den-idle\tpid=200\n"),
+                        standardOutput: "name=den-web\tpid=100\nname=den-idle\tpid=200\n"
+                    ),
                     ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]: TerminalCommandResult(
                         terminationStatus: 0,
                         standardOutput:
                             "100 1 100 600 /bin/zsh\n"
                             + "600 100 600 600 /opt/just web dev\n"
-                            + "200 1 200 0 /bin/zsh\n"),
-                ]))
+                            + "200 1 200 0 /bin/zsh\n"
+                    ),
+                ])
+        )
 
         #expect(try await client.foregroundProcessGroupID(for: "den-web") == 600)
         #expect(try await client.foregroundProcessGroupID(for: "den-idle") == 200)
@@ -178,11 +195,14 @@ struct TerminalConfigurationSourceTests {
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "name=den\tpid=100\n"),
+                        standardOutput: "name=den\tpid=100\n"
+                    ),
                     ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]: TerminalCommandResult(
                         terminationStatus: 1,
-                        standardOutput: ""),
-                ]))
+                        standardOutput: ""
+                    ),
+                ])
+        )
 
         let snapshot = try await client.sessionSnapshot()
         #expect(snapshot.processNames == ["den": "Unknown"])
@@ -191,7 +211,8 @@ struct TerminalConfigurationSourceTests {
     @Test func zmxClientPropagatesCancellationWhileReadingProcessSnapshot() async {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
-            commandRunner: CancellationDuringProcessSnapshotRunner())
+            commandRunner: CancellationDuringProcessSnapshotRunner()
+        )
 
         await #expect(throws: CancellationError.self) {
             try await client.sessionSnapshot()
@@ -205,8 +226,10 @@ struct TerminalConfigurationSourceTests {
                 responses: [
                     ["kill", "den-vi", "--force"]: TerminalCommandResult(
                         terminationStatus: 0,
-                        standardOutput: "")
-                ]))
+                        standardOutput: ""
+                    )
+                ])
+        )
 
         try await client.killSession(" den-vi ")
         await #expect(throws: TerminalCommandError.self) {
@@ -224,12 +247,14 @@ struct TerminalConfigurationSourceTests {
         try "command = /bin/zsh -f\nfont-size = 14".write(
             to: configDirectory.appending(path: "config.ghostty"),
             atomically: true,
-            encoding: .utf8)
+            encoding: .utf8
+        )
 
         let resolution = TerminalConfigurationSource.make(
             environment: ["XDG_CONFIG_HOME": root.path],
             arguments: [],
-            commandOverride: "'/opt/homebrew/bin/zellij' -l welcome")
+            commandOverride: "'/opt/homebrew/bin/zellij' -l welcome"
+        )
 
         guard case let .generated(contents) = resolution.configSource else {
             Issue.record("Expected a generated Ghostty config")
@@ -250,7 +275,8 @@ struct TerminalConfigurationSourceTests {
         try "theme = Gruvbox Dark".write(
             to: configDirectory.appending(path: "config.ghostty"),
             atomically: true,
-            encoding: .utf8)
+            encoding: .utf8
+        )
 
         let theme = TerminalConfigurationSource.make(
             environment: ["XDG_CONFIG_HOME": root.path],
@@ -271,7 +297,8 @@ struct TerminalConfigurationSourceTests {
         try "theme = light:Gruvbox Light,dark:Gruvbox Dark".write(
             to: configDirectory.appending(path: "config.ghostty"),
             atomically: true,
-            encoding: .utf8)
+            encoding: .utf8
+        )
 
         let theme = TerminalConfigurationSource.make(
             environment: ["XDG_CONFIG_HOME": root.path],
@@ -299,11 +326,13 @@ struct TerminalConfigurationSourceTests {
         """.write(
             to: configDirectory.appending(path: "config.ghostty"),
             atomically: true,
-            encoding: .utf8)
+            encoding: .utf8
+        )
 
         let resolution = TerminalConfigurationSource.make(
             environment: ["XDG_CONFIG_HOME": root.path],
-            arguments: [])
+            arguments: []
+        )
 
         guard case let .generated(contents) = resolution.configSource else {
             Issue.record("Expected a generated Ghostty config")
@@ -383,7 +412,8 @@ struct TerminalConfigurationSourceTests {
         var closeProfileWindow = ghostty_input_key_s()
         closeProfileWindow.action = GHOSTTY_ACTION_PRESS
         closeProfileWindow.mods = ghostty_input_mods_e(
-            rawValue: GHOSTTY_MODS_SUPER.rawValue | GHOSTTY_MODS_SHIFT.rawValue)
+            rawValue: GHOSTTY_MODS_SUPER.rawValue | GHOSTTY_MODS_SHIFT.rawValue
+        )
         closeProfileWindow.keycode = 13
         closeProfileWindow.unshifted_codepoint = 119  // w
         #expect(!ghostty_config_key_is_binding(config, closeProfileWindow))
@@ -400,12 +430,14 @@ struct TerminalConfigurationSourceTests {
         try "command = /bin/bash\nfont-size = 14".write(
             to: configDirectory.appending(path: "config.ghostty"),
             atomically: true,
-            encoding: .utf8)
+            encoding: .utf8
+        )
 
         // Act
         let resolution = TerminalConfigurationSource.make(
             environment: ["XDG_CONFIG_HOME": root.path],
-            arguments: ["--benchmark-scenario", "one-terminal-board"])
+            arguments: ["--benchmark-scenario", "one-terminal-board"]
+        )
 
         // Assert
         guard case let .generated(contents) = resolution.configSource else {
@@ -429,7 +461,8 @@ struct TerminalConfigurationSourceTests {
         try "command = /bin/bash\nfont-size = 14\ntheme = Gruvbox Dark".write(
             to: configDirectory.appending(path: "config.ghostty"),
             atomically: true,
-            encoding: .utf8)
+            encoding: .utf8
+        )
 
         // Act
         let resolution = TerminalConfigurationSource.make(
@@ -437,7 +470,8 @@ struct TerminalConfigurationSourceTests {
                 "XDG_CONFIG_HOME": root.path,
                 "XCTestConfigurationFilePath": "/tmp/DenBrowserTests.xctest",
             ],
-            arguments: [])
+            arguments: []
+        )
 
         // Assert
         guard case let .generated(contents) = resolution.configSource else {
@@ -478,6 +512,7 @@ private struct CancellationDuringProcessSnapshotRunner: TerminalCommandRunning, 
         }
         return TerminalCommandResult(
             terminationStatus: 0,
-            standardOutput: "name=den\tpid=100\n")
+            standardOutput: "name=den\tpid=100\n"
+        )
     }
 }

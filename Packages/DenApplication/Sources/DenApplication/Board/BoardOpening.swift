@@ -66,7 +66,8 @@ public enum BoardOpening {
                 width: width,
                 zmxSessionName: name,
                 workingDirectory: configuration.homeDirectory.path,
-                rootSessionName: zmxRootSessionName)
+                rootSessionName: zmxRootSessionName
+            )
             recent = .zmx(sessionName: name)
         } else if let zellij = BoardInputResolver.resolveZellijInput(input) {
             if case .invalid = zellij { return .rejected(.invalidSessionInput) }
@@ -80,8 +81,10 @@ public enum BoardOpening {
             board = BoardState(width: width, zellijSessionName: name)
             recent = .zellij(sessionName: name)
         } else if let terminal = BoardInputResolver.resolveTerminalInput(
-            input, homeDirectory: configuration.homeDirectory, directoryExists: directoryExists)
-        {
+            input,
+            homeDirectory: configuration.homeDirectory,
+            directoryExists: directoryExists
+        ) {
             switch terminal {
             case .success(let directory):
                 board = BoardState(width: width, workingDirectory: directory)
@@ -94,7 +97,9 @@ public enum BoardOpening {
         } else {
             guard
                 let resolution = BoardInputResolver.resolveOpenBoardInput(
-                    input, searchEngine: configuration.searchEngine)
+                    input,
+                    searchEngine: configuration.searchEngine
+                )
             else {
                 return .rejected(.invalidInput)
             }
@@ -102,7 +107,8 @@ public enum BoardOpening {
             board = BoardState(
                 label: url.host(percentEncoded: false) ?? url.absoluteString,
                 width: width,
-                currentSheetURL: url)
+                currentSheetURL: url
+            )
             recent = resolution.item
         }
 

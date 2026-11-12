@@ -6,12 +6,15 @@ struct NotificationCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "notification",
         abstract: "Inspect Notifications and manage their read status",
-        subcommands: [NotificationListCommand.self, NotificationReadCommand.self, NotificationUnreadCommand.self])
+        subcommands: [NotificationListCommand.self, NotificationReadCommand.self, NotificationUnreadCommand.self]
+    )
 }
 
 struct NotificationListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "list", abstract: "List Notifications, newest first, without marking them as read")
+        commandName: "list",
+        abstract: "List Notifications, newest first, without marking them as read"
+    )
 
     @OptionGroup var options: CLIOptions
     @Flag(name: .long, help: "List only unread Notifications") var unread = false
@@ -22,14 +25,20 @@ struct NotificationListCommand: ParsableCommand {
         if let limit, limit <= 0 { throw ValidationError("--limit must be a positive integer") }
         try DenIPCClient.execute(
             operation: .listNotifications(
-                unreadOnly: unread, boardID: try board.map { try DenIPCClient.requiredBoardID($0) }, limit: limit),
-            options: options)
+                unreadOnly: unread,
+                boardID: try board.map { try DenIPCClient.requiredBoardID($0) },
+                limit: limit
+            ),
+            options: options
+        )
     }
 }
 
 struct NotificationReadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "read", abstract: "Mark a Notification as read without opening its Board")
+        commandName: "read",
+        abstract: "Mark a Notification as read without opening its Board"
+    )
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "UUID of the Notification to mark as read") var id: String
@@ -41,7 +50,9 @@ struct NotificationReadCommand: ParsableCommand {
 
 struct NotificationUnreadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "unread", abstract: "Mark a Notification as unread without opening its Board")
+        commandName: "unread",
+        abstract: "Mark a Notification as unread without opening its Board"
+    )
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "UUID of the Notification to mark as unread") var id: String

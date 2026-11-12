@@ -29,7 +29,8 @@ struct DenIPCDeskLifecycleTests {
         let result = await service.handleRequest(
             DenIPCRequest(
                 operation: .inspectDen(target: .automatic),
-                context: .init(callerBoardID: callerBoardID.rawValue))
+                context: .init(callerBoardID: callerBoardID.rawValue)
+            )
         ).result
 
         // Assert
@@ -66,7 +67,9 @@ struct DenIPCDeskLifecycleTests {
         let response = await service.handleRequest(
             DenIPCRequest(
                 operation: .createDesk(label: "  New  ", focus: focus),
-                context: DenIPCCallerContext(callerBoardID: callerBoardID.rawValue)))
+                context: DenIPCCallerContext(callerBoardID: callerBoardID.rawValue)
+            )
+        )
 
         // Assert
         #expect(response.result.isOk)
@@ -184,6 +187,8 @@ struct DenIPCDeskLifecycleTests {
             directoryURL: directory,
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: "DeskCLI-\(UUID().uuidString)")),
-            removeDataStore: { _ in }, websiteDataStore: { _ in .nonPersistent() })
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() }
+        )
     }
 }

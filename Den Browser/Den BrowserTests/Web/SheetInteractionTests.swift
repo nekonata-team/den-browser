@@ -24,7 +24,11 @@ final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
             self.continuation = continuation
             webView.navigationDelegate = self
             pendingNavigation = webView.load(
-                Data(content.utf8), mimeType: mimeType, characterEncodingName: "utf-8", baseURL: baseURL)
+                Data(content.utf8),
+                mimeType: mimeType,
+                characterEncodingName: "utf-8",
+                baseURL: baseURL
+            )
         }
     }
 
@@ -88,7 +92,12 @@ struct SheetInteractionTests {
 
         // Act
         let elements = try await SheetInteraction.query(
-            selector: "button, input", visibleOnly: true, all: true, fields: ["name"], in: webView)
+            selector: "button, input",
+            visibleOnly: true,
+            all: true,
+            fields: ["name"],
+            in: webView
+        )
         try await SheetInteraction.click(role: "button", name: "Save changes", exact: true, in: webView)
         let clicked = try await SheetInteraction.attribute(target: "button", name: "data-clicked", in: webView)
 
@@ -121,7 +130,10 @@ struct SheetInteractionTests {
         let webView = makeWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
-            "<!doctype html>", baseURL: URL(string: "https://example.com/section")!, in: webView)
+            "<!doctype html>",
+            baseURL: URL(string: "https://example.com/section")!,
+            in: webView
+        )
 
         // Act / Assert
         await #expect(throws: SheetInteractionError.self) {
@@ -135,7 +147,10 @@ struct SheetInteractionTests {
         let webView = makeWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
-            "<!doctype html>", baseURL: URL(string: "https://example.com/section/section")!, in: webView)
+            "<!doctype html>",
+            baseURL: URL(string: "https://example.com/section/section")!,
+            in: webView
+        )
 
         // Act / Assert
         try await SheetInteraction.waitForURL(pattern: pattern, in: webView, timeout: 0)
@@ -324,8 +339,13 @@ struct SheetInteractionTests {
         )
         let element = try #require(
             await SheetInteraction.query(
-                selector: "#target", visibleOnly: true, all: false, fields: ["text"], in: webView
-            ).first)
+                selector: "#target",
+                visibleOnly: true,
+                all: false,
+                fields: ["text"],
+                in: webView
+            ).first
+        )
         let usesWeakReference =
             try await webView.callAsyncJavaScript(
                 "return typeof window.__denRefs.get(ref)?.deref === 'function';",
@@ -344,7 +364,8 @@ struct SheetInteractionTests {
         try await SheetInteraction.click(target: element.ref, in: webView)
         let clicked =
             try await webView.evaluateJavaScript(
-                "document.getElementById('target').dataset.clicked") as? String
+                "document.getElementById('target').dataset.clicked"
+            ) as? String
 
         // Assert
         #expect(usesWeakReference == true)
@@ -381,7 +402,8 @@ struct SheetInteractionTests {
             in: webView
         )
         let eventLog = try #require(
-            await webView.evaluateJavaScript("window.eventLog.join(',')") as? String)
+            await webView.evaluateJavaScript("window.eventLog.join(',')") as? String
+        )
 
         // Assert
         #expect(
@@ -716,7 +738,8 @@ struct SheetInteractionTests {
         // Act
         let message = try await SheetInteraction.scroll(direction: "#target", in: webView)
         let scrollYString = try #require(
-            await webView.evaluateJavaScript("String(window.scrollY)") as? String)
+            await webView.evaluateJavaScript("String(window.scrollY)") as? String
+        )
         let scrollY = try #require(Double(scrollYString))
 
         // Assert

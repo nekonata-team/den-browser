@@ -7,8 +7,10 @@ public struct BoardSizing {
     private let deferredSave: (() -> Void)?
 
     public init(
-        reader: DenStateReader, writer: DenStateWriter,
-        persist: ((DenState) -> Bool)? = nil, deferredSave: (() -> Void)? = nil
+        reader: DenStateReader,
+        writer: DenStateWriter,
+        persist: ((DenState) -> Bool)? = nil,
+        deferredSave: (() -> Void)? = nil
     ) {
         self.reader = reader
         self.writer = writer

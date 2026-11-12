@@ -95,18 +95,21 @@ struct InputContext {
                 case .overview:
                     .overview(
                         filterPhase: windowModel.overview.filterPhase,
-                        hasQuery: !windowModel.overview.query.isEmpty)
+                        hasQuery: !windowModel.overview.query.isEmpty
+                    )
                 case .boardActivity: .boardActivity
                 case .drawer:
                     .drawer(
                         filterPhase: windowModel.drawer.filterPhase,
                         peekFirstResponder: Self.isDrawerPeekFirstResponder(event, session: session),
-                        choosingPlacementDesk: windowModel.drawer.isChoosingPlacementDesk)
+                        choosingPlacementDesk: windowModel.drawer.isChoosingPlacementDesk
+                    )
                 case .zmxSessions:
                     .zmxSessions(
                         filterPhase: windowModel.zmxSessions.filterPhase,
                         hasQuery: !windowModel.zmxSessions.query.isEmpty,
-                        hasSelection: windowModel.zmxSessions.hasMarkedSessions)
+                        hasSelection: windowModel.zmxSessions.hasMarkedSessions
+                    )
                 case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
                     .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential, .profilePicker:
                     .textInput

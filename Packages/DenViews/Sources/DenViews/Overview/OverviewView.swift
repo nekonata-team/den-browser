@@ -42,8 +42,11 @@ public struct OverviewView: View {
     @State private var measuredBoardQuery: String?
 
     public init(
-        profileColor: Color, boardHeight: CGFloat, motionPreference: MotionPreference,
-        facing: @escaping (BoardID) -> NSImage?, loadFacing: @escaping (BoardID) async -> Void
+        profileColor: Color,
+        boardHeight: CGFloat,
+        motionPreference: MotionPreference,
+        facing: @escaping (BoardID) -> NSImage?,
+        loadFacing: @escaping (BoardID) async -> Void
     ) {
         self.profileColor = profileColor
         self.boardHeight = boardHeight
@@ -73,7 +76,9 @@ public struct OverviewView: View {
                                     guard let start = panStartOffset else { return }
                                     scrollCanvas(
                                         to: CGPoint(
-                                            x: start.x - value.translation.width, y: start.y - value.translation.height)
+                                            x: start.x - value.translation.width,
+                                            y: start.y - value.translation.height
+                                        )
                                     )
                                 }
                                 .onEnded { _ in panStartOffset = nil }
@@ -99,7 +104,9 @@ public struct OverviewView: View {
                         [canvasScale, canvasMargin, query = overview.query] in
                         OverviewCanvasMeasurement(
                             size: CGSize(width: $0.size.width / canvasScale, height: $0.size.height / canvasScale),
-                            margin: canvasMargin, query: query)
+                            margin: canvasMargin,
+                            query: query
+                        )
                     } action: { measurement in
                         canvasBaseSize = measurement.size
                         measuredCanvasMargin = measurement.margin
@@ -109,7 +116,8 @@ public struct OverviewView: View {
                     }
                     .animation(
                         DenMotion.spatial(reduceMotion: shouldReduceMotion),
-                        value: overview.allDesks.map { $0.boards.map(\.id) })
+                        value: overview.allDesks.map { $0.boards.map(\.id) }
+                    )
                 }
                 .frame(minWidth: scrollSize.width, minHeight: scrollSize.height, alignment: .center)
             }
@@ -131,7 +139,8 @@ public struct OverviewView: View {
                         guard let origin = rightPanStartOffset else { return false }
                         scrollCanvas(to: CGPoint(x: origin.x - translation.width, y: origin.y - translation.height))
                         return true
-                    })
+                    }
+                )
             }
             .simultaneousGesture(
                 MagnifyGesture()
@@ -143,12 +152,19 @@ public struct OverviewView: View {
                         let base = pinchStartScale ?? 1.0
                         let newScale = min(max(base * value.magnification, 0.2), DenOverviewLayout.maximumScale)
                         let anchor = CGPoint(
-                            x: value.startAnchor.x * scrollSize.width, y: value.startAnchor.y * scrollSize.height)
+                            x: value.startAnchor.x * scrollSize.width,
+                            y: value.startAnchor.y * scrollSize.height
+                        )
                         let offset = OverviewCanvasGeometry.zoomOffset(
-                            offset: pinchStartOffset ?? canvasOffset, anchor: anchor,
+                            offset: pinchStartOffset ?? canvasOffset,
+                            anchor: anchor,
                             contentSize: CGSize(
-                                width: canvasBaseSize.width * base, height: canvasBaseSize.height * base),
-                            viewportSize: scrollSize, factor: newScale / base)
+                                width: canvasBaseSize.width * base,
+                                height: canvasBaseSize.height * base
+                            ),
+                            viewportSize: scrollSize,
+                            factor: newScale / base
+                        )
                         canvasScale = newScale
                         scrollCanvas(to: offset)
                     }
@@ -258,7 +274,9 @@ public struct OverviewView: View {
         }
         .onChange(of: overview.canvasZoomSteps) { old, new in
             zoomCanvas(
-                by: pow(1.2, CGFloat(new - old)), anchor: CGPoint(x: scrollSize.width / 2, y: scrollSize.height / 2))
+                by: pow(1.2, CGFloat(new - old)),
+                anchor: CGPoint(x: scrollSize.width / 2, y: scrollSize.height / 2)
+            )
         }
         .onChange(of: overview.canvasResetRequest) { _, _ in
             animateInitialCenter = true
@@ -290,7 +308,9 @@ public struct OverviewView: View {
             scrollCanvas(
                 to: CGPoint(
                     x: canvasOffset.x + frame.midX - scrollSize.width / 2,
-                    y: canvasOffset.y + frame.midY - scrollSize.height / 2))
+                    y: canvasOffset.y + frame.midY - scrollSize.height / 2
+                )
+            )
         }
     }
 
@@ -303,16 +323,25 @@ public struct OverviewView: View {
         let size = CGSize(
             width: effectiveWidth.map { $0 * DenOverviewLayout.boardCardHeight / boardHeight }
                 ?? DenOverviewLayout.emptyBoardWidth,
-            height: DenOverviewLayout.boardCardHeight)
+            height: DenOverviewLayout.boardCardHeight
+        )
         let rowHeight = captionSize * 1.2 + 4 + DenOverviewLayout.boardCardHeight
         let neighborhoodHeight = rowHeight * 3 + DenOverviewLayout.deskSpacing * 2
         canvasScale = min(
             max(
                 OverviewCanvasGeometry.initialScale(
-                    boardSize: size, neighborhoodHeight: neighborhoodHeight, viewportSize: scrollSize), 0.2),
-            DenOverviewLayout.maximumScale)
+                    boardSize: size,
+                    neighborhoodHeight: neighborhoodHeight,
+                    viewportSize: scrollSize
+                ),
+                0.2
+            ),
+            DenOverviewLayout.maximumScale
+        )
         canvasMargin = CGSize(
-            width: scrollSize.width / (2 * canvasScale), height: scrollSize.height / (2 * canvasScale))
+            width: scrollSize.width / (2 * canvasScale),
+            height: scrollSize.height / (2 * canvasScale)
+        )
         didSetInitialScale = true
     }
 
@@ -340,7 +369,8 @@ public struct OverviewView: View {
         let target = OverviewCanvasGeometry.clampedOffset(
             offset,
             contentSize: CGSize(width: canvasBaseSize.width * canvasScale, height: canvasBaseSize.height * canvasScale),
-            viewportSize: scrollSize)
+            viewportSize: scrollSize
+        )
         scrollPosition.scrollTo(x: target.x, y: target.y)
     }
 
@@ -349,9 +379,12 @@ public struct OverviewView: View {
         guard windowModel.isOverviewPresented, overviewDrag == nil, didSetInitialScale else { return false }
         let nextScale = min(max(canvasScale * factor, 0.2), DenOverviewLayout.maximumScale)
         let offset = OverviewCanvasGeometry.zoomOffset(
-            offset: canvasOffset, anchor: anchor,
+            offset: canvasOffset,
+            anchor: anchor,
             contentSize: CGSize(width: canvasBaseSize.width * canvasScale, height: canvasBaseSize.height * canvasScale),
-            viewportSize: scrollSize, factor: nextScale / canvasScale)
+            viewportSize: scrollSize,
+            factor: nextScale / canvasScale
+        )
         canvasScale = nextScale
         scrollCanvas(to: offset)
         return true
@@ -424,7 +457,8 @@ public struct OverviewView: View {
             GeometryReader { proxy in
                 Color.clear.preference(
                     key: OverviewDeskFramePreferenceKey.self,
-                    value: [desk.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))])
+                    value: [desk.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))]
+                )
             }
         }
         .id(desk.id)
@@ -475,8 +509,10 @@ public struct OverviewView: View {
                 Color.clear.preference(
                     key: OverviewBoardFramePreferenceKey.self,
                     value: OverviewBoardFrames(
-                        query: overview.query, frames: [board.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))]
-                    ))
+                        query: overview.query,
+                        frames: [board.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))]
+                    )
+                )
             }
         }
         .opacity(overviewDrag?.boardID == board.id ? 0 : 1)
@@ -559,7 +595,9 @@ public struct OverviewView: View {
                 location: value.location,
                 pointerToCenter: CGSize(
                     width: frame.midX - value.startLocation.x,
-                    height: frame.midY - value.startLocation.y))
+                    height: frame.midY - value.startLocation.y
+                )
+            )
         }
 
         guard var drag = overviewDrag, drag.boardID == board.id else { return }
@@ -577,7 +615,10 @@ public struct OverviewView: View {
             return
         }
         overview.finishBoardDrag(
-            drag.boardID, toDeskID: target.deskID, at: target.index)
+            drag.boardID,
+            toDeskID: target.deskID,
+            at: target.index
+        )
         overviewDrag = nil
     }
 
@@ -608,12 +649,14 @@ public struct OverviewView: View {
                     ? frame.minX - DenOverviewLayout.boardSpacing * canvasScale / 2
                     : frame.maxX + DenOverviewLayout.boardSpacing * canvasScale / 2,
                 lineY: frame.midY,
-                height: frame.height + 8)
+                height: frame.height + 8
+            )
         } else if let frame = overviewGeometry.emptyBoardFrames[desk.id] {
             return OverviewDropTarget(
                 lineX: frame.minX - DenOverviewLayout.boardSpacing * canvasScale / 2,
                 lineY: frame.midY,
-                height: frame.height + 8)
+                height: frame.height + 8
+            )
         } else {
             return nil
         }
@@ -625,13 +668,15 @@ public struct OverviewView: View {
             scrollBounds.contains(location),
             let deskID = OverviewDragGeometry.targetDeskID(
                 at: location,
-                frames: overviewGeometry.deskFrames),
+                frames: overviewGeometry.deskFrames
+            ),
             let desk = overview.allDesks.first(where: { $0.id == deskID }),
             let index = OverviewDragGeometry.targetIndex(
                 draggedID: drag.boardID,
                 orderedIDs: desk.boards.map(\.id),
                 locationX: location.x,
-                frames: overviewGeometry.boardFrames)
+                frames: overviewGeometry.boardFrames
+            )
         else { return nil }
         return (deskID, BoardIndex(rawValue: index))
     }
@@ -655,7 +700,8 @@ public struct OverviewView: View {
         if horizontal <= vertical,
             let deskID = OverviewDragGeometry.targetDeskID(
                 at: location,
-                frames: overviewGeometry.deskFrames),
+                frames: overviewGeometry.deskFrames
+            ),
             let desk = overview.allDesks.first(where: { $0.id == deskID }),
             let boardID = (isLeading ? desk.boards.first : desk.boards.last)?.id
         {
@@ -674,7 +720,8 @@ public struct OverviewView: View {
         guard
             let currentDeskID = OverviewDragGeometry.targetDeskID(
                 at: CGPoint(x: 0, y: locationY),
-                frames: overviewGeometry.deskFrames),
+                frames: overviewGeometry.deskFrames
+            ),
             let currentIndex = desks.firstIndex(where: { $0.id == currentDeskID })
         else { return nil }
         let targetIndex = currentIndex + (leading ? -1 : 1)
@@ -703,7 +750,8 @@ public struct OverviewView: View {
     private var maximizedBoardWidth: CGFloat {
         max(
             CGFloat(BoardState.minimumWidth),
-            scrollSize.width - DenOverviewLayout.contentPadding * 2)
+            scrollSize.width - DenOverviewLayout.contentPadding * 2
+        )
     }
 }
 
@@ -866,7 +914,8 @@ private struct OverviewDragState {
     var previewCenter: CGPoint {
         CGPoint(
             x: location.x + pointerToCenter.width,
-            y: location.y + pointerToCenter.height)
+            y: location.y + pointerToCenter.height
+        )
     }
 }
 
@@ -958,7 +1007,8 @@ private struct OverviewEmptyDeskCard: View {
             GeometryReader { proxy in
                 Color.clear.preference(
                     key: OverviewEmptyBoardFramePreferenceKey.self,
-                    value: [desk.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))])
+                    value: [desk.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))]
+                )
             }
         }
         .accessibilityLabel("Empty Desk \(desk.label)")

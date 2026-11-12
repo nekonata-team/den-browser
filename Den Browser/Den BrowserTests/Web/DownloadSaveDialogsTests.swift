@@ -73,10 +73,14 @@ struct DownloadSaveDialogsTests {
     }
 
     private func register(
-        in dialogs: DownloadSaveDialogs, completion: @escaping @MainActor (URL?, Bool) -> Void
+        in dialogs: DownloadSaveDialogs,
+        completion: @escaping @MainActor (URL?, Bool) -> Void
     ) -> UUID {
         dialogs.register(
-            panel: NSSavePanel(), suggestedFilename: "report.pdf", downloadKey: ObjectIdentifier(dialogs),
-            completion: completion)
+            panel: NSSavePanel(),
+            suggestedFilename: "report.pdf",
+            downloadKey: ObjectIdentifier(dialogs),
+            completion: completion
+        )
     }
 }

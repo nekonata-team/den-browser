@@ -18,7 +18,8 @@ public enum DeskPresetTerminalSession: Codable, Equatable {
         case .zmx:
             self = .zmx(
                 sessionName: try container.decode(String.self, forKey: .sessionName),
-                rootSessionName: try container.decodeIfPresent(String.self, forKey: .rootSessionName))
+                rootSessionName: try container.decodeIfPresent(String.self, forKey: .rootSessionName)
+            )
         }
     }
 

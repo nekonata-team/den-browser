@@ -93,7 +93,8 @@ private struct NotificationRow: View {
                     .overlay {
                         Circle().stroke(
                             profileColor.opacity(0.7),
-                            lineWidth: item.notification.isRead ? 1 : 0)
+                            lineWidth: item.notification.isRead ? 1 : 0
+                        )
                     }
                     .padding(.top, 6)
 
@@ -125,7 +126,8 @@ private struct NotificationRow: View {
             .background(
                 isSelected
                     ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(
-                        DenSurfaceColors.selectionOpacity)
+                        DenSurfaceColors.selectionOpacity
+                    )
                     : item.notification.isRead
                         ? Color.clear
                         : profileColor.opacity(0.1),

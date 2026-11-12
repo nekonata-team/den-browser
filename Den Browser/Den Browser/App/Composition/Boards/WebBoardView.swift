@@ -60,7 +60,9 @@ struct WebBoardView: View {
                 guard session.resources.store.snapshot.activeDrag == nil else { return }
                 guard session.resources.webRuntimes[board.id] === runtime else { return }
                 await session.resources.facingCapture.captureWeb(
-                    boardID: board.id, webView: runtime.webView)
+                    boardID: board.id,
+                    webView: runtime.webView
+                )
             },
             faviconURL: runtime.faviconURL,
             isShowingInitialLoadFallback: runtime.isShowingInitialLoadFallback,

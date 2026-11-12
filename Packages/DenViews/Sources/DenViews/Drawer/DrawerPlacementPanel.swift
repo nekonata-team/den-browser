@@ -36,7 +36,9 @@ public struct DrawerPlacementPanel: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
                                 .denSelectionHighlight(
-                                    desk.id == windowModel.drawer.placementDeskID, profileColor: profileColor)
+                                    desk.id == windowModel.drawer.placementDeskID,
+                                    profileColor: profileColor
+                                )
                             }
                             .buttonStyle(.plain)
                             .disabled(!available)
@@ -49,7 +51,8 @@ public struct DrawerPlacementPanel: View {
                     height: min(
                         CGFloat(windowModel.desks.desks.count) * 30
                             + CGFloat(max(0, windowModel.desks.desks.count - 1)) * 4,
-                        DenPanelLayout.standardListMaxHeight)
+                        DenPanelLayout.standardListMaxHeight
+                    )
                 )
                 .onAppear {
                     if let id = windowModel.drawer.placementDeskID { proxy.scrollTo(id) }

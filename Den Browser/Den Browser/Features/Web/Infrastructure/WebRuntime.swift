@@ -115,7 +115,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             sheetScale: sheetScale,
             popupWebView: popupWebView,
             sheetNavigationActions: sheetNavigationActions,
-            events: events)
+            events: events
+        )
     }
 
     init(
@@ -251,7 +252,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             webView,
             boardID: board.id,
             paused: board.sheetNavigationPaused,
-            actions: sheetNavigationActions)
+            actions: sheetNavigationActions
+        )
     }
 
     func updateOwner(
@@ -326,7 +328,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
                         throw DenAPIBridge.Failure(message: "Board navigation is unavailable")
                     }
                     try focus(id)
-                })
+                }
+            )
         }
         denAPI?.setEnabled(enabled)
     }
@@ -464,7 +467,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         PerformanceTrace.mark(
             "WebRuntime.didFinish navigation (\(boardID.rawValue.uuidString.prefix(8)))",
-            category: "Board")
+            category: "Board"
+        )
         traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
@@ -608,7 +612,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         PerformanceTrace.mark(
             "WebRuntime.didCommit navigation (\(boardID.rawValue.uuidString.prefix(8)))",
-            category: "Board")
+            category: "Board"
+        )
         traceWebProcessIdentifier()
         didTerminateContentProcess = false
         guard isShowingInitialLoadFallback else { return }
@@ -657,7 +662,9 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     ) {
         recordHTTPStatus(
             navigationResponse.canShowMIMEType ? (navigationResponse.response as? HTTPURLResponse)?.statusCode : nil,
-            isMainFrame: navigationResponse.isForMainFrame, in: webView)
+            isMainFrame: navigationResponse.isForMainFrame,
+            in: webView
+        )
         super.webView(webView, decidePolicyFor: navigationResponse, decisionHandler: decisionHandler)
     }
 
@@ -701,7 +708,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
                 webView,
                 createWebViewWith: configuration,
                 for: navigationAction,
-                windowFeatures: windowFeatures)
+                windowFeatures: windowFeatures
+            )
         }
         guard navigationAction.targetFrame == nil else { return nil }
         let url = navigationAction.request.url
@@ -749,8 +757,10 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         guard !pictureInPictureScript.isEmpty else { return }
 
         webView.callAsyncJavaScript(
-            "\(pictureInPictureScript)\nreturn await denPictureInPicture.run(mode);", arguments: ["mode": mode],
-            in: nil, in: .page
+            "\(pictureInPictureScript)\nreturn await denPictureInPicture.run(mode);",
+            arguments: ["mode": mode],
+            in: nil,
+            in: .page
         ) { result in
             #if DEBUG
                 switch result {

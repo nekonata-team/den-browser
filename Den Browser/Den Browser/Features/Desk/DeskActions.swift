@@ -19,7 +19,9 @@ final class DeskActions {
     private var facingCache: BoardFacingCache { context.storage.facingCache }
     private var canDeleteFocusedDesk: Bool {
         context.storage.deskLifecycle.canDelete(
-            context.navigation.presentedDeskID, isAvailable: { context.canPresentDesk?($0) ?? true })
+            context.navigation.presentedDeskID,
+            isAvailable: { context.canPresentDesk?($0) ?? true }
+        )
     }
     private var canPresentDesk: ((DeskID) -> Bool)? { context.canPresentDesk }
     private var onWindowEffect: ((DenWindowEffect) -> Void)? { context.connection.onWindowEffect }
@@ -31,11 +33,18 @@ final class DeskActions {
 
     @discardableResult
     func createDesk(
-        label: String, preset: BuiltInDeskPreset, after deskID: DeskID? = nil, focus: Bool = true
+        label: String,
+        preset: BuiltInDeskPreset,
+        after deskID: DeskID? = nil,
+        focus: Bool = true
     ) -> DeskState? {
         createDesk(
-            label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex,
-            after: deskID, focus: focus)
+            label: label,
+            boards: preset.boards,
+            focusedBoardIndex: preset.focusedBoardIndex,
+            after: deskID,
+            focus: focus
+        )
     }
 
     func createDesk(label: String, personalPresetID: UUID) {
@@ -46,7 +55,10 @@ final class DeskActions {
     func duplicateDesk(_ deskID: DeskID) {
         guard
             let duplication = storage.deskLifecycle.duplicate(
-                deskID, presentedDeskID: presentedDeskID, notify: deskLifecycleNotifications())
+                deskID,
+                presentedDeskID: presentedDeskID,
+                notify: deskLifecycleNotifications()
+            )
         else { return }
         for (original, duplicate) in zip(duplication.source.boards.filter { !$0.isTutorial }, duplication.copy.boards) {
             if let image = facingCache.image(for: original.id) {
@@ -57,12 +69,21 @@ final class DeskActions {
 
     @discardableResult
     private func createDesk(
-        label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?, after deskID: DeskID? = nil,
+        label: String,
+        boards: [DeskPresetBoard],
+        focusedBoardIndex: BoardIndex?,
+        after deskID: DeskID? = nil,
         focus: Bool = true
     ) -> DeskState? {
         storage.deskLifecycle.create(
-            label: label, boards: boards, focusedBoardIndex: focusedBoardIndex,
-            presentedDeskID: presentedDeskID, after: deskID, focus: focus, notify: deskLifecycleNotifications())
+            label: label,
+            boards: boards,
+            focusedBoardIndex: focusedBoardIndex,
+            presentedDeskID: presentedDeskID,
+            after: deskID,
+            focus: focus,
+            notify: deskLifecycleNotifications()
+        )
     }
 
     func replaceFocusedDesk(label: String, preset: BuiltInDeskPreset) -> DeskReplacementResult {
@@ -70,7 +91,8 @@ final class DeskActions {
             label: label,
             presetLabel: preset.label,
             boards: preset.boards,
-            focusedBoardIndex: preset.focusedBoardIndex)
+            focusedBoardIndex: preset.focusedBoardIndex
+        )
     }
 
     func replaceFocusedDesk(label: String, personalPresetID: UUID) -> DeskReplacementResult? {
@@ -79,7 +101,8 @@ final class DeskActions {
             label: label,
             presetLabel: preset.label,
             boards: preset.boards,
-            focusedBoardIndex: preset.focusedBoardIndex)
+            focusedBoardIndex: preset.focusedBoardIndex
+        )
     }
 
     func confirmDeskReplacement(_ replacement: PendingDeskReplacement) {
@@ -106,7 +129,8 @@ final class DeskActions {
             presetLabel: presetLabel,
             label: label,
             boards: boards,
-            focusedBoardIndex: focusedBoardIndex)
+            focusedBoardIndex: focusedBoardIndex
+        )
         guard !desk.boards.isEmpty else {
             applyDeskReplacement(replacement)
             return .applied
@@ -118,8 +142,12 @@ final class DeskActions {
     private func applyDeskReplacement(_ replacement: PendingDeskReplacement) {
         guard
             storage.deskLifecycle.replace(
-                replacement.deskID, label: replacement.label, boards: replacement.boards,
-                focusedBoardIndex: replacement.focusedBoardIndex, notify: deskLifecycleNotifications())
+                replacement.deskID,
+                label: replacement.label,
+                boards: replacement.boards,
+                focusedBoardIndex: replacement.focusedBoardIndex,
+                notify: deskLifecycleNotifications()
+            )
         else { return }
         context.feedback.publish("Replaced Desk with Preset.", severity: .success)
     }
@@ -142,8 +170,11 @@ final class DeskActions {
 
     private func deleteDesk(_ deskID: DeskID) {
         storage.deskLifecycle.delete(
-            deskID, presentedDeskID: presentedDeskID, isAvailable: { canPresentDesk?($0) ?? true },
-            notify: deskLifecycleNotifications())
+            deskID,
+            presentedDeskID: presentedDeskID,
+            isAvailable: { canPresentDesk?($0) ?? true },
+            notify: deskLifecycleNotifications()
+        )
     }
 
     func renameFocusedDesk(to newLabel: String) {

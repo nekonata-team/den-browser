@@ -53,7 +53,9 @@ struct TerminalBoardView: View {
                     session.resources.terminalRuntimes[board.id] === runtime
                 else { return }
                 session.resources.facingCapture.captureTerminal(
-                    boardID: board.id, terminalView: runtime.terminalView)
+                    boardID: board.id,
+                    terminalView: runtime.terminalView
+                )
             },
             onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
             onAdjustFontSize: { runtime.adjustFontSize(by: $0) }

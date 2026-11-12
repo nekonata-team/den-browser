@@ -18,11 +18,16 @@ public final class ProfileSettingsModel {
     @ObservationIgnored private let clear: (Set<BrowsingDataCategory>, ProfileID) async -> Bool
 
     public init(
-        profiles: @escaping () -> [ProfileState], error: @escaping () -> String?,
-        canDelete: @escaping (ProfileID) -> Bool, create: @escaping (String, ProfileColor) -> ProfileState?,
-        update: @escaping (ProfileID, String?, ProfileColor?) -> Bool, delete: @escaping (ProfileID) async -> Bool,
-        dismissError: @escaping () -> Void, clearSelection: @escaping () -> ProfileID?,
-        requestClear: @escaping (ProfileID) -> Void, dismissClear: @escaping () -> Void,
+        profiles: @escaping () -> [ProfileState],
+        error: @escaping () -> String?,
+        canDelete: @escaping (ProfileID) -> Bool,
+        create: @escaping (String, ProfileColor) -> ProfileState?,
+        update: @escaping (ProfileID, String?, ProfileColor?) -> Bool,
+        delete: @escaping (ProfileID) async -> Bool,
+        dismissError: @escaping () -> Void,
+        clearSelection: @escaping () -> ProfileID?,
+        requestClear: @escaping (ProfileID) -> Void,
+        dismissClear: @escaping () -> Void,
         clear: @escaping (Set<BrowsingDataCategory>, ProfileID) async -> Bool
     ) {
         self.readProfiles = profiles

@@ -19,7 +19,9 @@ struct DenAPIBridgeTests {
             webView: webView,
             showToast: { message, severity in
                 toasts.append(DenFeedback(body: message, severity: severity))
-            }, focus: { _ in })
+            },
+            focus: { _ in }
+        )
         defer { bridge.dispose() }
         bridge.setEnabled(true)
         let waiter = SheetInteractionWebViewLoadWaiter()
@@ -31,8 +33,11 @@ struct DenAPIBridgeTests {
         ]
         for (name, severity) in severities {
             _ = try await webView.callAsyncJavaScript(
-                "await den.toast.show('Message', { severity });", arguments: ["severity": name], in: nil,
-                contentWorld: .page)
+                "await den.toast.show('Message', { severity });",
+                arguments: ["severity": name],
+                in: nil,
+                contentWorld: .page
+            )
             #expect(toasts.last?.body == "Message")
             #expect(toasts.last?.severity == severity)
         }
@@ -47,13 +52,18 @@ struct DenAPIBridgeTests {
             try { await den.toast.show('Message', { severity: 'invalid' }); results.push(false); }
             catch { results.push(true); }
             return results;
-            """, in: nil, contentWorld: .page)
+            """,
+            in: nil,
+            contentWorld: .page
+        )
         #expect(rejected as? [Bool] == [true, true, true, true])
         #expect(toasts.count == 5)
         bridge.setEnabled(false)
         let disabled = try await webView.callAsyncJavaScript(
             "try { await den.toast.show('Disabled'); return false; } catch { return true; }",
-            in: nil, contentWorld: .page)
+            in: nil,
+            contentWorld: .page
+        )
         #expect(disabled as? Bool == true)
         #expect(toasts.count == 5)
     }
@@ -78,7 +88,10 @@ struct DenAPIBridgeTests {
         // Act / Assert: inherited scripts do not grant the popup permission.
         let denied = try await popup.callAsyncJavaScript(
             "try { await den.boards.focus(id); return false; } catch { return true; }",
-            arguments: ["id": id.rawValue.uuidString], in: nil, contentWorld: .page)
+            arguments: ["id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(denied as? Bool == true)
         #expect(firstCalls == 0)
 
@@ -90,15 +103,21 @@ struct DenAPIBridgeTests {
         await waiter.load("<p>Popup</p>", baseURL: target, in: popup)
         for webView in [first, popup] {
             _ = try await webView.callAsyncJavaScript(
-                "await den.boards.focus(id);", arguments: ["id": id.rawValue.uuidString], in: nil,
-                contentWorld: .page)
+                "await den.boards.focus(id);",
+                arguments: ["id": id.rawValue.uuidString],
+                in: nil,
+                contentWorld: .page
+            )
         }
         #expect(firstCalls == 1)
         #expect(popupCalls == 1)
         firstBridge.dispose()
         _ = try await popup.callAsyncJavaScript(
-            "await den.boards.focus(id);", arguments: ["id": id.rawValue.uuidString], in: nil,
-            contentWorld: .page)
+            "await den.boards.focus(id);",
+            arguments: ["id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(popupCalls == 2)
     }
 
@@ -124,7 +143,11 @@ struct DenAPIBridgeTests {
         await waiter.load(html, baseURL: target, in: webView)
         #expect(try await webView.evaluateJavaScript("window.apiAtStart") as? String == "object")
         _ = try await webView.callAsyncJavaScript(
-            "await den.boards.focus(id);", arguments: ["id": id.rawValue.uuidString], in: nil, contentWorld: .page)
+            "await den.boards.focus(id);",
+            arguments: ["id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(focused == [id])
         let child = try await webView.evaluateJavaScript("typeof frames[0].den") as? String
         #expect(child == "undefined")
@@ -140,30 +163,47 @@ struct DenAPIBridgeTests {
                 await frames[0].webkit.messageHandlers[handler].postMessage({action: 'board.focus', boardId: id});
                 return 'allowed';
             } catch { return 'denied'; }
-            """, arguments: ["handler": DenAPIBridge.handlerName, "id": id.rawValue.uuidString], in: nil,
-            contentWorld: .page)
+            """,
+            arguments: ["handler": DenAPIBridge.handlerName, "id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(childResult as? String == "denied")
         await waiter.load(html, baseURL: URL(fileURLWithPath: "/tmp/other.html"), in: webView)
         #expect(try await webView.evaluateJavaScript("window.apiAtStart") as? String == "object")
         _ = try await webView.callAsyncJavaScript(
-            "await den.boards.focus(id);", arguments: ["id": id.rawValue.uuidString], in: nil, contentWorld: .page)
+            "await den.boards.focus(id);",
+            arguments: ["id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(focused == [id, id])
         await waiter.load(html, baseURL: URL(string: "https://example.com/other.html")!, in: webView)
         #expect(try await webView.evaluateJavaScript("typeof window.den") as? String == "undefined")
         let denied = try await webView.callAsyncJavaScript(
-            rawCall, arguments: ["handler": DenAPIBridge.handlerName, "id": id.rawValue.uuidString], in: nil,
-            contentWorld: .page)
+            rawCall,
+            arguments: ["handler": DenAPIBridge.handlerName, "id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(denied as? String == "denied")
         #expect(focused == [id, id])
         await waiter.load(html, baseURL: target, in: webView)
         _ = try await webView.callAsyncJavaScript(
-            "await den.boards.focus(id);", arguments: ["id": id.rawValue.uuidString], in: nil, contentWorld: .page)
+            "await den.boards.focus(id);",
+            arguments: ["id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(focused == [id, id, id])
         bridge.setEnabled(false)
         // An already-captured function must lose permission immediately, before a reload finishes.
         let disabled = try await webView.callAsyncJavaScript(
             "try { await den.boards.focus(id); return 'allowed'; } catch { return 'denied'; }",
-            arguments: ["id": id.rawValue.uuidString], in: nil, contentWorld: .page)
+            arguments: ["id": id.rawValue.uuidString],
+            in: nil,
+            contentWorld: .page
+        )
         #expect(disabled as? String == "denied")
         await waiter.load(html, baseURL: target, in: webView)
         #expect(try await webView.evaluateJavaScript("typeof window.den") as? String == "undefined")
@@ -189,7 +229,10 @@ struct DenAPIBridgeTests {
             let error =
                 try await webView.callAsyncJavaScript(
                     "try { await den.boards.focus(id); return ''; } catch (error) { return String(error); }",
-                    arguments: ["id": id], in: nil, contentWorld: .page) as? String
+                    arguments: ["id": id],
+                    in: nil,
+                    contentWorld: .page
+                ) as? String
             #expect(error?.contains(id == "invalid" ? "UUID" : "Board not found") == true)
         }
     }

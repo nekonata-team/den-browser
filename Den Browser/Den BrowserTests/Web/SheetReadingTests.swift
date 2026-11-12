@@ -18,7 +18,8 @@ struct SheetReadingTests {
                     + '<div id="nested"></div><pre><code class="language-js">  const x = 1;\\n  use(x);</code></pre>';
                 shadow.querySelector('#nested').attachShadow({mode: 'open'}).innerHTML = '<p>Nested marker</p>';
                 </script>
-                """)
+                """
+        )
         let inspect = """
             JSON.stringify([document.documentElement.outerHTML,
               document.querySelector('#host').shadowRoot.innerHTML,
@@ -56,7 +57,8 @@ struct SheetReadingTests {
                 shadow.innerHTML = '<p><slot name="first">Replaced fallback</slot></p>'
                     + '<p><slot name="empty">Fallback marker</slot></p><p><slot name="last"></slot></p>';
                 </script>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -99,7 +101,8 @@ struct SheetReadingTests {
                 document.querySelector('#hidden').attachShadow({mode: 'open'}).innerHTML = '<p>Hidden host marker</p>';
                 document.querySelector('#closed').attachShadow({mode: 'closed'}).innerHTML = '<p>Closed root marker</p>';
                 </script>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -125,7 +128,8 @@ struct SheetReadingTests {
     @Test func textWithoutShadowContentKeepsNativeFormatting() async throws {
         // Arrange
         let webView = await makeWebView(
-            html: "<h1>Heading</h1><p>First<br>Second</p><pre>  code\n    indented</pre><p hidden>Hidden</p>")
+            html: "<h1>Heading</h1><p>First<br>Second</p><pre>  code\n    indented</pre><p hidden>Hidden</p>"
+        )
         let expected = try await webView.evaluateJavaScript("document.body.innerText") as? String
 
         // Act
@@ -142,7 +146,8 @@ struct SheetReadingTests {
                 <div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span>some_value = 1</span>
                     print(some_value)
                 </pre></div>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -162,7 +167,8 @@ struct SheetReadingTests {
             html: """
                 <pre><div class="buttons"><button>Run control marker</button></div>
                 <code class="language-rust">\(content)</code></pre>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -182,7 +188,8 @@ struct SheetReadingTests {
                 <table><tr><th>Name</th><th>Value</th></tr>
                 <tr><td>Example</td><td>First<br>Second</td></tr>
                 <tr><td>Paragraphs</td><td><p>Third</p><p>Fourth</p></td></tr></table>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -203,7 +210,8 @@ struct SheetReadingTests {
         let content = "```js\nconsole.log(1)\n```"
         let code = wrapped ? "<code>\(content)</code>" : content
         let webView = await makeWebView(
-            html: "<div class=\"highlight \(highlightClass)\">\n<pre>\(code)</pre></div>")
+            html: "<div class=\"highlight \(highlightClass)\">\n<pre>\(code)</pre></div>"
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -226,7 +234,8 @@ struct SheetReadingTests {
                 <p id="inside">Closed content marker<span id="inside-child">Closed child marker</span></p>
                 </details>
                 <details open><summary>Open summary</summary><p>Open content marker</p></details>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView, within: scope)
@@ -255,7 +264,8 @@ struct SheetReadingTests {
             html: """
                 <section id="hidden" style="content-visibility:hidden">
                 <p id="hidden-child">Hidden content marker</p></section><p>Visible marker</p>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView, within: scope)
@@ -286,7 +296,8 @@ struct SheetReadingTests {
                 window.constructorCalls = 0;
                 document.getElementById('state').textContent = 'Unchanged marker';
                 </script>
-                """)
+                """
+        )
         let before = try await webView.evaluateJavaScript("document.documentElement.outerHTML") as? String
 
         // Act
@@ -319,7 +330,8 @@ struct SheetReadingTests {
                 Hidden text marker <img src="data:," alt="Hidden image marker">
                 <span id="child" style="visibility:visible">Visible child marker</span>
                 </section>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView, within: scope)
@@ -341,7 +353,8 @@ struct SheetReadingTests {
                 <p>Before marker</p><table></table>
                 <table><tr hidden><td>Hidden row marker</td></tr></table>
                 <table><caption>Caption marker</caption></table><p>After marker</p>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -363,7 +376,8 @@ struct SheetReadingTests {
             html: """
                 <table><tr><th>Expression | sample</th><th>Code</th></tr>
                 <tr><td>a | b</td><td><code>a | b</code></td></tr></table>
-                """)
+                """
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -391,11 +405,19 @@ struct SheetReadingTests {
             <main><h2 id="heading">Focus</h2><p>Body content</p></main>
             <div style="display:none"><article id="concealed">Concealed content</article></div>
             <footer>Footer marker</footer>
-            """, baseURL: URL(string: "https://example.com/")!, in: webView)
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
         let within: String
         if scope == "ref" {
             let elements = try await SheetInteraction.query(
-                selector: "main", visibleOnly: false, all: false, fields: [], in: webView)
+                selector: "main",
+                visibleOnly: false,
+                all: false,
+                fields: [],
+                in: webView
+            )
             within = try #require(elements.first).ref
         } else {
             within = scope
@@ -430,7 +452,9 @@ struct SheetReadingTests {
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             "<main>Body</main><footer>Footer</footer>",
-            baseURL: URL(string: "https://example.com/")!, in: webView)
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
 
         // Act / Assert
         do {
@@ -464,7 +488,9 @@ struct SheetReadingTests {
             <footer>Footer content</footer>
             </body></html>
             """,
-            baseURL: URL(string: "https://example.com/source")!, in: webView)
+            baseURL: URL(string: "https://example.com/source")!,
+            in: webView
+        )
         let before = try await webView.evaluateJavaScript("document.documentElement.outerHTML") as? String
 
         // Act
@@ -506,7 +532,8 @@ struct SheetReadingTests {
                 <h1>Offline</h1><p><del>Removed</del></p>
                 <ul><li><input type="checkbox" checked>Done</li></ul>
                 <table><tr><th>Name</th></tr><tr><td>Value</td></tr></table>
-                """)
+                """
+        )
         _ = try await webView.evaluateJavaScript(
             """
             globalThis.__denNetworkAttempts = 0;
@@ -517,7 +544,10 @@ struct SheetReadingTests {
                 };
             }
             null;
-            """, in: nil, contentWorld: SheetDOMRuntime.contentWorld)
+            """,
+            in: nil,
+            contentWorld: SheetDOMRuntime.contentWorld
+        )
 
         // Act
         let result = try await SheetReading.read(in: webView)
@@ -534,7 +564,10 @@ struct SheetReadingTests {
         #expect(markdown.contains("| Value |"))
         let attempts =
             try await webView.evaluateJavaScript(
-                "globalThis.__denNetworkAttempts", in: nil, contentWorld: SheetDOMRuntime.contentWorld) as? Int
+                "globalThis.__denNetworkAttempts",
+                in: nil,
+                contentWorld: SheetDOMRuntime.contentWorld
+            ) as? Int
         #expect(attempts == 0)
     }
 
@@ -545,8 +578,11 @@ struct SheetReadingTests {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
-            "<response>XML result</response>", mimeType: "application/xml",
-            baseURL: URL(string: "https://example.com/result.xml")!, in: webView)
+            "<response>XML result</response>",
+            mimeType: "application/xml",
+            baseURL: URL(string: "https://example.com/result.xml")!,
+            in: webView
+        )
 
         // Act / Assert
         await #expect(throws: (any Error).self) {

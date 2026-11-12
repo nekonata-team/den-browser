@@ -13,7 +13,8 @@ struct KeyboardShortcutsGuideTests {
             items: [
                 ShortcutGuideItem(keys: ["⌘", "T"], label: "Open Board", accessibilityKeys: "Command T"),
                 ShortcutGuideItem(keys: ["f"], label: "Toggle maximized Board", accessibilityKeys: "f"),
-            ])
+            ]
+        )
 
         // Act
         let actionMatch = section.filtered(matching: "open board")

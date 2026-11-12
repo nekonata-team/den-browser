@@ -15,9 +15,15 @@ struct BoardLayoutTests {
 
         // Act
         let belowThreshold = BoardLayout.visibleBoardIDs(
-            in: params, offsetX: first.maxX - width * 0.04, containerWidth: width)
+            in: params,
+            offsetX: first.maxX - width * 0.04,
+            containerWidth: width
+        )
         let aboveThreshold = BoardLayout.visibleBoardIDs(
-            in: params, offsetX: first.maxX - width * 0.06, containerWidth: width)
+            in: params,
+            offsetX: first.maxX - width * 0.06,
+            containerWidth: width
+        )
         let emptyViewport = BoardLayout.visibleBoardIDs(in: params, offsetX: 0, containerWidth: 0)
 
         // Assert
@@ -45,7 +51,8 @@ struct BoardLayoutTests {
             maximizedBoardID: baseParams.maximizedBoardID,
             windowWidth: baseParams.windowWidth,
             horizontalPadding: baseParams.horizontalPadding,
-            spacing: baseParams.spacing)
+            spacing: baseParams.spacing
+        )
 
         #expect(BoardLayout.calculatePaddings(for: params) == (leading: 500, trailing: 444))
     }
@@ -142,7 +149,10 @@ struct BoardLayoutTests {
 
         // Act
         let target = BoardLayout.scrollTargetAfterLayoutChange(
-            for: params.boards[1].id, in: params, currentScrollX: 1_500)
+            for: params.boards[1].id,
+            in: params,
+            currentScrollX: 1_500
+        )
 
         // Assert
         #expect(target == 488)
@@ -154,7 +164,10 @@ struct BoardLayoutTests {
 
         // Act
         let target = BoardLayout.scrollTargetAfterLayoutChange(
-            for: params.boards[1].id, in: params, currentScrollX: 1_000)
+            for: params.boards[1].id,
+            in: params,
+            currentScrollX: 1_000
+        )
 
         // Assert
         #expect(target == 488)
@@ -166,10 +179,16 @@ struct BoardLayoutTests {
 
         // Act
         let target = BoardLayout.scrollTargetAfterLayoutChange(
-            for: params.boards[2].id, in: params, currentScrollX: 800)
+            for: params.boards[2].id,
+            in: params,
+            currentScrollX: 800
+        )
         let fittingParams = parameters(centering: .never, boardCount: 1)
         let fittingTarget = BoardLayout.scrollTargetAfterLayoutChange(
-            for: fittingParams.boards[0].id, in: fittingParams, currentScrollX: 800)
+            for: fittingParams.boards[0].id,
+            in: fittingParams,
+            currentScrollX: 800
+        )
 
         // Assert
         #expect(target == 52)
@@ -182,7 +201,10 @@ struct BoardLayoutTests {
 
         // Act
         let target = BoardLayout.scrollTargetAfterLayoutChange(
-            for: params.boards[3].id, in: params, currentScrollX: 0)
+            for: params.boards[3].id,
+            in: params,
+            currentScrollX: 0
+        )
 
         // Assert
         #expect(target == 324)
@@ -193,14 +215,25 @@ struct BoardLayoutTests {
         let primary = BoardState(label: "Primary", width: 500, currentSheetURL: nil)
         let side = BoardState(label: "Inspection Board", width: 360, targetBoardID: primary.id)
         let params = BoardLayout.Parameters(
-            centering: .always, boards: [primary, side], maximizedBoardID: nil,
-            windowWidth: 1_000, horizontalPadding: 10, spacing: 8)
+            centering: .always,
+            boards: [primary, side],
+            maximizedBoardID: nil,
+            windowWidth: 1_000,
+            horizontalPadding: 10,
+            spacing: 8
+        )
 
         // Act
         let primaryTarget = BoardLayout.scrollTargetAfterLayoutChange(
-            for: primary.id, in: params, currentScrollX: 1_000)
+            for: primary.id,
+            in: params,
+            currentScrollX: 1_000
+        )
         let sideTarget = BoardLayout.scrollTargetAfterLayoutChange(
-            for: side.id, in: params, currentScrollX: 1_000)
+            for: side.id,
+            in: params,
+            currentScrollX: 1_000
+        )
 
         // Assert
         #expect(primaryTarget == 432)
@@ -214,16 +247,26 @@ struct BoardLayoutTests {
         var boards = original.boards
         for index in boards.indices { boards[index].width = BoardState.constrainedWidth(boards[index].width + delta) }
         let resized = BoardLayout.Parameters(
-            centering: original.centering, boards: boards, maximizedBoardID: nil,
-            windowWidth: original.windowWidth, horizontalPadding: original.horizontalPadding,
-            spacing: original.spacing)
+            centering: original.centering,
+            boards: boards,
+            maximizedBoardID: nil,
+            windowWidth: original.windowWidth,
+            horizontalPadding: original.horizontalPadding,
+            spacing: original.spacing
+        )
         let focusedIndex = 2
         let originalOffset = BoardLayout.scrollTargetAfterLayoutChange(
-            for: boards[focusedIndex].id, in: original, currentScrollX: 0)!
+            for: boards[focusedIndex].id,
+            in: original,
+            currentScrollX: 0
+        )!
 
         // Act
         let resizedOffset = BoardLayout.scrollTargetAfterLayoutChange(
-            for: boards[focusedIndex].id, in: resized, currentScrollX: originalOffset)!
+            for: boards[focusedIndex].id,
+            in: resized,
+            currentScrollX: originalOffset
+        )!
 
         // Assert
         let widthChange = boards[focusedIndex].width - original.boards[focusedIndex].width
@@ -240,10 +283,17 @@ struct BoardLayoutTests {
 
         // Act
         let target = BoardLayout.scrollTargetAfterLayoutChange(
-            for: params.boards[boardIndex].id, in: params, currentScrollX: 0, forceCenter: true)
+            for: params.boards[boardIndex].id,
+            in: params,
+            currentScrollX: 0,
+            forceCenter: true
+        )
         let expected = BoardLayout.centeredScrollX(
-            for: boardIndex, in: params,
-            containerWidth: params.windowWidth, contentWidth: BoardLayout.contentWidth(for: params))
+            for: boardIndex,
+            in: params,
+            containerWidth: params.windowWidth,
+            contentWidth: BoardLayout.contentWidth(for: params)
+        )
 
         // Assert
         #expect(target == expected)
@@ -342,6 +392,7 @@ struct BoardLayoutTests {
             maximizedBoardID: nil,
             windowWidth: 1_000,
             horizontalPadding: 10,
-            spacing: 8)
+            spacing: 8
+        )
     }
 }

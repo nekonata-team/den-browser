@@ -79,7 +79,8 @@ struct DrawerItemView<Peek: View>: View {
                         .foregroundStyle(.primary)
                         .frame(
                             width: DenDrawerLayout.itemButtonWidth,
-                            height: DenDrawerLayout.itemHeight)
+                            height: DenDrawerLayout.itemHeight
+                        )
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Place \(item.displayName) as Board")
@@ -93,7 +94,8 @@ struct DrawerItemView<Peek: View>: View {
                         .foregroundStyle(isDiscardHovered ? .red : .primary)
                         .frame(
                             width: DenDrawerLayout.itemButtonWidth,
-                            height: DenDrawerLayout.itemHeight)
+                            height: DenDrawerLayout.itemHeight
+                        )
                 }
                 .buttonStyle(.plain)
                 .onHover { isHovering in
@@ -116,7 +118,8 @@ struct DrawerItemView<Peek: View>: View {
                 .fill(
                     isSelected
                         ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(
-                            DenSurfaceColors.selectionOpacity)
+                            DenSurfaceColors.selectionOpacity
+                        )
                         : Color.primary.opacity(0.04)
                 )
         )

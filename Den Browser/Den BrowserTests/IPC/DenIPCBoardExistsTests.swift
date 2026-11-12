@@ -19,8 +19,10 @@ struct DenIPCBoardExistsTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
-            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
-            websiteDataStore: { _ in .nonPersistent() })
+            preferences: AppPreferences(defaults: defaults),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let callerSession = try #require(manager.session(for: manager.personalProfileID))
         let caller = try #require(callerSession.boardOpening.createBoard(urlString: "https://example.com/caller"))
         let profile = try #require(manager.createProfile(name: "Other", color: .blue))
@@ -51,7 +53,9 @@ struct DenIPCBoardExistsTests {
         let response = await service.handleRequest(
             DenIPCRequest(
                 operation: .boardExists(boardID: queriedID),
-                context: .init(profileID: profileID, callerBoardID: caller.rawValue)))
+                context: .init(profileID: profileID, callerBoardID: caller.rawValue)
+            )
+        )
 
         // Assert
         if scope == "unknown" {

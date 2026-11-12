@@ -16,7 +16,8 @@ struct NativeDeskTests {
         let second = desk("Second")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second]))
+            )
         ) { session, model in
             model.isDenMode = true
 
@@ -36,7 +37,8 @@ struct NativeDeskTests {
         let second = desk("Second")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second]))
+            )
         ) { session, model in
             model.isDenMode = true
 
@@ -53,7 +55,8 @@ struct NativeDeskTests {
     @Test func createsEmptyDeskAfterFocusedDesk() {
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("First"), desk("Second")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("First"), desk("Second")]))
+            )
         ) { session, windowModel in
             windowModel.isDenMode = true
             session.desks.createDesk(label: "  Writing  ", preset: .empty)
@@ -70,8 +73,10 @@ struct NativeDeskTests {
         let sourceDesk = desk("First")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.boardOpening.openTutorialBoard())
         #expect(session.boardOpening.openBoard(input: "https://one.example/"))
         #expect(session.navigation.focusedDesk?.boards.count == 2)
@@ -85,13 +90,15 @@ struct NativeDeskTests {
         #expect(
             session.resources.state.desks.flatMap(\.boards).first(where: \.isTutorial)?.tutorialCompletedSteps?
                 .isSuperset(
-                    of: [.openBoard, .navigateBoards, .createDesk]) == true)
+                    of: [.openBoard, .navigateBoards, .createDesk]) == true
+        )
     }
 
     @Test func createsChatGPTPresetWithThreeBoards() {
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("First")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("First")]))
+            )
         ) { session in
             session.desks.createDesk(label: "AI", preset: .chatGPT)
 
@@ -99,18 +106,21 @@ struct NativeDeskTests {
             #expect(
                 session.navigation.focusedDesk?.boards.allSatisfy {
                     $0.currentSheetURL == URL(string: "https://chatgpt.com/")
-                } == true)
+                } == true
+            )
             #expect(session.navigation.focusedDesk?.boards.allSatisfy { $0.width == 520 } == true)
             #expect(
                 session.navigation.focusedDesk?.focusedBoardID
-                    == session.navigation.focusedDesk?.boards.first?.id)
+                    == session.navigation.focusedDesk?.boards.first?.id
+            )
         }
     }
 
     @Test func createsGeminiPresetWithThreeBoards() {
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("First")])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk("First")]))
+            )
         ) { session in
             session.desks.createDesk(label: "Gemini", preset: .gemini)
 
@@ -118,7 +128,8 @@ struct NativeDeskTests {
             #expect(
                 session.navigation.focusedDesk?.boards.allSatisfy {
                     $0.currentSheetURL == URL(string: "https://gemini.google.com/") && $0.width == 520
-                } == true)
+                } == true
+            )
         }
     }
 
@@ -126,7 +137,8 @@ struct NativeDeskTests {
         let desks = (1...DeskCreation.maximumDeskCount).map { desk("Desk \($0)") }
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: desks)))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: desks))
+            )
         ) { session in
             session.desks.createDesk(label: "Overflow", preset: .empty)
 
@@ -151,14 +163,26 @@ struct NativeDeskTests {
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let context = try #require(
             CGContext(
-                data: nil, width: 10, height: 10, bitsPerComponent: 8, bytesPerRow: 40,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: 10,
+                height: 10,
+                bitsPerComponent: 8,
+                bytesPerRow: 40,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         let raster = try #require(context.makeImage())
         session.resources.facingCache.setFacing(
-            NSImage(cgImage: raster, size: CGSize(width: 10, height: 10)), for: web.id)
+            NSImage(cgImage: raster, size: CGSize(width: 10, height: 10)),
+            for: web.id
+        )
 
         // Act
         session.desks.duplicateDesk(source.id)
@@ -185,7 +209,8 @@ struct NativeDeskTests {
         let source = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source]))
+            )
         ) { session, windowModel in
             windowModel.isDenMode = true
 
@@ -205,8 +230,10 @@ struct NativeDeskTests {
         let source = desk("Learning")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.boardOpening.openTutorialBoard())
 
         // Act
@@ -230,7 +257,10 @@ struct NativeDeskTests {
                     let callback: (DenState) -> Void = { _ in didSave = true }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         session.desks.duplicateDesk(atLimit ? desks[0].id : DeskID())
@@ -248,12 +278,16 @@ struct NativeDeskTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [replacing, other], focusedDeskID: replacing.id)),
+                    DenState(desks: [replacing, other], focusedDeskID: replacing.id)
+                ),
                 onSave: { state in
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -262,7 +296,8 @@ struct NativeDeskTests {
         let restorationCandidate = RecentlyRemovedBoard(
             board: board("Removed"),
             sourceDeskID: other.id,
-            sourceBoardIndex: BoardIndex(rawValue: 0))
+            sourceBoardIndex: BoardIndex(rawValue: 0)
+        )
         session.resources.recentlyRemovedBoards = [restorationCandidate]
         windowModel.toggleFocusedBoardMaximized()
         windowModel.showReplaceDeskPanel()
@@ -304,14 +339,18 @@ struct NativeDeskTests {
             label: "Old",
             width: 520,
             currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true)
+            sheetNavigationPaused: true
+        )
         let replacing = desk("Research", boards: [oldBoard], focusedBoardID: oldBoard.id)
         let other = desk("Other")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [replacing, other], focusedDeskID: replacing.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [replacing, other], focusedDeskID: replacing.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         let composition = DenWindowComposition(session: session)
 
@@ -331,8 +370,10 @@ struct NativeDeskTests {
         replacing.anchorBoardID = oldBoards[0].id
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [replacing], focusedDeskID: replacing.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [replacing], focusedDeskID: replacing.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -361,7 +402,8 @@ struct NativeDeskTests {
         let original = desk("Original", boards: [existing])
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [original])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [original]))
+            )
         ) { session, windowModel in
             windowModel.showReplaceDeskPanel()
             #expect(session.desks.replaceFocusedDesk(label: "AI", preset: .gemini) == .confirmationPending)
@@ -378,7 +420,8 @@ struct NativeDeskTests {
         let empty = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty]))
+            )
         ) { session, windowModel in
             windowModel.showReplaceDeskPanel()
 
@@ -399,7 +442,8 @@ struct NativeDeskTests {
         let third = desk("Third")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, empty, third])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, empty, third]))
+            )
         ) { session, windowModel in
             session.boardNavigation.focusDesk(empty.id)
             windowModel.isDenMode = true
@@ -418,7 +462,8 @@ struct NativeDeskTests {
         let second = desk("Second")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second]))
+            )
         ) { session in
             session.desks.deleteFocusedDesk()
 
@@ -434,7 +479,8 @@ struct NativeDeskTests {
         let third = desk("Third")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second, third])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [first, second, third]))
+            )
         ) { session, windowModel in
             session.boardNavigation.focusDesk(second.id)
             session.desks.deleteFocusedDesk()
@@ -463,8 +509,11 @@ struct NativeDeskTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [first, second, third], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [first, second, third], focusedDeskID: first.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.boardNavigation.focusDesk(second.id)
         session.boardNavigation.focusDesk(third.id)
@@ -480,22 +529,26 @@ struct NativeDeskTests {
         let tutorialBoard = BoardState(
             label: "Tutorial",
             width: 520,
-            tutorial: TutorialBoardState())
+            tutorial: TutorialBoardState()
+        )
         var first = desk(
             "First",
             boards: [tutorialBoard, boardItem],
-            focusedBoardID: tutorialBoard.id)
+            focusedBoardID: tutorialBoard.id
+        )
         first.anchorBoardID = tutorialBoard.id
         first.scrollOffsetX = 80
         let second = desk("Second")
         let tutorialOnlyBoard = BoardState(
             label: "Tutorial",
             width: 520,
-            tutorial: TutorialBoardState())
+            tutorial: TutorialBoardState()
+        )
         let tutorialOnlyDesk = desk(
             "Tutorial only",
             boards: [tutorialOnlyBoard],
-            focusedBoardID: tutorialOnlyBoard.id)
+            focusedBoardID: tutorialOnlyBoard.id
+        )
         let rawState = DenState(desks: [second, first, tutorialOnlyDesk], focusedDeskID: DeskID())
 
         let normalized = DenStateNormalization.normalize(rawState)
@@ -513,8 +566,10 @@ struct NativeDeskTests {
         let second = desk("Second")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -530,12 +585,14 @@ struct NativeDeskTests {
         let first = BoardState(
             label: "First [Reference]",
             width: 520,
-            currentSheetURL: URL(string: "https://first.example/"))
+            currentSheetURL: URL(string: "https://first.example/")
+        )
         let empty = BoardState(label: "Empty", width: 520, currentSheetURL: nil)
         let second = BoardState(
             label: "Second",
             width: 520,
-            currentSheetURL: URL(string: "https://second.example/path"))
+            currentSheetURL: URL(string: "https://second.example/path")
+        )
         let desk = DeskState(label: "Research", boards: [first, empty, second])
 
         let expected = [
@@ -558,19 +615,24 @@ struct NativeDeskTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [first, second, third], focusedDeskID: first.id)),
+                    DenState(desks: [first, second, third], focusedDeskID: first.id)
+                ),
                 onSave: { state in
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         #expect(session.resources.deskMovement.beginDrag(second.id))
         session.resources.deskMovement.preview(second.id, to: DeskIndex(rawValue: 2))
         session.runtimes.updateBoard(
             boardID: secondBoard.id,
             url: URL(string: "https://updated.example/"),
-            title: "Updated title")
+            title: "Updated title"
+        )
 
         #expect(savedState == nil)
 
@@ -581,7 +643,8 @@ struct NativeDeskTests {
         #expect(session.resources.state.desks[2].boards.map(\.id) == [secondBoard.id])
         #expect(session.resources.state.desks[2].focusedBoardID == secondBoard.id)
         #expect(
-            session.resources.state.desks[2].boards[0].currentSheetURL == URL(string: "https://updated.example/"))
+            session.resources.state.desks[2].boards[0].currentSheetURL == URL(string: "https://updated.example/")
+        )
         #expect(session.resources.state.desks[2].boards[0].label == "Updated title")
         #expect(savedState == session.resources.state)
 
@@ -596,8 +659,11 @@ struct NativeDeskTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [first, second, third], focusedDeskID: second.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [first, second, third], focusedDeskID: second.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         session.resources.deskMovement.move(first.id, by: 1)
 
@@ -623,19 +689,24 @@ struct NativeDeskTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [first, second, third], focusedDeskID: first.id)),
+                    DenState(desks: [first, second, third], focusedDeskID: first.id)
+                ),
                 onSave: { state in
                     let callback: (DenState) -> Void = { savedState = $0 }
                     callback(state)
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         #expect(session.resources.deskMovement.beginDrag(second.id))
         session.resources.deskMovement.preview(second.id, to: DeskIndex(rawValue: 2))
         session.runtimes.updateBoard(
             boardID: secondBoard.id,
             url: URL(string: "https://updated.example/"),
-            title: "Updated title")
+            title: "Updated title"
+        )
         #expect(savedState == nil)
 
         session.resources.deskMovement.restoreOrder([first.id, second.id, third.id])
@@ -643,7 +714,8 @@ struct NativeDeskTests {
 
         #expect(session.resources.state.desks.map(\.id) == [first.id, second.id, third.id])
         #expect(
-            session.resources.state.desks[1].boards[0].currentSheetURL == URL(string: "https://updated.example/"))
+            session.resources.state.desks[1].boards[0].currentSheetURL == URL(string: "https://updated.example/")
+        )
         #expect(session.resources.state.desks[1].boards[0].label == "Updated title")
         #expect(savedState == session.resources.state)
     }
@@ -654,7 +726,8 @@ struct NativeDeskTests {
         let empty = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty]))
+            )
         ) { session, windowModel in
             session.desks.deleteFocusedDesk()
 
@@ -678,7 +751,8 @@ struct NativeDeskTests {
         let empty = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty]))
+            )
         ) { session, windowModel in
             windowModel.isDenMode = true
             session.desks.deleteFocusedDesk()
@@ -695,7 +769,8 @@ struct NativeDeskTests {
         let empty = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty]))
+            )
         ) { session, windowModel in
             session.desks.deleteFocusedDesk()
             windowModel.cancelConfirmation()
@@ -711,7 +786,8 @@ struct NativeDeskTests {
         let empty = desk("Empty")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty]))
+            )
         ) { session, windowModel in
             let runtime = session.runtimes.webRuntime(for: board)
             session.desks.deleteFocusedDesk()
@@ -729,14 +805,18 @@ struct NativeDeskTests {
             label: "Removed",
             width: 520,
             currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true)
+            sheetNavigationPaused: true
+        )
         let populated = desk("Populated", boards: [removedBoard], focusedBoardID: removedBoard.id)
         let empty = desk("Empty")
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [populated, empty], focusedDeskID: populated.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [populated, empty], focusedDeskID: populated.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -752,7 +832,8 @@ struct NativeDeskTests {
         let onlyDesk = desk("Only")
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [onlyDesk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [onlyDesk]))
+            )
         ) { session, windowModel in
             session.desks.deleteFocusedDesk()
 
@@ -768,7 +849,8 @@ struct NativeDeskTests {
         let target = desk("Two", boards: [targetBoard])
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [source, target]))
+            )
         ) { session in
             session.boardNavigation.moveFocusedBoard(toDeskNumber: 2)
 
@@ -786,7 +868,8 @@ struct NativeDeskTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk1]))
+            )
         ) { session, windowModel in
             // 1. Enter Den Mode, show rename panel
             windowModel.isDenMode = true
@@ -811,7 +894,8 @@ struct NativeDeskTests {
         let deskB = desk("Desk B")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA, deskB])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA, deskB]))
+            )
         ) { session in
             #expect(session.desks.deskScrollOffset(for: deskA.id) == nil)
 
@@ -829,7 +913,8 @@ struct NativeDeskTests {
         let deskA = desk("Desk A")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA]))
+            )
         ) { session in
             let pasteboard = NSPasteboard.withUniqueName()
             session.desks.copyDeskID(deskA.id, pasteboard: pasteboard)
@@ -844,7 +929,8 @@ struct NativeDeskTests {
         let deskA = desk("Desk A")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA]))
+            )
         ) { session in
             let pasteboard = NSPasteboard.withUniqueName()
             session.desks.copyDeskID(DeskID(), pasteboard: pasteboard)

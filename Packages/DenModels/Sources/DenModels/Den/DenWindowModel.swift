@@ -208,7 +208,8 @@ public final class DenWindowModel {
         case .presentZmxSessions(let returnsToOpenBoard, let selectedSessionName):
             showZmxSessions(
                 selectedSessionName: selectedSessionName,
-                returnsToOpenBoard: returnsToOpenBoard)
+                returnsToOpenBoard: returnsToOpenBoard
+            )
         case .presentZmxDuplicationPanel(let rootSessionName):
             zmxDuplicationRootSessionName = rootSessionName
             setTemporaryContext(.zmxDuplication)
@@ -251,7 +252,8 @@ public final class DenWindowModel {
                 itemID,
                 previousItems: previousItems,
                 advancesPeek: advancesPeek,
-                focusNext: focusNext)
+                focusNext: focusNext
+            )
             if drawer.items.isEmpty { closeDrawer() }
         case .drawerCleared:
             drawer.resetPresentation()

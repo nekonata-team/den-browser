@@ -15,7 +15,8 @@ struct OverviewKeyboardRoutingTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             model.showOverview()
             let event = try key(character)
@@ -37,7 +38,8 @@ struct OverviewKeyboardRoutingTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             model.showOverview()
             model.overview.enterFilterMode()
@@ -58,7 +60,8 @@ struct OverviewKeyboardRoutingTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             model.showOverview()
             model.overview.enterFilterMode()
@@ -81,7 +84,8 @@ struct OverviewKeyboardRoutingTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             model.showOverview()
             let event = try key(character)
@@ -102,7 +106,8 @@ struct OverviewKeyboardRoutingTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         try withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [desk]))
+            )
         ) { session, model in
             model.exitDenMode()
             let event = try key("=")
@@ -119,14 +124,24 @@ struct OverviewKeyboardRoutingTests {
         KeyboardRouter.route(
             event: KeyEvent(event),
             context: InputContext(session: session, windowModel: model, event: event),
-            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences))
+            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences)
+        )
     }
 
     private func key(_ character: String, modifiers: NSEvent.ModifierFlags = []) throws -> NSEvent {
         try #require(
             NSEvent.keyEvent(
-                with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0,
-                windowNumber: 0, context: nil, characters: character, charactersIgnoringModifiers: character,
-                isARepeat: false, keyCode: character == "-" ? 27 : (character == "0" ? 29 : 24)))
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: modifiers,
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: character,
+                charactersIgnoringModifiers: character,
+                isARepeat: false,
+                keyCode: character == "-" ? 27 : (character == "0" ? 29 : 24)
+            )
+        )
     }
 }

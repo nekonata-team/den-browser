@@ -28,15 +28,18 @@ struct SettingsView: View {
                             preferences.drawerAutoCleanup
                         } set: {
                             preferences.setDrawerAutoCleanup($0)
-                        })
+                        }
+                    )
                 case .skills:
                     SkillsSettingsView(
                         installCommand: SkillMaintenanceAction.install.command,
                         updateCommand: SkillMaintenanceAction.update.command,
                         install: { profileManager.runSkillMaintenance(.install) },
-                        update: { profileManager.runSkillMaintenance(.update) })
+                        update: { profileManager.runSkillMaintenance(.update) }
+                    )
                 }
-            })
+            }
+        )
     }
 }
 
@@ -47,6 +50,7 @@ private struct WebSettingsView: View {
         DenViews.WebSettingsView(
             model: WebSettingsModel(preferences: preferences, manager: profileManager),
             defaultBrowser: DefaultBrowserSettingsModel(preferences: preferences),
-            openPopup: { profileManager.presentUBOLitePopup(anchorView: $0) })
+            openPopup: { profileManager.presentUBOLitePopup(anchorView: $0) }
+        )
     }
 }

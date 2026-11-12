@@ -24,7 +24,8 @@ final class BoardRuntimeReceiver {
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
-                    recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
+                    recentItem: .url(WebURLPolicy.canonicalSheetURL(url))
+                )
             },
             onOpenBoardInBackground: { [connection] url in
                 _ = connection.boardOpening?.createBoard(
@@ -32,7 +33,8 @@ final class BoardRuntimeReceiver {
                     preferredWidth: board.width,
                     afterBoardID: board.id,
                     focus: false,
-                    recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
+                    recentItem: .url(WebURLPolicy.canonicalSheetURL(url))
+                )
             },
             onKeepInDrawer: { [connection] url in connection.drawer?.keepInDrawer(url, opensDrawer: false) },
             onEditCurrentSheet: { [connection] in
@@ -48,7 +50,8 @@ final class BoardRuntimeReceiver {
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
-                    recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
+                    recentItem: .url(WebURLPolicy.canonicalSheetURL(url))
+                )
             },
             onCopyURLSucceeded: { [connection] in
                 connection.feedback?.publish("Copied Current Sheet URL.", severity: .success)
@@ -77,7 +80,9 @@ final class BoardRuntimeReceiver {
                 connection.onWindowEffect?(
                     .presentOverview(
                         deskID: connection.presentedDeskID(),
-                        boardID: connection.focusedBoardID()))
+                        boardID: connection.focusedBoardID()
+                    )
+                )
             },
             onShowEssentials: { [connection] in
                 connection.boardNavigation?.focusBoard(board.id)
@@ -105,7 +110,8 @@ final class BoardRuntimeReceiver {
             onNavigateCurrentSheet: { [connection] url in
                 connection.boardNavigation?.focusBoard(board.id)
                 connection.boardOpening?.navigateFocusedBoard(urlString: url.absoluteString)
-            })
+            }
+        )
     }
 
     func webEvents(for board: BoardState, connection: RuntimeWindowConnection) -> WebRuntime.Events {
@@ -121,7 +127,11 @@ final class BoardRuntimeReceiver {
             },
             onCreatePopupBoard: { [connection] webView, url, flags in
                 connection.boardOpening?.createPopupBoard(
-                    webView, requestedURL: url, fromBoardID: board.id, modifierFlags: flags) ?? false
+                    webView,
+                    requestedURL: url,
+                    fromBoardID: board.id,
+                    modifierFlags: flags
+                ) ?? false
             },
             onClosePopupBoard: { [weak self, connection] in self?.removeBoard(connection: connection) },
             onReturnFromPictureInPicture: { [connection] in
@@ -155,7 +165,8 @@ final class BoardRuntimeReceiver {
                     throw DenAPIBridge.Failure(message: "Toast display is unavailable")
                 }
                 feedback.publish(title: nil, body: message, severity: severity, target: .board(board.id))
-            })
+            }
+        )
     }
 
     func terminalEvents(for board: BoardState, connection: RuntimeWindowConnection) -> TerminalRuntime.Events {
@@ -170,11 +181,15 @@ final class BoardRuntimeReceiver {
             onNotification: { [weak self, connection] title, body in
                 guard
                     let notification = self?.storage?.notificationOperations.record(
-                        title: title, body: body, boardID: board.id)
+                        title: title,
+                        body: body,
+                        boardID: board.id
+                    )
                 else { return }
                 connection.onWindowEffect?(.notificationAdded(notification.id))
                 connection.feedback?.publish(title: title, body: body, target: .notification(notification.id))
-            })
+            }
+        )
     }
 
     private func removeBoard(connection: RuntimeWindowConnection) {

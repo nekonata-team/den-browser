@@ -22,9 +22,11 @@ final class EssentialActions {
     func launchEssential(id: UUID, preferredWidth: Double? = nil, inDrawer: Bool = false) {
         guard let essential = essentials.first(where: { $0.id == id }) else { return }
         if case .rejected(let message) = storage.inputOpening.launch(
-            essential, context: boardOpening.inputOpeningContext(preferredWidth: preferredWidth), inDrawer: inDrawer,
-            notify: input.inputOpeningNotifications())
-        {
+            essential,
+            context: boardOpening.inputOpeningContext(preferredWidth: preferredWidth),
+            inDrawer: inDrawer,
+            notify: input.inputOpeningNotifications()
+        ) {
             if let message { context.feedback.publish(message, severity: .warning) }
         }
     }

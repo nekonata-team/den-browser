@@ -11,7 +11,10 @@ struct OverviewCanvasInputTests {
         // Arrange
         let window = CanvasTestWindow(
             contentRect: CGRect(x: 0, y: 0, width: 200, height: 200),
-            styleMask: [], backing: .buffered, defer: false)
+            styleMask: [],
+            backing: .buffered,
+            defer: false
+        )
         let view = OverviewCanvasInputSurface.CanvasInputView(frame: CGRect(x: 0, y: 0, width: 200, height: 200))
         window.contentView?.addSubview(view)
         defer { view.removeFromSuperview() }
@@ -44,8 +47,17 @@ struct OverviewCanvasInputTests {
     private func mouse(_ type: NSEvent.EventType, point: CGPoint, window: NSWindow) throws -> NSEvent {
         try #require(
             NSEvent.mouseEvent(
-                with: type, location: point, modifierFlags: [], timestamp: 0,
-                windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1))
+                with: type,
+                location: point,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: window.windowNumber,
+                context: nil,
+                eventNumber: 0,
+                clickCount: 1,
+                pressure: 1
+            )
+        )
     }
 }
 

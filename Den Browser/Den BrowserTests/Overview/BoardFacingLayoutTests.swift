@@ -12,8 +12,15 @@ struct BoardFacingLayoutTests {
         // Arrange
         let context = try #require(
             CGContext(
-                data: nil, width: 80, height: 120, bitsPerComponent: 8, bytesPerRow: 320,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: 80,
+                height: 120,
+                bitsPerComponent: 8,
+                bytesPerRow: 320,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         context.setFillColor(CGColor(gray: 1, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 80, height: 120))
         context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
@@ -35,9 +42,15 @@ struct BoardFacingLayoutTests {
         let rendered = try #require(ImageRenderer(content: card).cgImage)
         let pixels = try #require(
             CGContext(
-                data: nil, width: rendered.width, height: rendered.height, bitsPerComponent: 8,
-                bytesPerRow: rendered.width * 4, space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: rendered.width,
+                height: rendered.height,
+                bitsPerComponent: 8,
+                bytesPerRow: rendered.width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         pixels.draw(rendered, in: CGRect(x: 0, y: 0, width: rendered.width, height: rendered.height))
         let data = try #require(pixels.data).assumingMemoryBound(to: UInt8.self)
         let row = rendered.height / 2 * pixels.bytesPerRow
@@ -54,8 +67,15 @@ struct BoardFacingLayoutTests {
         let scale: CGFloat = 2
         let context = try #require(
             CGContext(
-                data: nil, width: 100, height: 100, bitsPerComponent: 8, bytesPerRow: 400,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: 100,
+                height: 100,
+                bitsPerComponent: 8,
+                bytesPerRow: 400,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 100, height: 100))
         let raster = try #require(context.makeImage())
@@ -75,9 +95,15 @@ struct BoardFacingLayoutTests {
         let rendered = try #require(ImageRenderer(content: card).cgImage)
         let pixels = try #require(
             CGContext(
-                data: nil, width: rendered.width, height: rendered.height, bitsPerComponent: 8,
-                bytesPerRow: rendered.width * 4, space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: rendered.width,
+                height: rendered.height,
+                bitsPerComponent: 8,
+                bytesPerRow: rendered.width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         pixels.draw(rendered, in: CGRect(x: 0, y: 0, width: rendered.width, height: rendered.height))
         let data = try #require(pixels.data).assumingMemoryBound(to: UInt8.self)
 

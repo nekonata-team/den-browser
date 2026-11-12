@@ -18,7 +18,8 @@ public struct ProfilesSettingsView: View {
                     ProfileSettingsRow(
                         profile: profile,
                         canDelete: profileManager.canDeleteProfile(profile.id),
-                        onDelete: { profileToDelete = profile })
+                        onDelete: { profileToDelete = profile }
+                    )
                 }
             }
 
@@ -53,7 +54,8 @@ public struct ProfilesSettingsView: View {
             "Delete \(profileToDelete?.name ?? "Profile")?",
             isPresented: Binding(
                 get: { profileToDelete != nil },
-                set: { if !$0 { profileToDelete = nil } })
+                set: { if !$0 { profileToDelete = nil } }
+            )
         ) {
             Button("Delete Profile", role: .destructive) {
                 guard let profileToDelete else { return }
@@ -72,7 +74,8 @@ public struct ProfilesSettingsView: View {
             "Profile Error",
             isPresented: Binding(
                 get: { profileManager.errorMessage != nil },
-                set: { if !$0 { profileManager.clearError() } })
+                set: { if !$0 { profileManager.clearError() } }
+            )
         ) {
             Button("OK") { profileManager.clearError() }
         } message: {
@@ -136,7 +139,8 @@ private struct ProfileColorPalette: View {
                             Circle()
                                 .strokeBorder(
                                     Color.primary.opacity(selection == preset ? 0.9 : 0.25),
-                                    lineWidth: selection == preset ? 2 : 1)
+                                    lineWidth: selection == preset ? 2 : 1
+                                )
                         }
                         .padding(2)
                 }

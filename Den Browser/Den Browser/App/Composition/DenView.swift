@@ -15,7 +15,10 @@ struct DenView<Header: View>: View {
     @Environment(AppPreferences.self) private var preferences
 
     init(
-        profileName: String? = nil, profileColor: Color = .blue, isPrivateDen: Bool = false, shouldShowHeader: Bool,
+        profileName: String? = nil,
+        profileColor: Color = .blue,
+        isPrivateDen: Bool = false,
+        shouldShowHeader: Bool,
         @ViewBuilder header: () -> Header
     ) {
         self.profileName = profileName
@@ -26,23 +29,35 @@ struct DenView<Header: View>: View {
     }
     var body: some View {
         DenViews.DenView(
-            profileName: profileName, profileColor: profileColor, isPrivateDen: isPrivateDen,
-            shouldShowHeader: shouldShowHeader, motionPreference: preferences.motionPreference,
-            drawerStyle: preferences.drawerStyle, sheetScale: preferences.sheetScale,
+            profileName: profileName,
+            profileColor: profileColor,
+            isPrivateDen: isPrivateDen,
+            shouldShowHeader: shouldShowHeader,
+            motionPreference: preferences.motionPreference,
+            drawerStyle: preferences.drawerStyle,
+            sheetScale: preferences.sheetScale,
             activities: windowModel.downloads.activities,
             onScaleChange: { session.runtimes.applySheetScale($0) },
             onMotionChange: { session.configuration.sheetNavigation.setReduceMotion($0) },
             onOpenTutorial: { session.boardOpening.openTutorialBoard(preferredWidth: $0) },
-            header: { header }, rail: { BoardRail(profileColor: profileColor) },
+            header: { header },
+            rail: { BoardRail(profileColor: profileColor) },
             strip: { size in
                 BoardStrip(
-                    size: size, shouldShowHeader: false, profileColor: profileColor,
-                    boardSpacing: DenLayout.outerInset, boardHorizontalPadding: DenLayout.outerInset,
-                    onOpenBoardAtEnd: { windowModel.showOpenBoardPanel(afterBoardID: $0) })
+                    size: size,
+                    shouldShowHeader: false,
+                    profileColor: profileColor,
+                    boardSpacing: DenLayout.outerInset,
+                    boardHorizontalPadding: DenLayout.outerInset,
+                    onOpenBoardAtEnd: { windowModel.showOpenBoardPanel(afterBoardID: $0) }
+                )
             },
             panels: { size in
                 DenActivePanelOverlay(
-                    size: size, profileName: profileName, profileColor: profileColor, shouldShowHeader: shouldShowHeader
+                    size: size,
+                    profileName: profileName,
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader
                 )
             },
             drawer: { size in
@@ -73,8 +88,11 @@ private struct DenDrawerOverlay: View {
 
     var body: some View {
         DenViews.DenDrawerOverlay(
-            size: size, profileColor: profileColor, shouldShowHeader: shouldShowHeader,
-            drawerStyle: preferences.drawerStyle, motionPreference: preferences.motionPreference,
+            size: size,
+            profileColor: profileColor,
+            shouldShowHeader: shouldShowHeader,
+            drawerStyle: preferences.drawerStyle,
+            motionPreference: preferences.motionPreference,
             peek: { item, isFocused in
                 // Outgoing animated rows must not reclaim the current Peek's runtime.
                 if windowModel.drawer.expandedItemID != item.id {
@@ -83,7 +101,8 @@ private struct DenDrawerOverlay: View {
                     let runtime = session.drawer.drawerTerminalRuntime(for: item)
                     TerminalBoardSurface(
                         terminalView: runtime.terminalView,
-                        onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) }, onBeforeHide: {},
+                        onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
+                        onBeforeHide: {},
                         isHidden: false,
                         focusRequest: isFocused
                             ? BoardFocusRequest(deskID: session.navigation.presentedDeskID, boardID: BoardID(item.id))
@@ -95,11 +114,14 @@ private struct DenDrawerOverlay: View {
                             guard needsFirstResponderActivation(window.firstResponder, target: runtime.terminalView)
                             else { return true }
                             return window.makeFirstResponder(runtime.terminalView)
-                        })
+                        }
+                    )
                 } else {
                     DrawerWebSurface(webView: session.drawer.drawerRuntime(for: item).webView, isFocused: isFocused)
                 }
-            }, placeFromContextMenu: { _ = session.drawer.placeDrawerItemAsBoard($0) })
+            },
+            placeFromContextMenu: { _ = session.drawer.placeDrawerItemAsBoard($0) }
+        )
     }
 }
 
@@ -116,7 +138,8 @@ private struct DenActivePanelOverlay: View {
 
     var body: some View {
         DenViews.DenActivePanelOverlay(
-            size: size, shouldShowHeader: shouldShowHeader,
+            size: size,
+            shouldShowHeader: shouldShowHeader,
             motionPreference: preferences.motionPreference,
             restoreInput: session.runtimes.restoreFocusedFirstResponder
         ) { context, newBoardWidth, boardHeight in
@@ -131,18 +154,28 @@ private struct DenActivePanelOverlay: View {
             UniversalSearchPanel(
                 profileColor: profileColor,
                 sourceItems: UniversalSearchModel.sourceItems(
-                    state: session.resources.store.snapshot.den, essentials: preferences.essentials,
+                    state: session.resources.store.snapshot.den,
+                    essentials: preferences.essentials,
                     hasBoardUndoHistory: !session.resources.store.snapshot.boardUndoHistory.isEmpty,
-                    profiles: profileManager.profiles, profileName: profileName ?? ""),
+                    profiles: profileManager.profiles,
+                    profileName: profileName ?? ""
+                ),
                 recentItems: session.resources.store.snapshot.recentItems,
                 boards: session.resources.store.snapshot.den.desks.flatMap(\.boards),
                 perform: { target, inDrawer in
                     UniversalSearchActions.perform(
-                        target, session: session, windowModel: windowModel, inDrawer: inDrawer,
+                        target,
+                        session: session,
+                        windowModel: windowModel,
+                        inDrawer: inDrawer,
                         openProfile: { id in
                             profileManager.profile(id: id) != nil && profileManager.openWindow(for: id)
-                        }, openSettings: { openSettings() })
-                }, restoreInput: { session.runtimes.restoreFocusedFirstResponder() })
+                        },
+                        openSettings: { openSettings() }
+                    )
+                },
+                restoreInput: { session.runtimes.restoreFocusedFirstResponder() }
+            )
         case .essentialsPrefix:
             EssentialsPrefixPanel(
                 profileColor: profileColor,
@@ -192,8 +225,10 @@ private struct DenActivePanelOverlay: View {
             OverviewView(profileColor: profileColor, boardHeight: boardHeight)
         case .boardActivity:
             BoardActivityView(
-                profileColor: profileColor, resources: session.resources,
-                remove: { session.boardRemoval.removeBoard($0) })
+                profileColor: profileColor,
+                resources: session.resources,
+                remove: { session.boardRemoval.removeBoard($0) }
+            )
         case .keyboardShortcuts:
             KeyboardShortcutsView(onClose: windowModel.hideKeyboardShortcuts)
         case .profilePicker:

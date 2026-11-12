@@ -80,6 +80,7 @@ final class DeskPresetActionsAdapter {
     private func reportPresetSave(_ persisted: Bool) {
         context.feedback.publish(
             persisted ? "Saved Desk Preset." : "Could not save Desk Preset.",
-            severity: persisted ? .success : .error)
+            severity: persisted ? .success : .error
+        )
     }
 }

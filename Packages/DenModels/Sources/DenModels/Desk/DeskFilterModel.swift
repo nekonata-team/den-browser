@@ -67,7 +67,8 @@ public final class DeskFilterModel {
         selectionBoardID = SelectionNavigation.next(
             selectionBoardID,
             among: boards.map(\.id),
-            by: offset)
+            by: offset
+        )
     }
 
     public func confirmSelection(_ boardID: BoardID? = nil) {

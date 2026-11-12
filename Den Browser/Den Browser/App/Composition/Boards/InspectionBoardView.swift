@@ -23,7 +23,8 @@ struct InspectionBoardView: View {
     var body: some View {
         if let runtime = session.resources.webRuntimes[targetBoardID] {
             ObservedInspectionBoard(
-                runtime: runtime, content: { generation in display(generation: generation, runtime: runtime) }
+                runtime: runtime,
+                content: { generation in display(generation: generation, runtime: runtime) }
             )
             .id(runtime.id)
         } else {
@@ -34,7 +35,8 @@ struct InspectionBoardView: View {
     private func display(generation: Int, runtime: WebRuntime?) -> some View {
         DenViews.InspectionBoardView(
             model: InspectionBoardModel(session: session, targetBoardID: targetBoardID, runtime: runtime),
-            surfaceModel: BoardSurfaceModel(board: board, session: session), runtimeGeneration: generation,
+            surfaceModel: BoardSurfaceModel(board: board, session: session),
+            runtimeGeneration: generation,
             focusTarget: { session.boardNavigation.focusBoard(targetBoardID, exitsDenMode: true) },
             board: board,
             isFocused: isFocused,
@@ -49,7 +51,8 @@ struct InspectionBoardView: View {
             onFocus: onFocus,
             onRemove: onRemove,
             onDragChanged: onDragChanged,
-            onDragEnded: onDragEnded)
+            onDragEnded: onDragEnded
+        )
     }
 }
 
@@ -74,6 +77,7 @@ extension InspectionBoardModel {
             highlightNode: { [weak runtime] in runtime?.highlightInspectionNode($0) },
             readSnapshot: { [weak runtime] in await runtime?.readInspectionSnapshot() ?? .empty },
             readChildren: { [weak runtime] in await runtime?.readInspectionChildren(for: $0) ?? [] },
-            refreshChildren: { [weak runtime] in await runtime?.readInspectionChildren(for: $0) ?? [:] })
+            refreshChildren: { [weak runtime] in await runtime?.readInspectionChildren(for: $0) ?? [:] }
+        )
     }
 }

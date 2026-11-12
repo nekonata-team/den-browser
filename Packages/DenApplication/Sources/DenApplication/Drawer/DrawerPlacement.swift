@@ -32,7 +32,8 @@ public struct DrawerPlacement {
     @discardableResult
     public func place(
         _ request: Request,
-        notifyBoard: (BoardCreation.Notice) -> Void, notifyDrawer: (DrawerItems.Notice) -> Void
+        notifyBoard: (BoardCreation.Notice) -> Void,
+        notifyDrawer: (DrawerItems.Notice) -> Void
     ) -> BoardID? {
         guard let index = reader.snapshot.den.drawerItems.firstIndex(where: { $0.id == request.itemID }) else {
             return nil
@@ -43,7 +44,10 @@ public struct DrawerPlacement {
         case .web(let url):
             boardID = creation.insert(
                 BoardState(id: BoardID(item.id), label: item.displayName, width: request.width, currentSheetURL: url),
-                target: request.target, recentItem: .url(WebURLPolicy.canonicalSheetURL(url)), notify: notifyBoard)
+                target: request.target,
+                recentItem: .url(WebURLPolicy.canonicalSheetURL(url)),
+                notify: notifyBoard
+            )
         case .terminal(let session):
             let recent: RecentItem =
                 switch session {
@@ -53,7 +57,10 @@ public struct DrawerPlacement {
                 }
             boardID = creation.insert(
                 BoardState(id: BoardID(item.id), label: item.displayName, width: request.width, terminal: session),
-                target: request.target, recentItem: recent, notify: notifyBoard)
+                target: request.target,
+                recentItem: recent,
+                notify: notifyBoard
+            )
         }
         guard let boardID else { return nil }
         items.consume(request.itemID, notify: notifyDrawer)

@@ -5,7 +5,9 @@ import DenModels
 
 extension TerminalRuntime {
     static func drawerEvents(
-        itemID: UUID, storage: DenProfileResources, connection: RuntimeWindowConnection
+        itemID: UUID,
+        storage: DenProfileResources,
+        connection: RuntimeWindowConnection
     ) -> Events {
         .init(
             onClose: { [weak storage] in
@@ -24,7 +26,8 @@ extension TerminalRuntime {
                     let link = TerminalLinkResolver.resolve(
                         rawURL,
                         relativeTo: item.terminal?.workingDirectory
-                            ?? FileManager.default.homeDirectoryForCurrentUser.path)
+                            ?? FileManager.default.homeDirectoryForCurrentUser.path
+                    )
                 else { return }
                 switch link {
                 case .localFile(let url): _ = NSWorkspace.shared.open(url)
@@ -34,6 +37,7 @@ extension TerminalRuntime {
             onNotification: { [weak storage, connection] title, body in
                 let feedback = connection.feedback ?? storage?.windowConnections.allObjects.compactMap(\.feedback).first
                 feedback?.publish(title: title, body: body, target: .drawerItem(itemID))
-            })
+            }
+        )
     }
 }

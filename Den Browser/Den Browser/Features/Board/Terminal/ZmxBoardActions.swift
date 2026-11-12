@@ -22,7 +22,9 @@ final class ZmxBoardActions {
     }
 
     init(
-        context: WindowNativeContext, boardNavigation: BoardNavigation, boardRemoval: BoardRemovalPresentation,
+        context: WindowNativeContext,
+        boardNavigation: BoardNavigation,
+        boardRemoval: BoardRemovalPresentation,
         boardOpening: BoardOpeningActions
     ) {
         self.context = context
@@ -52,8 +54,11 @@ final class ZmxBoardActions {
 
     var zmxBoards: ZmxBoards {
         ZmxBoards(
-            state: storage.store, creation: storage.boardCreation, removal: storage.boardRemoval,
-            updates: storage.boardUpdates)
+            state: storage.store,
+            creation: storage.boardCreation,
+            removal: storage.boardRemoval,
+            updates: storage.boardUpdates
+        )
     }
 
     func zmxWindowProvider() -> () -> ZmxBoards.Window? {
@@ -97,7 +102,8 @@ final class ZmxBoardActions {
             sessionName,
             request: boardOpening.inputOpeningContext(preferredWidth: preferredWidth),
             rootSessionName: rootSessionName,
-            notify: zmxBoardNotifications(returnsToOpenBoard: opensFromOpenBoardPanel))
+            notify: zmxBoardNotifications(returnsToOpenBoard: opensFromOpenBoardPanel)
+        )
     }
 
     private var duplicationSource: BoardState? {
@@ -136,9 +142,13 @@ final class ZmxBoardActions {
     func createZmxBoard(from source: BoardState, suffix: String, asSideBoard: Bool, focus: Bool) {
         guard source.zmxSessionName != nil else { return }
         let request = ZmxBoards.Duplication(
-            source: source, suffix: suffix, asSideBoard: asSideBoard, focus: focus,
+            source: source,
+            suffix: suffix,
+            asSideBoard: asSideBoard,
+            focus: focus,
             width: asSideBoard ? DenLayout.sideBoardInitialWidth : source.width,
-            workingDirectory: source.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path)
+            workingDirectory: source.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
+        )
         let operations = zmxBoards
         let client = zmxClient
         let window = zmxWindowProvider()

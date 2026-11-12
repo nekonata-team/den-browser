@@ -14,9 +14,12 @@ final class DenWindowComposition {
         let navigation = session.navigation
         let preferences = session.configuration.preferences
         let boardEditing = BoardEditingModel(
-            state: session.resources.store, updates: session.resources.boardUpdates,
-            recents: session.resources.recents, movement: session.resources.boardMovement,
-            focusedBoard: { navigation.focusedBoard }, essentials: { preferences.essentials },
+            state: session.resources.store,
+            updates: session.resources.boardUpdates,
+            recents: session.resources.recents,
+            movement: session.resources.boardMovement,
+            focusedBoard: { navigation.focusedBoard },
+            essentials: { preferences.essentials },
             searchEngine: { session.configuration.preferences.searchEngine },
             finishEditing: {
                 session.connection.onWindowEffect?(.dismissTemporaryPresentation)
@@ -25,7 +28,9 @@ final class DenWindowComposition {
             loadURL: { session.resources.webRuntimes[$0]?.load($1) },
             restoreInput: { session.runtimes.restoreFocusedFirstResponder() },
             duplicateZmx: { session.zmx.duplicateFocusedZmxBoard(suffix: $0) },
-            focus: { session.boardNavigation.focusBoard($0) }, center: { session.boardNavigation.centerFocusedBoard() })
+            focus: { session.boardNavigation.focusBoard($0) },
+            center: { session.boardNavigation.centerFocusedBoard() }
+        )
         let overview = OverviewModel(
             desks: { state.snapshot.den.desks },
             presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
@@ -38,8 +43,11 @@ final class DenWindowComposition {
             actions: OverviewModel.Actions(
                 removeBoard: {
                     session.resources.boardRemoval.remove(
-                        $0, presentedDeskID: navigation.presentedDeskID, focusNext: $1,
-                        notify: session.boardRemoval.boardRemovalNotifications())
+                        $0,
+                        presentedDeskID: navigation.presentedDeskID,
+                        focusNext: $1,
+                        notify: session.boardRemoval.boardRemovalNotifications()
+                    )
                 },
                 undoBoardOperation: { session.boardRemoval.undoBoardOperation(present: false) },
                 enterSelection: { session.boardNavigation.enterOverviewSelection(deskID: $0, boardID: $1) },
@@ -47,22 +55,29 @@ final class DenWindowComposition {
                 finishDrag: { session.resources.boardMovement.finishOverviewDrag($0, to: $1, at: $2) },
                 cancelDrag: { session.resources.boardMovement.cancelOverviewDrag() },
                 moveBoard: { session.resources.boardMovement.shiftInOverview($0, by: $1) },
-                moveBoardToDesk: { session.resources.boardMovement.transferInOverview($0, by: $1) }))
+                moveBoardToDesk: { session.resources.boardMovement.transferInOverview($0, by: $1) }
+            )
+        )
         let drawer = DrawerModel(
             items: { state.snapshot.den.drawerItems },
             isBottomStyle: { session.configuration.preferences.drawerStyle == .bottom },
             releasePeek: { session.runtimes.releaseDrawerPeek() },
             discardItem: { itemID, focusNext in
                 session.resources.drawerItems.discard(
-                    itemID, focusNext: focusNext, notify: session.drawer.drawerItemNotifications())
+                    itemID,
+                    focusNext: focusNext,
+                    notify: session.drawer.drawerItemNotifications()
+                )
             },
             toggleStyle: { session.configuration.preferences.toggleDrawerStyle() },
-            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() })
+            requestClearConfirmation: { session.drawer.requestDrawerClearConfirmation() }
+        )
         let zmxSessions = ZmxSessionsModel {
             let client = session.context.zmxClient
             return ZmxSessionsModel.Operations(
                 load: { try await client.sessionSnapshot() },
-                kill: { try await client.killSession($0) })
+                kill: { try await client.killSession($0) }
+            )
         }
         let openBoard = OpenBoardModel(
             creation: session.resources.boardCreation,
@@ -74,21 +89,29 @@ final class DenWindowComposition {
                     rootSessionName = nil
                 }
                 return session.boardOpening.boardOpeningRequest(
-                    input: input, preferredWidth: width, afterBoardID: afterBoardID,
-                    zmxRootSessionName: rootSessionName)
+                    input: input,
+                    preferredWidth: width,
+                    afterBoardID: afterBoardID,
+                    zmxRootSessionName: rootSessionName
+                )
             },
             notify: session.boardOpening.boardCreationNotifications(returnsToOpenBoard: true),
-            openInDrawer: { session.input.openInDrawer(input: $0) })
+            openInDrawer: { session.input.openInDrawer(input: $0) }
+        )
         let deskFilter = DeskFilterModel(
             focusedDesk: { navigation.focusedDesk },
-            focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: true) })
+            focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: true) }
+        )
         let notificationList = NotificationListModel(
             state: session.resources.store,
             operations: session.resources.notificationOperations,
-            openSource: session.notifications.openNotificationSource)
+            openSource: session.notifications.openNotificationSource
+        )
         let desks = DeskListModel(
-            state: session.resources.store, lifecycle: session.resources.deskLifecycle,
-            movement: session.resources.deskMovement, updates: session.resources.deskUpdates,
+            state: session.resources.store,
+            lifecycle: session.resources.deskLifecycle,
+            movement: session.resources.deskMovement,
+            updates: session.resources.deskUpdates,
             navigation: session.navigation,
             isAvailable: { session.context.canPresentDesk?($0) ?? true },
             select: { session.boardNavigation.focusDesk($0) },
@@ -106,7 +129,8 @@ final class DenWindowComposition {
                 session.connection.onWindowEffect?(.dismissTemporaryPresentation)
                 session.connection.onWindowEffect?(.exitDenMode)
             },
-            copyID: { session.desks.copyDeskID($0) }, exportLinks: { session.deskLinks.exportDeskLinks(for: $0) },
+            copyID: { session.desks.copyDeskID($0) },
+            exportLinks: { session.deskLinks.exportDeskLinks(for: $0) },
             copyLinks: { session.deskLinks.copyDeskLinks(for: $0) },
             copyURLs: { session.deskLinks.copyDeskLinks(for: $0, asURLs: true) },
             create: { label, selection in
@@ -122,10 +146,12 @@ final class DenWindowComposition {
                 case .personal(let id): session.desks.replaceFocusedDesk(label: label, personalPresetID: id)
                 case .newDesk: .unavailable
                 }
-            })
+            }
+        )
         let model = DenWindowModel(
             boardEditing: boardEditing,
-            desks: desks, downloads: session.downloads,
+            desks: desks,
+            downloads: session.downloads,
             overview: overview,
             drawer: drawer,
             openBoard: openBoard,
@@ -158,27 +184,32 @@ final class DenWindowComposition {
                 isDeskDragging: {
                     guard case .desk? = state.snapshot.activeDrag else { return false }
                     return true
-                }),
+                }
+            ),
             windowActions: DenWindowModel.WindowActions(
                 setBoardRailPresented: { session.configuration.preferences.setBoardRailPresented($0) },
                 openFeedbackTarget: { session.notifications.openFeedbackTarget($0) },
                 reportWarning: { session.context.feedback.publish($0, severity: .warning) },
                 didEnterDenMode: { session.resources.recordOperation(.denModeEntered) },
-                didShowKeyboardShortcuts: { session.resources.recordOperation(.keyboardShortcutsShown) }),
+                didShowKeyboardShortcuts: { session.resources.recordOperation(.keyboardShortcutsShown) }
+            ),
             boardSizing: session.resources.boardSizing,
             boardActions: DenWindowModel.BoardActions(
                 placeDrawerItem: { session.drawer.placeDrawerItemAsBoard($0, preferredWidth: $1, deskID: $2) },
                 focusBoard: { session.boardNavigation.focusBoard($0, exitsDenMode: $1) },
                 centerFocusedBoard: { session.boardNavigation.centerFocusedBoard() },
                 cancelBoardDrag: { session.boardNavigation.requestBoardDragCancellation() },
-                cancelDeskDrag: { session.boardNavigation.requestDeskDragCancellation() }),
+                cancelDeskDrag: { session.boardNavigation.requestDeskDragCancellation() }
+            ),
             zmxActions: DenWindowModel.ZmxActions(
                 canPresentSessions: { session.zmx.canPresentZmxSessions() },
                 openSession: {
                     session.zmx.openZmxSession(
-                        $0, preferredWidth: $1,
+                        $0,
+                        preferredWidth: $1,
                         rootSessionName: { zmxSessions.rootSessionName(for: $0) },
-                        opensFromOpenBoardPanel: $2)
+                        opensFromOpenBoardPanel: $2
+                    )
                 },
                 boardLocation: { sessionName in
                     for desk in state.snapshot.den.desks {
@@ -188,12 +219,15 @@ final class DenWindowComposition {
                     }
                     return nil
                 },
-                cancelDuplication: { session.zmx.cancelZmxDuplicationRequest() }),
+                cancelDuplication: { session.zmx.cancelZmxDuplicationRequest() }
+            ),
             deskPresetActions: DeskPresetActions(
                 save: { session.presets.saveFocusedDeskAsPreset(label: $0) },
                 rename: { session.presets.renameDeskPreset($0, to: $1) },
-                requestDeletion: { session.presets.requestDeskPresetDeletion($0) }),
-            feedbackDuration: feedbackDuration)
+                requestDeletion: { session.presets.requestDeskPresetDeletion($0) }
+            ),
+            feedbackDuration: feedbackDuration
+        )
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }
         drawer.onPeekExpanded = { [weak model] in model?.isDenMode = false }

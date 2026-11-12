@@ -29,8 +29,11 @@ public final class BoardRemoval {
 
     @discardableResult
     public func remove(
-        _ boardID: BoardID, presentedDeskID: DeskID, focusNext: Bool = false,
-        origin: BoardOperationOrigin = .interactive, notify: (Notice) -> Void
+        _ boardID: BoardID,
+        presentedDeskID: DeskID,
+        focusNext: Bool = false,
+        origin: BoardOperationOrigin = .interactive,
+        notify: (Notice) -> Void
     ) -> Bool {
         guard let deskIndex = reader.snapshot.den.desks.firstIndex(where: { $0.boards.contains { $0.id == boardID } })
         else { return false }
@@ -62,7 +65,9 @@ public final class BoardRemoval {
     }
 
     func restore(
-        _ history: RecentlyRemovedBoard, presentedDeskID: DeskID, present: Bool,
+        _ history: RecentlyRemovedBoard,
+        presentedDeskID: DeskID,
+        present: Bool,
         notify: (Notice) -> Void
     ) -> RestoreResult {
         switch BoardRestoration.restore(history, in: reader.snapshot.den.desks, presentedDeskID: presentedDeskID) {

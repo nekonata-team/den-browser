@@ -42,6 +42,8 @@ public struct BoardRemovalPlan {
                 board: board,
                 sideBoard: removedBoards.first(where: { $0.id != board.id }),
                 sourceDeskID: source.id,
-                sourceBoardIndex: BoardIndex(rawValue: boardOffset)))
+                sourceBoardIndex: BoardIndex(rawValue: boardOffset)
+            )
+        )
     }
 }

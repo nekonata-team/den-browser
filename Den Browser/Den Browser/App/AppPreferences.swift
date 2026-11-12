@@ -8,7 +8,9 @@ import Observation
 final class AppPreferences {
     static let schemaVersion = 1
     static let defaultDeskNumberBinding = ShortcutBinding(
-        key: .character("1"), modifiers: [.command, .option])
+        key: .character("1"),
+        modifiers: [.command, .option]
+    )
     static let defaultSheetScale = 100
     static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPeek
     static let defaultDrawerStyle: DrawerStyle = .floating

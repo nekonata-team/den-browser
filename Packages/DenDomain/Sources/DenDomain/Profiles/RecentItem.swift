@@ -124,12 +124,14 @@ public enum RecentItem: Sendable, Codable, Equatable, Hashable, Identifiable {
         case .url:
             self = .url(
                 try container.decode(URL.self, forKey: .url),
-                title: try container.decodeIfPresent(String.self, forKey: .title))
+                title: try container.decodeIfPresent(String.self, forKey: .title)
+            )
         case .search:
             self = .search(try container.decode(String.self, forKey: .query))
         case .terminal:
             self = .terminal(
-                workingDirectory: try container.decode(String.self, forKey: .workingDirectory))
+                workingDirectory: try container.decode(String.self, forKey: .workingDirectory)
+            )
         case .zellij:
             self = .zellij(sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName))
         case .zmx:

@@ -134,7 +134,8 @@ final class UBOLiteInstaller {
             let result = try await commandRunner.run(
                 executablePath: "/usr/bin/ditto",
                 arguments: ["-x", "-k", tempZipURL.path, unpackDir.path],
-                timeout: .seconds(60))
+                timeout: .seconds(60)
+            )
             guard result.terminationStatus == 0 else {
                 let diagnostic = result.standardError.trimmingCharacters(in: .whitespacesAndNewlines)
                 let suffix = diagnostic.isEmpty ? "" : ": \(diagnostic)"
@@ -174,7 +175,8 @@ final class UBOLiteInstaller {
             if FileManager.default.fileExists(atPath: directoryURL.path) {
                 let backup = parentDir.appending(
                     path: ".ubolite-backup-\(UUID().uuidString)",
-                    directoryHint: .isDirectory)
+                    directoryHint: .isDirectory
+                )
                 try FileManager.default.moveItem(at: directoryURL, to: backup)
                 backupURL = backup
             }
@@ -243,7 +245,8 @@ final class UBOLiteInstaller {
             throw NSError(
                 domain: "UBOLiteInstaller",
                 code: 3,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid extension archive manifest."])
+                userInfo: [NSLocalizedDescriptionKey: "Invalid extension archive manifest."]
+            )
         }
         return version
     }

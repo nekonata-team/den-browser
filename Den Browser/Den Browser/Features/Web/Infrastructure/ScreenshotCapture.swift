@@ -82,7 +82,8 @@ enum ScreenshotOutput {
     }
 
     static func captureAndOutput(
-        capture: @MainActor () async throws -> NSImage, destination: Destination
+        capture: @MainActor () async throws -> NSImage,
+        destination: Destination
     ) async throws -> String? {
         let image = try await capture()
         try Task.checkCancellation()

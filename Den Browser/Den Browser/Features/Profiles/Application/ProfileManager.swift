@@ -76,7 +76,8 @@ final class ProfileManager {
         self.persistence = ProfilePersistence(
             directoryURL: directoryURL,
             isEphemeral: isEphemeral,
-            quarantineFile: quarantineFile)
+            quarantineFile: quarantineFile
+        )
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.extensionCoordinator = ProfileExtensionCoordinator(
@@ -84,7 +85,8 @@ final class ProfileManager {
             preferences: preferences,
             userContentController: sheetNavigation.userContentController,
             descriptors: webExtensionDescriptors,
-            isEphemeral: isEphemeral)
+            isEphemeral: isEphemeral
+        )
         self.removeDataStore = removeDataStore
         self.removeExtensionData = removeExtensionData
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
@@ -120,22 +122,29 @@ final class ProfileManager {
         let presentedDeskID = availableDeskID(
             preferred: requestedDeskID,
             profileID: profileID,
-            excludingWindowID: route.windowID)
+            excludingWindowID: route.windowID
+        )
         guard let presentedDeskID else { return nil }
         let session = ProfileWindowSession(
             resources: storage,
             configuration: BoardRuntimeConfiguration(
-                websiteDataStore: profileWebsiteDataStore(for: profileID), sheetNavigation: sheetNavigation,
-                preferences: preferences, profileID: profileID, ipcSocketPath: ipcSocketPath,
+                websiteDataStore: profileWebsiteDataStore(for: profileID),
+                sheetNavigation: sheetNavigation,
+                preferences: preferences,
+                profileID: profileID,
+                ipcSocketPath: ipcSocketPath,
                 terminalCommandRunner: SubprocessCommandRunner(),
                 requestWebExtensionContext: { [weak self] in
                     guard let self,
                         let host = self.extensionCoordinator.host(
                             for: profileID,
-                            websiteDataStore: self.profileWebsiteDataStore(for: profileID))
+                            websiteDataStore: self.profileWebsiteDataStore(for: profileID)
+                        )
                     else { return nil }
                     return (host, host.window(for: route.windowID))
-                }), presentedDeskID: presentedDeskID,
+                }
+            ),
+            presentedDeskID: presentedDeskID,
             canPresentDesk: { [weak self] deskID in
                 self?.canPresent(deskID, profileID: profileID, excludingWindowID: route.windowID) ?? true
             },
@@ -143,11 +152,13 @@ final class ProfileManager {
                 self?.requestDeskPresentation(
                     deskID,
                     profileID: profileID,
-                    windowID: route.windowID) ?? true
+                    windowID: route.windowID
+                ) ?? true
             },
             onWillResetDen: { [weak self] in
                 self?.closeOtherWindows(profileID: profileID, excludingWindowID: route.windowID)
-            })
+            }
+        )
         windowRegistry.setSession(session, windowID: route.windowID, profileID: profileID)
         return session
     }
@@ -157,7 +168,11 @@ final class ProfileManager {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return nil }
         let profile = ProfileState(
-            id: ProfileID(), name: name, color: color, webProfileStore: .identified(UUID()))
+            id: ProfileID(),
+            name: name,
+            color: color,
+            webProfileStore: .identified(UUID())
+        )
         let persisted = PersistedProfile(profile: profile, den: .sample)
         profiles.append(profile)
         persistedProfiles[profile.id] = persisted
@@ -285,7 +300,8 @@ final class ProfileManager {
             windowID: target?.windowID,
             websiteDataStore: profileWebsiteDataStore(for: profileID),
             from: anchorView?.window ?? NSApp.keyWindow,
-            anchorView: anchorView)
+            anchorView: anchorView
+        )
     }
 
     func presentUBOLiteOptions() {
@@ -294,7 +310,8 @@ final class ProfileManager {
         let profileID = target?.registration.profileID ?? personalProfileID
         extensionCoordinator.presentOptions(
             profileID: profileID,
-            websiteDataStore: profileWebsiteDataStore(for: profileID))
+            websiteDataStore: profileWebsiteDataStore(for: profileID)
+        )
     }
 
     @discardableResult
@@ -362,7 +379,8 @@ final class ProfileManager {
             || availableReplacementDeskID(
                 for: deskID,
                 profileID: profileID,
-                excludingWindowID: sourceWindowID) != nil
+                excludingWindowID: sourceWindowID
+            ) != nil
     }
 
     func isDeskPresentedInAnotherWindow(
@@ -387,7 +405,8 @@ final class ProfileManager {
                 let replacementDeskID = availableReplacementDeskID(
                     for: deskID,
                     profileID: profileID,
-                    excludingWindowID: sourceWindowID)
+                    excludingWindowID: sourceWindowID
+                )
             else { return nil }
             source.boardNavigation.focusDesk(replacementDeskID)
         }
@@ -415,7 +434,8 @@ final class ProfileManager {
             onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
             onDeferredSave: { [weak self] in self?.scheduleDeferredSave(for: profileID) },
             onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) ?? false },
-            onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false })
+            onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false }
+        )
         storages[profileID] = storage
         if normalizedState != persisted.den {
             _ = saveDen(normalizedState, for: profileID)
@@ -427,7 +447,8 @@ final class ProfileManager {
         guard let presetFacingDirectoryURL else { return nil }
         if let disk = presetFacingDisks[profileID] { return disk }
         let disk = PresetFacingDiskStore(
-            directoryURL: presetFacingDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased()))
+            directoryURL: presetFacingDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased())
+        )
         presetFacingDisks[profileID] = disk
         return disk
     }
@@ -436,7 +457,8 @@ final class ProfileManager {
         guard let facingDirectoryURL else { return nil }
         if let disk = facingDisks[profileID] { return disk }
         let disk = BoardFacingDiskCache(
-            directoryURL: facingDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased()))
+            directoryURL: facingDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased())
+        )
         facingDisks[profileID] = disk
         return disk
     }
@@ -814,7 +836,8 @@ final class ProfileManager {
     private static func personalProfile() -> PersistedProfile {
         PersistedProfile(
             profile: ProfileState(id: ProfileID(), name: "Personal", color: .blue, webProfileStore: .default),
-            den: .sample)
+            den: .sample
+        )
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {

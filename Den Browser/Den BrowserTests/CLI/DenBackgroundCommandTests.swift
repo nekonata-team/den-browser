@@ -17,18 +17,22 @@ struct DenBackgroundCommandTests {
             arguments += ["new", "/tmp/probe.html", "--background"]
             expected = .createWebBoard(
                 payload: .init(url: "/tmp/probe.html", focus: false, backgroundExecution: true),
-                destination: .automatic)
+                destination: .automatic
+            )
         } else {
             arguments += ["background", "--board", boardID.uuidString]
             if mode != "read" { arguments.append(mode) }
             expected = .boardBackgroundExecution(
-                enabled: mode == "read" ? nil : mode == "on", target: .explicit(boardID))
+                enabled: mode == "read" ? nil : mode == "on",
+                target: .explicit(boardID)
+            )
         }
         try server.start { data in
             let operation = try? JSONDecoder().decode(DenIPCRequest.self, from: data).operation
             let response = DenIPCResponse(
                 result: operation == expected ? .success(.enabled(true)) : .failure("Unexpected operation"),
-                target: .none)
+                target: .none
+            )
             var encoded = (try? JSONEncoder().encode(response)) ?? Data()
             encoded.append(10)
             return encoded

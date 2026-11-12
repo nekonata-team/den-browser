@@ -58,7 +58,8 @@ enum TerminalConfigurationSource {
 
         return Resolution(
             configSource: .generated(contents),
-            theme: resolveTheme(from: loadedCandidates))
+            theme: resolveTheme(from: loadedCandidates)
+        )
     }
 
     private static func removingSetting(_ keyToRemove: String, from contents: String) -> String {
@@ -110,7 +111,8 @@ enum TerminalConfigurationSource {
         else { return TerminalTheme() }
         return TerminalTheme(
             light: light.toTerminalConfiguration(),
-            dark: dark.toTerminalConfiguration())
+            dark: dark.toTerminalConfiguration()
+        )
     }
 
     private static func unquoted(_ value: String) -> String {

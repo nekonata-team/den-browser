@@ -20,8 +20,11 @@ struct TerminalBoardCodableTests {
     func zmxPreservesSessionDirectoryAndRoot(rootSessionName: String?) throws {
         // Arrange
         let board = BoardState(
-            width: 520, zmxSessionName: "project", workingDirectory: "/tmp/project",
-            rootSessionName: rootSessionName)
+            width: 520,
+            zmxSessionName: "project",
+            workingDirectory: "/tmp/project",
+            rootSessionName: rootSessionName
+        )
 
         // Act
         let restored = try JSONDecoder().decode(BoardState.self, from: JSONEncoder().encode(board))
@@ -32,7 +35,12 @@ struct TerminalBoardCodableTests {
                 == .terminal(
                     .zmx(
                         ZmxBoardState(
-                            sessionName: "project", workingDirectory: "/tmp/project", rootSessionName: rootSessionName))
-                ))
+                            sessionName: "project",
+                            workingDirectory: "/tmp/project",
+                            rootSessionName: rootSessionName
+                        )
+                    )
+                )
+        )
     }
 }

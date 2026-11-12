@@ -38,7 +38,8 @@ public final class DefaultBrowserSettingsModel {
     public init(
         destination: @escaping () -> ExternalLinkDestination,
         setDestination: @escaping (ExternalLinkDestination) -> Void,
-        loadStatus: @escaping () async -> DefaultBrowserStatus, setDefault: @escaping () async -> Void
+        loadStatus: @escaping () async -> DefaultBrowserStatus,
+        setDefault: @escaping () async -> Void
     ) {
         self.readDestination = destination
         self.writeDestination = setDestination

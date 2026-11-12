@@ -56,7 +56,8 @@ public final class NotificationListModel {
                 notification: notification,
                 source: board.flatMap { board in
                     desk.map { NotificationListItem.Source(deskLabel: $0.label, boardLabel: board.label) }
-                })
+                }
+            )
         }
     }
 
@@ -75,7 +76,8 @@ public final class NotificationListModel {
         selectedNotificationID = SelectionNavigation.next(
             selectedNotificationID,
             among: items.map(\.id),
-            by: offset)
+            by: offset
+        )
     }
 
     public func openSelectedNotification() {

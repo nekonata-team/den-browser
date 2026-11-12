@@ -134,7 +134,8 @@ public final class DrawerModel {
             let targetID = SelectionNavigation.next(
                 selectedItemID,
                 among: items.map(\.id),
-                by: offset),
+                by: offset
+            ),
             selectedItemID != targetID
         else { return }
         selectedItemID = targetID
@@ -218,7 +219,10 @@ public final class DrawerModel {
     }
 
     public func itemWasRemoved(
-        _ itemID: UUID, previousItems: [DrawerItem], advancesPeek: Bool, focusNext: Bool
+        _ itemID: UUID,
+        previousItems: [DrawerItem],
+        advancesPeek: Bool,
+        focusNext: Bool
     ) {
         if placementItemID == itemID { cancelPlacementDeskSelection() }
         let wasSelected = selectedItemID == itemID
@@ -242,7 +246,9 @@ public final class DrawerModel {
     }
 
     private func adjacentItemID(
-        after itemID: UUID, among previousItems: [DrawerItem], focusNext: Bool
+        after itemID: UUID,
+        among previousItems: [DrawerItem],
+        focusNext: Bool
     ) -> UUID? {
         let items = previousItems.filter(matchesFilter)
         guard let index = items.firstIndex(where: { $0.id == itemID }) else { return nil }

@@ -93,7 +93,8 @@ public final class OverviewModel {
         filterPhase = .inactive
         selection = OverviewSelection(
             deskID: deskID ?? presentedDeskID(),
-            boardID: boardID ?? focusedDesk()?.focusedBoardID)
+            boardID: boardID ?? focusedDesk()?.focusedBoardID
+        )
     }
 
     public func endPresentation() {
@@ -172,7 +173,10 @@ public final class OverviewModel {
         let next = boards.dropFirst(index + 1).first { remainingIDs.contains($0.id) }?.id
         setSelection(
             OverviewSelection(
-                deskID: desk.id, boardID: focusNext ? (next ?? previous) : (previous ?? next)))
+                deskID: desk.id,
+                boardID: focusNext ? (next ?? previous) : (previous ?? next)
+            )
+        )
     }
 
     public func undoBoardOperation() {
@@ -281,7 +285,9 @@ public final class OverviewModel {
         setSelection(
             OverviewSelection(
                 deskID: desk.id,
-                boardID: boards[(index + delta % boards.count + boards.count) % boards.count].id))
+                boardID: boards[(index + delta % boards.count + boards.count) % boards.count].id
+            )
+        )
     }
 
     private func moveDeskSelection(by delta: Int) {

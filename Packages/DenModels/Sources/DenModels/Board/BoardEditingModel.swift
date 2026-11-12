@@ -21,11 +21,18 @@ public final class BoardEditingModel {
     @ObservationIgnored private let center: () -> Void
 
     public init(
-        state: DenStateStore, updates: BoardUpdates, recents: Recents, movement: BoardMovement,
-        focusedBoard: @escaping () -> BoardState?, essentials: @escaping () -> [Essential],
-        searchEngine: @escaping () -> SearchEngine, finishEditing: @escaping () -> Void,
-        loadURL: @escaping (BoardID, URL) -> Void, restoreInput: @escaping () -> Void,
-        duplicateZmx: @escaping (String) -> Void, focus: @escaping (BoardID) -> Void,
+        state: DenStateStore,
+        updates: BoardUpdates,
+        recents: Recents,
+        movement: BoardMovement,
+        focusedBoard: @escaping () -> BoardState?,
+        essentials: @escaping () -> [Essential],
+        searchEngine: @escaping () -> SearchEngine,
+        finishEditing: @escaping () -> Void,
+        loadURL: @escaping (BoardID, URL) -> Void,
+        restoreInput: @escaping () -> Void,
+        duplicateZmx: @escaping (String) -> Void,
+        focus: @escaping (BoardID) -> Void,
         center: @escaping () -> Void
     ) {
         self.state = state

@@ -21,7 +21,10 @@ enum SheetReading {
             throw SheetInteractionError.executionFailed("Bundled reading script is unavailable")
         }
         let value = try await webView.evaluateJavaScript(
-            source + "\ndenSheetRead.text();", in: nil, contentWorld: SheetDOMRuntime.contentWorld)
+            source + "\ndenSheetRead.text();",
+            in: nil,
+            contentWorld: SheetDOMRuntime.contentWorld
+        )
         guard let text = value as? String else {
             throw SheetInteractionError.executionFailed("Text reader returned an invalid result")
         }
@@ -31,8 +34,10 @@ enum SheetReading {
     static func read(in webView: WKWebView, within: String? = nil) async throws -> DenIPCResultPayload {
         guard let source else {
             throw NSError(
-                domain: "SheetReading", code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Bundled Markdown converter is unavailable"])
+                domain: "SheetReading",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Bundled Markdown converter is unavailable"]
+            )
         }
         guard let withinLiteral = String(data: try JSONEncoder().encode(within), encoding: .utf8) else {
             throw SheetInteractionError.executionFailed("Failed to encode reading scope")
@@ -45,7 +50,9 @@ enum SheetReading {
                         try { return denSheetRead.read(\(withinLiteral)); }
                         catch (error) { return { error: String(error) }; }
                     })();
-                    """, in: nil, in: SheetDOMRuntime.contentWorld
+                    """,
+                in: nil,
+                in: SheetDOMRuntime.contentWorld
             ) { result in
                 do {
                     let value = try result.get()
@@ -56,8 +63,10 @@ enum SheetReading {
                         let title = result["title"], let url = result["url"], let markdown = result["markdown"]
                     else {
                         throw NSError(
-                            domain: "SheetReading", code: 2,
-                            userInfo: [NSLocalizedDescriptionKey: "Markdown converter returned an invalid result"])
+                            domain: "SheetReading",
+                            code: 2,
+                            userInfo: [NSLocalizedDescriptionKey: "Markdown converter returned an invalid result"]
+                        )
                     }
                     continuation.resume(returning: .reading(title: title, url: url, markdown: markdown))
                 } catch {

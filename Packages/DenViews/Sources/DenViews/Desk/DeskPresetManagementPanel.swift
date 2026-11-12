@@ -38,10 +38,14 @@ public struct DeskPresetManagementPanel: View {
     }
 
     public init(
-        isStandalone: Bool, profileColor: Color, presets: [PersonalDeskPreset],
+        isStandalone: Bool,
+        profileColor: Color,
+        presets: [PersonalDeskPreset],
         boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
-        renamePreset: @escaping (UUID, String) -> DeskPresetRenameResult, requestDeletion: @escaping (UUID) -> Void,
-        facing: @escaping (UUID, Int) -> NSImage?, loadFacings: @escaping (UUID, Int) async -> Void,
+        renamePreset: @escaping (UUID, String) -> DeskPresetRenameResult,
+        requestDeletion: @escaping (UUID) -> Void,
+        facing: @escaping (UUID, Int) -> NSImage?,
+        loadFacings: @escaping (UUID, Int) async -> Void,
         onClose: @escaping () -> Void
     ) {
         self.isStandalone = isStandalone

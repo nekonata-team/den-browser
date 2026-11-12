@@ -38,7 +38,8 @@ final class DownloadHandler: NSObject, WKDownloadDelegate {
             DownloadActivity(
                 id: activityID,
                 filename: destinationURL.lastPathComponent,
-                fractionCompleted: fractionCompleted)
+                fractionCompleted: fractionCompleted
+            )
         }
     }
 
@@ -80,7 +81,9 @@ final class DownloadHandler: NSObject, WKDownloadDelegate {
     ) {
         let key = ObjectIdentifier(download)
         saveDialogs.present(
-            suggestedFilename: suggestedFilename, downloadKey: key, in: webView?.window
+            suggestedFilename: suggestedFilename,
+            downloadKey: key,
+            in: webView?.window
         ) {
             [weak self] destination, overwrite in
             guard let self, let destination else {
@@ -124,7 +127,10 @@ final class DownloadHandler: NSObject, WKDownloadDelegate {
         guard let pending = removePendingDownload(for: key) else { return false }
         do {
             try Self.finalizeDownload(
-                from: pending.temporaryURL, to: pending.destinationURL, allowsOverwrite: pending.allowsOverwrite)
+                from: pending.temporaryURL,
+                to: pending.destinationURL,
+                allowsOverwrite: pending.allowsOverwrite
+            )
             onFinished(pending.destinationURL.lastPathComponent)
             return true
         } catch {
@@ -164,7 +170,8 @@ final class DownloadHandler: NSObject, WKDownloadDelegate {
         pending.fractionCompleted = fractionCompleted
         pendingDownloads[key] = pending
         onActivity(
-            .progressed(id: pending.activityID, fractionCompleted: fractionCompleted))
+            .progressed(id: pending.activityID, fractionCompleted: fractionCompleted)
+        )
     }
 
     private func removePendingDownload(for key: ObjectIdentifier) -> PendingDownload? {

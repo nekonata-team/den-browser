@@ -25,7 +25,8 @@ final class TestWindow: NSWindow {
             contentRect: .init(x: 0, y: 0, width: 720, height: 640),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
-            defer: false)
+            defer: false
+        )
     }
 
     required init?(coder: NSCoder) {
@@ -50,7 +51,8 @@ func makeTestSheetNavigationManager(
     SheetNavigationManager(
         defaults: defaults ?? makeTestDefaults(),
         pasteboard: .withUniqueName(),
-        scriptSource: scriptSource)
+        scriptSource: scriptSource
+    )
 }
 
 @MainActor
@@ -71,8 +73,11 @@ func makeTestBoardRuntimeConfiguration(
         sheetNavigation: sheetNavigation
             ?? SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
         preferences: preferences ?? AppPreferences(defaults: defaults),
-        profileID: profileID, ipcSocketPath: ipcSocketPath, terminalCommandRunner: terminalCommandRunner,
-        requestWebExtensionContext: requestWebExtensionContext)
+        profileID: profileID,
+        ipcSocketPath: ipcSocketPath,
+        terminalCommandRunner: terminalCommandRunner,
+        requestWebExtensionContext: requestWebExtensionContext
+    )
 }
 
 @MainActor

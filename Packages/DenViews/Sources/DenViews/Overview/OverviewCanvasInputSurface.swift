@@ -35,7 +35,9 @@ struct OverviewCanvasInputSurface: NSViewRepresentable {
             stopMonitoring()
             guard let window else { return }
             resignObserver = NotificationCenter.default.addObserver(
-                forName: NSWindow.didResignKeyNotification, object: window, queue: .main
+                forName: NSWindow.didResignKeyNotification,
+                object: window,
+                queue: .main
             ) { [weak self] _ in
                 MainActor.assumeIsolated { self?.endPan() }
             }

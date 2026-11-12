@@ -29,8 +29,10 @@ public struct DeskSwitcher: View {
     }
 
     public init(
-        profileColor: Color, canOpenInNewWindow: @escaping (DeskID) -> Bool,
-        isPresentedInAnotherWindow: @escaping (DeskID) -> Bool, onOpenInNewWindow: @escaping (DeskID) -> Void
+        profileColor: Color,
+        canOpenInNewWindow: @escaping (DeskID) -> Bool,
+        isPresentedInAnotherWindow: @escaping (DeskID) -> Bool,
+        onOpenInNewWindow: @escaping (DeskID) -> Void
     ) {
         self.profileColor = profileColor
         self.canOpenInNewWindow = canOpenInNewWindow
@@ -299,7 +301,8 @@ public struct DeskSwitcher: View {
                 draggedID: current.deskID,
                 orderedIDs: desks.desks.map(\.id),
                 desiredCenterX: current.desiredCenterX,
-                frames: frames)
+                frames: frames
+            )
         {
             let crossedDesk = desks.desks[targetIndex]
             desks.previewDeskMove(current.deskID, to: DeskIndex(rawValue: targetIndex))

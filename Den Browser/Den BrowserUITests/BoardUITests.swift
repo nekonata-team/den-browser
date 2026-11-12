@@ -165,10 +165,12 @@ final class BoardUITests: UITestCase {
         given("Bravo and Charlie are exposed as draggable Overview Boards") {
             XCTAssertTrue(
                 bravo.wait(for: \.isHittable, toEqual: true, timeout: 5),
-                "Bravo should be ready for pointer interaction")
+                "Bravo should be ready for pointer interaction"
+            )
             XCTAssertTrue(
                 charlie.wait(for: \.isHittable, toEqual: true, timeout: 5),
-                "Charlie should be ready for pointer interaction")
+                "Charlie should be ready for pointer interaction"
+            )
         }
 
         when("dragging Bravo to the right of Charlie") {
@@ -201,7 +203,8 @@ final class BoardUITests: UITestCase {
         app.typeKey(",", modifierFlags: [.control])
         XCTAssertTrue(
             sheetInputWindow.waitUntilExists(timeout: 5),
-            "Den Mode should return to Sheet Input after focusing Bravo")
+            "Den Mode should return to Sheet Input after focusing Bravo"
+        )
         XCTAssertTrue(bravo.isSelected)
 
         enterDenMode(in: app)
@@ -210,7 +213,8 @@ final class BoardUITests: UITestCase {
         app.typeKey(",", modifierFlags: [.control])
         XCTAssertTrue(
             sheetInputWindow.waitUntilExists(timeout: 5),
-            "Den Mode should return to Sheet Input after focusing Alpha")
+            "Den Mode should return to Sheet Input after focusing Alpha"
+        )
         XCTAssertTrue(alpha.isSelected)
 
         when("typing a Shell command after returning from Den Mode") {

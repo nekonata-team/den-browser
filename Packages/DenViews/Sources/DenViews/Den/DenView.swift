@@ -26,12 +26,21 @@ public struct DenView<Header: View, Rail: View, Strip: View, Panels: View, Drawe
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     public init(
-        profileName: String? = nil, profileColor: Color = .blue, isPrivateDen: Bool = false, shouldShowHeader: Bool,
-        motionPreference: MotionPreference, drawerStyle: DrawerStyle, sheetScale: Int, activities: [DownloadActivity],
-        onScaleChange: @escaping (Int) -> Void, onMotionChange: @escaping (Bool) -> Void,
+        profileName: String? = nil,
+        profileColor: Color = .blue,
+        isPrivateDen: Bool = false,
+        shouldShowHeader: Bool,
+        motionPreference: MotionPreference,
+        drawerStyle: DrawerStyle,
+        sheetScale: Int,
+        activities: [DownloadActivity],
+        onScaleChange: @escaping (Int) -> Void,
+        onMotionChange: @escaping (Bool) -> Void,
         onOpenTutorial: @escaping (Double) -> Void,
-        @ViewBuilder header: () -> Header, @ViewBuilder rail: () -> Rail,
-        @ViewBuilder strip: @escaping (CGSize) -> Strip, @ViewBuilder panels: @escaping (CGSize) -> Panels,
+        @ViewBuilder header: () -> Header,
+        @ViewBuilder rail: () -> Rail,
+        @ViewBuilder strip: @escaping (CGSize) -> Strip,
+        @ViewBuilder panels: @escaping (CGSize) -> Panels,
         @ViewBuilder drawer: @escaping (CGSize) -> Drawer
     ) {
         self.profileName = profileName
@@ -123,7 +132,8 @@ public struct DenView<Header: View, Rail: View, Strip: View, Panels: View, Drawe
             DenBackground(
                 isDenMode: windowModel.isDenMode,
                 isPrivateDen: isPrivateDen,
-                profileColor: profileColor)
+                profileColor: profileColor
+            )
         )
         .frame(
             minWidth: DenLayout.minimumWindowWidth,

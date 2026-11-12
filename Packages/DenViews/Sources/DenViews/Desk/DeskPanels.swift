@@ -22,8 +22,10 @@ public struct NewDeskPanel: View {
     @FocusState private var isLabelFocused: Bool
 
     public init(
-        profileColor: Color, boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
-        facing: @escaping (UUID, Int) -> NSImage?, loadFacings: @escaping (UUID, Int) async -> Void
+        profileColor: Color,
+        boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
+        facing: @escaping (UUID, Int) -> NSImage?,
+        loadFacings: @escaping (UUID, Int) async -> Void
     ) {
         self.profileColor = profileColor
         self.boardHeight = boardHeight
@@ -50,7 +52,10 @@ public struct NewDeskPanel: View {
                     allowsEmptyPreset: !windowModel.isReplaceDeskPanelPresented,
                     isSearchFocused: $isSearchFocused,
                     boardHeight: boardHeight,
-                    facing: facing, loadFacings: loadFacings, onConfirm: confirmDeskPreset)
+                    facing: facing,
+                    loadFacings: loadFacings,
+                    onConfirm: confirmDeskPreset
+                )
             } else {
                 HStack(spacing: DenPanelLayout.controlSpacing) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -65,7 +70,8 @@ public struct NewDeskPanel: View {
                 .padding(10)
                 .background(
                     Color.primary.opacity(0.055),
-                    in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                )
 
                 DeskPresetPreview(
                     boards: selectedDeskPresetBoards,
@@ -115,7 +121,8 @@ public struct NewDeskPanel: View {
                     .buttonStyle(.glassProminent)
                     .disabled(
                         trimmedNewDeskLabel.isEmpty
-                            || (!windowModel.isReplaceDeskPanelPresented && !windowModel.desks.canCreateDesk))
+                            || (!windowModel.isReplaceDeskPanelPresented && !windowModel.desks.canCreateDesk)
+                    )
                 }
                 .font(.caption)
             }
@@ -127,11 +134,13 @@ public struct NewDeskPanel: View {
         .overlay {
             if isManagementPresented {
                 DeskPresetManagementPanel(
-                    isStandalone: false, profileColor: profileColor,
+                    isStandalone: false,
+                    profileColor: profileColor,
                     presets: windowModel.desks.deskPresets,
                     boardHeight: boardHeight,
                     renamePreset: windowModel.deskPresetActions.rename,
-                    requestDeletion: windowModel.deskPresetActions.requestDeletion, facing: facing,
+                    requestDeletion: windowModel.deskPresetActions.requestDeletion,
+                    facing: facing,
                     loadFacings: loadFacings
                 ) {
                     isManagementPresented = false
@@ -298,9 +307,13 @@ public struct SaveDeskPresetPanel: View {
     @FocusState private var isFocused: Bool
 
     public init(
-        initialLabel: String, previewBoards: [DeskPresetBoard], boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
-        savePreset: @escaping (String) -> DeskPresetSaveResult, facing: @escaping (Int) -> NSImage?,
-        captureFacings: @escaping () async -> Void, onClose: @escaping () -> Void
+        initialLabel: String,
+        previewBoards: [DeskPresetBoard],
+        boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
+        savePreset: @escaping (String) -> DeskPresetSaveResult,
+        facing: @escaping (Int) -> NSImage?,
+        captureFacings: @escaping () async -> Void,
+        onClose: @escaping () -> Void
     ) {
         self.initialLabel = initialLabel
         self.previewBoards = previewBoards

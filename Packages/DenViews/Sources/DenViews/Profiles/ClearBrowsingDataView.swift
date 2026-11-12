@@ -10,7 +10,8 @@ public struct ClearBrowsingDataView: View {
     @State private var isClearing = false
 
     public init(
-        profile: ProfileState? = nil, onClear: @escaping (Set<BrowsingDataCategory>) async -> Void,
+        profile: ProfileState? = nil,
+        onClear: @escaping (Set<BrowsingDataCategory>) async -> Void,
         onDismiss: @escaping () -> Void
     ) {
         self.profile = profile

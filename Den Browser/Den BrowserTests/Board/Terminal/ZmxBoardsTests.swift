@@ -14,24 +14,37 @@ struct ZmxBoardsTests {
         let source = BoardState(width: 520, zmxSessionName: "root", workingDirectory: "/tmp")
         let desk = DeskState(label: "Desk", boards: [source], focusedBoardID: source.id)
         let shared = DenStateStore.make(
-            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
+            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id))
+        )
         let creation = BoardCreation(
-            reader: shared.reader, writer: shared.writer,
-            recents: Recents(reader: shared.reader, writer: shared.writer), directoryExists: { _ in true })
+            reader: shared.reader,
+            writer: shared.writer,
+            recents: Recents(reader: shared.reader, writer: shared.writer),
+            directoryExists: { _ in true }
+        )
         let operations = ZmxBoards(
-            state: shared.store, creation: creation,
+            state: shared.store,
+            creation: creation,
             removal: BoardRemoval(reader: shared.reader, writer: shared.writer),
-            updates: BoardUpdates(reader: shared.reader, writer: shared.writer))
+            updates: BoardUpdates(reader: shared.reader, writer: shared.writer)
+        )
         let runner = DuplicationRunner()
         let initial = shared.store.snapshot
         let task = Task { @MainActor in
             if cancelled { withUnsafeCurrentTask { $0?.cancel() } }
             await operations.duplicate(
                 .init(
-                    source: source, suffix: "", asSideBoard: false, focus: true, width: 520, workingDirectory: "/tmp"),
+                    source: source,
+                    suffix: "",
+                    asSideBoard: false,
+                    focus: true,
+                    width: 520,
+                    workingDirectory: "/tmp"
+                ),
                 client: ZmxClient(executablePath: "/usr/bin/zmx", commandRunner: runner),
                 window: { cancelled ? .init(presentedDeskID: desk.id, focusedBoardID: source.id) : nil },
-                notify: { _ in Issue.record("Cancelled or closed-window operation must not notify") })
+                notify: { _ in Issue.record("Cancelled or closed-window operation must not notify") }
+            )
         }
         // Act
         await task.value

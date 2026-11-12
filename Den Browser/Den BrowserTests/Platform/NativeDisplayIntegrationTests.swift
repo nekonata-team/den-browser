@@ -23,14 +23,18 @@ struct NativeDisplayIntegrationTests {
             var height: CGFloat = 0
             let hostingView = NSHostingView(
                 rootView: EssentialsPrefixPanel(
-                    profileColor: .blue, essentials: essentials, onSelect: { _ in }, onOpenInDrawer: { _ in }
+                    profileColor: .blue,
+                    essentials: essentials,
+                    onSelect: { _ in },
+                    onOpenInDrawer: { _ in }
                 )
                 .onGeometryChange(for: CGFloat.self) {
                     $0.size.height
                 } action: {
                     height = $0
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            )
             window.contentView = hostingView
             var stableSamples = 0
             // Drive SwiftUI layout directly so other MainActor tests cannot consume a settling deadline.
@@ -62,8 +66,10 @@ struct NativeDisplayIntegrationTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let runtime = session.runtimes.webRuntime(for: board)
         defer { session.runtimes.releaseRuntimes() }
         let window = TestWindow()
@@ -93,18 +99,28 @@ struct NativeDisplayIntegrationTests {
         }
         let dom =
             try await runtime.webView.callAsyncJavaScript(
-                "return typeof window.__denSheetDOM", arguments: [:], in: nil,
-                contentWorld: SheetDOMRuntime.contentWorld) as? String
+                "return typeof window.__denSheetDOM",
+                arguments: [:],
+                in: nil,
+                contentWorld: SheetDOMRuntime.contentWorld
+            ) as? String
         #expect(dom == "object")
     }
 
     @Test func terminalResourceDisplaysThroughViewAndNativeCommandsNeedNoModel() async throws {
         // Arrange
         let runtime = TerminalRuntime(
-            workingDirectory: "/tmp", command: "/bin/zsh -f",
+            workingDirectory: "/tmp",
+            command: "/bin/zsh -f",
             events: .init(
-                onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in },
-                onTitleChange: { _ in }, onOpenURL: { _ in }, onNotification: { _, _ in }))
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
         defer { runtime.dispose() }
         let window = TestWindow()
         defer { window.contentView = nil }

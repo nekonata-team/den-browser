@@ -20,7 +20,8 @@ public enum ProfileExtensionDataStore {
         FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0]
             .appending(path: "WebKit", directoryHint: .isDirectory)
             .appending(
-                path: Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName, directoryHint: .isDirectory
+                path: Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName,
+                directoryHint: .isDirectory
             )
             .appending(path: "WebExtensions", directoryHint: .isDirectory)
     }

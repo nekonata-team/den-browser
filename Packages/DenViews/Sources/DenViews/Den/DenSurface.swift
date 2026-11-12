@@ -53,7 +53,9 @@ public struct EmptyDenView: View {
     public let showKeyboardShortcuts: () -> Void
 
     public init(
-        openBoard: @escaping () -> Void, openTutorial: @escaping () -> Void, showKeyboardShortcuts: @escaping () -> Void
+        openBoard: @escaping () -> Void,
+        openTutorial: @escaping () -> Void,
+        showKeyboardShortcuts: @escaping () -> Void
     ) {
         self.openBoard = openBoard
         self.openTutorial = openTutorial

@@ -11,8 +11,12 @@ public struct TerminalBoardSurface: NSViewRepresentable {
     let onSurfaceReady: (NSWindow) -> Bool
 
     public init(
-        terminalView: NSView, onSurfaceVisibilityChange: @escaping (Bool) -> Void, onBeforeHide: @escaping () -> Void,
-        isHidden: Bool, focusRequest: BoardFocusRequest?, onSurfaceReady: @escaping (NSWindow) -> Bool
+        terminalView: NSView,
+        onSurfaceVisibilityChange: @escaping (Bool) -> Void,
+        onBeforeHide: @escaping () -> Void,
+        isHidden: Bool,
+        focusRequest: BoardFocusRequest?,
+        onSurfaceReady: @escaping (NSWindow) -> Bool
     ) {
         self.terminalView = terminalView
         self.onSurfaceVisibilityChange = onSurfaceVisibilityChange

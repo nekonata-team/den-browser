@@ -87,7 +87,12 @@ public struct BoardUndo {
             reader.snapshot.den.desks.contains(where: { $0.id == deskID })
         else { return .unavailable }
         BoardMovement(reader: reader, writer: writer).transfer(
-            boardID, from: source.id, to: deskID, at: index, recordsUndo: false)
+            boardID,
+            from: source.id,
+            to: deskID,
+            at: index,
+            recordsUndo: false
+        )
         writer.update {
             guard let target = $0.den.desks.firstIndex(where: { $0.id == deskID }) else { return }
             $0.den.desks[target].focusedBoardID = boardID
@@ -114,16 +119,23 @@ public struct BoardUndo {
         let offset = BoardInsertion.groupBoundaryOffset(source.sourceBoardIndex.rawValue, in: desk.boards)
         let before = desk.boards.indices.contains(offset) ? desk.boards[offset].id : nil
         let creation = BoardCreation(
-            reader: reader, writer: writer, recents: Recents(reader: reader, writer: writer),
+            reader: reader,
+            writer: writer,
+            recents: Recents(reader: reader, writer: writer),
             directoryExists: { _ in true }
         )
         guard
             creation.insert(
                 board,
                 target: .init(
-                    presentedDeskID: desk.id, deskID: desk.id,
-                    afterBoardID: before == nil ? desk.boards.last?.id : nil, beforeBoardID: before, focus: false),
-                notify: { notify(id, $0) }) != nil
+                    presentedDeskID: desk.id,
+                    deskID: desk.id,
+                    afterBoardID: before == nil ? desk.boards.last?.id : nil,
+                    beforeBoardID: before,
+                    focus: false
+                ),
+                notify: { notify(id, $0) }
+            ) != nil
         else { return .unavailable }
         DrawerItems(reader: reader, writer: writer).consume(id, notify: notifyDrawer)
         writer.update {

@@ -35,14 +35,17 @@ struct DeskRemoveCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: .removeDesk(deskID: try DenIPCClient.requiredDeskID(deskID), force: force), options: options)
+            operation: .removeDesk(deskID: try DenIPCClient.requiredDeskID(deskID), force: force),
+            options: options
+        )
     }
 }
 
 struct DeskListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List all Desks in the Den")
+        abstract: "List all Desks in the Den"
+    )
 
     @OptionGroup var options: CLIOptions
 

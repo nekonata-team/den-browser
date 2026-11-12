@@ -6,7 +6,8 @@ final class DrawerStateUITests: UITestCase {
         let app = launchApp(
             boardCount: .one,
             sheetNavigationEnabled: true,
-            multipleDrawerItems: true)
+            multipleDrawerItems: true
+        )
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let peekContent = drawer.staticTexts["result:pending"].firstMatch
@@ -66,7 +67,8 @@ final class DrawerStateUITests: UITestCase {
     @MainActor
     func testDrawerRetainsFormAndReceivesInputAfterSwitchingAndReopening() throws {
         let url = try makeHTMLFixture(
-            "<html><head><title>Drawer Fixture</title></head><body><input aria-label='Retained input'></body></html>")
+            "<html><head><title>Drawer Fixture</title></head><body><input aria-label='Retained input'></body></html>"
+        )
         let app = launchApp(boardCount: .one, multipleDrawerItems: true, drawerSheetURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let input = drawer.textFields["Retained input"].firstMatch
@@ -118,7 +120,8 @@ final class DrawerStateUITests: UITestCase {
             <html><head><title>Live Drawer Fixture</title></head><body>
               <input aria-label="Live input" spellcheck="false" autocorrect="off" autocapitalize="off">
             </body></html>
-            """)
+            """
+        )
         let app = launchApp(boardCount: .one, drawerSheetURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let peekInput = drawer.textFields["Live input"].firstMatch
@@ -231,7 +234,11 @@ final class DrawerStateUITests: UITestCase {
 
         let discardItems = drawer.buttons.matching(
             NSPredicate(
-                format: "label BEGINSWITH %@ AND label != %@", "Discard ", "Discard All Drawer Items"))
+                format: "label BEGINSWITH %@ AND label != %@",
+                "Discard ",
+                "Discard All Drawer Items"
+            )
+        )
         XCTAssertEqual(discardItems.count, 2)
 
         when("typing a command that exits only if the original Shell state survived") {

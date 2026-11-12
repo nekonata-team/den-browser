@@ -46,9 +46,13 @@ public struct BoardSurfaceModel {
     public let perform: (Action) -> Void
 
     public init(
-        desks: @escaping () -> [DeskState], boardDeskID: @escaping () -> DeskID?, canMoveLeft: @escaping () -> Bool,
-        canMoveRight: @escaping () -> Bool, inputSourceLabel: @escaping () -> String?,
-        sheetNavigationEnabled: @escaping () -> Bool, drawerStyle: @escaping () -> DrawerStyle,
+        desks: @escaping () -> [DeskState],
+        boardDeskID: @escaping () -> DeskID?,
+        canMoveLeft: @escaping () -> Bool,
+        canMoveRight: @escaping () -> Bool,
+        inputSourceLabel: @escaping () -> String?,
+        sheetNavigationEnabled: @escaping () -> Bool,
+        drawerStyle: @escaping () -> DrawerStyle,
         motionPreference: @escaping () -> MotionPreference,
         perform: @escaping (Action) -> Void
     ) {

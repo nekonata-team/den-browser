@@ -76,8 +76,8 @@ final class DeskLinkActions {
                 if let destination = try await DeskLinkOutput.saveMarkdown(
                     markdown,
                     suggestedFilename: filename,
-                    attachedTo: NSApp.keyWindow)
-                {
+                    attachedTo: NSApp.keyWindow
+                ) {
                     context.feedback.publish("Saved \(destination.lastPathComponent).", severity: .success)
                 }
             } catch {

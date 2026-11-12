@@ -12,9 +12,11 @@ struct OverviewView: View {
 
     var body: some View {
         DenViews.OverviewView(
-            profileColor: profileColor, boardHeight: boardHeight,
+            profileColor: profileColor,
+            boardHeight: boardHeight,
             motionPreference: preferences.motionPreference,
             facing: { session.resources.facingCache.image(for: $0) },
-            loadFacing: { await session.resources.facingCache.loadFacing(for: $0) })
+            loadFacing: { await session.resources.facingCache.loadFacing(for: $0) }
+        )
     }
 }

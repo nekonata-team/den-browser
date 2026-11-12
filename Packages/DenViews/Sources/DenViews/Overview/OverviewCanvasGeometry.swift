@@ -12,28 +12,37 @@ public enum OverviewCanvasGeometry {
     public static func centeringInset(contentSize: CGSize, viewportSize: CGSize) -> CGPoint {
         CGPoint(
             x: max(0, (viewportSize.width - contentSize.width) / 2),
-            y: max(0, (viewportSize.height - contentSize.height) / 2))
+            y: max(0, (viewportSize.height - contentSize.height) / 2)
+        )
     }
 
     public static func zoomOffset(
-        offset: CGPoint, anchor: CGPoint, contentSize: CGSize, viewportSize: CGSize, factor: CGFloat
+        offset: CGPoint,
+        anchor: CGPoint,
+        contentSize: CGSize,
+        viewportSize: CGSize,
+        factor: CGFloat
     )
         -> CGPoint
     {
         let before = centeringInset(
             contentSize: contentSize,
-            viewportSize: viewportSize)
+            viewportSize: viewportSize
+        )
         let after = centeringInset(
             contentSize: CGSize(width: contentSize.width * factor, height: contentSize.height * factor),
-            viewportSize: viewportSize)
+            viewportSize: viewportSize
+        )
         return CGPoint(
             x: (offset.x + anchor.x - before.x) * factor + after.x - anchor.x,
-            y: (offset.y + anchor.y - before.y) * factor + after.y - anchor.y)
+            y: (offset.y + anchor.y - before.y) * factor + after.y - anchor.y
+        )
     }
 
     public static func clampedOffset(_ offset: CGPoint, contentSize: CGSize, viewportSize: CGSize) -> CGPoint {
         CGPoint(
             x: min(max(0, offset.x), max(0, contentSize.width - viewportSize.width)),
-            y: min(max(0, offset.y), max(0, contentSize.height - viewportSize.height)))
+            y: min(max(0, offset.y), max(0, contentSize.height - viewportSize.height))
+        )
     }
 }

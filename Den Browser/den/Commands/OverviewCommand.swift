@@ -4,7 +4,9 @@ import Foundation
 
 struct OverviewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "overview", abstract: "Show Desks vertically and Boards horizontally")
+        commandName: "overview",
+        abstract: "Show Desks vertically and Boards horizontally"
+    )
 
     @OptionGroup var options: CLIOptions
     @Flag(name: .shortAndLong, help: "Include full Desk and Board IDs in a numbered legend")
@@ -20,7 +22,11 @@ struct OverviewCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: .inspectDen(target: .automatic), options: options, showBoardIDs: long, forceText: text)
+            operation: .inspectDen(target: .automatic),
+            options: options,
+            showBoardIDs: long,
+            forceText: text
+        )
     }
 
     static func render(_ overview: DenIPCOverview, showIDs: Bool) -> String {

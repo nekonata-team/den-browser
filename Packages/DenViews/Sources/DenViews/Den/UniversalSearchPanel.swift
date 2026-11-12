@@ -18,8 +18,11 @@ public struct UniversalSearchPanel: View {
     private let restoreInput: () -> Void
 
     public init(
-        profileColor: Color, sourceItems: [UniversalSearchItem], recentItems: [RecentItem],
-        boards: [BoardState], perform: @escaping (UniversalSearchItem.Target, Bool) -> String?,
+        profileColor: Color,
+        sourceItems: [UniversalSearchItem],
+        recentItems: [RecentItem],
+        boards: [BoardState],
+        perform: @escaping (UniversalSearchItem.Target, Bool) -> String?,
         restoreInput: @escaping () -> Void
     ) {
         self.profileColor = profileColor

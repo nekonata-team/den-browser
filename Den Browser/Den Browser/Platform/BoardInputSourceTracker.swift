@@ -51,7 +51,9 @@ final class BoardInputSourceTracker {
             }
         }
         windowActiveObserver = notificationCenter.addObserver(
-            forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.handleApplicationDidBecomeActive()
@@ -193,8 +195,14 @@ final class BoardInputSourceTracker {
                     String(
                         format:
                             "match=%@ duration=%.3f context=none carbon=%@ contextLookup=none contextSelect=none status=%@ restored=%@",
-                        match, milliseconds, carbon, status, didRestore),
-                    category: "InputSource")
+                        match,
+                        milliseconds,
+                        carbon,
+                        status,
+                        didRestore
+                    ),
+                    category: "InputSource"
+                )
             }
         }
         guard previousSource != id else { return }

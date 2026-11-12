@@ -11,8 +11,10 @@ public final class TerminalSettingsModel {
     @ObservationIgnored private let openPermissions: () -> Void
 
     public init(
-        zellijPath: @escaping () -> String, zmxPath: @escaping () -> String,
-        saveZellijPath: @escaping (String) -> Void, saveZmxPath: @escaping (String) -> Void,
+        zellijPath: @escaping () -> String,
+        zmxPath: @escaping () -> String,
+        saveZellijPath: @escaping (String) -> Void,
+        saveZmxPath: @escaping (String) -> Void,
         openPermissions: @escaping () -> Void
     ) {
         self.readZellijPath = zellijPath

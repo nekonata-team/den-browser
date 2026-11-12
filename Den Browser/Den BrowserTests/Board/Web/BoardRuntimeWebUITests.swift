@@ -219,7 +219,8 @@ struct BoardRuntimeWebUITests {
                 onOpenBoard: { keptURL = $0 },
                 onOpenBoardInBackground: { backgroundURL = $0 },
                 onKeepInDrawer: { keptURL = $0 },
-                isSupportedSheetURL: WebURLPolicy.isSupported),
+                isSupportedSheetURL: WebURLPolicy.isSupported
+            ),
             events: .init(onChange: { _, _, _ in })
         )
         defer { runtime.dispose() }

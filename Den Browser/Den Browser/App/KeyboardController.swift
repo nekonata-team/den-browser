@@ -45,7 +45,8 @@ final class KeyboardController {
                 session: session,
                 windowModel: windowModel,
                 preferences: preferences,
-                openSettings: openSettings) ? nil : event
+                openSettings: openSettings
+            ) ? nil : event
         }
     }
 
@@ -69,7 +70,8 @@ final class KeyboardController {
             for: event,
             session: session,
             windowModel: windowModel,
-            preferences: preferences)
+            preferences: preferences
+        )
         apply(decision, session: session, windowModel: windowModel, openSettings: openSettings)
         return !decision.isForwarded
     }
@@ -84,7 +86,8 @@ final class KeyboardController {
         return KeyboardRouter.route(
             event: KeyEvent(event),
             context: InputContext(session: session, windowModel: windowModel, event: event),
-            shortcuts: ShortcutConfiguration(preferences: preferences))
+            shortcuts: ShortcutConfiguration(preferences: preferences)
+        )
     }
 
     static func handleNotificationKeyPress(
@@ -96,7 +99,8 @@ final class KeyboardController {
         let decision = KeyboardRouter.route(
             event: KeyEvent(notificationKeyPress: press),
             context: InputContext(session: session, windowModel: windowModel),
-            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences))
+            shortcuts: ShortcutConfiguration(preferences: session.configuration.preferences)
+        )
         apply(decision, session: session, windowModel: windowModel, openSettings: {})
         return decision.isForwarded ? .ignored : .handled
     }

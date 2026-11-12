@@ -32,11 +32,23 @@ public struct InspectionBoardView: View {
     private var inspectionHighlightColor: ProfileRGB? { profileRGB(from: profileColor) }
 
     public init(
-        model: InspectionBoardModel, surfaceModel: BoardSurfaceModel, runtimeGeneration: Int,
-        focusTarget: @escaping () -> Void, board: BoardState, isFocused: Bool, focusRequest: BoardFocusRequest?,
-        isDragging: Bool, isPointerFocusEnabled: Bool, profileColor: Color, width: Double, height: Double,
-        isVisibleInViewport: Bool, targetBoardID: BoardID, onFocus: @escaping () -> Void,
-        onRemove: @escaping () -> Void, onDragChanged: @escaping (DragGesture.Value) -> Void,
+        model: InspectionBoardModel,
+        surfaceModel: BoardSurfaceModel,
+        runtimeGeneration: Int,
+        focusTarget: @escaping () -> Void,
+        board: BoardState,
+        isFocused: Bool,
+        focusRequest: BoardFocusRequest?,
+        isDragging: Bool,
+        isPointerFocusEnabled: Bool,
+        profileColor: Color,
+        width: Double,
+        height: Double,
+        isVisibleInViewport: Bool,
+        targetBoardID: BoardID,
+        onFocus: @escaping () -> Void,
+        onRemove: @escaping () -> Void,
+        onDragChanged: @escaping (DragGesture.Value) -> Void,
         onDragEnded: @escaping (DragGesture.Value) -> Void
     ) {
         self._model = State(initialValue: model)
@@ -307,7 +319,8 @@ private struct InspectionBoardFocusSurface: NSViewRepresentable {
                     needsFirstResponderActivation(window.firstResponder, target: inputView)
                 else { return true }
                 return window.makeFirstResponder(inputView)
-            })
+            }
+        )
         return host
     }
 
@@ -323,7 +336,8 @@ private struct InspectionBoardFocusSurface: NSViewRepresentable {
                     needsFirstResponderActivation(window.firstResponder, target: inputView)
                 else { return true }
                 return window.makeFirstResponder(inputView)
-            })
+            }
+        )
     }
 }
 
@@ -392,7 +406,9 @@ private struct InspectionDOMBranch: View {
                 .overlay {
                     if isSelected {
                         RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous).stroke(
-                            profileColor.opacity(0.6), lineWidth: 1)
+                            profileColor.opacity(0.6),
+                            lineWidth: 1
+                        )
                     }
                 }
                 .onHover(perform: onHover)

@@ -15,7 +15,8 @@ enum SheetDOMRuntime {
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
                 in: contentWorld
-            ))
+            )
+        )
     }
 
     private static let source: String = {

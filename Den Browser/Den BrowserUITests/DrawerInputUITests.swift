@@ -10,7 +10,8 @@ final class DrawerInputUITests: UITestCase {
             <html><head><title>Live Drawer Fixture</title></head><body>
               <input aria-label="Live input" spellcheck="false" autocorrect="off">
             </body></html>
-            """)
+            """
+        )
         let app = launchApp(boardCount: .one, drawerSheetURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let peekInput = drawer.textFields["Live input"].firstMatch
@@ -67,7 +68,8 @@ final class DrawerInputUITests: UITestCase {
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let additionInput = app.textFields["open-board-input"].firstMatch
         let discardItems = drawer.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH %@ AND label != %@", "Discard ", "Discard All Drawer Items"))
+            NSPredicate(format: "label BEGINSWITH %@ AND label != %@", "Discard ", "Discard All Drawer Items")
+        )
 
         given("a Terminal Peek holds Shell state") {
             enterDenMode(in: app)

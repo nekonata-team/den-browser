@@ -39,7 +39,8 @@ final class BoardScreenshots {
         guard let target = focusedScreenshotTarget() else { return }
         performSheetScreenshot(
             capture: { try await target.capture() },
-            destination: .save(window: target.window))
+            destination: .save(window: target.window)
+        )
     }
 
     func copyFocusedSheetScreenshot() {
@@ -56,7 +57,9 @@ final class BoardScreenshots {
             do {
                 guard
                     let message = try await ScreenshotOutput.captureAndOutput(
-                        capture: capture, destination: destination)
+                        capture: capture,
+                        destination: destination
+                    )
                 else { return }
                 context.feedback.publish(message, severity: .success)
             } catch is CancellationError {

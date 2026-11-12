@@ -4,7 +4,8 @@ import DenIPCProtocol
 struct TerminalTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",
-        abstract: "Print visible screen text or recent history from the target Terminal Board")
+        abstract: "Print visible screen text or recent history from the target Terminal Board"
+    )
 
     @OptionGroup var target: BoardTargetOptions
     @Option(help: "Read the last N lines of retained history, including the screen (must be positive)")
@@ -27,7 +28,8 @@ struct TerminalTextCommand: ParsableCommand {
 struct TerminalSendCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "send",
-        abstract: "Send text to the target Terminal Board")
+        abstract: "Send text to the target Terminal Board"
+    )
 
     @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Text to send to the terminal") var text: String
@@ -43,7 +45,8 @@ struct TerminalSendCommand: ParsableCommand {
 struct TerminalRunCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "run",
-        abstract: "Run a shell command in the target Terminal Board")
+        abstract: "Run a shell command in the target Terminal Board"
+    )
 
     @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Shell command to run") var command: String
@@ -51,7 +54,9 @@ struct TerminalRunCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .terminal(
-                command: .run(command: command), target: try DenIPCClient.boardTarget(target.boardID)),
+                command: .run(command: command),
+                target: try DenIPCClient.boardTarget(target.boardID)
+            ),
             options: target.common
         )
     }
@@ -59,7 +64,9 @@ struct TerminalRunCommand: ParsableCommand {
 
 struct TerminalPressCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "press", abstract: "Press and release a terminal key, optionally with modifiers")
+        commandName: "press",
+        abstract: "Press and release a terminal key, optionally with modifiers"
+    )
 
     @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Key or chord (e.g. Enter, Escape, ArrowDown, Ctrl+C, Shift+Tab)") var key: String
@@ -77,7 +84,8 @@ struct TerminalPressCommand: ParsableCommand {
 struct TerminalKillCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "kill",
-        abstract: "Send a signal to the foreground process group of the target Terminal Board")
+        abstract: "Send a signal to the foreground process group of the target Terminal Board"
+    )
 
     @OptionGroup var target: BoardTargetOptions
     @Option(name: [.short, .customLong("signal")], help: "Signal name or number to send (default: TERM)")
@@ -86,7 +94,9 @@ struct TerminalKillCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .terminal(
-                command: .kill(signal: signal), target: try DenIPCClient.boardTarget(target.boardID)),
+                command: .kill(signal: signal),
+                target: try DenIPCClient.boardTarget(target.boardID)
+            ),
             options: target.common
         )
     }

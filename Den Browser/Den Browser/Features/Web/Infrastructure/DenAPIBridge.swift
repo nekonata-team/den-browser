@@ -19,7 +19,8 @@ final class DenAPIBridge: NSObject {
     private var userScript: WKUserScript?
 
     init(
-        webView: WKWebView, showToast: ((String, DenFeedback.Severity) throws -> Void)? = nil,
+        webView: WKWebView,
+        showToast: ((String, DenFeedback.Severity) throws -> Void)? = nil,
         focus: @escaping (BoardID) throws -> Void
     ) {
         self.webView = webView
@@ -136,7 +137,8 @@ private final class DenAPIMessageRouter: NSObject, WKScriptMessageHandlerWithRep
     }
 
     func userContentController(
-        _ userContentController: WKUserContentController, didReceive message: WKScriptMessage,
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage,
         replyHandler: @escaping @MainActor (Any?, String?) -> Void
     ) {
         guard let webView = message.webView, let owner = owners.object(forKey: webView) else {

@@ -33,7 +33,11 @@ public struct InputOpening {
     public func open(_ input: String, context: Context, inDrawer: Bool, notify: (Notice) -> Void) -> BoardOpenResult {
         if inDrawer {
             let request = BoardCreation.OpenRequest(
-                input: input, width: context.width, target: context.target, configuration: context.configuration)
+                input: input,
+                width: context.width,
+                target: context.target,
+                configuration: context.configuration
+            )
             switch creation.resolve(request) {
             case .createBoard(let board, _):
                 switch board.kind {
@@ -63,7 +67,8 @@ public struct InputOpening {
         notify(.willOpenBoard)
         return creation.open(
             .init(input: input, width: context.width, target: context.target, configuration: context.configuration),
-            notify: { notify(.board($0)) })
+            notify: { notify(.board($0)) }
+        )
     }
 
     public func openClipboard(_ text: String?, context: Context, inDrawer: Bool, notify: (Notice) -> Void)
@@ -87,7 +92,10 @@ public struct InputOpening {
 
     @discardableResult
     public func openExternalURL(
-        _ url: URL, destination: ExternalLinkDestination, context: Context, notify: (Notice) -> Void
+        _ url: URL,
+        destination: ExternalLinkDestination,
+        context: Context,
+        notify: (Notice) -> Void
     ) -> Bool {
         switch destination {
         case .drawerPeek:
@@ -96,9 +104,13 @@ public struct InputOpening {
             return true
         case .focusedBoard:
             return creation.createWeb(
-                urlString: url.absoluteString, width: context.width, searchEngine: context.configuration.searchEngine,
-                target: context.target, recentItem: .url(WebURLPolicy.canonicalSheetURL(url)),
-                notify: { notify(.board($0)) }) != nil
+                urlString: url.absoluteString,
+                width: context.width,
+                searchEngine: context.configuration.searchEngine,
+                target: context.target,
+                recentItem: .url(WebURLPolicy.canonicalSheetURL(url)),
+                notify: { notify(.board($0)) }
+            ) != nil
         }
     }
 }

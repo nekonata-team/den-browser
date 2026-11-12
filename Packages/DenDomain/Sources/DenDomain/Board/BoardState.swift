@@ -208,7 +208,9 @@ public struct BoardState: Codable, Equatable, Identifiable {
                 currentSheetURL: currentSheetURL,
                 firstSheetURL: firstSheetURL ?? currentSheetURL,
                 sheetNavigationPaused: sheetNavigationPaused,
-                backgroundExecutionEnabled: backgroundExecutionEnabled))
+                backgroundExecutionEnabled: backgroundExecutionEnabled
+            )
+        )
         role = .primary
         self.customLabel = customLabel
     }
@@ -221,12 +223,19 @@ public struct BoardState: Codable, Equatable, Identifiable {
         customLabel: String? = nil
     ) {
         self.init(
-            id: id, label: label, width: width, terminal: .shell(workingDirectory: workingDirectory),
-            customLabel: customLabel)
+            id: id,
+            label: label,
+            width: width,
+            terminal: .shell(workingDirectory: workingDirectory),
+            customLabel: customLabel
+        )
     }
 
     public init(
-        id: BoardID = BoardID(), label: String, width: Double, terminal: TerminalBoardState,
+        id: BoardID = BoardID(),
+        label: String,
+        width: Double,
+        terminal: TerminalBoardState,
         customLabel: String? = nil
     ) {
         self.id = id
@@ -269,7 +278,10 @@ public struct BoardState: Codable, Equatable, Identifiable {
                 ZmxBoardState(
                     sessionName: zmxSessionName,
                     workingDirectory: workingDirectory,
-                    rootSessionName: rootSessionName)))
+                    rootSessionName: rootSessionName
+                )
+            )
+        )
         role = .primary
         self.customLabel = customLabel
     }
@@ -318,7 +330,8 @@ public struct BoardState: Codable, Equatable, Identifiable {
             throw DecodingError.dataCorruptedError(
                 forKey: .role,
                 in: container,
-                debugDescription: "An Inspection Board must belong to a Board Group as its Side Board.")
+                debugDescription: "An Inspection Board must belong to a Board Group as its Side Board."
+            )
         }
     }
 

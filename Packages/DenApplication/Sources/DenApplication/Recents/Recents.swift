@@ -10,8 +10,10 @@ public struct Recents {
     private let persistRecent: (([RecentItem]) -> Bool)?
 
     public init(
-        reader: DenStateReader, writer: DenStateWriter,
-        persist: ((DenState) -> Bool)? = nil, persistRecent: (([RecentItem]) -> Bool)? = nil
+        reader: DenStateReader,
+        writer: DenStateWriter,
+        persist: ((DenState) -> Bool)? = nil,
+        persistRecent: (([RecentItem]) -> Bool)? = nil
     ) {
         self.reader = reader
         self.writer = writer

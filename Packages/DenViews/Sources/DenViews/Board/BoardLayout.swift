@@ -15,8 +15,13 @@ public struct BoardLayout {
         public var sideSpacing: CGFloat = defaultSideSpacing
 
         public init(
-            centering: FocusedBoardCentering, boards: [BoardState], maximizedBoardID: BoardID?, windowWidth: CGFloat,
-            horizontalPadding: CGFloat, spacing: CGFloat, sideSpacing: CGFloat = defaultSideSpacing
+            centering: FocusedBoardCentering,
+            boards: [BoardState],
+            maximizedBoardID: BoardID?,
+            windowWidth: CGFloat,
+            horizontalPadding: CGFloat,
+            spacing: CGFloat,
+            sideSpacing: CGFloat = defaultSideSpacing
         ) {
             self.centering = centering
             self.boards = boards
@@ -97,7 +102,8 @@ public struct BoardLayout {
             for: boardIndex...boardIndex,
             in: params,
             containerWidth: containerWidth,
-            contentWidth: contentWidth)
+            contentWidth: contentWidth
+        )
     }
 
     /// Reveals or centers according to the configured policy; centering uses the full Board Group.
@@ -118,8 +124,12 @@ public struct BoardLayout {
         let clampedScrollX = min(max(0, currentScrollX), max(0, contentWidth - params.windowWidth))
         if params.centering == .never, !forceCenter {
             return scrollTargetToRevealBoard(
-                for: boardIndex, in: params, currentScrollX: clampedScrollX,
-                contentWidth: contentWidth, containerWidth: params.windowWidth) ?? clampedScrollX
+                for: boardIndex,
+                in: params,
+                currentScrollX: clampedScrollX,
+                contentWidth: contentWidth,
+                containerWidth: params.windowWidth
+            ) ?? clampedScrollX
         }
         guard forceCenter || shouldCenterFocusedBoard(for: params) else { return restingScrollX(for: params) }
 
@@ -130,8 +140,11 @@ public struct BoardLayout {
             let lastIndex = params.boards.firstIndex(where: { $0.id == lastID })
         else { return nil }
         return centeredScrollX(
-            for: firstIndex...lastIndex, in: params,
-            containerWidth: params.windowWidth, contentWidth: contentWidth)
+            for: firstIndex...lastIndex,
+            in: params,
+            containerWidth: params.windowWidth,
+            contentWidth: contentWidth
+        )
     }
 
     /// Centers the full range, including inter-Board spacing, within the scrollable content bounds.
@@ -177,7 +190,8 @@ public struct BoardLayout {
         guard params.centering == .onOverflow, !params.boardsOverflow else { return 0 }
         let centeredPadding = max(
             params.horizontalPadding,
-            (params.windowWidth - params.requiredBoardsWidth) / 2)
+            (params.windowWidth - params.requiredBoardsWidth) / 2
+        )
         return max(0, calculatePaddings(for: params).leading - centeredPadding)
     }
 
@@ -222,7 +236,8 @@ public struct BoardLayout {
             guard let range = boardContentRange(for: index, in: params) else { continue }
             let visibleWidth = max(
                 0,
-                min(range.maxX, offsetX + containerWidth) - max(range.minX, offsetX))
+                min(range.maxX, offsetX + containerWidth) - max(range.minX, offsetX)
+            )
             guard visibleWidth / (range.maxX - range.minX) >= 0.05 else { continue }
             visibleIDs.insert(board.id)
         }

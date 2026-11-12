@@ -36,11 +36,15 @@ final class ProfileWindowSession {
     let reset: DenResetActions
 
     init(
-        resources: DenProfileResources, configuration: BoardRuntimeConfiguration, pasteboard: NSPasteboard? = nil,
+        resources: DenProfileResources,
+        configuration: BoardRuntimeConfiguration,
+        pasteboard: NSPasteboard? = nil,
         presentedDeskID: DeskID? = nil,
-        webExtensionHost: WebExtensionHost? = nil, webExtensionWindow: MV3WebExtensionWindow? = nil,
+        webExtensionHost: WebExtensionHost? = nil,
+        webExtensionWindow: MV3WebExtensionWindow? = nil,
         canPresentDesk: ((DeskID) -> Bool)? = nil,
-        onDeskPresentationRequest: ((DeskID) -> Bool)? = nil, onWillResetDen: (() -> Void)? = nil
+        onDeskPresentationRequest: ((DeskID) -> Bool)? = nil,
+        onWillResetDen: (() -> Void)? = nil
     ) {
         let windowPasteboard = pasteboard ?? configuration.sheetNavigation.pasteboard
         let selectedDeskID =
@@ -56,16 +60,25 @@ final class ProfileWindowSession {
         let preferences = configuration.preferences
         inputSourceTracker.isEnabled = { [weak preferences] in preferences?.rememberBoardInputMethod ?? false }
         let runtimes = BoardRuntimeAccess(
-            storage: resources, windowResources: windowResources, connection: connection, configuration: configuration,
-            webExtensionHost: webExtensionHost, webExtensionWindow: webExtensionWindow,
-            focusedDesk: { [weak navigation] in navigation?.focusedDesk })
+            storage: resources,
+            windowResources: windowResources,
+            connection: connection,
+            configuration: configuration,
+            webExtensionHost: webExtensionHost,
+            webExtensionWindow: webExtensionWindow,
+            focusedDesk: { [weak navigation] in navigation?.focusedDesk }
+        )
         let output = WindowFeedbackOutput(
             publish: { feedback.publish(title: $0, body: $1, severity: $2, target: $3) },
             clearNotification: { feedback.clearNotification() },
-            emit: { [weak connection] in connection?.onWindowEffect?($0) })
+            emit: { [weak connection] in connection?.onWindowEffect?($0) }
+        )
         let context = WindowNativeContext(
-            storage: resources, configuration: configuration, windowResources: windowResources,
-            connection: connection, runtimes: runtimes,
+            storage: resources,
+            configuration: configuration,
+            windowResources: windowResources,
+            connection: connection,
+            runtimes: runtimes,
             navigation: WindowNavigationBindings(
                 readPresentedDesk: { navigation.presentedDeskID },
                 readPreviousDesk: { navigation.previousFocusedDeskID },
@@ -74,10 +87,15 @@ final class ProfileWindowSession {
                 writeAnchorOrigins: { navigation.anchorJumpOriginBoardIDByDesk = $0 },
                 present: { navigation.present($0) },
                 replacePresentedDesk: { navigation.replacePresentedDesk($0) },
-                clearHistory: { navigation.clearHistory() }),
-            feedback: output, pasteboard: windowPasteboard, inputSourceTracker: inputSourceTracker,
-            canPresentDesk: canPresentDesk, onDeskPresentationRequest: onDeskPresentationRequest,
-            onWillResetDen: onWillResetDen)
+                clearHistory: { navigation.clearHistory() }
+            ),
+            feedback: output,
+            pasteboard: windowPasteboard,
+            inputSourceTracker: inputSourceTracker,
+            canPresentDesk: canPresentDesk,
+            onDeskPresentationRequest: onDeskPresentationRequest,
+            onWillResetDen: onWillResetDen
+        )
         let boardNavigation = BoardNavigation(context: context)
         let deskLinks = DeskLinkActions(context: context)
         let screenshots = BoardScreenshots(context: context)
@@ -90,10 +108,18 @@ final class ProfileWindowSession {
         let notifications = NotificationDelivery(context: context, boardNavigation: boardNavigation)
         let drawer = DrawerActions(context: context, boardOpening: boardOpening)
         let zmx = ZmxBoardActions(
-            context: context, boardNavigation: boardNavigation, boardRemoval: boardRemoval, boardOpening: boardOpening)
+            context: context,
+            boardNavigation: boardNavigation,
+            boardRemoval: boardRemoval,
+            boardOpening: boardOpening
+        )
         let input = InputOpeningActions(context: context, boardOpening: boardOpening, drawer: drawer)
         let sideBoards = SideBoardCreation(
-            context: context, boardNavigation: boardNavigation, boardOpening: boardOpening, zmx: zmx)
+            context: context,
+            boardNavigation: boardNavigation,
+            boardOpening: boardOpening,
+            zmx: zmx
+        )
         let essentials = EssentialActions(context: context, boardOpening: boardOpening, input: input)
 
         connection.runtimes = runtimes

@@ -13,8 +13,11 @@ public struct EssentialsPrefixPanel: View {
     @State private var listHeight: CGFloat = 0
 
     public init(
-        profileColor: Color, essentials: [Essential], selectedEssentialID: UUID? = nil,
-        onSelect: @escaping (UUID) -> Void, onOpenInDrawer: @escaping (UUID) -> Void
+        profileColor: Color,
+        essentials: [Essential],
+        selectedEssentialID: UUID? = nil,
+        onSelect: @escaping (UUID) -> Void,
+        onOpenInDrawer: @escaping (UUID) -> Void
     ) {
         self.profileColor = profileColor
         self.essentials = essentials

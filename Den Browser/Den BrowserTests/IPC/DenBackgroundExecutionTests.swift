@@ -25,8 +25,10 @@ struct DenBackgroundExecutionTests {
         let manager = ProfileManager(
             directoryURL: directory.appendingPathComponent("profiles"),
             sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
-            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
-            websiteDataStore: { _ in .nonPersistent() })
+            preferences: AppPreferences(defaults: defaults),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() }
+        )
         let session = try #require(manager.session(for: manager.personalProfileID))
         defer { session.runtimes.releaseRuntimes() }
         let shown = session.navigation.presentedDeskID
@@ -40,7 +42,10 @@ struct DenBackgroundExecutionTests {
             .init(
                 operation: .createWebBoard(
                     payload: .init(url: html.absoluteString, focus: false, backgroundExecution: initiallyEnabled),
-                    destination: .endOfDesk(hidden.rawValue))))
+                    destination: .endOfDesk(hidden.rawValue)
+                )
+            )
+        )
         guard case .createdBoard(let rawID, _, _) = response.result.payload, let uuid = UUID(uuidString: rawID) else {
             Issue.record("Expected a created Board")
             return
@@ -48,7 +53,8 @@ struct DenBackgroundExecutionTests {
         let id = BoardID(uuid)
         let runtime = try #require(session.resources.webRuntimes[id])
         let read = await service.handleRequest(
-            .init(operation: .boardBackgroundExecution(enabled: nil, target: .explicit(uuid))))
+            .init(operation: .boardBackgroundExecution(enabled: nil, target: .explicit(uuid)))
+        )
 
         // Assert the read operation preserves the saved setting.
         guard case .enabled(let enabled) = read.result.payload else {
@@ -60,7 +66,8 @@ struct DenBackgroundExecutionTests {
         // Act: explicitly enable twice; it must never toggle back off or reload.
         for _ in 0..<2 {
             let result = await service.handleRequest(
-                .init(operation: .boardBackgroundExecution(enabled: true, target: .explicit(uuid))))
+                .init(operation: .boardBackgroundExecution(enabled: true, target: .explicit(uuid)))
+            )
             #expect(result.result.isOk)
         }
         try await SheetInteraction.waitForFunction(expression: "window.framesRun > 1", in: runtime.webView)
@@ -70,27 +77,34 @@ struct DenBackgroundExecutionTests {
         #expect(try await runtime.webView.evaluateJavaScript("document.visibilityState") as? String == "visible")
         #expect(session.navigation.presentedDeskID == shown)
         let persistence = ProfilePersistence(
-            directoryURL: directory.appendingPathComponent("profiles"), isEphemeral: false,
-            quarantineFile: { try FileManager.default.moveItem(at: $0, to: $1) })
+            directoryURL: directory.appendingPathComponent("profiles"),
+            isEphemeral: false,
+            quarantineFile: { try FileManager.default.moveItem(at: $0, to: $1) }
+        )
         #expect(persistence.load().profiles.first?.den.board(for: id)?.backgroundExecutionEnabled == true)
 
         // Act / Assert: reads are available during a drag, but setting changes are rejected.
         session.resources.activeDrag = .board(id)
         let duringDrag = await service.handleRequest(
-            .init(operation: .boardBackgroundExecution(enabled: nil, target: .explicit(uuid))))
+            .init(operation: .boardBackgroundExecution(enabled: nil, target: .explicit(uuid)))
+        )
         #expect(duringDrag.result.isOk)
         let rejected = await service.handleRequest(
-            .init(operation: .boardBackgroundExecution(enabled: false, target: .explicit(uuid))))
+            .init(operation: .boardBackgroundExecution(enabled: false, target: .explicit(uuid)))
+        )
         #expect(!rejected.result.isOk)
         #expect(session.resources.state.board(for: id)?.backgroundExecutionEnabled == true)
         session.resources.activeDrag = nil
 
         // Act / Assert: disable applies without changing the page or focus.
         let disabled = await service.handleRequest(
-            .init(operation: .boardBackgroundExecution(enabled: false, target: .explicit(uuid))))
+            .init(operation: .boardBackgroundExecution(enabled: false, target: .explicit(uuid)))
+        )
         #expect(disabled.result.isOk)
         try await SheetInteraction.waitForFunction(
-            expression: "document.visibilityState === 'hidden'", in: runtime.webView)
+            expression: "document.visibilityState === 'hidden'",
+            in: runtime.webView
+        )
         #expect(session.resources.state.board(for: id)?.backgroundExecutionEnabled == false)
         #expect(persistence.load().profiles.first?.den.board(for: id)?.backgroundExecutionEnabled == false)
         #expect(session.navigation.presentedDeskID == shown)

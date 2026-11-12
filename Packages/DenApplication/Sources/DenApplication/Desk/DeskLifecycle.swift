@@ -28,13 +28,22 @@ public struct DeskLifecycle {
 
     @discardableResult
     public func create(
-        label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?,
-        presentedDeskID: DeskID, after deskID: DeskID? = nil, focus: Bool = true, notify: (Notice) -> Void
+        label: String,
+        boards: [DeskPresetBoard],
+        focusedBoardIndex: BoardIndex?,
+        presentedDeskID: DeskID,
+        after deskID: DeskID? = nil,
+        focus: Bool = true,
+        notify: (Notice) -> Void
     ) -> DeskState? {
         guard
             let result = DeskCreation.create(
-                label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
-                in: reader.snapshot.den.desks, presentedDeskID: deskID ?? presentedDeskID)
+                label: label,
+                presetBoards: boards,
+                focusedBoardIndex: focusedBoardIndex,
+                in: reader.snapshot.den.desks,
+                presentedDeskID: deskID ?? presentedDeskID
+            )
         else { return nil }
         writer.update { $0.den.desks = result.desks }
         if focus { notify(.presentCreatedDesk(result.createdDesk.id)) }
@@ -44,27 +53,41 @@ public struct DeskLifecycle {
     }
 
     public func duplicate(
-        _ id: DeskID, presentedDeskID: DeskID, notify: (Notice) -> Void
+        _ id: DeskID,
+        presentedDeskID: DeskID,
+        notify: (Notice) -> Void
     ) -> (source: DeskState, copy: DeskState)? {
         guard let source = reader.snapshot.den.desks.first(where: { $0.id == id }) else { return nil }
         let preset = PersonalDeskPreset(label: source.label, desk: source)
         guard
             let copy = create(
-                label: source.label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex,
-                presentedDeskID: presentedDeskID, after: source.id, notify: notify)
+                label: source.label,
+                boards: preset.boards,
+                focusedBoardIndex: preset.focusedBoardIndex,
+                presentedDeskID: presentedDeskID,
+                after: source.id,
+                notify: notify
+            )
         else { return nil }
         return (source, copy)
     }
 
     @discardableResult
     public func replace(
-        _ id: DeskID, label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?,
+        _ id: DeskID,
+        label: String,
+        boards: [DeskPresetBoard],
+        focusedBoardIndex: BoardIndex?,
         notify: (Notice) -> Void
     ) -> Bool {
         guard
             let result = DeskReplacement.replace(
-                id, label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
-                in: reader.snapshot.den.desks)
+                id,
+                label: label,
+                presetBoards: boards,
+                focusedBoardIndex: focusedBoardIndex,
+                in: reader.snapshot.den.desks
+            )
         else { return false }
         notify(.willReplace(result.removedBoards))
         writer.update { $0.den.desks[result.deskIndex.rawValue] = result.desk }
@@ -76,7 +99,10 @@ public struct DeskLifecycle {
 
     @discardableResult
     public func delete(
-        _ id: DeskID, presentedDeskID: DeskID, isAvailable: (DeskID) -> Bool, notify: (Notice) -> Void
+        _ id: DeskID,
+        presentedDeskID: DeskID,
+        isAvailable: (DeskID) -> Bool,
+        notify: (Notice) -> Void
     ) -> Bool {
         guard let result = DeskDeletion.delete(id, from: reader.snapshot.den.desks, isAvailable: isAvailable) else {
             return false
@@ -84,7 +110,11 @@ public struct DeskLifecycle {
         let wasPresented = presentedDeskID == id
         notify(
             .willDelete(
-                desk: result.removedDesk, replacementDeskID: result.replacementDeskID, wasPresented: wasPresented))
+                desk: result.removedDesk,
+                replacementDeskID: result.replacementDeskID,
+                wasPresented: wasPresented
+            )
+        )
         writer.update { $0.den.desks = result.desks }
         notify(.didDelete(desk: result.removedDesk, wasPresented: wasPresented))
         cancelDrag(removing: Set(result.removedDesk.boards.map(\.id)), deskID: id)

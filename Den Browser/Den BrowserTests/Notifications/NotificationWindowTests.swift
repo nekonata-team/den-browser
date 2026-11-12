@@ -16,8 +16,10 @@ struct NotificationWindowTests {
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         var effects: [String] = []
         session.connection.onWindowEffect = { effect in
             switch effect {
@@ -51,8 +53,10 @@ struct NotificationWindowTests {
         let desk = desk("Desk", boards: [currentBoard, targetBoard], focusedBoardID: currentBoard.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.notifications.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
         session.notifications.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
         session.notifications.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
@@ -76,8 +80,11 @@ struct NotificationWindowTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
-                    DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                    DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id)
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         session.notifications.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
 
         // Act
@@ -94,8 +101,10 @@ struct NotificationWindowTests {
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -132,8 +141,10 @@ struct NotificationWindowTests {
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -161,8 +172,10 @@ struct NotificationWindowTests {
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, second], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -188,7 +201,8 @@ struct NotificationWindowTests {
         let firstDesk = desk("First")
         let secondDesk = desk("Second", boards: sourceExists ? [board] : [], focusedBoardID: nil)
         let storage = DenProfileResources(
-            state: DenState(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id))
+            state: DenState(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id)
+        )
         let defaults = makeTestDefaults()
         let navigation = makeTestSheetNavigationManager(defaults: defaults, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
@@ -196,9 +210,15 @@ struct NotificationWindowTests {
             ProfileWindowSession(
                 resources: storage,
                 configuration: makeTestBoardRuntimeConfiguration(
-                    websiteDataStore: .nonPersistent(), sheetNavigation: navigation, preferences: preferences),
-                presentedDeskID: firstDesk.id, canPresentDesk: { _ in true }, onDeskPresentationRequest: { _ in true },
-                onWillResetDen: {})
+                    websiteDataStore: .nonPersistent(),
+                    sheetNavigation: navigation,
+                    preferences: preferences
+                ),
+                presentedDeskID: firstDesk.id,
+                canPresentDesk: { _ in true },
+                onDeskPresentationRequest: { _ in true },
+                onWillResetDen: {}
+            )
         }
         let first = DenWindowComposition(session: session())
         let second = DenWindowComposition(session: session())

@@ -15,7 +15,10 @@ extension WebProfileStore: Codable {
         case .default:
             guard !container.contains(.identifier) else {
                 throw DecodingError.dataCorruptedError(
-                    forKey: .identifier, in: container, debugDescription: "Default store cannot have an identifier")
+                    forKey: .identifier,
+                    in: container,
+                    debugDescription: "Default store cannot have an identifier"
+                )
             }
             self = .default
         case .identified:

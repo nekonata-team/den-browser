@@ -14,11 +14,14 @@ struct DenIPCClientValidationTests {
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             return encodedResponse(
                 request?.operation == .terminal(command: .press(key: key), target: .explicit(boardID))
-                    ? .success() : .failure("Unexpected terminal key"))
+                    ? .success() : .failure("Unexpected terminal key")
+            )
         }
         defer { server.stop() }
         let result = try await runCLI(
-            ["board", "terminal", "press", key, "--board", boardID.uuidString], socketPath: socketPath)
+            ["board", "terminal", "press", key, "--board", boardID.uuidString],
+            socketPath: socketPath
+        )
         #expect(result.status == 0)
         #expect(try jsonResult(result.output)["ok"] as? Bool == true)
     }
@@ -39,15 +42,25 @@ struct DenIPCClientValidationTests {
         try server.start { data in
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             let expected = DenIPCOperation.listNotifications(
-                unreadOnly: filtered, boardID: filtered ? boardID : nil, limit: filtered ? 10 : nil)
+                unreadOnly: filtered,
+                boardID: filtered ? boardID : nil,
+                limit: filtered ? 10 : nil
+            )
             return encodedResponse(
                 request?.operation == expected
                     ? .success(
                         .notifications([
                             DenNotificationInfo(
-                                id: id, title: "Title", body: "Body", boardID: boardID,
-                                createdAt: "2026-11-11T00:00:00Z", isRead: false)
-                        ])) : .failure("Unexpected notification request"))
+                                id: id,
+                                title: "Title",
+                                body: "Body",
+                                boardID: boardID,
+                                createdAt: "2026-11-11T00:00:00Z",
+                                isRead: false
+                            )
+                        ])
+                    ) : .failure("Unexpected notification request")
+            )
         }
         defer { server.stop() }
 
@@ -78,13 +91,16 @@ struct DenIPCClientValidationTests {
         try server.start { data in
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             return encodedResponse(
-                request?.operation == .setNotificationRead(id: id, isRead: isRead) ? .success() : .failure("Wrong ID"))
+                request?.operation == .setNotificationRead(id: id, isRead: isRead) ? .success() : .failure("Wrong ID")
+            )
         }
         defer { server.stop() }
 
         // Act
         let result = try await runCLI(
-            ["notification", isRead ? "read" : "unread", id.uuidString], socketPath: socketPath)
+            ["notification", isRead ? "read" : "unread", id.uuidString],
+            socketPath: socketPath
+        )
 
         // Assert
         #expect(result.status == 0)
@@ -117,7 +133,8 @@ struct DenIPCClientValidationTests {
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             return encodedResponse(
                 request?.operation == .terminal(command: .text(lines: lines), target: .explicit(boardID))
-                    ? .success(.text("retained output")) : .failure("Unexpected request"))
+                    ? .success(.text("retained output")) : .failure("Unexpected request")
+            )
         }
         defer { server.stop() }
 
@@ -125,7 +142,8 @@ struct DenIPCClientValidationTests {
         let result = try await runCLI(
             ["board", "terminal", "text", "--board", boardID.uuidString]
                 + (lines.map { ["--lines", String($0)] } ?? []),
-            socketPath: socketPath)
+            socketPath: socketPath
+        )
         let object = try jsonResult(result.output)
 
         // Assert
@@ -162,22 +180,32 @@ struct DenIPCClientValidationTests {
         let desk = DenDeskInfo(id: deskID, label: "Work", isActive: true, boardCount: 3, boards: boards)
         let empty = DenDeskInfo(id: UUID().uuidString, label: "Empty", isActive: false, boardCount: 0, boards: [])
         let overview = DenIPCOverview(
-            profiles: [], profile: .init(id: profileID.uuidString, name: "Default"),
-            profileID: profileID.uuidString, desks: [desk, empty], activeDesk: desk,
-            boards: boards, focusedBoardID: sideID, drawerItemCount: 0)
+            profiles: [],
+            profile: .init(id: profileID.uuidString, name: "Default"),
+            profileID: profileID.uuidString,
+            desks: [desk, empty],
+            activeDesk: desk,
+            boards: boards,
+            focusedBoardID: sideID,
+            drawerItemCount: 0
+        )
         let socketPath = temporarySocketPath()
         let server = DenSocketServer(socketPath: socketPath)
         try server.start { data in
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             return encodedResponse(
                 request?.operation == .inspectDen(target: .automatic) && request?.context.profileID == profileID
-                    ? .success(.denOverview(overview)) : .failure("Unexpected request"))
+                    ? .success(.denOverview(overview)) : .failure("Unexpected request")
+            )
         }
         defer { server.stop() }
 
         // Act
         let result = try await runCLI(
-            ["overview", "--profile", profileID.uuidString] + flags, socketPath: socketPath, forceJSON: false)
+            ["overview", "--profile", profileID.uuidString] + flags,
+            socketPath: socketPath,
+            forceJSON: false
+        )
 
         // Assert
         #expect(result.status == 0)
@@ -189,7 +217,9 @@ struct DenIPCClientValidationTests {
                 text.contains(
                     long
                         ? "[2: web: Docs (API) | 3: inspection: Console *]"
-                        : "[web: Docs (API) | inspection: Console *]"))
+                        : "[web: Docs (API) | inspection: Console *]"
+                )
+            )
             #expect(text.contains("  (empty)"))
             #expect(text.contains("]  [\(long ? "4: " : "")terminal: \(String(longLabel.prefix(31)))…]"))
             #expect(text.contains(boardID) == long)
@@ -229,13 +259,16 @@ struct DenIPCClientValidationTests {
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             return encodedResponse(
                 request?.operation == .resizeBoard(boardID: boardID, width: 2_000)
-                    ? .success(.resizedBoard(id: boardID.uuidString, width: 960)) : .failure("Unexpected request"))
+                    ? .success(.resizedBoard(id: boardID.uuidString, width: 960)) : .failure("Unexpected request")
+            )
         }
         defer { server.stop() }
 
         // Act
         let result = try await runCLI(
-            ["board", "resize", "--board", boardID.uuidString, "--width", "2000"], socketPath: socketPath)
+            ["board", "resize", "--board", boardID.uuidString, "--width", "2000"],
+            socketPath: socketPath
+        )
         let object = try jsonResult(result.output)
 
         // Assert
@@ -273,7 +306,8 @@ struct DenIPCClientValidationTests {
             let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
             let expected = DenIPCRequest(
                 operation: .boardExists(boardID: boardID),
-                context: .init(profileID: explicit ? profileID : nil))
+                context: .init(profileID: explicit ? profileID : nil)
+            )
             return encodedResponse(request == expected ? .success() : .failure("Unexpected scope"))
         }
         defer { server.stop() }
@@ -283,7 +317,8 @@ struct DenIPCClientValidationTests {
             ["board", "exists", "--board", boardID.uuidString]
                 + (explicit ? ["--profile", profileID.uuidString] : []),
             socketPath: socketPath,
-            environmentOverrides: ["DEN_PROFILE": ambientProfile, "DEN_BOARD_ID": UUID().uuidString])
+            environmentOverrides: ["DEN_PROFILE": ambientProfile, "DEN_BOARD_ID": UUID().uuidString]
+        )
 
         // Assert
         #expect(result.status == 0)
@@ -300,7 +335,8 @@ struct DenIPCClientValidationTests {
             encodedResponse(
                 state == "error"
                     ? .failure("Lookup failed")
-                    : .success(.boardExistence(boardID: boardID, location: state == "found" ? location : nil)))
+                    : .success(.boardExistence(boardID: boardID, location: state == "found" ? location : nil))
+            )
         }
         defer { server.stop() }
 
@@ -412,7 +448,8 @@ struct DenIPCClientValidationTests {
         // Act
         let result = try await runCLI(
             arguments + ["--left-of", UUID().uuidString, "--end-of", UUID().uuidString],
-            socketPath: temporarySocketPath())
+            socketPath: temporarySocketPath()
+        )
         let object = try jsonResult(result.output)
         let message = try #require(object["error"] as? String)
 
@@ -456,7 +493,8 @@ struct DenIPCClientValidationTests {
         // Act
         let result = try await runCLI(
             ["board", kind, "new"] + (kind == "web" ? ["https://example.com/"] : []) + [option, id.uuidString],
-            socketPath: socketPath)
+            socketPath: socketPath
+        )
 
         // Assert
         #expect(result.status == 0)
@@ -469,7 +507,8 @@ struct DenIPCClientValidationTests {
             ["--left-of", UUID().uuidString, "--right-of", UUID().uuidString],
             ["--end-of", UUID().uuidString, "--left-of", UUID().uuidString],
             ["--end-of", UUID().uuidString, "--right-of", UUID().uuidString],
-        ])
+        ]
+    )
     func boardCreationRejectsConflictingOrInvalidPlacement(kind: String, arguments: [String]) async throws {
         // Arrange
         let socketPath = temporarySocketPath()
@@ -480,7 +519,8 @@ struct DenIPCClientValidationTests {
         // Act
         let result = try await runCLI(
             ["board", kind, "new"] + (kind == "web" ? ["https://example.com/"] : []) + arguments,
-            socketPath: socketPath)
+            socketPath: socketPath
+        )
 
         // Assert
         #expect(result.status == 64)
@@ -508,7 +548,9 @@ struct DenIPCClientValidationTests {
 
         // Act
         let result = try await runCLI(
-            ["board", "move", "--board", boardID.uuidString, option, targetID.uuidString], socketPath: socketPath)
+            ["board", "move", "--board", boardID.uuidString, option, targetID.uuidString],
+            socketPath: socketPath
+        )
 
         // Assert
         #expect(result.status == 0)
@@ -595,12 +637,14 @@ struct DenIPCClientValidationTests {
         case "web":
             expected = .createWebBoard(
                 payload: DenBoardWebNewPayload(url: "https://example.com/", focus: true),
-                destination: destination)
+                destination: destination
+            )
             arguments = ["board", "web", "new", "https://example.com/", "--focus"]
         case "terminal":
             expected = .createTerminalBoard(
                 payload: DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: true),
-                destination: destination)
+                destination: destination
+            )
             arguments = ["board", "terminal", "new", "--focus"]
         default:
             expected = .boardList(target: explicitDesk ? .explicit(deskID) : .automatic)
@@ -619,7 +663,8 @@ struct DenIPCClientValidationTests {
         // Act
         let result = try await runCLI(
             arguments + (explicitDesk ? [command == "list" ? "--desk" : "--end-of", deskID.uuidString] : []),
-            socketPath: socketPath)
+            socketPath: socketPath
+        )
 
         // Assert
         #expect(result.status == 0)
@@ -648,7 +693,8 @@ struct DenIPCClientValidationTests {
         let result = try await runCLI(
             ["board", "web", "dialog", "save", id.uuidString, "--path", "report.pdf"]
                 + (overwrite ? ["--overwrite"] : []),
-            socketPath: socketPath)
+            socketPath: socketPath
+        )
 
         // Assert
         #expect(result.status == 0)

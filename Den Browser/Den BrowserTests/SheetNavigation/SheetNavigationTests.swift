@@ -72,29 +72,40 @@ struct SheetNavigationTests {
     @Test func sheetURLPolicyNormalizesRootPathAndHostCase() {
         #expect(
             WebURLPolicy.canonicalSheetURL(URL(string: "HTTP://EXAMPLE.TEST")!)
-                == URL(string: "http://example.test/")!)
+                == URL(string: "http://example.test/")!
+        )
         #expect(
             WebURLPolicy.canonicalSheetURL(URL(string: "http://example.test/app")!)
-                == URL(string: "http://example.test/app")!)
+                == URL(string: "http://example.test/app")!
+        )
         #expect(
             WebURLPolicy.canonicalSheetURL(
-                URL(string: "file://localhost/tmp/a%20b.html?mode=test#section")!)
-                == URL(string: "file:///tmp/a%20b.html?mode=test#section")!)
+                URL(string: "file://localhost/tmp/a%20b.html?mode=test#section")!
+            )
+                == URL(string: "file:///tmp/a%20b.html?mode=test#section")!
+        )
     }
 
     @Test func boardRuntimeLoadsLocalHTMLAndSiblingScript() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
             path: "DenBrowserFileURLTests-(UUID().uuidString)",
-            directoryHint: .isDirectory)
+            directoryHint: .isDirectory
+        )
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let htmlURL = directory.appending(path: "index.html")
         let scriptURL = directory.appending(path: "title.js")
         try "<html><head><script src=\"title.js\"></script></head></html>".write(
-            to: htmlURL, atomically: true, encoding: .utf8)
+            to: htmlURL,
+            atomically: true,
+            encoding: .utf8
+        )
         try "document.title = 'Sibling script loaded';".write(
-            to: scriptURL, atomically: true, encoding: .utf8)
+            to: scriptURL,
+            atomically: true,
+            encoding: .utf8
+        )
 
         var continuation: AsyncStream<(URL?, String?)>.Continuation?
         let changes = AsyncStream<(URL?, String?)> { continuation = $0 }
@@ -106,7 +117,8 @@ struct SheetNavigationTests {
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: boardRuntimeEvents { _, url, title in
                 continuation?.yield((url, title))
-            })
+            }
+        )
         defer {
             continuation?.finish()
             runtime.dispose()
@@ -162,7 +174,8 @@ struct SheetNavigationTests {
                 "preferences.sheet-navigation.enabled",
                 "preferences.sheet-navigation.hint-alphabet",
                 "preferences.sheet-navigation.ignored-hosts",
-            ])
+            ]
+        )
 
         let restored = SheetNavigationManager(defaults: defaults, scriptSource: "")
         #expect(restored.isEnabled)
@@ -216,14 +229,18 @@ struct SheetNavigationTests {
         await waiter.load(sheetNavigationTestHTML, baseURL: URL(string: "https://example.com/")!, in: webView)
         let pageCanSeeBridge =
             (try await webView.evaluateJavaScript(
-                "typeof window.webkit?.messageHandlers?.denSheetNavigation !== 'undefined'") as? Bool) ?? true
+                "typeof window.webkit?.messageHandlers?.denSheetNavigation !== 'undefined'"
+            ) as? Bool) ?? true
         let pageCanSeeConfiguration =
             (try await webView.evaluateJavaScript(
-                "typeof window.__denSheetNavigation !== 'undefined'") as? Bool) ?? true
+                "typeof window.__denSheetNavigation !== 'undefined'"
+            ) as? Bool) ?? true
         try await dispatchSheetKey("f", in: webView)
         let hintCount = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
 
         #expect(!pageCanSeeBridge)
         #expect(!pageCanSeeConfiguration)
@@ -261,7 +278,8 @@ struct SheetNavigationTests {
                   cancelable: true,
                   composed: true
                 }))
-                """) as? Bool
+                """
+            ) as? Bool
         let optionClickWasAllowed =
             try await webView.evaluateJavaScript(
                 """
@@ -272,7 +290,8 @@ struct SheetNavigationTests {
                   cancelable: true,
                   composed: true
                 }))
-                """) as? Bool
+                """
+            ) as? Bool
         let svgCommandClickWasAllowed =
             try await webView.evaluateJavaScript(
                 """
@@ -283,7 +302,8 @@ struct SheetNavigationTests {
                   cancelable: true,
                   composed: true
                 }))
-                """) as? Bool
+                """
+            ) as? Bool
         let svgOptionClickWasAllowed =
             try await webView.evaluateJavaScript(
                 """
@@ -294,7 +314,8 @@ struct SheetNavigationTests {
                   cancelable: true,
                   composed: true
                 }))
-                """) as? Bool
+                """
+            ) as? Bool
 
         #expect(commandClickWasAllowed == false)
         #expect(optionClickWasAllowed == false)
@@ -305,7 +326,8 @@ struct SheetNavigationTests {
     @Test func sheetNavigationScriptHandlesCoreMotionsAndModes() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
@@ -327,17 +349,22 @@ struct SheetNavigationTests {
         let spacePreventedDefault = try await dispatchSheetKey(" ", in: webView)
         let hintCountAfterSpace = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
         _ = try await webView.evaluateJavaScript("scrollTo(0, 0)")
         try await dispatchSheetKey("f", in: webView)
         let hintCount = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
         try await dispatchSheetKey("Escape", in: webView)
         try await dispatchSheetKey("/", in: webView)
         let hasFindBar =
             (try await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+                "document.querySelector('[data-den-sheet-find]') !== null"
+            ) as? Bool) ?? false
 
         #expect(afterBottom[0] == 300)
         #expect(afterBottom[1] > 300)
@@ -353,7 +380,8 @@ struct SheetNavigationTests {
         // Arrange
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         manager.setReduceMotion(true)
@@ -376,15 +404,19 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("f", in: webView)
         let hintCount = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
         try await dispatchSheetKey("a", in: webView)
         try await dispatchSheetKey("j", in: webView)
         let panelScrollTop = try #require(
-            await webView.evaluateJavaScript("document.getElementById('panel').scrollTop") as? Int)
+            await webView.evaluateJavaScript("document.getElementById('panel').scrollTop") as? Int
+        )
         try await dispatchSheetKey("Escape", in: webView)
         try await dispatchSheetKey("j", in: webView)
         let documentScrollTop = try #require(
-            await webView.evaluateJavaScript("document.scrollingElement.scrollTop") as? Int)
+            await webView.evaluateJavaScript("document.scrollingElement.scrollTop") as? Int
+        )
 
         // Assert
         #expect(hintCount == 1)
@@ -423,12 +455,16 @@ struct SheetNavigationTests {
         // Act
         let hitNamespace = try #require(
             await webView.evaluateJavaScript(
-                "document.elementFromPoint(innerWidth / 2, innerHeight * 0.75).namespaceURI") as? String)
+                "document.elementFromPoint(innerWidth / 2, innerHeight * 0.75).namespaceURI"
+            ) as? String
+        )
         try await dispatchSheetKey("j", in: webView)
         let panelScrollTop = try #require(
-            await webView.evaluateJavaScript("document.getElementById('panel').scrollTop") as? Int)
+            await webView.evaluateJavaScript("document.getElementById('panel').scrollTop") as? Int
+        )
         let documentScrollTop = try #require(
-            await webView.evaluateJavaScript("document.scrollingElement.scrollTop") as? Int)
+            await webView.evaluateJavaScript("document.scrollingElement.scrollTop") as? Int
+        )
 
         // Assert
         #expect(hitNamespace == "http://www.w3.org/2000/svg")
@@ -463,12 +499,16 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("F", shift: true, in: webView)
         let linkHintCount = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
         try await dispatchSheetKey("Escape", in: webView)
         try await dispatchSheetKey("f", in: webView)
         let activateHintCount = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
 
         // Assert
         #expect(linkHintCount == 1)
@@ -479,7 +519,8 @@ struct SheetNavigationTests {
         // Arrange
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
@@ -501,10 +542,13 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("f", in: webView)
         let hintCount = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+                "document.querySelectorAll('[data-den-sheet-hints] span').length"
+            ) as? Int
+        )
         try await dispatchSheetKey("a", in: webView)
         let status = try #require(
-            await webView.evaluateJavaScript("document.getElementById('status').textContent") as? String)
+            await webView.evaluateJavaScript("document.getElementById('status').textContent") as? String
+        )
 
         // Assert
         #expect(hintCount == 1)
@@ -533,7 +577,8 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("/", in: webView)
         let hasFindBar =
             (try await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+                "document.querySelector('[data-den-sheet-find]') !== null"
+            ) as? Bool) ?? false
         #expect(hasFindBar)
 
         _ = try await webView.evaluateJavaScript(
@@ -551,10 +596,13 @@ struct SheetNavigationTests {
                 "return CSS.highlights.get('den-find')?.size ?? 0;",
                 in: nil,
                 contentWorld: SheetNavigationManager.contentWorld
-            ) as? Int)
+            ) as? Int
+        )
         let initialStatus = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent"
+            ) as? String
+        )
         #expect(initialMatchCount == 3)
         #expect(initialStatus == "1 / 3")
 
@@ -570,10 +618,13 @@ struct SheetNavigationTests {
 
         let noMatchStatus = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent"
+            ) as? String
+        )
         let isInputFocusedOnNoMatch =
             (try await webView.evaluateJavaScript(
-                "document.activeElement === document.querySelector('[data-den-sheet-find] input')") as? Bool) ?? false
+                "document.activeElement === document.querySelector('[data-den-sheet-find] input')"
+            ) as? Bool) ?? false
         #expect(noMatchStatus == "No matches")
         #expect(isInputFocusedOnNoMatch)
 
@@ -599,36 +650,46 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("n", in: webView)
         let secondStatus = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent"
+            ) as? String
+        )
         #expect(secondStatus == "2 / 3")
 
         try await dispatchSheetKey("n", in: webView)
         let thirdStatus = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent"
+            ) as? String
+        )
         #expect(thirdStatus == "3 / 3")
 
         try await dispatchSheetKey("n", in: webView)
         let wrappedStatus = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent"
+            ) as? String
+        )
         #expect(wrappedStatus == "1 / 3")
 
         try await dispatchSheetKey("N", shift: true, in: webView)
         let prevStatus = try #require(
             await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent"
+            ) as? String
+        )
         #expect(prevStatus == "3 / 3")
         let findBarBeforeEscape =
             (try await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+                "document.querySelector('[data-den-sheet-find]') !== null"
+            ) as? Bool) ?? false
         #expect(findBarBeforeEscape)
 
         try await dispatchSheetKey("Escape", in: webView)
 
         let findBarAfterEscape =
             (try await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+                "document.querySelector('[data-den-sheet-find]') !== null"
+            ) as? Bool) ?? false
         let hasInContentWorld =
             (try await webView.callAsyncJavaScript(
                 "return CSS.highlights.has('den-find');",
@@ -649,7 +710,8 @@ struct SheetNavigationTests {
     @Test func sheetNavigationFocusesEditableControlsInDocumentOrder() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
@@ -660,7 +722,8 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("i", in: webView)
         let firstFocused = try #require(
-            await webView.evaluateJavaScript("document.activeElement.id") as? String)
+            await webView.evaluateJavaScript("document.activeElement.id") as? String
+        )
         #expect(firstFocused == "first-text")
 
         try await dispatchSheetKey("Escape", in: webView)
@@ -668,7 +731,8 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("i", in: webView)
         let secondFocused = try #require(
-            await webView.evaluateJavaScript("document.activeElement.id") as? String)
+            await webView.evaluateJavaScript("document.activeElement.id") as? String
+        )
         #expect(secondFocused == "message")
 
         try await dispatchSheetKey("Escape", in: webView)
@@ -676,7 +740,8 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("i", in: webView)
         let thirdFocused = try #require(
-            await webView.evaluateJavaScript("document.activeElement.id") as? String)
+            await webView.evaluateJavaScript("document.activeElement.id") as? String
+        )
         let scrollY = try #require(await webView.evaluateJavaScript("scrollY") as? Int)
         #expect(thirdFocused == "composer")
         #expect(scrollY > 0)
@@ -714,7 +779,8 @@ struct SheetNavigationTests {
             sheetNavigation: manager,
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
-            events: boardRuntimeEvents())
+            events: boardRuntimeEvents()
+        )
         defer { runtime.dispose() }
 
         let userContentController = runtime.webView.configuration.userContentController
@@ -738,8 +804,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: [source, focused], focusedBoardID: focused.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let sourceWebView = session.runtimes.webRuntime(for: source).webView
         manager.setEnabled(true)
 
@@ -748,13 +816,17 @@ struct SheetNavigationTests {
                 [
                     "action": "openBoard",
                     "url": "https://destination.example/path",
-                ], from: sourceWebView))
+                ],
+                from: sourceWebView
+            )
+        )
         #expect(
             session.navigation.focusedDesk?.boards.map(\.currentSheetURL) == [
                 URL(string: "https://source.example/"),
                 URL(string: "https://destination.example/path"),
                 URL(string: "https://focused.example/"),
-            ])
+            ]
+        )
         #expect(session.navigation.focusedDesk?.focusedBoardID == session.navigation.focusedDesk?.boards[1].id)
     }
 
@@ -764,8 +836,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let sourceWebView = session.runtimes.webRuntime(for: source).webView
         let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/reference.html"))
         manager.setEnabled(true)
@@ -773,13 +847,17 @@ struct SheetNavigationTests {
         #expect(
             manager.handleScriptMessage(
                 ["action": "openBoard", "url": fileURL.absoluteString],
-                from: sourceWebView))
+                from: sourceWebView
+            )
+        )
         #expect(session.navigation.focusedBoard?.currentSheetURL == fileURL)
 
         #expect(
             manager.handleScriptMessage(
                 ["action": "keepInDrawer", "url": fileURL.absoluteString],
-                from: sourceWebView))
+                from: sourceWebView
+            )
+        )
         #expect(session.resources.state.drawerItems.first?.url == fileURL)
     }
 
@@ -789,8 +867,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let webView = session.runtimes.webRuntime(for: source).webView
         let waiter = WebViewLoadWaiter()
 
@@ -804,17 +884,22 @@ struct SheetNavigationTests {
         #expect(
             manager.handleScriptMessage(
                 ["action": "copyMarkdownLink", "title": "Example [Page]\n Title "],
-                from: webView))
+                from: webView
+            )
+        )
         #expect(session.feedback.latest?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
-                == "[Example \\[Page\\] Title](https://source.example/)")
+                == "[Example \\[Page\\] Title](https://source.example/)"
+        )
 
         manager.pasteboard.clearContents()
         #expect(
             manager.pasteboard.setString(
                 "https://pasted.example/long-\npath",
-                forType: .string))
+                forType: .string
+            )
+        )
         #expect(manager.handleScriptMessage(["action": "pasteURL"], from: webView))
         #expect(session.navigation.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/long-path"))
 
@@ -822,7 +907,9 @@ struct SheetNavigationTests {
         #expect(
             manager.pasteboard.setString(
                 "https://pasted.example/new-\nboard",
-                forType: .string))
+                forType: .string
+            )
+        )
         #expect(manager.handleScriptMessage(["action": "pasteURLInNewBoard"], from: webView))
         #expect(session.navigation.focusedDesk?.boards.count == 2)
         #expect(session.navigation.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/new-board"))
@@ -844,8 +931,12 @@ struct SheetNavigationTests {
                     DenState(
                         desks: [desk],
                         focusedDeskID: desk.id,
-                        drawerItems: [item]))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                        drawerItems: [item]
+                    )
+                )
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let runtime = session.drawer.drawerRuntime(for: item)
         let waiter = WebViewLoadWaiter()
 
@@ -862,11 +953,14 @@ struct SheetNavigationTests {
         #expect(
             manager.handleScriptMessage(
                 ["action": "copyMarkdownLink", "title": "Drawer Peek"],
-                from: runtime.webView))
+                from: runtime.webView
+            )
+        )
         #expect(session.feedback.latest?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
-                == "[Drawer Peek](https://drawer.example/)")
+                == "[Drawer Peek](https://drawer.example/)"
+        )
 
         manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
@@ -908,19 +1002,24 @@ struct SheetNavigationTests {
 
         #expect(
             SheetNavigationManager.markdownLink(title: "Hello World", url: url)
-                == "[Hello World](https://example.com/path)")
+                == "[Hello World](https://example.com/path)"
+        )
         #expect(
             SheetNavigationManager.markdownLink(title: "  Hello \n\t World  ", url: url)
-                == "[Hello World](https://example.com/path)")
+                == "[Hello World](https://example.com/path)"
+        )
         #expect(
             SheetNavigationManager.markdownLink(title: "Swift [5.10] Release [Notes]", url: url)
-                == "[Swift \\[5.10\\] Release \\[Notes\\]](https://example.com/path)")
+                == "[Swift \\[5.10\\] Release \\[Notes\\]](https://example.com/path)"
+        )
         #expect(
             SheetNavigationManager.markdownLink(title: "", url: url)
-                == "[https://example.com/path](https://example.com/path)")
+                == "[https://example.com/path](https://example.com/path)"
+        )
         #expect(
             SheetNavigationManager.markdownLink(title: "   \n  ", url: url)
-                == "[https://example.com/path](https://example.com/path)")
+                == "[https://example.com/path](https://example.com/path)"
+        )
     }
 
     @Test func commandClickCanOpenLinkWhenSheetNavigationIsDisabled() {
@@ -929,8 +1028,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let sourceWebView = session.runtimes.webRuntime(for: source).webView
 
         #expect(
@@ -938,12 +1039,16 @@ struct SheetNavigationTests {
                 [
                     "action": "commandOpenBoard",
                     "url": "https://destination.example/path",
-                ], from: sourceWebView))
+                ],
+                from: sourceWebView
+            )
+        )
         #expect(
             session.navigation.focusedDesk?.boards.map(\.currentSheetURL) == [
                 URL(string: "https://source.example/"),
                 URL(string: "https://destination.example/path"),
-            ])
+            ]
+        )
         #expect(session.navigation.focusedDesk?.focusedBoardID == source.id)
 
         #expect(
@@ -952,13 +1057,17 @@ struct SheetNavigationTests {
                     "action": "commandOpenBoard",
                     "url": "https://focused.example/path",
                     "focused": true,
-                ], from: sourceWebView))
+                ],
+                from: sourceWebView
+            )
+        )
         #expect(
             session.navigation.focusedDesk?.boards.map(\.currentSheetURL) == [
                 URL(string: "https://source.example/"),
                 URL(string: "https://focused.example/path"),
                 URL(string: "https://destination.example/path"),
-            ])
+            ]
+        )
         #expect(session.navigation.focusedDesk?.focusedBoardID == session.navigation.focusedDesk?.boards[1].id)
     }
 
@@ -968,8 +1077,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -982,7 +1093,10 @@ struct SheetNavigationTests {
                 [
                     "action": "keepInDrawer",
                     "url": destination.absoluteString,
-                ], from: sourceWebView))
+                ],
+                from: sourceWebView
+            )
+        )
         #expect(session.resources.state.drawerItems.map(\.url) == [destination])
         #expect(!windowModel.isDrawerOpen)
         #expect(session.navigation.focusedDesk?.focusedBoardID == source.id)
@@ -996,8 +1110,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: [source, second], focusedBoardID: source.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let sourceWebView = session.runtimes.webRuntime(for: source).webView
         let secondWebView = session.runtimes.webRuntime(for: second).webView
         manager.setEnabled(true)
@@ -1016,28 +1132,40 @@ struct SheetNavigationTests {
 
         #expect(
             !manager.handleScriptMessage(
-                ["action": "openBoard", "url": "https://example.com/"], from: webView))
+                ["action": "openBoard", "url": "https://example.com/"],
+                from: webView
+            )
+        )
         manager.setEnabled(true)
         #expect(
             !manager.handleScriptMessage(
-                ["action": "openBoard", "url": "mailto:user@example.com"], from: webView))
+                ["action": "openBoard", "url": "mailto:user@example.com"],
+                from: webView
+            )
+        )
         #expect(
             !manager.handleScriptMessage(
-                ["action": "unknown", "url": "https://example.com/"], from: webView))
+                ["action": "unknown", "url": "https://example.com/"],
+                from: webView
+            )
+        )
         #expect(!manager.handleScriptMessage(["action": "openBoard"], from: webView))
     }
 
     @Test func sheetNavigationRoutesCurrentSheetActionsToDenPanels() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1075,15 +1203,18 @@ struct SheetNavigationTests {
     @Test func sheetNavigationWorksOnInitialUnnavigatedAboutBlank() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let board = BoardState(label: "Blank", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -1109,8 +1240,10 @@ struct SheetNavigationTests {
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let webView = session.runtimes.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
 
@@ -1133,14 +1266,17 @@ struct SheetNavigationTests {
         // Arrange
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
-            with: "if (")
+            with: "if ("
+        )
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let webView = session.runtimes.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
 
@@ -1171,8 +1307,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let webView = session.runtimes.webRuntime(for: boards[1]).webView
         let waiter = WebViewLoadWaiter()
 
@@ -1209,8 +1347,10 @@ struct SheetNavigationTests {
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))),
-            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager))
+                state: DenStateNormalization.normalize(DenState(desks: [currentDesk], focusedDeskID: currentDesk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration(sheetNavigation: manager)
+        )
         let webView = session.runtimes.webRuntime(for: boards[1]).webView
         let waiter = WebViewLoadWaiter()
 
@@ -1239,7 +1379,8 @@ struct SheetNavigationTests {
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: boardRuntimeEvents { _, url, title in
                 changeContinuation?.yield((url, title))
-            })
+            }
+        )
 
         let waiter = WebViewLoadWaiter()
         let testURL = URL(string: "https://example.com/test-page")!
@@ -1280,7 +1421,8 @@ struct SheetNavigationTests {
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
-            events: boardRuntimeEvents())
+            events: boardRuntimeEvents()
+        )
         let expectedURL = URL(string: "https://example.com/assets/favicon.png")!
         var continuation: AsyncStream<URL?>.Continuation?
         let faviconURLs = AsyncStream<URL?> { continuation = $0 }
@@ -1290,7 +1432,8 @@ struct SheetNavigationTests {
             """
             <html><head><link rel="icon" href="/assets/favicon.png"></head></html>
             """,
-            baseURL: URL(string: "https://example.com/"))
+            baseURL: URL(string: "https://example.com/")
+        )
 
         let observedURL = try await withThrowingTaskGroup(of: URL?.self) { group in
             group.addTask {
@@ -1452,7 +1595,8 @@ struct SheetNavigationTests {
             try await webView.evaluateJavaScript(
                 "(() => { const event = new KeyboardEvent('keydown', "
                     + "{key: \(keyLiteral), shiftKey: \(shift), bubbles: true, cancelable: true}); "
-                    + "document.dispatchEvent(event); return event.defaultPrevented; })()") as? Bool
+                    + "document.dispatchEvent(event); return event.defaultPrevented; })()"
+            ) as? Bool
         return wasPrevented ?? false
     }
 

@@ -11,8 +11,10 @@ public struct SkillsSettingsView: View {
     @State private var copiedCommand: String?
 
     public init(
-        installCommand: String, updateCommand: String,
-        install: @escaping () -> String?, update: @escaping () -> String?
+        installCommand: String,
+        updateCommand: String,
+        install: @escaping () -> String?,
+        update: @escaping () -> String?
     ) {
         self.installCommand = installCommand
         self.updateCommand = updateCommand

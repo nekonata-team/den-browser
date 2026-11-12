@@ -44,16 +44,39 @@ public struct WebBoardView: View {
     let onDragEnded: (DragGesture.Value) -> Void
 
     public init(
-        model: BoardSurfaceModel, board: BoardState, isFocused: Bool, focusRequest: BoardFocusRequest?,
-        isDragging: Bool, profileColor: Color, width: Double, height: Double, isPointerFocusEnabled: Bool,
-        isVisibleInViewport: Bool, onFocus: @escaping () -> Void, onGoToFirst: @escaping () -> Void,
-        onGoBack: @escaping () -> Void, onGoForward: @escaping () -> Void, onRemove: @escaping () -> Void,
-        onDragChanged: @escaping (DragGesture.Value) -> Void, onDragEnded: @escaping (DragGesture.Value) -> Void,
-        surface: NSView, onSurfaceReady: @escaping (NSWindow) -> Bool,
-        onBeforeHide: @escaping @MainActor () async -> Void, faviconURL: URL?, isShowingInitialLoadFallback: Bool,
-        isLoading: Bool, estimatedProgress: Double, canGoBack: Bool, canGoForward: Bool, highlightID: UUID?,
-        highlightRect: CGRect?, onAppear: @escaping () -> Void, onActivate: @escaping () -> Void,
-        onReload: @escaping () -> Void, onHardReload: @escaping () -> Void, onPictureInPicture: @escaping () -> Void
+        model: BoardSurfaceModel,
+        board: BoardState,
+        isFocused: Bool,
+        focusRequest: BoardFocusRequest?,
+        isDragging: Bool,
+        profileColor: Color,
+        width: Double,
+        height: Double,
+        isPointerFocusEnabled: Bool,
+        isVisibleInViewport: Bool,
+        onFocus: @escaping () -> Void,
+        onGoToFirst: @escaping () -> Void,
+        onGoBack: @escaping () -> Void,
+        onGoForward: @escaping () -> Void,
+        onRemove: @escaping () -> Void,
+        onDragChanged: @escaping (DragGesture.Value) -> Void,
+        onDragEnded: @escaping (DragGesture.Value) -> Void,
+        surface: NSView,
+        onSurfaceReady: @escaping (NSWindow) -> Bool,
+        onBeforeHide: @escaping @MainActor () async -> Void,
+        faviconURL: URL?,
+        isShowingInitialLoadFallback: Bool,
+        isLoading: Bool,
+        estimatedProgress: Double,
+        canGoBack: Bool,
+        canGoForward: Bool,
+        highlightID: UUID?,
+        highlightRect: CGRect?,
+        onAppear: @escaping () -> Void,
+        onActivate: @escaping () -> Void,
+        onReload: @escaping () -> Void,
+        onHardReload: @escaping () -> Void,
+        onPictureInPicture: @escaping () -> Void
     ) {
         self.model = model
         self.board = board
@@ -95,8 +118,11 @@ public struct WebBoardView: View {
             header
             ZStack(alignment: .top) {
                 WebBoardSurface(
-                    webView: surface, isHidden: !isSurfaceVisible, focusRequest: focusRequest,
-                    onSurfaceReady: onSurfaceReady, onBeforeHide: onBeforeHide
+                    webView: surface,
+                    isHidden: !isSurfaceVisible,
+                    focusRequest: focusRequest,
+                    onSurfaceReady: onSurfaceReady,
+                    onBeforeHide: onBeforeHide
                 )
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0)
@@ -315,7 +341,8 @@ public struct WebBoardView: View {
             "Run in Background",
             isOn: Binding(
                 get: { board.backgroundExecutionEnabled },
-                set: { _ in model.perform(.toggleBackgroundExecution) })
+                set: { _ in model.perform(.toggleBackgroundExecution) }
+            )
         )
         .help("Keep this Board running and updating while hidden. Uses more energy.")
 
@@ -436,7 +463,8 @@ public struct WebBoardView: View {
                 )
                 .accessibilityLabel(
                     board.sheetNavigationPaused
-                        ? "Resume Sheet Navigation for this Board" : "Pause Sheet Navigation for this Board")
+                        ? "Resume Sheet Navigation for this Board" : "Pause Sheet Navigation for this Board"
+                )
             }
 
             withBoardContextMenu(

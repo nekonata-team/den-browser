@@ -21,7 +21,10 @@ struct WebBackgroundCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             operation: .boardBackgroundExecution(
-                enabled: state.map { $0 == .enabled }, target: try DenIPCClient.boardTarget(target.boardID)),
-            options: target.common)
+                enabled: state.map { $0 == .enabled },
+                target: try DenIPCClient.boardTarget(target.boardID)
+            ),
+            options: target.common
+        )
     }
 }

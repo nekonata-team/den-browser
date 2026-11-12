@@ -48,7 +48,8 @@ struct WebExtensionDescriptor: Equatable {
         return bundle.url(
             forResource: resourceName,
             withExtension: nil,
-            subdirectory: resourceSubdirectory)
+            subdirectory: resourceSubdirectory
+        )
     }
 }
 
@@ -167,7 +168,8 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
         let tab = MV3WebExtensionTab(
             webView: webView,
             window: window,
-            loadInitialURL: loadURL)
+            loadInitialURL: loadURL
+        )
         tabs[key] = tab
         window.add(tab)
         controller.didOpenTab(tab)
@@ -285,11 +287,13 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
                         context.grantedPermissions = Dictionary(
                             uniqueKeysWithValues: webExtension.requestedPermissions.map {
                                 ($0, expirationDate)
-                            })
+                            }
+                        )
                         context.grantedPermissionMatchPatterns = Dictionary(
                             uniqueKeysWithValues: webExtension.requestedPermissionMatchPatterns.map {
                                 ($0, expirationDate)
-                            })
+                            }
+                        )
                     }
                     do {
                         try controller.load(context)
@@ -367,7 +371,8 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
             contentRect: NSRect(x: 0, y: 0, width: 720, height: 760),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
-            defer: false)
+            defer: false
+        )
         window.title = "uBlock Origin Lite Settings"
         window.contentView = webView
         window.center()
@@ -442,25 +447,30 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
                         x: anchorBounds.midX,
                         y: anchorBounds.midY,
                         width: 1,
-                        height: 1)
+                        height: 1
+                    )
                     : anchorBounds
                 let anchorRect = popupPresentationView.convert(
                     localAnchorRect,
-                    to: contentView)
+                    to: contentView
+                )
                 popover.show(
                     relativeTo: anchorRect,
                     of: contentView,
-                    preferredEdge: .maxY)
+                    preferredEdge: .maxY
+                )
             } else {
                 let anchorRect = NSRect(
                     x: fallbackAnchorView.bounds.midX,
                     y: fallbackAnchorView.bounds.midY,
                     width: 1,
-                    height: 1)
+                    height: 1
+                )
                 popover.show(
                     relativeTo: anchorRect,
                     of: fallbackAnchorView,
-                    preferredEdge: .maxY)
+                    preferredEdge: .maxY
+                )
             }
         }
         completionHandler(nil)

@@ -16,13 +16,18 @@ struct NativeQuitBoardTests {
             ? BoardState(label: "Terminal", width: 520, zellijSessionName: "shared")
             : BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://example.com/"))
         let neighbor = BoardState(
-            label: "Neighbor", width: 520, currentSheetURL: URL(string: "https://example.com/neighbor"))
+            label: "Neighbor",
+            width: 520,
+            currentSheetURL: URL(string: "https://example.com/neighbor")
+        )
         withTestWindow(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(
                     makeNativeTestState(desks: [
                         DeskState(label: "Desk", boards: [neighbor, target], focusedBoardID: target.id)
-                    ])))
+                    ])
+                )
+            )
         ) { session, model in
             // Act
             session.zmx.quitFocusedBoard()
@@ -43,7 +48,10 @@ struct NativeQuitBoardTests {
                 state: DenStateNormalization.normalize(
                     makeNativeTestState(desks: [
                         DeskState(label: "Desk", boards: [target], focusedBoardID: target.id)
-                    ]))), terminalCommandRunner: runner
+                    ])
+                )
+            ),
+            terminalCommandRunner: runner
         ) { session, model in
             session.configuration.preferences.setZmxPath("/test/bin/zmx")
             session.zmx.quitFocusedBoard()
@@ -72,7 +80,10 @@ struct NativeQuitBoardTests {
                 state: DenStateNormalization.normalize(
                     makeNativeTestState(desks: [
                         DeskState(label: "Desk", boards: [target, child], focusedBoardID: target.id)
-                    ]))), terminalCommandRunner: runner
+                    ])
+                )
+            ),
+            terminalCommandRunner: runner
         ) { session, model in
             session.configuration.preferences.setZmxPath("/test/bin/zmx")
             session.zmx.quitFocusedBoard()

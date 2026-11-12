@@ -16,19 +16,24 @@ struct DenAPICommandTests {
         case "new":
             arguments += ["new", "/tmp/sketch.html", "--den-api"]
             expected = .createWebBoard(
-                payload: .init(url: "/tmp/sketch.html", focus: false, denAPI: true), destination: .automatic)
+                payload: .init(url: "/tmp/sketch.html", focus: false, denAPI: true),
+                destination: .automatic
+            )
         default:
             arguments += ["reload"]
             if mode == "enable" { arguments += ["--den-api"] }
             if mode == "disable" { arguments += ["--no-den-api"] }
             expected = .sheet(
-                command: mode == "preserve" ? .reload : .reloadWithDenAPI(enabled: mode == "enable"), target: .automatic
+                command: mode == "preserve" ? .reload : .reloadWithDenAPI(enabled: mode == "enable"),
+                target: .automatic
             )
         }
         try server.start { data in
             let operation = try? JSONDecoder().decode(DenIPCRequest.self, from: data).operation
             let response = DenIPCResponse(
-                result: operation == expected ? .success() : .failure("Unexpected operation"), target: .none)
+                result: operation == expected ? .success() : .failure("Unexpected operation"),
+                target: .none
+            )
             var encoded = (try? JSONEncoder().encode(response)) ?? Data()
             encoded.append(10)
             return encoded

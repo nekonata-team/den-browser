@@ -12,8 +12,10 @@ struct ScreenshotCaptureTests {
             ScreenshotOutput.suggestedFilename(
                 scope: "Current Sheet Screenshot",
                 date: date,
-                timeZone: try #require(TimeZone(secondsFromGMT: 0)))
-                == "Current Sheet Screenshot 1970-01-01 00.00.00.png")
+                timeZone: try #require(TimeZone(secondsFromGMT: 0))
+            )
+                == "Current Sheet Screenshot 1970-01-01 00.00.00.png"
+        )
     }
 
     @Test func outputEncodesPNGData() throws {
@@ -31,7 +33,9 @@ struct ScreenshotCaptureTests {
                 capture: {
                     withUnsafeCurrentTask { $0?.cancel() }
                     return NSImage(size: .init(width: 1, height: 1))
-                }, destination: .clipboard)
+                },
+                destination: .clipboard
+            )
         }
         // Act / Assert
         await #expect(throws: CancellationError.self) { try await task.value }

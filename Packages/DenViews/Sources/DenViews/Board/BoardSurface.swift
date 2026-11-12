@@ -92,8 +92,15 @@ public struct BoardSurfaceModifier: ViewModifier {
     let shouldReduceMotion: Bool
 
     public init(
-        boardID: BoardID, isFocused: Bool, isDragging: Bool, profileColor: Color, width: Double, height: Double,
-        isFocusModeDeemphasized: Bool, isFocusModeFocused: Bool, differentiateWithoutColor: Bool,
+        boardID: BoardID,
+        isFocused: Bool,
+        isDragging: Bool,
+        profileColor: Color,
+        width: Double,
+        height: Double,
+        isFocusModeDeemphasized: Bool,
+        isFocusModeFocused: Bool,
+        differentiateWithoutColor: Bool,
         shouldReduceMotion: Bool
     ) {
         self.boardID = boardID
@@ -120,7 +127,9 @@ public struct BoardSurfaceModifier: ViewModifier {
             }
             .shadow(
                 color: DenSurfaceColors.boardShadow(isFocused: isFocused, isDragging: isDragging),
-                radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
+                radius: isDragging ? 42 : (isFocused ? 34 : 24),
+                x: 0,
+                y: isDragging ? 28 : 22
             )
             .shadow(
                 color: isFocusModeFocused ? profileColor.opacity(0.24) : .clear,

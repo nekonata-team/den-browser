@@ -25,9 +25,17 @@ public struct TutorialBoardView: View {
     let onDragEnded: (DragGesture.Value) -> Void
 
     public init(
-        board: BoardState, isFocused: Bool, isDragging: Bool, profileColor: Color, width: Double, height: Double,
-        isPointerFocusEnabled: Bool, onFocus: @escaping () -> Void, onRemove: @escaping () -> Void,
-        onDragChanged: @escaping (DragGesture.Value) -> Void, onDragEnded: @escaping (DragGesture.Value) -> Void
+        board: BoardState,
+        isFocused: Bool,
+        isDragging: Bool,
+        profileColor: Color,
+        width: Double,
+        height: Double,
+        isPointerFocusEnabled: Bool,
+        onFocus: @escaping () -> Void,
+        onRemove: @escaping () -> Void,
+        onDragChanged: @escaping (DragGesture.Value) -> Void,
+        onDragEnded: @escaping (DragGesture.Value) -> Void
     ) {
         self.board = board
         self.isFocused = isFocused
@@ -80,7 +88,8 @@ public struct TutorialBoardView: View {
                             )
                         }
                         .background(
-                            .regularMaterial, in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                            .regularMaterial,
+                            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                         )
                         .overlay {
                             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
@@ -224,10 +233,12 @@ public struct TutorialBoardView: View {
                         .foregroundStyle(.secondary)
                     shortcutHint(
                         "Previous Board",
-                        tokens: previousBinding?.displayTokens ?? ["←", "/", "h"])
+                        tokens: previousBinding?.displayTokens ?? ["←", "/", "h"]
+                    )
                     shortcutHint(
                         "Next Board",
-                        tokens: nextBinding?.displayTokens ?? ["→", "/", "l"])
+                        tokens: nextBinding?.displayTokens ?? ["→", "/", "l"]
+                    )
                 }
             }
             Spacer(minLength: 0)
@@ -260,7 +271,8 @@ public struct TutorialBoardView: View {
                             .padding(.horizontal, 7)
                             .padding(.vertical, 4)
                             .background(
-                                .quaternary, in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                                .quaternary,
+                                in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                             )
                             .padding(.top, 2)
                     }

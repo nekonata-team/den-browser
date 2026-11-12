@@ -25,12 +25,20 @@ public struct WebSettingsModel {
     public let uninstall: () -> Void
 
     public init(
-        searchEngine: @escaping () -> SearchEngine, automaticPIPOnDeskSwitch: @escaping () -> Bool,
-        uBOLiteEnabled: @escaping () -> Bool, isInstalled: @escaping () -> Bool,
-        installedVersion: @escaping () -> String?, isBusy: @escaping () -> Bool, errorMessage: @escaping () -> String?,
-        setSearchEngine: @escaping (SearchEngine) -> Void, setAutomaticPIPOnDeskSwitch: @escaping (Bool) -> Void,
-        setUBOLiteEnabled: @escaping (Bool) -> Void, openOptions: @escaping () -> Void,
-        update: @escaping () async -> Void, install: @escaping () async -> Void, uninstall: @escaping () -> Void
+        searchEngine: @escaping () -> SearchEngine,
+        automaticPIPOnDeskSwitch: @escaping () -> Bool,
+        uBOLiteEnabled: @escaping () -> Bool,
+        isInstalled: @escaping () -> Bool,
+        installedVersion: @escaping () -> String?,
+        isBusy: @escaping () -> Bool,
+        errorMessage: @escaping () -> String?,
+        setSearchEngine: @escaping (SearchEngine) -> Void,
+        setAutomaticPIPOnDeskSwitch: @escaping (Bool) -> Void,
+        setUBOLiteEnabled: @escaping (Bool) -> Void,
+        openOptions: @escaping () -> Void,
+        update: @escaping () async -> Void,
+        install: @escaping () async -> Void,
+        uninstall: @escaping () -> Void
     ) {
         self.readSearchEngine = searchEngine
         self.readAutomaticPIPOnDeskSwitch = automaticPIPOnDeskSwitch

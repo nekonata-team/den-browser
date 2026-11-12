@@ -82,8 +82,12 @@ public nonisolated struct DenDrawerItemInfo: Codable, Sendable {
     }
 
     public init(
-        id: String, url: String? = nil, title: String? = nil, type: String = "web",
-        workingDirectory: String? = nil, sessionName: String? = nil
+        id: String,
+        url: String? = nil,
+        title: String? = nil,
+        type: String = "web",
+        workingDirectory: String? = nil,
+        sessionName: String? = nil
     ) {
         self.id = id
         self.type = type

@@ -30,32 +30,47 @@ final class BoardOpeningActions {
     }
 
     func boardCreationTarget(
-        afterBoardID: BoardID? = nil, focus: Bool = true,
-        origin: BoardOperationOrigin = .interactive, deskID: DeskID? = nil
+        afterBoardID: BoardID? = nil,
+        focus: Bool = true,
+        origin: BoardOperationOrigin = .interactive,
+        deskID: DeskID? = nil
     ) -> BoardCreation.Target {
         BoardCreation.Target(
-            presentedDeskID: presentedDeskID, deskID: deskID, afterBoardID: afterBoardID,
-            focus: focus, origin: origin)
+            presentedDeskID: presentedDeskID,
+            deskID: deskID,
+            afterBoardID: afterBoardID,
+            focus: focus,
+            origin: origin
+        )
     }
 
     func boardOpeningRequest(
-        input: String, preferredWidth: Double?, afterBoardID: BoardID?, zmxRootSessionName: String? = nil
+        input: String,
+        preferredWidth: Double?,
+        afterBoardID: BoardID?,
+        zmxRootSessionName: String? = nil
     ) -> BoardCreation.OpenRequest {
         BoardCreation.OpenRequest(
-            input: input, width: preferredWidth ?? inheritedBoardWidth,
+            input: input,
+            width: preferredWidth ?? inheritedBoardWidth,
             target: boardCreationTarget(afterBoardID: afterBoardID),
             configuration: boardOpeningConfiguration,
-            zmxRootSessionName: zmxRootSessionName)
+            zmxRootSessionName: zmxRootSessionName
+        )
     }
 
     var boardOpeningConfiguration: BoardOpening.Configuration {
         .init(
-            searchEngine: preferences.searchEngine, zmxConfigured: zmxClient.isConfigured,
-            zellijConfigured: zellijClient.isConfigured, homeDirectory: FileManager.default.homeDirectoryForCurrentUser)
+            searchEngine: preferences.searchEngine,
+            zmxConfigured: zmxClient.isConfigured,
+            zellijConfigured: zellijClient.isConfigured,
+            homeDirectory: FileManager.default.homeDirectoryForCurrentUser
+        )
     }
 
     func boardCreationNotifications(
-        returnsToOpenBoard: Bool = false, existingRuntime: WebRuntime? = nil
+        returnsToOpenBoard: Bool = false,
+        existingRuntime: WebRuntime? = nil
     ) -> (BoardCreation.Notice) -> Void {
         { [self] notice in
             switch notice {
@@ -75,7 +90,10 @@ final class BoardOpeningActions {
             case .didInsert(let board):
                 if let existingRuntime {
                     runtimes.updateBoard(
-                        boardID: board.id, url: existingRuntime.webView.url, title: existingRuntime.webView.title)
+                        boardID: board.id,
+                        url: existingRuntime.webView.url,
+                        title: existingRuntime.webView.title
+                    )
                 }
                 if board.isWeb {
                     storage.recordOperation(.webBoardOpened)
@@ -97,8 +115,10 @@ final class BoardOpeningActions {
 
     func inputOpeningContext(preferredWidth: Double? = nil, afterBoardID: BoardID? = nil) -> InputOpening.Context {
         .init(
-            width: preferredWidth ?? inheritedBoardWidth, target: boardCreationTarget(afterBoardID: afterBoardID),
-            configuration: boardOpeningConfiguration)
+            width: preferredWidth ?? inheritedBoardWidth,
+            target: boardCreationTarget(afterBoardID: afterBoardID),
+            configuration: boardOpeningConfiguration
+        )
     }
 
     @discardableResult
@@ -114,7 +134,8 @@ final class BoardOpeningActions {
             preferredWidth: preferredWidth,
             afterBoardID: afterBoardID,
             opensFromOpenBoardPanel: opensFromOpenBoardPanel,
-            zmxRootSessionName: zmxRootSessionName)
+            zmxRootSessionName: zmxRootSessionName
+        )
         {
         case .accepted:
             return true
@@ -134,9 +155,13 @@ final class BoardOpeningActions {
     ) -> BoardOpenResult {
         storage.boardCreation.open(
             boardOpeningRequest(
-                input: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID,
-                zmxRootSessionName: zmxRootSessionName),
-            notify: boardCreationNotifications(returnsToOpenBoard: opensFromOpenBoardPanel))
+                input: input,
+                preferredWidth: preferredWidth,
+                afterBoardID: afterBoardID,
+                zmxRootSessionName: zmxRootSessionName
+            ),
+            notify: boardCreationNotifications(returnsToOpenBoard: opensFromOpenBoardPanel)
+        )
     }
 
     @discardableResult
@@ -144,7 +169,8 @@ final class BoardOpeningActions {
         storage.boardCreation.openTutorial(
             width: preferredWidth ?? inheritedBoardWidth,
             target: boardCreationTarget(afterBoardID: afterBoardID),
-            notify: boardCreationNotifications()) != nil
+            notify: boardCreationNotifications()
+        ) != nil
     }
 
     func dispatchDenOperationEvent(_ event: DenOperationEvent) {
@@ -168,11 +194,13 @@ final class BoardOpeningActions {
         existingRuntime: WebRuntime? = nil
     ) -> BoardID? {
         storage.boardCreation.createWeb(
-            urlString: urlString, width: preferredWidth ?? inheritedBoardWidth,
+            urlString: urlString,
+            width: preferredWidth ?? inheritedBoardWidth,
             searchEngine: preferences.searchEngine,
             target: boardCreationTarget(afterBoardID: afterBoardID, focus: focus, origin: origin, deskID: deskID),
             recentItem: recentItem,
-            notify: boardCreationNotifications(existingRuntime: existingRuntime))
+            notify: boardCreationNotifications(existingRuntime: existingRuntime)
+        )
     }
 
     @discardableResult
@@ -191,7 +219,8 @@ final class BoardOpeningActions {
         let board = BoardState(
             label: initialURL?.host(percentEncoded: false) ?? "New Board",
             width: sourceBoard.width,
-            currentSheetURL: initialURL)
+            currentSheetURL: initialURL
+        )
         let focus = !modifierFlags.contains(.command) || modifierFlags.contains(.shift)
         let runtime = runtimes.webRuntime(for: board, popupWebView: popupWebView)
         guard runtime.webView === popupWebView else {
@@ -203,7 +232,8 @@ final class BoardOpeningActions {
                 board,
                 afterBoardID: fromBoardID,
                 focus: focus,
-                origin: .interactive)
+                origin: .interactive
+            )
         else {
             runtimes.disposeRuntime(for: board.id)
             return false
@@ -226,7 +256,9 @@ final class BoardOpeningActions {
             workingDirectory: workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
             width: preferredWidth ?? inheritedBoardWidth,
             target: boardCreationTarget(afterBoardID: afterBoardID, focus: focus, origin: origin, deskID: deskID),
-            recentItem: recentItem, notify: boardCreationNotifications())
+            recentItem: recentItem,
+            notify: boardCreationNotifications()
+        )
     }
 
     @discardableResult
@@ -240,7 +272,8 @@ final class BoardOpeningActions {
         storage.boardCreation.insert(
             board,
             target: boardCreationTarget(afterBoardID: afterBoardID, focus: focus, origin: origin, deskID: deskID),
-            notify: boardCreationNotifications()) != nil
+            notify: boardCreationNotifications()
+        ) != nil
     }
 
     var inheritedBoardWidth: Double {
@@ -251,11 +284,14 @@ final class BoardOpeningActions {
     func navigateFocusedBoard(urlString: String) -> Bool {
         guard let id = focusedBoard?.id,
             let url = storage.boardUpdates.navigate(
-                id, to: urlString, searchEngine: preferences.searchEngine,
+                id,
+                to: urlString,
+                searchEngine: preferences.searchEngine,
                 beforeSave: {
                     onWindowEffect?(.dismissTemporaryPresentation)
                     onWindowEffect?(.exitDenMode)
-                })
+                }
+            )
         else { return false }
         webRuntimes[id]?.load(url)
         return true
@@ -337,7 +373,8 @@ final class BoardOpeningActions {
             let link = TerminalLinkResolver.resolve(
                 rawURL,
                 relativeTo: board.terminalWorkingDirectory
-                    ?? FileManager.default.homeDirectoryForCurrentUser.path)
+                    ?? FileManager.default.homeDirectoryForCurrentUser.path
+            )
         else { return }
 
         switch link {
@@ -349,7 +386,8 @@ final class BoardOpeningActions {
                 preferredWidth: state.desks[indices.deskOffset].inheritedBoardWidth(for: board.id),
                 afterBoardID: board.id,
                 focus: true,
-                recentItem: .url(resolvedURL))
+                recentItem: .url(resolvedURL)
+            )
         }
     }
 }

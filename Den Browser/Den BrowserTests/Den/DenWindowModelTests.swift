@@ -23,8 +23,10 @@ struct DenWindowModelTests {
         let desk = DeskState(label: "Desk", boards: [current, target], focusedBoardID: current.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         composition.connect()
         defer { composition.disconnect() }
@@ -45,19 +47,30 @@ struct DenWindowModelTests {
         let selectedDesk = DeskState(label: "Selected", boards: [selectedBoard], focusedBoardID: selectedBoard.id)
         let otherDesk = DeskState(label: "Other", boards: [])
         let storage = DenProfileResources(
-            state: DenState(desks: [mainDesk, selectedDesk, otherDesk], focusedDeskID: mainDesk.id))
+            state: DenState(desks: [mainDesk, selectedDesk, otherDesk], focusedDeskID: mainDesk.id)
+        )
         let defaults = makeTestDefaults()
         let pasteboard = NSPasteboard.withUniqueName()
         let sheetNavigation = SheetNavigationManager(
-            defaults: defaults, pasteboard: pasteboard, scriptSource: "")
+            defaults: defaults,
+            pasteboard: pasteboard,
+            scriptSource: ""
+        )
         let preferences = AppPreferences(defaults: defaults)
         func makeSession(presenting deskID: DeskID) -> ProfileWindowSession {
             ProfileWindowSession(
                 resources: storage,
                 configuration: makeTestBoardRuntimeConfiguration(
-                    websiteDataStore: .nonPersistent(), sheetNavigation: sheetNavigation, preferences: preferences),
-                pasteboard: pasteboard, presentedDeskID: deskID, canPresentDesk: { _ in true },
-                onDeskPresentationRequest: { _ in true }, onWillResetDen: {})
+                    websiteDataStore: .nonPersistent(),
+                    sheetNavigation: sheetNavigation,
+                    preferences: preferences
+                ),
+                pasteboard: pasteboard,
+                presentedDeskID: deskID,
+                canPresentDesk: { _ in true },
+                onDeskPresentationRequest: { _ in true },
+                onWillResetDen: {}
+            )
         }
         let deletingSession = makeSession(presenting: mainDesk.id)
         let otherWindowComposition = DenWindowComposition(session: makeSession(presenting: otherDesk.id))
@@ -87,7 +100,8 @@ struct DenWindowModelTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session, feedbackDuration: .milliseconds(30))
         let windowModel = composition.model
         composition.connect()
@@ -113,7 +127,8 @@ struct DenWindowModelTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -136,8 +151,10 @@ struct DenWindowModelTests {
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [first, desk], focusedDeskID: first.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [first, desk], focusedDeskID: first.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -159,7 +176,8 @@ struct DenWindowModelTests {
         // Arrange
         let session = ProfileWindowSession(
             resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration())
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let initialState = session.resources.state
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model

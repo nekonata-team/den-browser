@@ -38,9 +38,16 @@ public struct BoardFacing: View {
     }
 
     public init(
-        displayName: String, width: Double, symbol: SFSymbol, kindLabel: String, typeColor: Color, detailText: String,
-        facing: NSImage?, boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
-        facingHeight: CGFloat = DenLayout.overviewFacingHeight, scale: CGFloat = 1
+        displayName: String,
+        width: Double,
+        symbol: SFSymbol,
+        kindLabel: String,
+        typeColor: Color,
+        detailText: String,
+        facing: NSImage?,
+        boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
+        facingHeight: CGFloat = DenLayout.overviewFacingHeight,
+        scale: CGFloat = 1
     ) {
         self.displayName = displayName
         self.width = width
@@ -155,10 +162,16 @@ public struct OverviewBoardFacing: View {
     }
 
     public init(
-        board: BoardState, isSelected: Bool = false, isAnchor: Bool = false, isMaximized: Bool = false,
-        maximizedBoardWidth: CGFloat? = nil, profileColor: Color = .blue,
-        boardHeight: CGFloat = DenLayout.fallbackBoardHeight, facingHeight: CGFloat = DenLayout.overviewFacingHeight,
-        facing: NSImage? = nil, scale: CGFloat = 1
+        board: BoardState,
+        isSelected: Bool = false,
+        isAnchor: Bool = false,
+        isMaximized: Bool = false,
+        maximizedBoardWidth: CGFloat? = nil,
+        profileColor: Color = .blue,
+        boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
+        facingHeight: CGFloat = DenLayout.overviewFacingHeight,
+        facing: NSImage? = nil,
+        scale: CGFloat = 1
     ) {
         self.board = board
         self.isSelected = isSelected
@@ -189,7 +202,8 @@ public struct OverviewBoardFacing: View {
             .background(
                 isSelected
                     ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(
-                        DenSurfaceColors.selectionOpacity) : Color.clear,
+                        DenSurfaceColors.selectionOpacity
+                    ) : Color.clear,
                 in: RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
             )
             .overlay {
@@ -240,8 +254,10 @@ public struct DeskPresetBoardFacing: View {
     var facing: NSImage?
 
     public init(
-        board: DeskPresetBoard, boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
-        facingHeight: CGFloat = DenPanelLayout.presetFacingHeight, facing: NSImage? = nil
+        board: DeskPresetBoard,
+        boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
+        facingHeight: CGFloat = DenPanelLayout.presetFacingHeight,
+        facing: NSImage? = nil
     ) {
         self.board = board
         self.boardHeight = boardHeight

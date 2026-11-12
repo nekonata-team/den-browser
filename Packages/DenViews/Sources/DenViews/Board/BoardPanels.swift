@@ -56,7 +56,8 @@ public struct OpenBoardPanel: View {
                     prompt: Text(
                         verbatim: openBoard.opensInDrawer
                             ? "https://example.com, search, or :terminal"
-                            : "https://example.com, search, or :terminal / :tutorial")
+                            : "https://example.com, search, or :terminal / :tutorial"
+                    )
                 ) {
                     Text("Open URL, search, or command")
                 }
@@ -145,7 +146,8 @@ public struct OpenBoardPanel: View {
                 DenPanelHint(
                     openBoard.opensInDrawer
                         ? "Return or click a Recent Item to add to Drawer"
-                        : "Return opens a Board · Option–Return or Option-click a Recent Item opens in Drawer")
+                        : "Return opens a Board · Option–Return or Option-click a Recent Item opens in Drawer"
+                )
                 if !openBoard.opensInDrawer {
                     DenPanelHint("Use :tutorial for the interactive guide")
                 }
@@ -245,7 +247,8 @@ private struct OpenBoardRecentRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint(
-                opensInDrawer ? "Adds this Item to Drawer." : "Opens a new Board. Option click opens in Drawer.")
+                opensInDrawer ? "Adds this Item to Drawer." : "Opens a new Board. Option click opens in Drawer."
+            )
 
             if let matchedEssential {
                 HStack(spacing: 4) {

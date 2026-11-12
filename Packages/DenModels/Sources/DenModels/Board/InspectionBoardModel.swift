@@ -28,10 +28,16 @@ public final class InspectionBoardModel {
     @ObservationIgnored private var observedPageGeneration = 0
 
     public init(
-        runtimeID: UUID?, targetBoard: @escaping () -> BoardState?, pageGeneration: @escaping () -> Int,
-        hasPage: @escaping () -> Bool, isActive: @escaping () -> Bool, startCollection: @escaping (ProfileRGB?) -> Void,
-        setHighlightColor: @escaping (ProfileRGB?) -> Void, beginPicking: @escaping (ProfileRGB?) -> Void,
-        selectNode: @escaping (String) -> Void, highlightNode: @escaping (String?) -> Void,
+        runtimeID: UUID?,
+        targetBoard: @escaping () -> BoardState?,
+        pageGeneration: @escaping () -> Int,
+        hasPage: @escaping () -> Bool,
+        isActive: @escaping () -> Bool,
+        startCollection: @escaping (ProfileRGB?) -> Void,
+        setHighlightColor: @escaping (ProfileRGB?) -> Void,
+        beginPicking: @escaping (ProfileRGB?) -> Void,
+        selectNode: @escaping (String) -> Void,
+        highlightNode: @escaping (String?) -> Void,
         readSnapshot: @escaping () async -> InspectionPageSnapshot,
         readChildren: @escaping (String) async -> [InspectionDOMNode],
         refreshChildren: @escaping ([String]) async -> [String: [InspectionDOMNode]]

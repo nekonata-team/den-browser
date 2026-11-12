@@ -11,7 +11,11 @@ struct ProfilePersistenceTests {
     @Test func profileModelsRoundTrip() throws {
         // Arrange
         let profile = ProfileState(
-            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(),
+            name: "Work",
+            color: .purple,
+            webProfileStore: .identified(UUID())
+        )
         let persisted = PersistedProfile(profile: profile, den: .sample)
 
         // Act
@@ -77,13 +81,19 @@ struct ProfilePersistenceTests {
             label: "Paused",
             width: 520,
             currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true)
+            sheetNavigationPaused: true
+        )
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let profile = ProfileState(
-            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(),
+            name: "Work",
+            color: .purple,
+            webProfileStore: .identified(UUID())
+        )
         let persisted = PersistedProfile(
             profile: profile,
-            den: DenState(desks: [desk], focusedDeskID: desk.id))
+            den: DenState(desks: [desk], focusedDeskID: desk.id)
+        )
 
         // Act
         let encoded = try JSONEncoder().encode(persisted)
@@ -96,7 +106,11 @@ struct ProfilePersistenceTests {
     @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
         // Arrange
         let profile = ProfileState(
-            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(),
+            name: "Work",
+            color: .purple,
+            webProfileStore: .identified(UUID())
+        )
         let encoded = try JSONEncoder().encode(PersistedProfile(profile: profile, den: .sample))
         var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         #expect(object["deskPresets"] != nil)
@@ -114,7 +128,11 @@ struct ProfilePersistenceTests {
     @Test func profileDocumentWithoutRecentItemsLoadsEmptyList() throws {
         // Arrange
         let profile = ProfileState(
-            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(),
+            name: "Work",
+            color: .purple,
+            webProfileStore: .identified(UUID())
+        )
         let recentItems: [RecentItem] = [
             .url(URL(string: "https://example.com")!),
             .search("Swift"),
@@ -127,9 +145,12 @@ struct ProfilePersistenceTests {
             PersistedProfile(
                 profile: profile,
                 den: .sample,
-                recentItems: recentItems))
+                recentItems: recentItems
+            )
+        )
         #expect(
-            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems == recentItems)
+            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems == recentItems
+        )
         var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         object.removeValue(forKey: "recentItems")
         let dataWithoutRecentItems = try JSONSerialization.data(withJSONObject: object)
@@ -144,7 +165,8 @@ struct ProfilePersistenceTests {
     @Test func versionOneFixturesMigrateToVersionFour() throws {
         // Arrange
         var profileObject = try #require(
-            JSONSerialization.jsonObject(with: fixtureData("persisted-profile-v1")) as? [String: Any])
+            JSONSerialization.jsonObject(with: fixtureData("persisted-profile-v1")) as? [String: Any]
+        )
         var den = try #require(profileObject["den"] as? [String: Any])
         var desks = try #require(den["desks"] as? [[String: Any]])
         var boards = try #require(desks[0]["boards"] as? [[String: Any]])
@@ -169,7 +191,8 @@ struct ProfilePersistenceTests {
         #expect(index == ProfileIndex(profileIDs: [persisted.profile.id]))
 
         let migrated = try #require(
-            JSONSerialization.jsonObject(with: JSONEncoder().encode(persisted)) as? [String: Any])
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(persisted)) as? [String: Any]
+        )
         #expect(migrated["schemaVersion"] as? Int == 4)
         #expect(try jsonObject(JSONEncoder().encode(index)).isEqual(jsonObject(indexData)))
 
@@ -178,7 +201,8 @@ struct ProfilePersistenceTests {
         futureObject["futureField"] = true
         #expect(
             try PersistedProfileDocumentDecoder.decode(JSONSerialization.data(withJSONObject: futureObject))
-                == persisted)
+                == persisted
+        )
 
         // Missing required field fails
         futureObject.removeValue(forKey: "profile")
@@ -186,7 +210,8 @@ struct ProfilePersistenceTests {
             throws: DecodingError.self,
             performing: {
                 try PersistedProfileDocumentDecoder.decode(JSONSerialization.data(withJSONObject: futureObject))
-            })
+            }
+        )
     }
 
     @Test func versionTwoBoardContentMigratesToCanonicalVersionFour() throws {
@@ -209,7 +234,8 @@ struct ProfilePersistenceTests {
         #expect(persisted.deskPresets[0].boards[4].zmxSessionName == "preset-zmx")
         #expect(
             persisted.deskPresets[0].boards[4].kind
-                == .terminal(.zmx(sessionName: "preset-zmx", rootSessionName: nil)))
+                == .terminal(.zmx(sessionName: "preset-zmx", rootSessionName: nil))
+        )
 
         let encoded = try JSONEncoder().encode(persisted)
         let object = try jsonObject(encoded)
@@ -224,25 +250,31 @@ struct ProfilePersistenceTests {
         #expect(webContent["sheetNavigationPaused"] as? Bool == true)
         #expect(encodedBoards[0]["sheetNavigationPaused"] == nil)
         let shellSession = try #require(
-            (encodedBoards[2]["content"] as? NSDictionary)?["session"] as? NSDictionary)
+            (encodedBoards[2]["content"] as? NSDictionary)?["session"] as? NSDictionary
+        )
         #expect(shellSession["kind"] as? String == "shell")
         let zellijSession = try #require(
-            (encodedBoards[3]["content"] as? NSDictionary)?["session"] as? NSDictionary)
+            (encodedBoards[3]["content"] as? NSDictionary)?["session"] as? NSDictionary
+        )
         #expect(zellijSession["kind"] as? String == "zellij")
         let zmxSession = try #require(
-            (encodedBoards[4]["content"] as? NSDictionary)?["session"] as? NSDictionary)
+            (encodedBoards[4]["content"] as? NSDictionary)?["session"] as? NSDictionary
+        )
         #expect(zmxSession["kind"] as? String == "zmx")
         let presets = try #require(object["deskPresets"] as? [NSDictionary])
         let presetBoards = try #require(presets[0]["boards"] as? [NSDictionary])
         #expect(presetBoards[1]["targetBoardIndex"] as? Int == 0)
         let presetShell = try #require(
-            (presetBoards[2]["content"] as? NSDictionary)?["session"] as? NSDictionary)
+            (presetBoards[2]["content"] as? NSDictionary)?["session"] as? NSDictionary
+        )
         #expect(presetShell["kind"] as? String == "shell")
         let presetZellij = try #require(
-            (presetBoards[3]["content"] as? NSDictionary)?["session"] as? NSDictionary)
+            (presetBoards[3]["content"] as? NSDictionary)?["session"] as? NSDictionary
+        )
         #expect(presetZellij["kind"] as? String == "zellij")
         let presetZmx = try #require(
-            (presetBoards[4]["content"] as? NSDictionary)?["session"] as? NSDictionary)
+            (presetBoards[4]["content"] as? NSDictionary)?["session"] as? NSDictionary
+        )
         #expect(presetZmx["kind"] as? String == "zmx")
         #expect(try JSONDecoder().decode(PersistedProfile.self, from: encoded) == persisted)
     }
@@ -264,11 +296,13 @@ struct ProfilePersistenceTests {
             migrated.den.drawerItems.map(\.id) == [
                 UUID(uuidString: "00000000-0000-0000-0000-000000000401")!,
                 UUID(uuidString: "00000000-0000-0000-0000-000000000402")!,
-            ])
+            ]
+        )
         #expect(
             migrated.den.drawerItems.map(\.url) == [
                 URL(string: "https://example.com/article"), URL(string: "file:///tmp/reference.html"),
-            ])
+            ]
+        )
         #expect(migrated.den.drawerItems.map(\.title) == ["Article", nil])
         #expect(migrated.den.desks[0].boards[0].kind == .terminal(.shell(workingDirectory: "/tmp")))
         #expect(migrated.recentItems == [.terminal(workingDirectory: "/tmp")])
@@ -299,7 +333,8 @@ struct ProfilePersistenceTests {
     @Test func invalidLegacyDrawerItemFailsMigrationInsteadOfDroppingData() throws {
         // Arrange
         var object = try #require(
-            JSONSerialization.jsonObject(with: fixtureData("persisted-profile-v3")) as? [String: Any])
+            JSONSerialization.jsonObject(with: fixtureData("persisted-profile-v3")) as? [String: Any]
+        )
         var den = try #require(object["den"] as? [String: Any])
         den["drawerItems"] = [["id": UUID().uuidString, "title": "Missing URL"]]
         object["den"] = den
@@ -338,7 +373,8 @@ struct ProfilePersistenceTests {
     private func fixtureData(_ name: String) throws -> Data {
         let url = try #require(
             Bundle(for: PersistenceFixtureBundleToken.self)
-                .url(forResource: name, withExtension: "json"))
+                .url(forResource: name, withExtension: "json")
+        )
         return try Data(contentsOf: url)
     }
 

@@ -15,8 +15,11 @@ public struct DenDrawerOverlay<Peek: View>: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     public init(
-        size: CGSize, profileColor: Color, shouldShowHeader: Bool,
-        drawerStyle: DrawerStyle, motionPreference: MotionPreference,
+        size: CGSize,
+        profileColor: Color,
+        shouldShowHeader: Bool,
+        drawerStyle: DrawerStyle,
+        motionPreference: MotionPreference,
         @ViewBuilder peek: @escaping (DrawerItem, Bool) -> Peek,
         placeFromContextMenu: @escaping (UUID) -> Void
     ) {
@@ -45,7 +48,8 @@ public struct DenDrawerOverlay<Peek: View>: View {
                     isDenMode: { windowModel.isDenMode },
                     isInputActive: { windowModel.isDrawerOpen && !windowModel.drawer.isChoosingPlacementDesk },
                     motionPreference: motionPreference,
-                    peek: peek, placeFromContextMenu: placeFromContextMenu,
+                    peek: peek,
+                    placeFromContextMenu: placeFromContextMenu,
                     placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
                 )
                 .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)

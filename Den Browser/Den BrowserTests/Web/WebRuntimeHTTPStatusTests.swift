@@ -72,9 +72,11 @@ struct WebRuntimeHTTPStatusTests {
             board: BoardState(label: "Page", width: 520, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100, popupWebView: webView,
+            sheetScale: 100,
+            popupWebView: webView,
             sheetNavigationActions: .init(),
-            events: .init(onChange: { _, _, _ in }))
+            events: .init(onChange: { _, _, _ in })
+        )
     }
 }
 

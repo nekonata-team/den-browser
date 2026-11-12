@@ -17,7 +17,8 @@ struct AppConfiguration {
         if processInfo.arguments.contains("--benchmark-scenario") {
             return benchmark(
                 runID: processInfo.environment["DEN_BENCHMARK_RUN_ID"] ?? UUID().uuidString,
-                arguments: processInfo.arguments)
+                arguments: processInfo.arguments
+            )
         }
 
         guard processInfo.arguments.contains("--ui-testing") else {
@@ -41,10 +42,13 @@ struct AppConfiguration {
                 defaults.removePersistentDomain(forName: suiteName)
                 defaults.set(MotionPreference.standard.rawValue, forKey: "preferences.appearance.motion.mode")
                 defaults.set(
-                    FocusedBoardCentering.onOverflow.rawValue, forKey: "preferences.appearance.board-centering.mode")
+                    FocusedBoardCentering.onOverflow.rawValue,
+                    forKey: "preferences.appearance.board-centering.mode"
+                )
                 let socket = DenSocketPath.resolve(
                     environment: processInfo.environment,
-                    defaultPath: DenSocketPath.temporary(prefix: "den-demo", identifier: runID))
+                    defaultPath: DenSocketPath.temporary(prefix: "den-demo", identifier: runID)
+                )
                 let initialProfile: PersistedProfile =
                     if let seedPath = argumentValue(after: "--initial-profile", in: processInfo.arguments),
                         let profile = try? loadInitialProfile(at: URL(fileURLWithPath: seedPath))
@@ -59,7 +63,8 @@ struct AppConfiguration {
                     initialProfile: initialProfile,
                     isEphemeral: false,
                     ipcSocketPath: socket,
-                    websiteDataStore: { _ in .nonPersistent() })
+                    websiteDataStore: { _ in .nonPersistent() }
+                )
             }
             let ipcSocketPath = resolveSocketPath(isPrivateDen: isPrivateDen, environment: processInfo.environment)
             return AppConfiguration(
@@ -68,7 +73,8 @@ struct AppConfiguration {
                 initialProfile: isPrivateDen ? privateDenProfile() : nil,
                 isEphemeral: isPrivateDen,
                 ipcSocketPath: ipcSocketPath,
-                websiteDataStore: isPrivateDen ? { _ in .nonPersistent() } : { $0.websiteDataStore })
+                websiteDataStore: isPrivateDen ? { _ in .nonPersistent() } : { $0.websiteDataStore }
+            )
         }
 
         let runID = processInfo.environment["DEN_UI_TEST_RUN_ID"] ?? UUID().uuidString
@@ -97,7 +103,8 @@ struct AppConfiguration {
             initialProfile: initialProfile,
             isEphemeral: false,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
     }
 
     static func resolveSocketPath(isPrivateDen: Bool, environment: [String: String]) -> String {
@@ -120,7 +127,8 @@ struct AppConfiguration {
             initialProfile: nil,
             isEphemeral: true,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
     }
 
     private static func benchmark(runID: String, arguments: [String]) -> AppConfiguration {
@@ -139,7 +147,8 @@ struct AppConfiguration {
             initialProfile: initialProfile(from: arguments),
             isEphemeral: true,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-benchmark", identifier: runID),
-            websiteDataStore: { _ in .nonPersistent() })
+            websiteDataStore: { _ in .nonPersistent() }
+        )
     }
 
     private static func demoProfile() -> PersistedProfile {
@@ -150,8 +159,10 @@ struct AppConfiguration {
                 id: ProfileID(),
                 name: "Demo",
                 color: .blue,
-                webProfileStore: .default),
-            den: den)
+                webProfileStore: .default
+            ),
+            den: den
+        )
     }
 
     private static func privateDenProfile() -> PersistedProfile {
@@ -160,8 +171,10 @@ struct AppConfiguration {
                 id: ProfileID(),
                 name: "Private Den",
                 color: .gray,
-                webProfileStore: .default),
-            den: .sample)
+                webProfileStore: .default
+            ),
+            den: .sample
+        )
     }
 
     private static func initialProfile(from arguments: [String]) -> PersistedProfile {

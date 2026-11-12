@@ -17,7 +17,8 @@ struct NativeRecentTests {
         let titledItem = RecentItem.url(url, title: "Example page")
         let decodedTitledItem = try JSONDecoder().decode(
             RecentItem.self,
-            from: JSONEncoder().encode(titledItem))
+            from: JSONEncoder().encode(titledItem)
+        )
 
         #expect(legacyItem == .url(url))
         #expect(legacyItem.title == nil)
@@ -34,7 +35,8 @@ struct NativeRecentTests {
                 onRecentItemsSave: {
                     savedItems = $0
                     return true
-                })
+                }
+            )
         ) { session in
             session.boardOpening.openBoard(input: url.absoluteString)
             let boardID = try #require(session.navigation.focusedDesk?.boards.first?.id)
@@ -49,7 +51,8 @@ struct NativeRecentTests {
             session.runtimes.updateBoard(
                 boardID: boardID,
                 url: URL(string: "https://example.com/next"),
-                title: "Next page")
+                title: "Next page"
+            )
             #expect(session.resources.recentItems.first?.title == "Example page")
         }
     }
@@ -63,7 +66,8 @@ struct NativeRecentTests {
                 onRecentItemsSave: {
                     savedItems = $0
                     return true
-                })
+                }
+            )
         ) { session in
             session.boardOpening.openBoard(input: "example.com")
             session.boardOpening.openBoard(input: "Swift Observation")
@@ -73,7 +77,8 @@ struct NativeRecentTests {
                 session.resources.recentItems == [
                     .url(expectedURL),
                     .search("Swift Observation"),
-                ])
+                ]
+            )
             #expect(savedItems == session.resources.recentItems)
         }
     }
@@ -81,7 +86,9 @@ struct NativeRecentTests {
     @Test func recentSearchDeduplicationIgnoresCaseAndRepeatedWhitespace() {
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), onRecentItemsSave: { _ in true })
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             session.boardOpening.openBoard(input: "Swift   Observation")
             session.boardOpening.openBoard(input: "swift observation")
@@ -93,23 +100,28 @@ struct NativeRecentTests {
     @Test func pastedLineBreaksDoNotBreakURLOrSearchInput() throws {
         try withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), onRecentItemsSave: { _ in true })
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             session.boardOpening.openBoard(input: "https://example.com/long-\npath")
             session.boardOpening.openBoard(input: "Swift\nObservation")
 
             #expect(
                 session.navigation.focusedDesk?.boards.first?.currentSheetURL
-                    == URL(string: "https://example.com/long-path"))
+                    == URL(string: "https://example.com/long-path")
+            )
             let searchURL = try #require(
                 session.navigation.focusedDesk?.boards.last?.currentSheetURL
-                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
+                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+            )
             #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "Swift Observation")])
             #expect(
                 session.resources.recentItems == [
                     .search("Swift Observation"),
                     .url(URL(string: "https://example.com/long-path")!),
-                ])
+                ]
+            )
 
             let composition = DenWindowComposition(session: session)
 
@@ -140,11 +152,13 @@ struct NativeRecentTests {
             .map { .url(URL(string: "https://example.com/\($0)")!) }
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), recentItems: initialItems,
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                recentItems: initialItems,
                 onRecentItemsSave: {
                     savedItems = $0
                     return true
-                })
+                }
+            )
         ) { session in
             session.boardOpening.openBoard(input: "https://example.com/500")
 
@@ -164,8 +178,10 @@ struct NativeRecentTests {
         let original: [RecentItem] = [.search("existing")]
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), recentItems: original,
-                onRecentItemsSave: { _ in false })
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                recentItems: original,
+                onRecentItemsSave: { _ in false }
+            )
         ) { session in
             session.boardOpening.openBoard(input: "new search")
 
@@ -197,7 +213,8 @@ struct NativeRecentTests {
                     .zellij(sessionName: nil),
                     .terminal(workingDirectory: directory),
                     .terminal(workingDirectory: home),
-                ])
+                ]
+            )
         }
     }
 
@@ -229,7 +246,8 @@ struct NativeRecentTests {
             #expect(session.navigation.focusedDesk?.boards.count == initialBoardCount)
             #expect(
                 session.feedback.latest?.message
-                    == "Set an absolute zmx executable path in Settings > Terminal.")
+                    == "Set an absolute zmx executable path in Settings > Terminal."
+            )
             #expect(session.feedback.latest?.severity == .warning)
         }
     }
@@ -252,7 +270,9 @@ struct NativeRecentTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(makeNativeTestState()),
-                recentItems: [.search("existing"), item], onRecentItemsSave: { _ in true })
+                recentItems: [.search("existing"), item],
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             session.boardOpening.openBoard(recentItem: item)
 
@@ -263,11 +283,14 @@ struct NativeRecentTests {
 
     @Test func missingTerminalRecentShowsErrorWithoutCreatingBoard() {
         let item = RecentItem.terminal(
-            workingDirectory: "/missing/den-browser-\(UUID().uuidString)")
+            workingDirectory: "/missing/den-browser-\(UUID().uuidString)"
+        )
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), recentItems: [item],
-                onRecentItemsSave: { _ in true })
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                recentItems: [item],
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             do {
                 let denWindowComposition = DenWindowComposition(session: session)
@@ -289,7 +312,9 @@ struct NativeRecentTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(makeNativeTestState()),
-                recentItems: [.search("existing"), item], onRecentItemsSave: { _ in true })
+                recentItems: [.search("existing"), item],
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             session.configuration.preferences.setZellijPath("/opt/homebrew/bin/zellij")
             session.boardOpening.openBoard(recentItem: item)
@@ -305,7 +330,9 @@ struct NativeRecentTests {
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(makeNativeTestState()),
-                recentItems: [.search("existing"), item], onRecentItemsSave: { _ in true })
+                recentItems: [.search("existing"), item],
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             session.configuration.preferences.setZmxPath("/opt/homebrew/bin/zmx")
             session.boardOpening.openBoard(recentItem: item)
@@ -320,8 +347,10 @@ struct NativeRecentTests {
         let item = RecentItem.zellij(sessionName: nil)
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), recentItems: [item],
-                onRecentItemsSave: { _ in true })
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                recentItems: [item],
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             do {
                 let denWindowComposition = DenWindowComposition(session: session)
@@ -333,7 +362,8 @@ struct NativeRecentTests {
 
                 #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
                 #expect(
-                    windowModel.openBoard.message?.contains("absolute Zellij executable path") == true)
+                    windowModel.openBoard.message?.contains("absolute Zellij executable path") == true
+                )
                 #expect(session.resources.recentItems == [item])
             }
         }
@@ -343,8 +373,10 @@ struct NativeRecentTests {
         let item = RecentItem.zmx(sessionName: "project-a")
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState()), recentItems: [item],
-                onRecentItemsSave: { _ in true })
+                state: DenStateNormalization.normalize(makeNativeTestState()),
+                recentItems: [item],
+                onRecentItemsSave: { _ in true }
+            )
         ) { session in
             do {
                 let denWindowComposition = DenWindowComposition(session: session)

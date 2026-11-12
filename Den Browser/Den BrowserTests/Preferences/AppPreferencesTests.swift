@@ -144,7 +144,8 @@ struct AppPreferencesTests {
                 "preferences.terminal.zellij.executable-path",
                 "preferences.terminal.zmx.executable-path",
                 "preferences.input-method.remember-per-board",
-            ])
+            ]
+        )
         #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.motionPreference == .standard)
         #expect(restored.uBOLiteEnabled)

@@ -16,9 +16,15 @@ struct OverviewCanvasGeometryTests {
 
         // Act
         let wideScale = OverviewCanvasGeometry.initialScale(
-            boardSize: board, neighborhoodHeight: neighborhoodHeight, viewportSize: landscape)
+            boardSize: board,
+            neighborhoodHeight: neighborhoodHeight,
+            viewportSize: landscape
+        )
         let tallScale = OverviewCanvasGeometry.initialScale(
-            boardSize: board, neighborhoodHeight: neighborhoodHeight, viewportSize: portrait)
+            boardSize: board,
+            neighborhoodHeight: neighborhoodHeight,
+            viewportSize: portrait
+        )
 
         // Assert
         #expect(wideScale > 1)
@@ -39,10 +45,12 @@ struct OverviewCanvasGeometryTests {
 
         // Act
         let next = OverviewCanvasGeometry.zoomOffset(
-            offset: offset, anchor: anchor,
+            offset: offset,
+            anchor: anchor,
             contentSize: CGSize(width: 1000 * oldScale, height: 600 * oldScale),
             viewportSize: CGSize(width: 500, height: 300),
-            factor: newScale / oldScale)
+            factor: newScale / oldScale
+        )
 
         // Assert
         #expect((offset.x + anchor.x) / oldScale == (next.x + anchor.x) / newScale)
@@ -58,8 +66,12 @@ struct OverviewCanvasGeometryTests {
 
         // Act
         let next = OverviewCanvasGeometry.zoomOffset(
-            offset: CGPoint(x: 0, y: 0), anchor: anchor,
-            contentSize: content, viewportSize: viewport, factor: 2)
+            offset: CGPoint(x: 0, y: 0),
+            anchor: anchor,
+            contentSize: content,
+            viewportSize: viewport,
+            factor: 2
+        )
 
         // Assert
         #expect(anchor.x - inset.x == (next.x + anchor.x) / 2)
@@ -74,8 +86,12 @@ struct OverviewCanvasGeometryTests {
 
         // Act
         let next = OverviewCanvasGeometry.zoomOffset(
-            offset: CGPoint(x: 0, y: 0), anchor: anchor,
-            contentSize: content, viewportSize: viewport, factor: 0.5)
+            offset: CGPoint(x: 0, y: 0),
+            anchor: anchor,
+            contentSize: content,
+            viewportSize: viewport,
+            factor: 0.5
+        )
 
         // Assert
         #expect(next == CGPoint(x: 0, y: 0))
@@ -88,9 +104,15 @@ struct OverviewCanvasGeometryTests {
 
         // Act
         let leading = OverviewCanvasGeometry.clampedOffset(
-            CGPoint(x: -100, y: -100), contentSize: scaledContent, viewportSize: viewport)
+            CGPoint(x: -100, y: -100),
+            contentSize: scaledContent,
+            viewportSize: viewport
+        )
         let trailing = OverviewCanvasGeometry.clampedOffset(
-            CGPoint(x: 3000, y: 1000), contentSize: scaledContent, viewportSize: viewport)
+            CGPoint(x: 3000, y: 1000),
+            contentSize: scaledContent,
+            viewportSize: viewport
+        )
 
         // Assert
         #expect(leading == CGPoint(x: 0, y: 0))

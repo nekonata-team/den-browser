@@ -63,26 +63,33 @@ struct DenIPCNotificationTests {
         manager.register(window: window, for: route)
         defer { manager.unregister(window: window, for: route) }
         let notification = try #require(
-            session.resources.notificationOperations.record(title: nil, body: "Message", boardID: BoardID()))
+            session.resources.notificationOperations.record(title: nil, body: "Message", boardID: BoardID())
+        )
         session.resources.notificationOperations.setRead(notification.id, isRead: !isRead)
         let untouched = try #require(
-            session.resources.notificationOperations.record(title: nil, body: "Other", boardID: BoardID()))
+            session.resources.notificationOperations.record(title: nil, body: "Other", boardID: BoardID())
+        )
         let service = DenIPCService(profileManager: manager)
         let read = DenIPCRequest(
             operation: .setNotificationRead(id: notification.id, isRead: isRead),
-            context: .init(profileID: manager.personalProfileID.rawValue))
+            context: .init(profileID: manager.personalProfileID.rawValue)
+        )
 
         // Act
         let wrongProfile = await service.handleRequest(
-            DenIPCRequest(operation: read.operation, context: .init(profileID: other.id.rawValue)))
+            DenIPCRequest(operation: read.operation, context: .init(profileID: other.id.rawValue))
+        )
         let otherList = await service.handleRequest(
             DenIPCRequest(
                 operation: .listNotifications(unreadOnly: false, boardID: nil, limit: nil),
-                context: .init(profileID: other.id.rawValue)))
+                context: .init(profileID: other.id.rawValue)
+            )
+        )
         let firstRead = await service.handleRequest(read)
         let secondRead = await service.handleRequest(read)
         let missing = await service.handleRequest(
-            DenIPCRequest(operation: .setNotificationRead(id: UUID(), isRead: isRead), context: read.context))
+            DenIPCRequest(operation: .setNotificationRead(id: UUID(), isRead: isRead), context: read.context)
+        )
 
         // Assert
         #expect(!wrongProfile.result.isOk)
@@ -106,7 +113,8 @@ struct DenIPCNotificationTests {
 
         // Act
         let result = await service.handleRequest(
-            DenIPCRequest(operation: .listNotifications(unreadOnly: false, boardID: nil, limit: limit)))
+            DenIPCRequest(operation: .listNotifications(unreadOnly: false, boardID: nil, limit: limit))
+        )
 
         // Assert
         #expect(!result.result.isOk)
@@ -118,6 +126,8 @@ struct DenIPCNotificationTests {
             directoryURL: directory,
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             preferences: AppPreferences(defaults: makeTestDefaults()),
-            removeDataStore: { _ in }, websiteDataStore: { _ in .nonPersistent() })
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() }
+        )
     }
 }

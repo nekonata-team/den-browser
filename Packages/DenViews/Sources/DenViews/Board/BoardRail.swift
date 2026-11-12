@@ -43,9 +43,12 @@ public struct BoardRail<Favicon: View>: View {
     }
 
     public init(
-        profileColor: Color, boardModel: @escaping (BoardState) -> BoardSurfaceModel,
-        focusBoard: @escaping (BoardID) -> Void, reorderBoard: @escaping (BoardID, BoardIndex, DeskID, Bool) -> Void,
-        toggleAnchor: @escaping (BoardID, DeskID) -> Void, @ViewBuilder favicon: @escaping (BoardID) -> Favicon
+        profileColor: Color,
+        boardModel: @escaping (BoardState) -> BoardSurfaceModel,
+        focusBoard: @escaping (BoardID) -> Void,
+        reorderBoard: @escaping (BoardID, BoardIndex, DeskID, Bool) -> Void,
+        toggleAnchor: @escaping (BoardID, DeskID) -> Void,
+        @ViewBuilder favicon: @escaping (BoardID) -> Favicon
     ) {
         self.profileColor = profileColor
         self.boardModel = boardModel

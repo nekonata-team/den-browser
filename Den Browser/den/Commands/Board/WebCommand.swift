@@ -5,7 +5,8 @@ import Foundation
 struct WebNavigateCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "navigate",
-        abstract: "Navigate Current Sheet in the target Web Board to a URL or search query")
+        abstract: "Navigate Current Sheet in the target Web Board to a URL or search query"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "URL or search query to open") var url: String
@@ -21,7 +22,8 @@ struct WebNavigateCommand: ParsableCommand {
 struct WebURLCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "url",
-        abstract: "Print Current Sheet URL of the target Web Board")
+        abstract: "Print Current Sheet URL of the target Web Board"
+    )
 
     @OptionGroup var target: WebTargetOptions
 
@@ -36,7 +38,8 @@ struct WebURLCommand: ParsableCommand {
 struct WebStatusCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "status",
-        abstract: "Print the main page's HTTP status code, or null when unavailable")
+        abstract: "Print the main page's HTTP status code, or null when unavailable"
+    )
 
     @OptionGroup var target: WebTargetOptions
 
@@ -48,12 +51,14 @@ struct WebStatusCommand: ParsableCommand {
 struct WebReloadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "reload",
-        abstract: "Reload Current Sheet in the target Web Board")
+        abstract: "Reload Current Sheet in the target Web Board"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Flag(
         name: .customLong("den-api"),
-        help: "Enable and save this Board's Den API setting for local HTML files before reloading")
+        help: "Enable and save this Board's Den API setting for local HTML files before reloading"
+    )
     var denAPI = false
     @Flag(name: .customLong("no-den-api"), help: "Disable and save this Board's Den API setting before reloading")
     var noDenAPI = false
@@ -79,7 +84,8 @@ struct WebReloadCommand: ParsableCommand {
 struct WebEvalCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "eval",
-        abstract: "Evaluate JavaScript in the target Web Board")
+        abstract: "Evaluate JavaScript in the target Web Board"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(parsing: .remaining, help: "JavaScript code to evaluate") var scriptParts: [String]
@@ -99,7 +105,8 @@ struct WebEvalCommand: ParsableCommand {
 struct WebTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",
-        abstract: "Print visible text from the target Web Board")
+        abstract: "Print visible text from the target Web Board"
+    )
 
     @OptionGroup var target: WebTargetOptions
 
@@ -114,7 +121,8 @@ struct WebTextCommand: ParsableCommand {
 struct WebReadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "read",
-        abstract: "Read the Current Sheet as Markdown, preserving headings, links, lists, tables, and code")
+        abstract: "Read the Current Sheet as Markdown, preserving headings, links, lists, tables, and code"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Option(name: .long, help: "Read only one CSS selector or element reference")
@@ -128,7 +136,8 @@ struct WebReadCommand: ParsableCommand {
 struct WebSnapshotCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "snapshot",
-        abstract: "Extract semantic DOM tree with short references (@e1, @e2)")
+        abstract: "Extract semantic DOM tree with short references (@e1, @e2)"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Flag(name: [.customShort("i"), .long], help: "Filter to interactive elements only (default)")
@@ -155,7 +164,8 @@ struct WebSnapshotCommand: ParsableCommand {
 struct WebQueryCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "query",
-        abstract: "Inspect matching DOM elements")
+        abstract: "Inspect matching DOM elements"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "CSS selector to query")
@@ -185,7 +195,8 @@ struct WebQueryCommand: ParsableCommand {
 struct WebClickCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "click",
-        abstract: "Click an element by reference (@e1) or CSS selector")
+        abstract: "Click an element by reference (@e1) or CSS selector"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to click")
@@ -257,7 +268,8 @@ struct WebFocusCommand: ParsableCommand {
 struct WebFillCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fill",
-        abstract: "Fill an input, textarea, or editable element with text by reference or selector")
+        abstract: "Fill an input, textarea, or editable element with text by reference or selector"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to fill")
@@ -434,7 +446,8 @@ struct WebMouseClickCommand: ParsableCommand {
                         coordY: coordY,
                         button: button,
                         count: count
-                    ))
+                    )
+                )
             ),
             options: target
         )
@@ -495,7 +508,8 @@ struct WebInteractCommand: ParsableCommand {
               screenshot /tmp/result.png
               EOF
               den board web interact path/to/script.den
-            """)
+            """
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Script text, script file path, or - for stdin (defaults to stdin if piped)")
@@ -911,7 +925,8 @@ private enum DenSheetInteractParser {
                             coordY: coordinateY,
                             button: button,
                             count: count
-                        ))
+                        )
+                    )
                 )
             case "wheel":
                 guard actionArguments.count >= 1 else {
@@ -930,7 +945,8 @@ private enum DenSheetInteractParser {
                         DenSheetMousePayload(
                             deltaX: try doubleValue("--dx", from: parsed.values),
                             deltaY: deltaY
-                        ))
+                        )
+                    )
                 )
             default:
                 throw usage("Unknown mouse action: \(action)")
@@ -1114,7 +1130,8 @@ struct WebGetCommand: ParsableCommand {
 struct WebGetBoxCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "box",
-        abstract: "Get bounding box of an element")
+        abstract: "Get bounding box of an element"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1131,7 +1148,8 @@ struct WebGetBoxCommand: ParsableCommand {
 struct WebGetTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",
-        abstract: "Get text from an element")
+        abstract: "Get text from an element"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1148,7 +1166,8 @@ struct WebGetTextCommand: ParsableCommand {
 struct WebGetValueCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "value",
-        abstract: "Get an element value")
+        abstract: "Get an element value"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1164,7 +1183,8 @@ struct WebGetValueCommand: ParsableCommand {
 struct WebGetAttributeCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "attr",
-        abstract: "Get an element attribute")
+        abstract: "Get an element attribute"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1185,7 +1205,8 @@ struct WebGetAttributeCommand: ParsableCommand {
 struct WebGetCountCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "count",
-        abstract: "Count elements matching a selector")
+        abstract: "Count elements matching a selector"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "CSS selector")
@@ -1214,7 +1235,8 @@ struct WebIsCommand: ParsableCommand {
 struct WebIsVisibleCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "visible",
-        abstract: "Check whether an element is visible")
+        abstract: "Check whether an element is visible"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1231,7 +1253,8 @@ struct WebIsVisibleCommand: ParsableCommand {
 struct WebIsEnabledCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "enabled",
-        abstract: "Check whether an element is enabled")
+        abstract: "Check whether an element is enabled"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1248,7 +1271,8 @@ struct WebIsEnabledCommand: ParsableCommand {
 struct WebIsCheckedCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "checked",
-        abstract: "Check whether a checkbox is checked")
+        abstract: "Check whether a checkbox is checked"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
@@ -1265,7 +1289,8 @@ struct WebIsCheckedCommand: ParsableCommand {
 struct WebScreenshotCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "screenshot",
-        abstract: "Capture a PNG screenshot of the target Web Board")
+        abstract: "Capture a PNG screenshot of the target Web Board"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Destination file path for PNG screenshot (optional)")
@@ -1282,7 +1307,8 @@ struct WebScreenshotCommand: ParsableCommand {
 struct WebBackCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "back",
-        abstract: "Navigate back in browsing history")
+        abstract: "Navigate back in browsing history"
+    )
 
     @OptionGroup var target: WebTargetOptions
 
@@ -1297,7 +1323,8 @@ struct WebBackCommand: ParsableCommand {
 struct WebForwardCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "forward",
-        abstract: "Navigate forward in browsing history")
+        abstract: "Navigate forward in browsing history"
+    )
 
     @OptionGroup var target: WebTargetOptions
 
@@ -1312,7 +1339,8 @@ struct WebForwardCommand: ParsableCommand {
 struct WebPressCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "press",
-        abstract: "Dispatch key events (Enter, Escape, Tab, arrows) to the active element")
+        abstract: "Dispatch key events (Enter, Escape, Tab, arrows) to the active element"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Key to press (e.g. Enter, Escape, Tab, ArrowDown, ArrowUp)")
@@ -1329,7 +1357,8 @@ struct WebPressCommand: ParsableCommand {
 struct WebScrollCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "scroll",
-        abstract: "Scroll the page or bring an element into view")
+        abstract: "Scroll the page or bring an element into view"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "Direction, pixel amount, element ref (@e1), or CSS selector (optional, defaults to down)")
@@ -1346,7 +1375,8 @@ struct WebScrollCommand: ParsableCommand {
 struct WebWaitCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "wait",
-        abstract: "Wait for a DOM state, text, load state, URL, or JavaScript condition")
+        abstract: "Wait for a DOM state, text, load state, URL, or JavaScript condition"
+    )
 
     @OptionGroup var target: WebTargetOptions
     @Argument(help: "CSS selector or element reference (@e1)")

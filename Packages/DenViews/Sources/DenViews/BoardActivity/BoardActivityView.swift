@@ -122,9 +122,16 @@ public struct BoardActivityRow<StateIcon: View, Status: View>: View {
     @State private var isRemoveConfirmationPresented = false
 
     public init(
-        board: BoardState, usage: ProcessResourceUsage?, processLabel: String?, processIdentifier: Int32?,
-        sharedWebBoardCount: Int, profileColor: Color, onOpen: @escaping () -> Void, onRemove: @escaping () -> Void,
-        @ViewBuilder stateIcon: () -> StateIcon, @ViewBuilder status: () -> Status
+        board: BoardState,
+        usage: ProcessResourceUsage?,
+        processLabel: String?,
+        processIdentifier: Int32?,
+        sharedWebBoardCount: Int,
+        profileColor: Color,
+        onOpen: @escaping () -> Void,
+        onRemove: @escaping () -> Void,
+        @ViewBuilder stateIcon: () -> StateIcon,
+        @ViewBuilder status: () -> Status
     ) {
         self.board = board
         self.usage = usage
@@ -207,7 +214,8 @@ public struct BoardActivityRow<StateIcon: View, Status: View>: View {
             Text(
                 board.isTerminal
                     ? "This ends its live Terminal Session."
-                    : "The Board will move to Recently Removed Boards.")
+                    : "The Board will move to Recently Removed Boards."
+            )
         }
     }
 }
@@ -338,7 +346,10 @@ public struct WebActivityStateIcon: View {
     let webProcessIsResponsive: Bool?
 
     public init(
-        didTerminateContentProcess: Bool, isLoading: Bool, estimatedProgress: Double, webProcessIsResponsive: Bool?
+        didTerminateContentProcess: Bool,
+        isLoading: Bool,
+        estimatedProgress: Double,
+        webProcessIsResponsive: Bool?
     ) {
         self.didTerminateContentProcess = didTerminateContentProcess
         self.isLoading = isLoading

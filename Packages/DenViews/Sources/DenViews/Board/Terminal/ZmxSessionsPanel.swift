@@ -46,7 +46,8 @@ public struct ZmxSessionsPanel: View {
             pendingDeletionTitle,
             isPresented: Binding(
                 get: { !model.pendingDeletion.isEmpty },
-                set: { if !$0 { model.clearPendingDeletion() } })
+                set: { if !$0 { model.clearPendingDeletion() } }
+            )
         ) {
             Button(role: .destructive) {
                 let targets = model.pendingDeletion
@@ -263,7 +264,8 @@ public struct ZmxSessionsPanel: View {
         .frame(minHeight: 48)
         .background(
             (isFocused ? focusColor : Color.primary).opacity(
-                isFocused ? DenSurfaceColors.selectionOpacity : (isMarked ? 0.1 : 0.04)),
+                isFocused ? DenSurfaceColors.selectionOpacity : (isMarked ? 0.1 : 0.04)
+            ),
             in: RoundedRectangle(cornerRadius: DenRadius.small)
         )
         .overlay {

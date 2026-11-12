@@ -35,9 +35,12 @@ final class BoardRuntimeAccess {
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
     init(
-        storage: DenProfileResources, windowResources: DenWindowResources,
-        connection: RuntimeWindowConnection, configuration: BoardRuntimeConfiguration,
-        webExtensionHost: WebExtensionHost? = nil, webExtensionWindow: MV3WebExtensionWindow? = nil,
+        storage: DenProfileResources,
+        windowResources: DenWindowResources,
+        connection: RuntimeWindowConnection,
+        configuration: BoardRuntimeConfiguration,
+        webExtensionHost: WebExtensionHost? = nil,
+        webExtensionWindow: MV3WebExtensionWindow? = nil,
         focusedDesk: @escaping () -> DeskState?
     ) {
         self.storage = storage
@@ -128,7 +131,8 @@ final class BoardRuntimeAccess {
         runtime.attach(
             to: board,
             sheetNavigationActions: receiver.sheetNavigationActions(for: board, connection: runtimeConnection),
-            events: receiver.webEvents(for: board, connection: runtimeConnection))
+            events: receiver.webEvents(for: board, connection: runtimeConnection)
+        )
         webRuntimes[board.id] = runtime
         runtime.activateWebExtensionTab()
     }
@@ -144,7 +148,8 @@ final class BoardRuntimeAccess {
         let command = TerminalLaunchCommand.make(
             for: board.kind,
             zellijClient: zellijClient,
-            zmxClient: zmxClient)
+            zmxClient: zmxClient
+        )
 
         let runtime = TerminalRuntime(
             workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
@@ -152,14 +157,16 @@ final class BoardRuntimeAccess {
             boardID: board.id,
             profileID: profileID,
             socketPath: ipcSocketPath,
-            events: events)
+            events: events
+        )
         terminalRuntimes[board.id] = runtime
         return runtime
     }
 
     func attachTerminalRuntime(_ runtime: TerminalRuntime, to board: BoardState) {
         runtime.updateOwner(
-            events: runtimeReceiver(for: board).terminalEvents(for: board, connection: runtimeConnection))
+            events: runtimeReceiver(for: board).terminalEvents(for: board, connection: runtimeConnection)
+        )
         terminalRuntimes[board.id] = runtime
     }
 

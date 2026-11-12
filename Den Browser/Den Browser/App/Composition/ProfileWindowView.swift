@@ -141,7 +141,8 @@ private struct ProfileDenWindow: View {
                 route: route,
                 composition: composition,
                 registerKeyboardWindow: registerKeyboardWindow,
-                unregisterKeyboardWindow: unregisterKeyboardWindow)
+                unregisterKeyboardWindow: unregisterKeyboardWindow
+            )
         )
         .environment(session)
         .environment(windowModel)
@@ -171,7 +172,8 @@ private struct WindowRegistration: NSViewRepresentable {
             profileManager: profileManager,
             composition: composition,
             registerKeyboardWindow: registerKeyboardWindow,
-            unregisterKeyboardWindow: unregisterKeyboardWindow)
+            unregisterKeyboardWindow: unregisterKeyboardWindow
+        )
     }
 
     func makeNSView(context: Context) -> NSView {

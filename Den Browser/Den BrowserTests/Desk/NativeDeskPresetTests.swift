@@ -27,18 +27,23 @@ struct NativeDeskPresetTests {
                 label: "Gemini Research",
                 width: 520,
                 initialSheetURL: URL(string: "https://docs.google.com/"),
-                customLabel: "Project Chat")
+                customLabel: "Project Chat"
+            )
         ]
 
         // Act
         let labelScore = try #require(
-            DeskPresetSearch.score(query: "chat", label: "ChatGPT", boards: []))
+            DeskPresetSearch.score(query: "chat", label: "ChatGPT", boards: [])
+        )
         let boardScore = try #require(
-            DeskPresetSearch.score(query: "gemres", label: "Research", boards: boards))
+            DeskPresetSearch.score(query: "gemres", label: "Research", boards: boards)
+        )
         let hostScore = try #require(
-            DeskPresetSearch.score(query: "docs", label: "Research", boards: boards))
+            DeskPresetSearch.score(query: "docs", label: "Research", boards: boards)
+        )
         let customLabelScore = try #require(
-            DeskPresetSearch.score(query: "project", label: "Research", boards: boards))
+            DeskPresetSearch.score(query: "project", label: "Research", boards: boards)
+        )
         let missingScore = DeskPresetSearch.score(query: "claude", label: "Research", boards: boards)
 
         // Assert
@@ -56,7 +61,8 @@ struct NativeDeskPresetTests {
         let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "   ",
-            allowsEmptyPreset: true)
+            allowsEmptyPreset: true
+        )
 
         // Assert
         #expect(matched == choices)
@@ -70,7 +76,8 @@ struct NativeDeskPresetTests {
         let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "chat",
-            allowsEmptyPreset: true)
+            allowsEmptyPreset: true
+        )
 
         // Assert
         #expect(
@@ -82,7 +89,8 @@ struct NativeDeskPresetTests {
                     boards: [],
                     sourceLabel: "Empty Desk"
                 ),
-            ])
+            ]
+        )
     }
 
     @Test func matchingChoicesProvidesCustomEmptyFallbackWhenAllowed() {
@@ -93,7 +101,8 @@ struct NativeDeskPresetTests {
         let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "  Project X  ",
-            allowsEmptyPreset: true)
+            allowsEmptyPreset: true
+        )
 
         // Assert
         #expect(
@@ -104,7 +113,8 @@ struct NativeDeskPresetTests {
                     boards: [],
                     sourceLabel: "Empty Desk"
                 )
-            ])
+            ]
+        )
     }
 
     @Test func matchingChoicesReturnsEmptyWhenNoMatchesAndEmptyPresetNotAllowed() {
@@ -115,7 +125,8 @@ struct NativeDeskPresetTests {
         let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "Project X",
-            allowsEmptyPreset: false)
+            allowsEmptyPreset: false
+        )
 
         // Assert
         #expect(matched.isEmpty)
@@ -129,8 +140,10 @@ struct NativeDeskPresetTests {
         let source = desk("Morning", boards: [first, inspection, second], focusedBoardID: inspection.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -149,7 +162,8 @@ struct NativeDeskPresetTests {
         #expect(preset.boards.map(\.width) == [420, 360, 760])
         #expect(
             preset.boards[0].initialSheetURL
-                == URL(string: "https://mail.example.com/inbox?label=work#today"))
+                == URL(string: "https://mail.example.com/inbox?label=work#today")
+        )
         #expect(preset.boards[1].kind == .inspection)
         #expect(preset.boards[1].targetBoardIndex?.rawValue == 0)
         #expect(preset.boards[2].initialSheetURL == nil)
@@ -180,7 +194,10 @@ struct NativeDeskPresetTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(DenState(desks: [oldDesk], focusedDeskID: oldDesk.id)),
-                deskPresets: [preset]), configuration: makeTestBoardRuntimeConfiguration())
+                deskPresets: [preset]
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -207,8 +224,10 @@ struct NativeDeskPresetTests {
         let source = desk("Development", boards: [terminal], focusedBoardID: terminal.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let saveResult = session.presets.saveFocusedDeskAsPreset(label: "Terminal")
@@ -229,8 +248,10 @@ struct NativeDeskPresetTests {
         let source = desk("Development", boards: [zellij], focusedBoardID: zellij.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let saveResult = session.presets.saveFocusedDeskAsPreset(label: "Zellij")
@@ -252,12 +273,15 @@ struct NativeDeskPresetTests {
             width: 700,
             zmxSessionName: "project-a",
             rootSessionName: "project",
-            customLabel: "Project")
+            customLabel: "Project"
+        )
         let source = desk("Development", boards: [zmx], focusedBoardID: zmx.id)
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let saveResult = session.presets.saveFocusedDeskAsPreset(label: "zmx")
@@ -266,14 +290,18 @@ struct NativeDeskPresetTests {
         let restoredSession = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id)),
-                deskPresets: [restoredPreset]), configuration: makeTestBoardRuntimeConfiguration())
+                deskPresets: [restoredPreset]
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         restoredSession.desks.createDesk(label: "Copy", personalPresetID: restoredPreset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(
             restoredPreset.boards.first?.kind
-                == .terminal(.zmx(sessionName: "project-a", rootSessionName: "project")))
+                == .terminal(.zmx(sessionName: "project-a", rootSessionName: "project"))
+        )
         #expect(restoredSession.navigation.focusedBoard?.id != zmx.id)
         #expect(restoredSession.navigation.focusedBoard?.isZmx == true)
         #expect(restoredSession.navigation.focusedBoard?.zmxSessionName == "project-a")
@@ -286,8 +314,10 @@ struct NativeDeskPresetTests {
         let source = desk("Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let emptyResult = session.presets.saveFocusedDeskAsPreset(label: "Empty")
@@ -304,8 +334,10 @@ struct NativeDeskPresetTests {
         let source = desk("Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -331,8 +363,10 @@ struct NativeDeskPresetTests {
         let source = desk("Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.presets.saveFocusedDeskAsPreset(label: "Routine") == .created)
         #expect(session.presets.saveFocusedDeskAsPreset(label: "Other") == .created)
         let routineID = try #require(session.resources.deskPresets.last?.id)
@@ -354,8 +388,10 @@ struct NativeDeskPresetTests {
         let source = desk("Desk", boards: [board("First")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         #expect(session.presets.saveFocusedDeskAsPreset(label: "Routine") == .created)
         #expect(session.presets.saveFocusedDeskAsPreset(label: "Other") == .created)
         let presetID = try #require(session.resources.deskPresets.last?.id)
@@ -383,8 +419,10 @@ struct NativeDeskPresetTests {
         let source = desk("Desk", boards: [board("Board")])
         let session = ProfileWindowSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))),
-            configuration: makeTestBoardRuntimeConfiguration())
+                state: DenStateNormalization.normalize(DenState(desks: [source], focusedDeskID: source.id))
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let composition = DenWindowComposition(session: session)
         let windowModel = composition.model
         composition.connect()
@@ -406,7 +444,8 @@ struct NativeDeskPresetTests {
 
         withTestSession(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty]))
+            )
         ) { session in
             // Act
             let result = session.presets.saveFocusedDeskAsPreset(label: "Saved")
@@ -426,7 +465,8 @@ struct NativeDeskPresetTests {
 
         withTestWindow(
             resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty])))
+                state: DenStateNormalization.normalize(makeNativeTestState(desks: [empty]))
+            )
         ) { _, windowModel in
             // Act
             windowModel.showSaveDeskPresetPanel()
@@ -447,7 +487,10 @@ struct NativeDeskPresetTests {
                 onDeskPresetsSave: { _ in
                     saveCallCount += 1
                     return false
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let result = session.presets.saveFocusedDeskAsPreset(label: "Test Preset")
@@ -470,7 +513,10 @@ struct NativeDeskPresetTests {
                 onDeskPresetsSave: { _ in
                     saveCallCount += 1
                     return true
-                }), configuration: makeTestBoardRuntimeConfiguration())
+                }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
 
         // Act
         let result = session.presets.saveFocusedDeskAsPreset(label: "Test Preset")
@@ -489,11 +535,22 @@ struct NativeDeskPresetTests {
         let session = ProfileWindowSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(DenState(desks: [deskState], focusedDeskID: deskState.id)),
-                deskPresets: [], onDeskPresetsSave: { _ in true }), configuration: makeTestBoardRuntimeConfiguration())
+                deskPresets: [],
+                onDeskPresetsSave: { _ in true }
+            ),
+            configuration: makeTestBoardRuntimeConfiguration()
+        )
         let context = try #require(
             CGContext(
-                data: nil, width: 10, height: 10, bitsPerComponent: 8, bytesPerRow: 40,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: 10,
+                height: 10,
+                bitsPerComponent: 8,
+                bytesPerRow: 40,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         let raster = try #require(context.makeImage())
         let sampleImage = NSImage(cgImage: raster, size: CGSize(width: 10, height: 10))
         session.resources.facingCache.setFacing(sampleImage, for: boardState.id)

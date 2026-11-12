@@ -102,7 +102,8 @@ final class DenProfileResources {
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
         let shared = DenStateStore.make(
-            initialState: DenSharedState(den: state, deskPresets: deskPresets, recentItems: recentItems))
+            initialState: DenSharedState(den: state, deskPresets: deskPresets, recentItems: recentItems)
+        )
         let persistState: ((DenState) -> Bool)? = onSave.map { persist in
             { persist(DenStateNormalization.normalize($0)) }
         }
@@ -116,25 +117,43 @@ final class DenProfileResources {
         deskMovement = DeskMovement(reader: shared.reader, writer: shared.writer, persist: persistState)
         denReset = DenReset(reader: shared.reader, writer: shared.writer, persist: persistState)
         boardMovement = BoardMovement(
-            reader: shared.reader, writer: shared.writer,
-            persist: persistState)
+            reader: shared.reader,
+            writer: shared.writer,
+            persist: persistState
+        )
         boardSizing = BoardSizing(
-            reader: shared.reader, writer: shared.writer,
-            persist: persistState, deferredSave: onDeferredSave)
+            reader: shared.reader,
+            writer: shared.writer,
+            persist: persistState,
+            deferredSave: onDeferredSave
+        )
         boardRemoval = BoardRemoval(
-            reader: shared.reader, writer: shared.writer,
-            persist: persistState)
+            reader: shared.reader,
+            writer: shared.writer,
+            persist: persistState
+        )
         boardUndo = BoardUndo(reader: shared.reader, writer: shared.writer, persist: persistState)
         boardUpdates = BoardUpdates(reader: shared.reader, writer: shared.writer, persist: persistState)
         recents = Recents(
-            reader: shared.reader, writer: shared.writer, persist: persistState, persistRecent: onRecentItemsSave)
-        boardCreation = BoardCreation(
-            reader: shared.reader, writer: shared.writer, recents: recents,
+            reader: shared.reader,
+            writer: shared.writer,
             persist: persistState,
-            directoryExists: TerminalWorkingDirectory.exists)
+            persistRecent: onRecentItemsSave
+        )
+        boardCreation = BoardCreation(
+            reader: shared.reader,
+            writer: shared.writer,
+            recents: recents,
+            persist: persistState,
+            directoryExists: TerminalWorkingDirectory.exists
+        )
         drawerItems = DrawerItems(reader: shared.reader, writer: shared.writer, persist: persistState)
         drawerPlacement = DrawerPlacement(
-            reader: shared.reader, writer: shared.writer, creation: boardCreation, items: drawerItems)
+            reader: shared.reader,
+            writer: shared.writer,
+            creation: boardCreation,
+            items: drawerItems
+        )
         drawerTransfer = DrawerTransfer(reader: shared.reader, writer: shared.writer, persist: persistState)
         inputOpening = InputOpening(creation: boardCreation, drawer: drawerItems)
         tutorialProgress = TutorialProgress(reader: shared.reader, writer: shared.writer)

@@ -44,7 +44,8 @@ public struct EssentialsSettingsView: View {
                     id: editor.essential?.id,
                     name: name,
                     key: key,
-                    input: input)
+                    input: input
+                )
             }
         }
     }
@@ -145,11 +146,13 @@ private struct EssentialEditorView: View {
                 TextField(
                     "Input",
                     text: $input,
-                    prompt: Text("URL, search, :terminal, :zellij, or :zmx"))
+                    prompt: Text("URL, search, :terminal, :zellij, or :zmx")
+                )
                 SettingsHelpText {
                     Text(
                         "Keys are case-sensitive; hold Shift for uppercase. "
-                            + "Examples: c, C, https://chatgpt.com, :terminal ~/Projects, :zellij work, :zmx work")
+                            + "Examples: c, C, https://chatgpt.com, :terminal ~/Projects, :zellij work, :zmx work"
+                    )
                 }
             }
             .formStyle(.grouped)
