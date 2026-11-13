@@ -29,6 +29,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     }
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
+    private var geolocationProvider: WebGeolocationProvider?
 
     init(
         id: UUID,
@@ -68,6 +69,9 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
 
         webView.navigationDelegate = self
         webView.uiDelegate = self
+        if #available(macOS 27.0, *) {
+            geolocationProvider = WebGeolocationProvider.install(for: webView)
+        }
 
         urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -111,6 +115,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
         titleObservation?.invalidate()
         urlObservation = nil
         titleObservation = nil
+        geolocationProvider = nil
     }
 
     // MARK: - Hooks for Subclasses
@@ -252,6 +257,16 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     }
 
     // MARK: - WKUIDelegate
+
+    @available(macOS 27.0, *)
+    func webView(
+        _ webView: WKWebView,
+        requestGeolocationPermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        decisionHandler: @escaping @MainActor @Sendable (WKPermissionDecision) -> Void
+    ) {
+        decisionHandler(.prompt)
+    }
 
     func webView(
         _ webView: WKWebView,

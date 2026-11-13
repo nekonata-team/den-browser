@@ -661,6 +661,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Den Browser uses the camera for video calls and other websites that capture video.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 nekonata. All rights reserved.";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Den Browser uses your location for websites that request your current location.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Den Browser uses the microphone for calls and other websites that capture audio.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Den Browser uses speech recognition for websites that convert speech to text.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -702,6 +703,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Den Browser uses the camera for video calls and other websites that capture video.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 nekonata. All rights reserved.";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Den Browser uses your location for websites that request your current location.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Den Browser uses the microphone for calls and other websites that capture audio.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Den Browser uses speech recognition for websites that convert speech to text.";
 				LD_RUNPATH_SEARCH_PATHS = (
