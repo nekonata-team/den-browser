@@ -69,9 +69,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
 
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        if #available(macOS 27.0, *) {
-            geolocationProvider = WebGeolocationProvider.install(for: webView)
-        }
+        geolocationProvider = WebGeolocationProvider.install(for: webView)
 
         urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -257,6 +255,17 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
     }
 
     // MARK: - WKUIDelegate
+
+    // macOS 26 uses this SPI; WebKit prefers the public delegate on macOS 27 and later.
+    @objc(_webView:requestGeolocationPermissionForOrigin:initiatedByFrame:decisionHandler:)
+    func webView(
+        _ webView: WKWebView,
+        requestPrivateGeolocationPermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        decisionHandler: @escaping @MainActor @Sendable (WKPermissionDecision) -> Void
+    ) {
+        decisionHandler(.prompt)
+    }
 
     @available(macOS 27.0, *)
     func webView(

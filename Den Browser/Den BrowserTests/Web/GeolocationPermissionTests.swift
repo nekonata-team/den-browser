@@ -8,7 +8,6 @@ import WebKit
 
 @MainActor
 struct GeolocationPermissionTests {
-    @available(macOS 27.0, *)
     @Test(.timeLimit(.minutes(1)))
     func websiteGeolocationRequestsRequireUserConfirmation() async {
         // Arrange
@@ -42,9 +41,20 @@ struct GeolocationPermissionTests {
 
         // Assert
         #expect(decision == .prompt)
+        #expect(
+            runtime.responds(
+                to: NSSelectorFromString(
+                    "_webView:requestGeolocationPermissionForOrigin:initiatedByFrame:decisionHandler:"
+                )
+            )
+        )
+        if #available(macOS 27.0, *) {
+            #expect(!runtime.usedPrivateDelegate)
+        } else {
+            #expect(runtime.usedPrivateDelegate)
+        }
     }
 
-    @available(macOS 27.0, *)
     @Test(.timeLimit(.minutes(1)), arguments: LocationScenario.allCases)
     func locationProviderDeliversPositionsAndRecovers(scenario: LocationScenario) async throws {
         // Arrange
@@ -138,12 +148,13 @@ enum LocationScenario: CaseIterable, Sendable {
     case position, denied, networkRecovery, permissionRecovery
 }
 
-@available(macOS 27.0, *)
 @MainActor
 private final class GeolocationPermissionRuntime: BaseWebRuntime {
     var permissionCompletion: CheckedContinuation<WKPermissionDecision, Never>?
     var permissionDecision: WKPermissionDecision = .deny
+    var usedPrivateDelegate = false
 
+    @available(macOS 27.0, *)
     override func webView(
         _ webView: WKWebView,
         requestGeolocationPermissionFor origin: WKSecurityOrigin,
@@ -154,6 +165,20 @@ private final class GeolocationPermissionRuntime: BaseWebRuntime {
             self.permissionCompletion?.resume(returning: decision)
             self.permissionCompletion = nil
             // Exercise the permission request without opening a dialog or accessing location in tests.
+            decisionHandler(self.permissionDecision)
+        }
+    }
+
+    override func webView(
+        _ webView: WKWebView,
+        requestPrivateGeolocationPermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        decisionHandler: @escaping @MainActor @Sendable (WKPermissionDecision) -> Void
+    ) {
+        usedPrivateDelegate = true
+        super.webView(webView, requestPrivateGeolocationPermissionFor: origin, initiatedByFrame: frame) { decision in
+            self.permissionCompletion?.resume(returning: decision)
+            self.permissionCompletion = nil
             decisionHandler(self.permissionDecision)
         }
     }
