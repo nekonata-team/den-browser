@@ -102,6 +102,7 @@ struct InspectionBoardCapabilityTests {
             backing: .buffered,
             defer: false
         )
+        window.isReleasedWhenClosed = false
         window.contentView?.addSubview(webView)
         webView.frame = window.contentView?.bounds ?? .zero
         return (webView, window, probe)
