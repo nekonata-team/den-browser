@@ -50,6 +50,11 @@ Empty search keeps Built-in Presets and My Presets grouped.
 Typed search ranks fuzzy subsequence matches across both groups: Preset Labels first, followed by Board Labels, then URL hosts or session names.
 During Desk creation, a `Create "..."` Empty Desk option is always appended for non-empty search queries.
 Confirming this option creates the Desk directly; repeated Return events while the panel closes do not create additional Desks.
+Shift-Return creates an Empty Desk using the search text without selecting this option, even when a matching Preset is active.
+The picker shows a Shift-Return action hint at the bottom; creation requires non-empty search text.
+In the Desk Label field, Shift-Return creates an Empty Desk using the edited label instead of the chosen Preset.
+Holding Shift changes the Create button to Create Empty Desk. Active IME conversion keeps Shift-Return in the input method.
+These shortcuts apply only to creation, not Replace Desk.
 The active candidate drives a preview showing Board Labels, URL hosts, session names, and relative widths without capturing Sheet images.
 
 The built-in order is:

@@ -18,6 +18,7 @@ public struct NewDeskPanel: View {
     @State private var didAttemptAction = false
     @State private var newDeskLabel = ""
     @State private var newDeskLabelSelection: TextSelection?
+    @State private var isShiftPressed = false
     @FocusState private var isSearchFocused: Bool
     @FocusState private var isLabelFocused: Bool
 
@@ -95,7 +96,14 @@ public struct NewDeskPanel: View {
                 .textFieldStyle(.roundedBorder)
                 .font(.body.weight(.medium))
                 .focused($isLabelFocused)
-                .onSubmit { TextInputComposition.performUnlessActive(submitDeskPreset) }
+                .onSubmit { TextInputComposition.performUnlessActive { submitDeskPreset() } }
+                .onKeyPress(keys: [.return], phases: .down) { press in
+                    guard !windowModel.isReplaceDeskPanelPresented, press.modifiers == .shift,
+                        !TextInputComposition.isActive
+                    else { return .ignored }
+                    submitDeskPreset(creatingEmptyDesk: true)
+                    return .handled
+                }
                 .onKeyPress(phases: .down) { keyPress in
                     let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
                     guard
@@ -115,8 +123,13 @@ public struct NewDeskPanel: View {
                     }
                     Spacer()
                     Button(
-                        windowModel.isReplaceDeskPanelPresented ? "Replace Desk" : "Create",
-                        action: submitDeskPreset
+                        windowModel.isReplaceDeskPanelPresented
+                            ? "Replace Desk" : (isShiftPressed ? "Create Empty Desk" : "Create"),
+                        action: {
+                            submitDeskPreset(
+                                creatingEmptyDesk: isShiftPressed && !windowModel.isReplaceDeskPanelPresented
+                            )
+                        }
                     )
                     .buttonStyle(.glassProminent)
                     .disabled(
@@ -128,6 +141,9 @@ public struct NewDeskPanel: View {
             }
         }
         .denPanel(width: DenPanelLayout.wideWidth)
+        .onModifierKeysChanged(mask: .shift) { _, modifiers in
+            isShiftPressed = modifiers.contains(.shift)
+        }
         .opacity(isManagementPresented ? 0 : 1)
         .disabled(isManagementPresented)
         .accessibilityHidden(isManagementPresented)
@@ -220,7 +236,7 @@ public struct NewDeskPanel: View {
         count == 1 ? "1 Board" : "\(count) Boards"
     }
 
-    private func submitDeskPreset() {
+    private func submitDeskPreset(creatingEmptyDesk: Bool = false) {
         guard windowModel.isNewDeskPanelPresented, !isChoosing else { return }
         didAttemptAction = true
         guard !trimmedNewDeskLabel.isEmpty else { return }
@@ -233,7 +249,10 @@ public struct NewDeskPanel: View {
             return
         }
 
-        windowModel.desks.createDesk(label: newDeskLabel, selection: selectedDeskPreset)
+        windowModel.desks.createDesk(
+            label: newDeskLabel,
+            selection: creatingEmptyDesk ? .builtIn(.empty) : selectedDeskPreset
+        )
         resetDeskPresetPanel()
     }
 

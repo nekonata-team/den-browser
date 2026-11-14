@@ -135,6 +135,7 @@ public struct KeyboardShortcutsView: View {
                 title: "Desk",
                 items: [
                     item(["⇧", "N"], "Den Mode: New Desk"),
+                    item(["⇧", "Return"], "New Desk panel: Create Empty Desk with the entered label"),
                     item(["p"], "Den Mode: Save Desk as Preset"),
                     item(["⇧", "P"], "Den Mode: Replace Desk from Preset"),
                     item(["⌃", "P"], "Den Mode: Manage Desk Presets"),

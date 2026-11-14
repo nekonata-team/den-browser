@@ -134,6 +134,12 @@ When saving a Board or Recent Item as an Essential, an assigned key asks for con
 
 ---
 
+## New Desk panel
+
+`Shift` + `Return` creates an Empty Desk using the search text, without moving to the `Create "..."` option.
+From the Desk Label field, it uses the edited label instead of applying the chosen Preset.
+Search text must be non-empty. IME conversion retains the key event, and Replace Desk does not offer this shortcut.
+
 ## zmx Sessions
 
 Open from the Den menu, a zmx Board's context menu, or `:zmx` in the Open Board panel.

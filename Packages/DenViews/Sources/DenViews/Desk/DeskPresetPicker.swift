@@ -60,6 +60,13 @@ struct DeskPresetPicker: View {
                     .textFieldStyle(.roundedBorder)
                     .focused(isSearchFocused)
                     .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
+                    .onKeyPress(keys: [.return], phases: .down) { press in
+                        guard allowsEmptyPreset, press.modifiers == .shift,
+                            !TextInputComposition.isActive
+                        else { return .ignored }
+                        confirmEmptyDesk()
+                        return .handled
+                    }
                     .onKeyPress(phases: .down) { keyPress in
                         guard
                             keyPress.key == .tab,
@@ -102,6 +109,10 @@ struct DeskPresetPicker: View {
                     return nil
                 }
             )
+
+            if allowsEmptyPreset {
+                DenPanelHint("⇧Return Create Empty Desk")
+            }
         }
         .task(id: selection) {
             if case .personal(let id) = selection {
@@ -269,6 +280,12 @@ struct DeskPresetPicker: View {
                 ?? matchingChoices.first
         else { return }
         onConfirm(choice.selection)
+    }
+
+    private func confirmEmptyDesk() {
+        let label = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard allowsEmptyPreset, !label.isEmpty else { return }
+        onConfirm(.newDesk(label: label))
     }
 
     private func ensureValidSelection() {
