@@ -18,6 +18,7 @@ public extension DenWindowModel {
     func selectAllZmxSessions() { zmxSessions.markAllVisible() }
     func clearZmxSessionSelection() { zmxSessions.clearMarks() }
     func enterZmxSessionFilter() { zmxSessions.enterFilter() }
+    func confirmZmxSessionFilterQuery() { zmxSessions.confirmFilterQuery() }
     func exitZmxSessionFilter() { zmxSessions.exitFilter() }
     func clearZmxSessionFilter() { zmxSessions.clearFilter() }
 

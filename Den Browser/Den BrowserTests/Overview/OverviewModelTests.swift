@@ -321,7 +321,8 @@ struct OverviewModelTests {
         ) { _, windowModel in
             windowModel.showOverview()
             windowModel.overview.enterFilterMode()
-            windowModel.overview.setQuery("goog")
+            windowModel.overview.setQuery("no-match")
+            #expect(windowModel.overview.selectionBoardID == nil)
 
             // Act
             windowModel.overview.exitFilterMode()
@@ -329,6 +330,7 @@ struct OverviewModelTests {
             // Assert
             #expect(windowModel.overview.filterPhase == .inactive)
             #expect(windowModel.overview.query == "")
+            #expect(windowModel.overview.selectionBoardID == googleBoard.id)
         }
     }
 

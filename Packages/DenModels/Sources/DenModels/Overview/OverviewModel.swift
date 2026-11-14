@@ -118,6 +118,7 @@ public final class OverviewModel {
     public func exitFilterMode() {
         filterPhase = .inactive
         query = ""
+        updateSelectionForFilter()
     }
 
     public func confirmFilterQuery() {

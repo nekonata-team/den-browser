@@ -121,6 +121,7 @@ enum BoardAction: Equatable {
 enum ZmxSessionsAction: Equatable {
     case hide
     case enterFilter
+    case confirmFilterQuery
     case exitFilter
     case clearFilter
     case moveSelection(Int)
@@ -333,6 +334,7 @@ enum AppActionHandler {
             switch action {
             case .hide: windowModel.hideZmxSessions()
             case .enterFilter: windowModel.enterZmxSessionFilter()
+            case .confirmFilterQuery: windowModel.confirmZmxSessionFilterQuery()
             case .exitFilter: windowModel.exitZmxSessionFilter()
             case .clearFilter: windowModel.clearZmxSessionFilter()
             case .moveSelection(let offset): windowModel.selectZmxSession(by: offset)

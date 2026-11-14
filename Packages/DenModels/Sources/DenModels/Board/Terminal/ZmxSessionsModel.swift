@@ -197,6 +197,11 @@ public final class ZmxSessionsModel {
         updateSelection()
     }
 
+    public func confirmFilterQuery() {
+        guard filterPhase == .filtering else { return }
+        filterPhase = .selecting
+    }
+
     public func setQuery(_ query: String) {
         self.query = query
         updateSelection()

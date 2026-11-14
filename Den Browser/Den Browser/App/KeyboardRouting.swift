@@ -538,17 +538,10 @@ enum KeyboardRouter {
         let modifiers = event.modifiers
         if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
-            if modifiers == [.command], event.character?.lowercased() == "a" {
-                return .perform(.zmxSessions(.selectAll))
-            }
             if event.isEscape, modifiers == [] { return .perform(.zmxSessions(.exitFilter)) }
-            if event.key == .upArrow, modifiers == [] {
-                return .perform(.zmxSessions(.moveSelection(-1)))
+            if event.key == .returnKey, modifiers == [] {
+                return .perform(.zmxSessions(.confirmFilterQuery))
             }
-            if event.key == .downArrow, modifiers == [] {
-                return .perform(.zmxSessions(.moveSelection(1)))
-            }
-            if event.key == .returnKey, modifiers == [] { return .perform(.zmxSessions(.openSelected)) }
             return .forward(.filterTextInput)
         }
         if event.isEscape {

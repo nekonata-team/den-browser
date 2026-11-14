@@ -2410,9 +2410,14 @@ struct KeyboardShortcutTests {
         )
         #expect(KeyboardController.handle(filter, session: session, windowModel: windowModel))
         #expect(windowModel.zmxSessions.isFilterInputActive)
+        windowModel.zmxSessions.setQuery("vi")
         #expect(
             KeyboardController.decision(for: selectAll, session: session, windowModel: windowModel)
-                == .perform(.zmxSessions(.selectAll))
+                == .forward(.filterTextInput)
+        )
+        #expect(
+            KeyboardController.decision(for: down, session: session, windowModel: windowModel)
+                == .forward(.filterTextInput)
         )
         #expect(
             KeyboardController.decision(for: deleteKey, session: session, windowModel: windowModel)
@@ -2420,10 +2425,20 @@ struct KeyboardShortcutTests {
         )
         #expect(
             KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
+                == .perform(.zmxSessions(.confirmFilterQuery))
+        )
+        #expect(KeyboardController.handle(returnKey, session: session, windowModel: windowModel))
+        #expect(windowModel.zmxSessions.filterPhase == .selecting)
+        #expect(
+            KeyboardController.decision(for: returnKey, session: session, windowModel: windowModel)
                 == .perform(.zmxSessions(.openSelected))
         )
+        #expect(
+            KeyboardController.decision(for: down, session: session, windowModel: windowModel)
+                == .perform(.zmxSessions(.moveSelection(1)))
+        )
         #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
-        #expect(!windowModel.zmxSessions.isFilterInputActive)
+        #expect(windowModel.zmxSessions.filterPhase == .inactive)
         #expect(windowModel.zmxSessions.query.isEmpty)
         #expect(
             KeyboardController.decision(for: escape, session: session, windowModel: windowModel)
