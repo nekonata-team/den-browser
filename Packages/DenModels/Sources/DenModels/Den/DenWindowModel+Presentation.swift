@@ -13,7 +13,8 @@ public extension DenWindowModel {
 
     var isDrawerOpen: Bool { temporaryContext == .drawer }
     var isAddingToDrawer: Bool { temporaryContext == .openBoard && openBoard.opensInDrawer }
-    var isDrawerPresented: Bool { isDrawerOpen || isAddingToDrawer }
+    var isAddingEssentialToDrawer: Bool { temporaryContext == .essentialsPrefix && essentialsPrefixOpensInDrawer }
+    var isDrawerPresented: Bool { isDrawerOpen || isAddingToDrawer || isAddingEssentialToDrawer }
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }
     var isNewDeskPanelPresented: Bool {
@@ -69,7 +70,12 @@ public extension DenWindowModel {
         case .boardWidth:
             boardWidthPanelMessage = nil
         case .drawer:
-            if !(nextContext == .openBoard && openBoard.opensInDrawer) { drawer.endPresentation() }
+            let keepsDrawerPresentation =
+                (nextContext == .openBoard && openBoard.opensInDrawer)
+                || (nextContext == .essentialsPrefix && essentialsPrefixOpensInDrawer)
+            if !keepsDrawerPresentation { drawer.endPresentation() }
+        case .essentialsPrefix:
+            if nextContext != .drawer { essentialsPrefixOpensInDrawer = false }
         case .zmxDuplication:
             zmxActions.cancelDuplication()
             zmxDuplicationRootSessionName = nil
@@ -95,6 +101,7 @@ public extension DenWindowModel {
         drawer.resetPresentation()
         saveEssentialDraft = nil
         selectedEssentialID = nil
+        essentialsPrefixOpensInDrawer = false
         pendingConfirmation = nil
         maximizedBoardID = nil
         isZenViewPresented = false
@@ -106,11 +113,13 @@ public extension DenWindowModel {
 
     func enterEssentialsPrefix() {
         guard isDenMode else { return }
-        showEssentialsPrefix()
+        showEssentialsPrefix(inDrawer: isDrawerOpen)
     }
 
-    func showEssentialsPrefix() {
-        guard temporaryContext == nil else { return }
+    func showEssentialsPrefix(inDrawer: Bool = false) {
+        let canPresent = inDrawer ? isDrawerOpen : temporaryContext == nil
+        guard canPresent else { return }
+        essentialsPrefixOpensInDrawer = inDrawer
         selectedEssentialID = inputs.essentials().first?.id
         setTemporaryContext(.essentialsPrefix)
     }
@@ -137,14 +146,17 @@ public extension DenWindowModel {
     }
 
     func launchEssential(id: UUID, inDrawer: Bool = false) {
+        let opensInDrawer = inDrawer || essentialsPrefixOpensInDrawer
         exitEssentialsPrefix()
-        onLaunchEssential(id, defaultBoardWidth, inDrawer)
+        onLaunchEssential(id, defaultBoardWidth, opensInDrawer)
     }
 
     func exitEssentialsPrefix() {
         guard temporaryContext == .essentialsPrefix else { return }
+        let returnsToDrawer = essentialsPrefixOpensInDrawer
         selectedEssentialID = nil
-        setTemporaryContext(nil)
+        essentialsPrefixOpensInDrawer = false
+        setTemporaryContext(returnsToDrawer ? .drawer : nil)
     }
 
     func toggleDenMode() {

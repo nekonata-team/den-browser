@@ -100,6 +100,7 @@ public final class DenWindowModel {
     public let notificationList: NotificationListModel
     public var temporaryContext: TemporaryContext?
     public var selectedEssentialID: UUID?
+    public internal(set) var essentialsPrefixOpensInDrawer = false
     public var saveEssentialDraft: SaveEssentialDraft?
     public var isZenViewPresented = false
     public var isFocusModePresented = false

@@ -7,21 +7,28 @@ public struct EssentialsPrefixPanel: View {
     public let profileColor: Color
     public let essentials: [Essential]
     public let selectedEssentialID: UUID?
+    public let opensInDrawer: Bool
     public let onSelect: (UUID) -> Void
     public let onOpenInDrawer: (UUID) -> Void
-    @State private var opensInDrawer = false
+    @State private var isOptionPressed = false
     @State private var listHeight: CGFloat = 0
+
+    private var addsToDrawer: Bool {
+        opensInDrawer || isOptionPressed
+    }
 
     public init(
         profileColor: Color,
         essentials: [Essential],
         selectedEssentialID: UUID? = nil,
+        opensInDrawer: Bool = false,
         onSelect: @escaping (UUID) -> Void,
         onOpenInDrawer: @escaping (UUID) -> Void
     ) {
         self.profileColor = profileColor
         self.essentials = essentials
         self.selectedEssentialID = selectedEssentialID
+        self.opensInDrawer = opensInDrawer
         self.onSelect = onSelect
         self.onOpenInDrawer = onOpenInDrawer
     }
@@ -34,8 +41,8 @@ public struct EssentialsPrefixPanel: View {
                 Spacer()
                 if !essentials.isEmpty {
                     Label(
-                        opensInDrawer ? "Add to Drawer" : "Open Board",
-                        systemSymbol: opensInDrawer ? .tray : .plusRectangle
+                        addsToDrawer ? "Add to Drawer" : "Open Board",
+                        systemSymbol: addsToDrawer ? .tray : .plusRectangle
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -74,14 +81,22 @@ public struct EssentialsPrefixPanel: View {
                 DenPanelHint("Press Escape to cancel")
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    DenPanelHint(opensInDrawer ? "⌥Key / ⌥Return Add to Drawer" : "Essential key / Return Open Board")
-                    DenPanelHint("↑↓ Select · Hold ⌥ for Drawer · Click Select · ⌥Click Drawer · Esc Cancel")
+                    DenPanelHint(
+                        opensInDrawer
+                            ? "Essential key / Return Add to Drawer"
+                            : (isOptionPressed ? "⌥Key / ⌥Return Add to Drawer" : "Essential key / Return Open Board")
+                    )
+                    DenPanelHint(
+                        opensInDrawer
+                            ? "↑↓ Select · Click Add to Drawer · Esc Cancel"
+                            : "↑↓ Select · Hold ⌥ for Drawer · Click Select · ⌥Click Drawer · Esc Cancel"
+                    )
                 }
             }
         }
         .denPanel()
         .onModifierKeysChanged(mask: .option) { _, modifiers in
-            opensInDrawer = modifiers.contains(.option)
+            isOptionPressed = modifiers.contains(.option)
         }
     }
 
@@ -112,7 +127,7 @@ public struct EssentialsPrefixPanel: View {
                 .denSelectionHighlight(isSelected, profileColor: profileColor, showsInactiveBackground: true)
                 .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
                 .onTapGesture {
-                    if NSEvent.modifierFlags.contains(.option) {
+                    if opensInDrawer || NSEvent.modifierFlags.contains(.option) {
                         onOpenInDrawer(essential.id)
                     } else {
                         onSelect(essential.id)
@@ -123,7 +138,9 @@ public struct EssentialsPrefixPanel: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
                 .accessibilityHint(
-                    "Return or its shortcut opens a Board. Hold Option with Return, its shortcut, or a click to open in Drawer."
+                    opensInDrawer
+                        ? "Return, its shortcut, or a click adds this Essential to Drawer."
+                        : "Return or its shortcut opens a Board. Hold Option with Return, its shortcut, or a click to open in Drawer."
                 )
             }
         }

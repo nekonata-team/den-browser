@@ -35,7 +35,8 @@ public struct DenActivePanelOverlay<Content: View>: View {
                 panel(context)
             }
             .zIndex(
-                windowModel.isAddingToDrawer || windowModel.drawer.isChoosingPlacementDesk
+                windowModel.isAddingToDrawer || windowModel.isAddingEssentialToDrawer
+                    || windowModel.drawer.isChoosingPlacementDesk
                     ? DenOverlayLayer.drawerInput : DenOverlayLayer.activePanel
             )
         }

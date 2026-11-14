@@ -2100,6 +2100,67 @@ struct KeyboardShortcutTests {
         #expect(windowModel.temporaryContext == nil)
     }
 
+    @Test func drawerDenModeGOpensEssentialsPrefixInDrawerAndEscapeRestoresDrawer() throws {
+        let existingURL = try #require(URL(string: "https://existing.example"))
+        let session = try makeSession(boards: [board("First")])
+        let composition = DenWindowComposition(session: session)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let existingItemID = try #require(session.drawer.keepInDrawer(existingURL, opensDrawer: false))
+        let essential = Essential(name: "Docs", key: "d", input: "https://docs.example")
+        #expect(session.configuration.preferences.setEssentials([essential]))
+
+        windowModel.openDrawer()
+        windowModel.drawer.setQuery("existing")
+        windowModel.isDenMode = true
+
+        let prefix = try keyEvent(characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        #expect(
+            KeyboardController.decision(for: prefix, session: session, windowModel: windowModel)
+                == .perform(.essentials(.enterPrefix))
+        )
+        #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
+        #expect(windowModel.temporaryContext == .essentialsPrefix)
+        #expect(windowModel.essentialsPrefixOpensInDrawer)
+        #expect(windowModel.isAddingEssentialToDrawer)
+        #expect(windowModel.isDrawerPresented)
+
+        let escape = try keyEvent(characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+        #expect(KeyboardController.handle(escape, session: session, windowModel: windowModel))
+        #expect(windowModel.temporaryContext == .drawer)
+        #expect(!windowModel.essentialsPrefixOpensInDrawer)
+        #expect(windowModel.drawer.selectedItemID == existingItemID)
+        #expect(windowModel.drawer.query == "existing")
+    }
+
+    @Test func drawerEssentialsPrefixLaunchesMatchingKeyInDrawer() throws {
+        let original = board("First")
+        let session = try makeSession(boards: [original])
+        let composition = DenWindowComposition(session: session)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
+        #expect(session.configuration.preferences.setEssentials([essential]))
+
+        windowModel.openDrawer()
+        windowModel.isDenMode = true
+
+        let prefix = try keyEvent(characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        #expect(KeyboardController.handle(prefix, session: session, windowModel: windowModel))
+
+        let key = try keyEvent(characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+        #expect(KeyboardController.handle(key, session: session, windowModel: windowModel))
+
+        let item = try #require(session.resources.state.drawerItems.first)
+        #expect(item.url?.host == "chatgpt.com")
+        #expect(session.navigation.focusedDesk?.boards.map(\.id) == [original.id])
+        #expect(windowModel.isDrawerOpen)
+        #expect(!windowModel.essentialsPrefixOpensInDrawer)
+        #expect(windowModel.drawer.expandedItemID == item.id)
+    }
+
     @Test func essentialsPrefixRoutesArrowsReturnAndConfiguredJkKeys() throws {
         // Arrange
         let session = try makeSession(boards: [board("First")])

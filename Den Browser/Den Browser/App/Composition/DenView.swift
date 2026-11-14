@@ -181,6 +181,7 @@ private struct DenActivePanelOverlay: View {
                 profileColor: profileColor,
                 essentials: session.configuration.preferences.essentials,
                 selectedEssentialID: windowModel.selectedEssentialID,
+                opensInDrawer: windowModel.essentialsPrefixOpensInDrawer,
                 onSelect: { windowModel.selectEssential($0) },
                 onOpenInDrawer: { windowModel.launchEssential(id: $0, inDrawer: true) }
             )

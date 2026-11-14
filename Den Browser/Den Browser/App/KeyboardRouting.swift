@@ -405,6 +405,9 @@ enum KeyboardRouter {
             if character == "n" || character == " " {
                 return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.addItem))
             }
+            if character == "g" {
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.essentials(.enterPrefix))
+            }
             if event.key == .returnKey {
                 return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.toggleSelectedItem))
             }

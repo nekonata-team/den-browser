@@ -194,6 +194,7 @@ Click **Add to Drawer** (+) in the Drawer header, enter a URL, search, or Termin
 | --- | --- |
 | `Tab` | Close Drawer in Den Mode |
 | `n` / `Space` | Open Add to Drawer in Den Mode (outside filtering) |
+| `g` | Open Essentials to add to Drawer in Den Mode |
 | `Control` + `Escape` | Close Drawer |
 | `/` | Search / filter Drawer items |
 | `Up` / `Down` or `k` / `j` | Select Drawer item |
