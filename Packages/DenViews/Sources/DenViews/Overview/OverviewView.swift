@@ -264,11 +264,6 @@ public struct OverviewView: View {
         .onChange(of: overview.isFilterInputActive) { _, newValue in
             isSearchFocused = newValue
         }
-        .onChange(of: overview.query) { _, newValue in
-            if isSearchFocused {
-                TextInputComposition.syncActiveFieldEditor(to: newValue)
-            }
-        }
         .onChange(of: overview.selectionCenterRequest) { _, _ in
             scrollToSelection(overview.selectionBoardID)
         }
@@ -769,45 +764,16 @@ private struct OverviewHeader: View {
             Text("Overview")
                 .font(.title3.bold())
 
-            HStack(spacing: 8) {
-                Image(systemSymbol: .magnifyingglass)
-                    .foregroundStyle(isFilterInputActive ? .primary : .secondary)
-                    .accessibilityHidden(true)
-
-                TextField(
-                    text: $query,
-                    prompt: Text("Search desks and boards")
-                ) {
-                    Text("Search desks and boards")
-                }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .focused($isSearchFocused)
-                .disabled(!isFilterInputActive)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(width: DenOverviewLayout.searchFieldWidth)
-            .background(
-                DenSurfaceColors.filterInputBackground(isActive: isFilterInputActive),
-                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            DenFilterField(
+                text: $query,
+                prompt: "Search desks and boards",
+                accessibilityLabel: "Search desks and boards",
+                isActive: isFilterInputActive,
+                profileColor: profileColor,
+                isFocused: $isSearchFocused,
+                onTapInactive: onEnterFilterMode
             )
-            .overlay {
-                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                    .stroke(
-                        DenSurfaceColors.filterInputBorder(
-                            isActive: isFilterInputActive,
-                            profileColor: profileColor,
-                            differentiateWithoutColor: differentiateWithoutColor
-                        ),
-                        lineWidth: isFilterInputActive ? 1.5 : 1
-                    )
-            }
-            .onTapGesture {
-                if !isFilterInputActive {
-                    onEnterFilterMode()
-                }
-            }
+            .frame(width: DenOverviewLayout.searchFieldWidth)
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, DenOverviewLayout.contentPadding)

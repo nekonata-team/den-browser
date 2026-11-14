@@ -26,6 +26,9 @@ public struct OpenProfilePanel: View {
     }
 
     public var body: some View {
+        let profiles = filteredProfiles
+        let activeProfileID = profiles.first(where: { $0.id == selectedProfileID })?.id ?? profiles.first?.id
+
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemSymbol: .personCropCircle) {
                 TextField(
@@ -40,43 +43,62 @@ public struct OpenProfilePanel: View {
                 .onKeyPress(.downArrow) {
                     guard !TextInputComposition.isActive else { return .ignored }
                     moveProfileSelection(by: 1)
-                    return filteredProfiles.isEmpty ? .ignored : .handled
+                    return profiles.isEmpty ? .ignored : .handled
                 }
                 .onKeyPress(.upArrow) {
                     guard !TextInputComposition.isActive else { return .ignored }
                     moveProfileSelection(by: -1)
-                    return filteredProfiles.isEmpty ? .ignored : .handled
+                    return profiles.isEmpty ? .ignored : .handled
                 }
                 .onSubmit {
                     TextInputComposition.performUnlessActive(confirmSelection)
                 }
             }
 
-            ForEach(filteredProfiles) { profile in
-                Button {
-                    openProfile(profile.id)
-                } label: {
-                    HStack(spacing: DenPanelLayout.controlSpacing) {
-                        Circle()
-                            .fill(profileDisplayColor(for: profile.color))
-                            .frame(width: 10, height: 10)
-                        Text(profile.name)
-                        Spacer(minLength: 0)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(profiles) { profile in
+                            Button {
+                                openProfile(profile.id)
+                            } label: {
+                                HStack(spacing: DenPanelLayout.controlSpacing) {
+                                    Circle()
+                                        .fill(profileDisplayColor(for: profile.color))
+                                        .frame(width: 10, height: 10)
+                                    Text(profile.name)
+                                    Spacer(minLength: 0)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(height: 30)
+                            .denSelectionHighlight(profile.id == activeProfileID, profileColor: profileColor)
+                            .id(profile.id)
+                        }
                     }
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 30)
-                .denSelectionHighlight(profile.id == selectedProfileID, profileColor: profileColor)
+                .frame(
+                    height: min(
+                        CGFloat(profiles.count) * 30 + CGFloat(max(0, profiles.count - 1)) * 4,
+                        DenPanelLayout.standardListMaxHeight
+                    )
+                )
+                .onChange(of: activeProfileID) { _, id in
+                    if let id { proxy.scrollTo(id) }
+                }
             }
 
             DenPanelHint("↑↓ Select · Return Open · Escape Close")
         }
         .denPanel()
         .onAppear { DispatchQueue.main.async { isFocused = true } }
-        .onChange(of: query) { _, _ in selectedProfileID = nil }
+        .onChange(of: query) { _, newValue in
+            selectedProfileID = nil
+            if isFocused { TextInputComposition.syncActiveFieldEditor(to: newValue) }
+        }
         .onExitCommand(perform: close)
     }
 
@@ -86,9 +108,11 @@ public struct OpenProfilePanel: View {
     }
 
     private func moveProfileSelection(by offset: Int) {
+        let profiles = filteredProfiles
+        let currentID = profiles.first(where: { $0.id == selectedProfileID })?.id ?? profiles.first?.id
         selectedProfileID = SelectionNavigation.next(
-            selectedProfileID,
-            among: filteredProfiles.map(\.id),
+            currentID,
+            among: profiles.map(\.id),
             by: offset
         )
     }

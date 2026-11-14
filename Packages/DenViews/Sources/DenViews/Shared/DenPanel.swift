@@ -124,3 +124,100 @@ public struct DenPanelHint: View {
             .foregroundStyle(.secondary)
     }
 }
+
+/// Shared filter/search input with leading symbol, consistent surface styling, and IME sync.
+public struct DenFilterField: View {
+    @Binding private var text: String
+    private let prompt: String
+    private let accessibilityLabel: String
+    private let accessibilityIdentifier: String?
+    private let isActive: Bool
+    private let profileColor: Color
+    private let trailingHint: String?
+    private let isFocused: FocusState<Bool>.Binding
+    private let onTapInactive: (() -> Void)?
+
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
+    public init(
+        text: Binding<String>,
+        prompt: String,
+        accessibilityLabel: String,
+        accessibilityIdentifier: String? = nil,
+        isActive: Bool = true,
+        profileColor: Color = .primary,
+        trailingHint: String? = nil,
+        isFocused: FocusState<Bool>.Binding,
+        onTapInactive: (() -> Void)? = nil
+    ) {
+        self._text = text
+        self.prompt = prompt
+        self.accessibilityLabel = accessibilityLabel
+        self.accessibilityIdentifier = accessibilityIdentifier
+        self.isActive = isActive
+        self.profileColor = profileColor
+        self.trailingHint = trailingHint
+        self.isFocused = isFocused
+        self.onTapInactive = onTapInactive
+    }
+
+    public var body: some View {
+        HStack(spacing: 8) {
+            Image(systemSymbol: .magnifyingglass)
+                .foregroundStyle(isActive ? .primary : .secondary)
+                .accessibilityHidden(true)
+
+            inputField
+
+            if let trailingHint {
+                Text(trailingHint)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            DenSurfaceColors.filterInputBackground(isActive: isActive),
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .stroke(
+                    DenSurfaceColors.filterInputBorder(
+                        isActive: isActive,
+                        profileColor: profileColor,
+                        differentiateWithoutColor: differentiateWithoutColor
+                    ),
+                    lineWidth: isActive ? 1.5 : 1
+                )
+        }
+        .onChange(of: text) { _, newValue in
+            if isFocused.wrappedValue {
+                TextInputComposition.syncActiveFieldEditor(to: newValue)
+            }
+        }
+        .onTapGesture {
+            if !isActive {
+                onTapInactive?()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var inputField: some View {
+        let field = TextField(text: $text, prompt: Text(prompt)) {
+            Text(accessibilityLabel)
+        }
+        .labelsHidden()
+        .textFieldStyle(.plain)
+        .focused(isFocused)
+        .disabled(!isActive)
+
+        if let accessibilityIdentifier {
+            field.accessibilityIdentifier(accessibilityIdentifier)
+        } else {
+            field
+        }
+    }
+}

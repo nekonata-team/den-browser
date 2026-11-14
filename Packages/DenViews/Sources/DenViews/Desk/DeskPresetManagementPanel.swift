@@ -79,12 +79,13 @@ public struct DeskPresetManagementPanel: View {
             }
 
             VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-                TextField(text: $query, prompt: Text("Filter presets")) {
-                    Text("Search Personal Desk Presets")
-                }
-                .labelsHidden()
-                .textFieldStyle(.roundedBorder)
-                .focused($isSearchFocused)
+                DenFilterField(
+                    text: $query,
+                    prompt: "Filter presets",
+                    accessibilityLabel: "Search Personal Desk Presets",
+                    profileColor: profileColor,
+                    isFocused: $isSearchFocused
+                )
                 .onSubmit { TextInputComposition.performUnlessActive(beginRenameSelected) }
                 .onKeyPress(.escape) {
                     guard !TextInputComposition.isActive else { return .ignored }

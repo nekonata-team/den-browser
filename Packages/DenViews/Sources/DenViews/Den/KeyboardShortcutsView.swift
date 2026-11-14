@@ -46,28 +46,12 @@ public struct KeyboardShortcutsView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemSymbol: .magnifyingglass)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-            TextField(text: $query, prompt: Text("Search shortcuts")) {
-                Text("Search shortcuts")
-            }
-            .labelsHidden()
-            .textFieldStyle(.plain)
-            .focused($isSearchFocused)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            Color.primary.opacity(0.055),
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        DenFilterField(
+            text: $query,
+            prompt: "Search shortcuts",
+            accessibilityLabel: "Search shortcuts",
+            isFocused: $isSearchFocused
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-        }
     }
 
     private var visibleSections: [ShortcutGuideSection] {

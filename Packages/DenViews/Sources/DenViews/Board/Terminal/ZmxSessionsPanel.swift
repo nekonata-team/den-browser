@@ -102,35 +102,19 @@ public struct ZmxSessionsPanel: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemSymbol: .magnifyingglass)
-                .foregroundStyle(model.isFilterInputActive ? .primary : .secondary)
-                .accessibilityHidden(true)
-            TextField(
-                text: Binding(
-                    get: { model.query },
-                    set: { model.setQuery($0) }
-                ),
-                prompt: Text("Filter zmx Sessions")
-            ) {
-                Text("Filter zmx Sessions")
-            }
-            .labelsHidden()
-            .textFieldStyle(.plain)
-            .focused($isSearchFocused)
-            .disabled(!model.isFilterInputActive)
-            Spacer(minLength: 0)
-            Text("/")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            DenSurfaceColors.filterInputBackground(isActive: model.isFilterInputActive),
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        DenFilterField(
+            text: Binding(
+                get: { model.query },
+                set: { model.setQuery($0) }
+            ),
+            prompt: "Filter zmx Sessions",
+            accessibilityLabel: "Filter zmx Sessions",
+            isActive: model.isFilterInputActive,
+            profileColor: profileColor,
+            trailingHint: "/",
+            isFocused: $isSearchFocused,
+            onTapInactive: windowModel.enterZmxSessionFilter
         )
-        .onTapGesture { windowModel.enterZmxSessionFilter() }
     }
 
     private var sessionList: some View {
@@ -263,15 +247,10 @@ public struct ZmxSessionsPanel: View {
         .padding(.horizontal, 8)
         .frame(minHeight: 48)
         .background(
-            (isFocused ? focusColor : Color.primary).opacity(
-                isFocused ? DenSurfaceColors.selectionOpacity : (isMarked ? 0.1 : 0.04)
-            ),
-            in: RoundedRectangle(cornerRadius: DenRadius.small)
+            isMarked && !isFocused ? Color.primary.opacity(0.1) : .clear,
+            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.small)
-                .stroke(isFocused ? focusColor : .clear, lineWidth: 1)
-        }
+        .denSelectionHighlight(isFocused, profileColor: profileColor, showsInactiveBackground: !isMarked)
         .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
         .onTapGesture { model.select(sessionName: sessionName) }
         .accessibilityAddTraits(isFocused ? .isSelected : [])

@@ -50,15 +50,13 @@ struct DeskPresetPicker: View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    TextField(
+                    DenFilterField(
                         text: $query,
-                        prompt: Text("Filter presets")
-                    ) {
-                        Text("Search Desk Presets")
-                    }
-                    .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
-                    .focused(isSearchFocused)
+                        prompt: "Filter presets",
+                        accessibilityLabel: "Search Desk Presets",
+                        profileColor: profileColor,
+                        isFocused: isSearchFocused
+                    )
                     .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
                     .onKeyPress(keys: [.return], phases: .down) { press in
                         guard allowsEmptyPreset, press.modifiers == .shift,
@@ -110,9 +108,11 @@ struct DeskPresetPicker: View {
                 }
             )
 
-            if allowsEmptyPreset {
-                DenPanelHint("⇧Return Create Empty Desk")
-            }
+            DenPanelHint(
+                allowsEmptyPreset
+                    ? "↑↓ Select · Return Choose · ⇧Return Create Empty Desk · Escape Close"
+                    : "↑↓ Select · Return Choose · Escape Close"
+            )
         }
         .task(id: selection) {
             if case .personal(let id) = selection {

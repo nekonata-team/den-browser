@@ -76,53 +76,25 @@ struct DrawerHeaderView: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                Image(systemSymbol: .magnifyingglass)
-                    .foregroundStyle(drawer.isFilterInputActive ? .primary : .secondary)
-                    .accessibilityHidden(true)
-                TextField(
-                    text: Binding(
-                        get: { drawer.query },
-                        set: drawer.setQuery
-                    ),
-                    prompt: Text("Search drawer items")
-                ) {
-                    Text("Search Drawer Items")
-                }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .focused($isSearchFocused)
-                .disabled(!drawer.isFilterInputActive)
-                .accessibilityIdentifier("drawer-search")
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(width: DenDrawerLayout.searchFieldWidth)
-            .background(
-                DenSurfaceColors.filterInputBackground(isActive: drawer.isFilterInputActive),
-                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            DenFilterField(
+                text: Binding(
+                    get: { drawer.query },
+                    set: drawer.setQuery
+                ),
+                prompt: "Search drawer items",
+                accessibilityLabel: "Search Drawer Items",
+                accessibilityIdentifier: "drawer-search",
+                isActive: drawer.isFilterInputActive,
+                profileColor: profileColor,
+                isFocused: $isSearchFocused,
+                onTapInactive: drawer.enterFilterMode
             )
-            .overlay {
-                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                    .stroke(
-                        DenSurfaceColors.filterInputBorder(
-                            isActive: drawer.isFilterInputActive,
-                            profileColor: profileColor,
-                            differentiateWithoutColor: differentiateWithoutColor
-                        ),
-                        lineWidth: drawer.isFilterInputActive ? 1.5 : 1
-                    )
-            }
+            .frame(width: DenDrawerLayout.searchFieldWidth)
             .opacity(isSearchPresented ? 1 : 0)
             .frame(height: isSearchPresented ? nil : 0)
             .clipped()
             .allowsHitTesting(isSearchPresented)
             .accessibilityHidden(!isSearchPresented)
-            .onTapGesture {
-                if !drawer.isFilterInputActive {
-                    drawer.enterFilterMode()
-                }
-            }
         }
         .padding(.horizontal, DenDrawerLayout.headerHorizontalPadding)
         .padding(.vertical, 12)
