@@ -1,6 +1,6 @@
 ---
 name: den
-description: Control Den Browser through its first-party den CLI for Boards, Sheets, Drawer items, and task handoff through Terminal Boards.
+description: Control Den Browser through its first-party den CLI for Boards, Sheets, Drawer items, and CLI agent delegation in Terminal Boards.
 ---
 
 # Den Browser (`den`)
@@ -104,15 +104,15 @@ Terminal Boards suit long-running, human-visible processes and interactive TUIs.
 Use `den board terminal text --lines <N> --board <id> --json` to read recent retained history beyond the viewport.
 This does not recover text erased by the application or discarded from scrollback; see `text --help`.
 
-To hand off a task, open a Terminal Board and launch the chosen CLI agent with a task prompt:
+To delegate a task to a CLI agent, open a Terminal Board and launch it with a prompt:
 
 ```sh
-den board terminal new <working-directory> --run 'codex "Review the changes in this directory and report findings."' --json
+den board terminal new <working-directory> --run 'codex "Review the changes in this directory and write findings to /tmp/review.md."' --json
 ```
 
-Use the selected agent's supported CLI syntax; include the goal, working directory, allowed changes, and completion criteria in the prompt as needed.
-Shell-quote both the startup command and its prompt argument safely.
-Success acknowledges Board creation, not task acceptance or completion. Leave execution management and result collection to the user or external tools.
+Use the selected agent's supported CLI syntax, and shell-quote both the startup command and its prompt argument safely.
+When passing large instructions or exchanging state and results, prefer specifying file paths in the prompt over scraping `den board terminal text`; reserve `text` and `press` for checking startup, prompts, or interactive states.
+Success acknowledges Board creation, not task acceptance or completion.
 
 ## Drawer work
 
