@@ -60,14 +60,21 @@ struct DrawerItemView<Peek: View>: View {
                 .buttonStyle(.plain)
                 .focused($focusedDrawerItemID, equals: item.id)
                 .contextMenu {
-                    Button("Place as Board") {
+                    Button {
                         onPlaceFromContextMenu()
+                    } label: {
+                        Label("Place as Board", systemSymbol: .rectangleStackBadgePlus)
                     }
-                    Button("Place in Desk…") {
+                    Button {
                         onChoosePlacementDesk()
+                    } label: {
+                        Label("Place in Desk…", systemSymbol: .rectangleStack)
                     }
-                    Button("Discard", role: .destructive) {
+                    Divider()
+                    Button(role: .destructive) {
                         onDiscard()
+                    } label: {
+                        Label("Discard", systemSymbol: .trash)
                     }
                 }
                 .accessibilityAddTraits(isSelected ? .isSelected : [])

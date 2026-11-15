@@ -142,12 +142,6 @@ public struct DeskSwitcher: View {
             }
             .disabled(!canOpenInNewWindow(desk.id))
 
-            Button {
-                desks.copyDeskID(desk.id)
-            } label: {
-                Label("Copy Desk ID", systemSymbol: .documentOnDocument)
-            }
-
             Divider()
 
             Button {
@@ -165,29 +159,41 @@ public struct DeskSwitcher: View {
             }
             .disabled(!desks.canCreateDesk)
 
-            Button(role: .destructive) {
-                desks.focusDesk(desk.id)
-                desks.deleteFocusedDesk()
-            } label: {
-                Label("Delete Desk", systemSymbol: .trash)
-            }
-            .disabled(!desks.canSelectDesk(desk.id) || !desks.canDeleteFocusedDesk)
-
             Divider()
 
-            Button {
-                desks.focusDesk(desk.id)
-                windowModel.showSaveDeskPresetPanel()
-            } label: {
-                Label("Save Desk as Preset...", systemSymbol: .squareAndArrowDown)
-            }
-            .disabled(!desks.canSelectDesk(desk.id))
+            Menu {
+                Button {
+                    desks.focusDesk(desk.id)
+                    windowModel.showSaveDeskPresetPanel()
+                } label: {
+                    Label("Save Desk as Preset…", systemSymbol: .squareAndArrowDown)
+                }
+                .disabled(!desks.canSelectDesk(desk.id))
 
-            Menu("Export") {
+                Button {
+                    desks.focusDesk(desk.id)
+                    windowModel.showReplaceDeskPanel()
+                } label: {
+                    Label("Replace Desk…", systemSymbol: .rectangleStackBadgeMinus)
+                }
+                .disabled(!desks.canSelectDesk(desk.id))
+
+                Divider()
+
+                Button {
+                    windowModel.showDeskPresetManagement()
+                } label: {
+                    Label("Manage Presets…", systemSymbol: .sliderHorizontal3)
+                }
+            } label: {
+                Label("Presets", systemSymbol: .sliderHorizontal3)
+            }
+
+            Menu {
                 Button {
                     desks.exportDeskLinks(for: desk.id)
                 } label: {
-                    Label("Save Desk Links as Markdown...", systemSymbol: .arrowDownDocument)
+                    Label("Save Desk Links as Markdown…", systemSymbol: .arrowDownDocument)
                 }
                 .disabled(!desks.canExportDeskLinks(for: desk.id))
 
@@ -204,30 +210,27 @@ public struct DeskSwitcher: View {
                     Label("Copy Desk Links as URLs", systemSymbol: .documentOnDocument)
                 }
                 .disabled(!desks.canExportDeskLinks(for: desk.id))
-            }
 
-            Button {
-                desks.focusDesk(desk.id)
-                windowModel.showReplaceDeskPanel()
-            } label: {
-                Label("Replace Desk...", systemSymbol: .rectangleStackBadgeMinus)
-            }
-            .disabled(!desks.canSelectDesk(desk.id))
+                Divider()
 
-            Button {
-                windowModel.showDeskPresetManagement()
+                Button {
+                    desks.copyDeskID(desk.id)
+                } label: {
+                    Label("Copy Desk ID", systemSymbol: .documentOnDocument)
+                }
             } label: {
-                Label("Manage Presets...", systemSymbol: .sliderHorizontal3)
+                Label("Export", systemSymbol: .arrowDownDocument)
             }
 
             Divider()
 
-            Button {
-                windowModel.showNewDeskPanel()
+            Button(role: .destructive) {
+                desks.focusDesk(desk.id)
+                desks.deleteFocusedDesk()
             } label: {
-                Label("New Desk...", systemSymbol: .plus)
+                Label("Delete Desk", systemSymbol: .trash)
             }
-            .disabled(!desks.canCreateDesk)
+            .disabled(!desks.canSelectDesk(desk.id) || !desks.canDeleteFocusedDesk)
         }
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .named(DeskSwitcherCoordinateSpace.name))

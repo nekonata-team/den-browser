@@ -25,7 +25,6 @@ struct BoardRail: View {
                 }
                 session.resources.save()
             },
-            toggleAnchor: { session.boardNavigation.toggleAnchorBoard($0, in: $1) },
             favicon: { id in
                 if let runtime = session.resources.webRuntimes[id] {
                     ObservedBoardRailFavicon(runtime: runtime)

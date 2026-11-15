@@ -148,11 +148,21 @@ public struct InspectionBoardView: View {
         .background(.regularMaterial)
         .contextMenu {
             if targetBoard != nil {
-                Button("Focus Target Web Board") { focusTarget() }
+                Button {
+                    focusTarget()
+                } label: {
+                    Label("Focus Target Web Board", systemSymbol: .scope)
+                }
             }
-            Button("Copy Board ID") { surfaceModel.perform(.copyID) }
+            Button {
+                surfaceModel.perform(.copyID)
+            } label: {
+                Label("Copy Board ID", systemSymbol: .documentOnDocument)
+            }
             Divider()
-            Button("Remove Inspection Board", role: .destructive, action: onRemove)
+            Button(role: .destructive, action: onRemove) {
+                Label("Remove Inspection Board", systemSymbol: .xmark)
+            }
         }
     }
 

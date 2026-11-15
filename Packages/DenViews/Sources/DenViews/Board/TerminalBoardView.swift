@@ -304,7 +304,7 @@ public struct TerminalBoardView: View {
                 model.perform(.focus)
                 model.perform(.screenshot)
             } label: {
-                Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
+                Label("Capture Current Sheet Screenshot…", systemSymbol: .camera)
             }
             Button {
                 model.perform(.copyID)

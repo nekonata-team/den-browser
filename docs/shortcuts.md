@@ -283,13 +283,13 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
   - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together.
   - Web, Terminal, and Inspection Board headers provide context menus with actions appropriate to their Board kind. Web Board actions include copying the Current Sheet URL, duplicating, renaming, setting or clearing the Anchor Board, moving to Drawer or a Desk, saving as an Essential, maximizing, Sheet options and tools (Run in Background, Picture in Picture, Sheet size, inspection, hard reload, screenshot, copying the Board ID), and removing. Tutorial Board headers have no context menu.
 - **BoardRail**:
-  - Right-click or Control-click a Board for its context menu (set or clear Anchor, rename, duplicate, move to Desk, copy Current Sheet URL for Web Boards, remove). Opening the menu does not change focus.
+  - Right-click or Control-click a Board for its context menu (copy Current Sheet URL for Web Boards, duplicate, rename, set or clear Anchor, move to Drawer or Desk, save as Essential, remove). Opening the menu does not change focus.
 - **Board Resize**:
   - Drag the gap after a Board to resize it. Hold `Shift` to resize it with the next Board while keeping the pair's outer edges fixed.
 - **Desk Switcher**:
   - Click `+` after the last Desk to create a new Desk.
   - Drag Desk button to reorder Desks.
-  - Right-click for context menu (copy ID, open in new window, rename, duplicate, delete, save preset, export). [Duplicate Desk](./desk-presets.md#duplicating-a-desk) creates a same-label copy immediately after the source and switches to it.
+  - Right-click for context menu (open in new window, rename, duplicate, presets, export, delete). [Duplicate Desk](./desk-presets.md#duplicating-a-desk) creates a same-label copy immediately after the source and switches to it.
 - **Overview**:
   - Click a Board to select and center it when the mouse button is released, including an already selected Board. Dragging keeps the current selection until release, then selects the dragged Board without centering the canvas. Overview stays open for both actions. Double-click to enter a Board.
   - Scroll in either direction or drag the background to pan. Right-drag anywhere on the canvas, including over a Board,

@@ -9,7 +9,6 @@ public struct BoardRail<Favicon: View>: View {
     private let boardModel: (BoardState) -> BoardSurfaceModel
     private let focusBoard: (BoardID) -> Void
     private let reorderBoard: (BoardID, BoardIndex, DeskID, Bool) -> Void
-    private let toggleAnchor: (BoardID, DeskID) -> Void
     private let favicon: (BoardID) -> Favicon
     @Environment(DenWindowModel.self) private var windowModel
     @FocusState private var isRailFocused: Bool
@@ -47,14 +46,12 @@ public struct BoardRail<Favicon: View>: View {
         boardModel: @escaping (BoardState) -> BoardSurfaceModel,
         focusBoard: @escaping (BoardID) -> Void,
         reorderBoard: @escaping (BoardID, BoardIndex, DeskID, Bool) -> Void,
-        toggleAnchor: @escaping (BoardID, DeskID) -> Void,
         @ViewBuilder favicon: @escaping (BoardID) -> Favicon
     ) {
         self.profileColor = profileColor
         self.boardModel = boardModel
         self.focusBoard = focusBoard
         self.reorderBoard = reorderBoard
-        self.toggleAnchor = toggleAnchor
         self.favicon = favicon
     }
 
@@ -216,8 +213,33 @@ public struct BoardRail<Favicon: View>: View {
 
     @ViewBuilder
     private func boardContextMenu(_ board: BoardState, in desk: DeskState) -> some View {
+        let model = boardModel(board)
+
+        if board.isWeb {
+            Button {
+                model.perform(.copyLocation)
+            } label: {
+                Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
+            }
+            .disabled(board.currentSheetURL == nil && board.firstSheetURL == nil)
+        }
+
         Button {
-            toggleAnchor(board.id, desk.id)
+            model.perform(.focus)
+            model.perform(.duplicate)
+        } label: {
+            Label("Duplicate Board", systemSymbol: .plusSquareOnSquare)
+        }
+
+        Button {
+            model.perform(.focus)
+            windowModel.showRenameBoardPanel()
+        } label: {
+            Label("Rename Board", systemSymbol: .pencil)
+        }
+
+        Button {
+            model.perform(.toggleAnchor)
         } label: {
             Label(
                 desk.anchorBoardID == board.id ? "Clear Anchor Board" : "Set Anchor Board",
@@ -225,20 +247,13 @@ public struct BoardRail<Favicon: View>: View {
             )
         }
 
-        Divider()
-
-        Button {
-            boardModel(board).perform(.focus)
-            windowModel.showRenameBoardPanel()
-        } label: {
-            Label("Rename Board", systemSymbol: .pencil)
-        }
-
-        Button {
-            boardModel(board).perform(.focus)
-            boardModel(board).perform(.duplicate)
-        } label: {
-            Label("Duplicate Board", systemSymbol: .plusSquareOnSquare)
+        if board.isWeb || board.isTerminal {
+            Button {
+                model.perform(.moveToDrawer)
+            } label: {
+                Label("Move to Drawer", systemSymbol: .trayAndArrowDown)
+            }
+            .disabled(!model.canMoveToDrawer(board))
         }
 
         if windowModel.desks.desks.count > 1 {
@@ -246,8 +261,8 @@ public struct BoardRail<Favicon: View>: View {
                 ForEach(Array(windowModel.desks.desks.enumerated()), id: \.element.id) { entry in
                     if entry.element.id != desk.id {
                         Button("\(entry.offset + 1). \(entry.element.label)") {
-                            boardModel(board).perform(.focus)
-                            boardModel(board).perform(.moveToDesk(entry.offset + 1))
+                            model.perform(.focus)
+                            model.perform(.moveToDesk(entry.offset + 1))
                         }
                     }
                 }
@@ -256,19 +271,19 @@ public struct BoardRail<Favicon: View>: View {
             }
         }
 
-        if board.isWeb {
+        if board.isWeb || board.isTerminal {
             Button {
-                boardModel(board).perform(.copyLocation)
+                model.perform(.focus)
+                windowModel.showSaveEssentialPanel(for: board)
             } label: {
-                Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
+                Label("Save as Essential…", systemSymbol: .sparkles)
             }
-            .disabled(board.currentSheetURL == nil && board.firstSheetURL == nil)
         }
 
         Divider()
 
         Button(role: .destructive) {
-            boardModel(board).perform(.remove)
+            model.perform(.remove)
         } label: {
             Label("Remove Board", systemSymbol: .xmark)
         }
