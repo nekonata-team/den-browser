@@ -13,7 +13,7 @@ public struct BoardSurfaceModel {
         case copyLocation
         case inspect
         case moveToDrawer
-        case goToFirst
+        case toggleAnchor
         case toggleNavigation
         case toggleBackgroundExecution
         case screenshot
@@ -31,10 +31,6 @@ public struct BoardSurfaceModel {
     }
     private let readBoardDeskID: () -> DeskID?
     public var boardDeskID: DeskID? { readBoardDeskID() }
-    private let readCanMoveLeft: () -> Bool
-    public var canMoveLeft: Bool { readCanMoveLeft() }
-    private let readCanMoveRight: () -> Bool
-    public var canMoveRight: Bool { readCanMoveRight() }
     private let readInputSourceLabel: () -> String?
     public var inputSourceLabel: String? { readInputSourceLabel() }
     private let readSheetNavigationEnabled: () -> Bool
@@ -48,8 +44,6 @@ public struct BoardSurfaceModel {
     public init(
         desks: @escaping () -> [DeskState],
         boardDeskID: @escaping () -> DeskID?,
-        canMoveLeft: @escaping () -> Bool,
-        canMoveRight: @escaping () -> Bool,
         inputSourceLabel: @escaping () -> String?,
         sheetNavigationEnabled: @escaping () -> Bool,
         drawerStyle: @escaping () -> DrawerStyle,
@@ -58,8 +52,6 @@ public struct BoardSurfaceModel {
     ) {
         self.readDesks = desks
         self.readBoardDeskID = boardDeskID
-        self.readCanMoveLeft = canMoveLeft
-        self.readCanMoveRight = canMoveRight
         self.readInputSourceLabel = inputSourceLabel
         self.readSheetNavigationEnabled = sheetNavigationEnabled
         self.readDrawerStyle = drawerStyle

@@ -215,90 +215,25 @@ public struct TerminalBoardView: View {
             )
         }
         Button {
+            model.perform(.focus)
+            windowModel.showRenameBoardPanel()
+        } label: {
+            Label("Rename Board", systemSymbol: .pencil)
+        }
+        Button {
+            model.perform(.toggleAnchor)
+        } label: {
+            Label(
+                isAnchorBoard ? "Clear Anchor Board" : "Set Anchor Board",
+                systemSymbol: .pinFill
+            )
+        }
+        Button {
             model.perform(.moveToDrawer)
         } label: {
             Label("Move to Drawer", systemSymbol: .trayAndArrowDown)
         }
         .disabled(!model.canMoveToDrawer(board))
-        Button {
-            model.perform(.focus)
-            windowModel.showSaveEssentialPanel(for: board)
-        } label: {
-            Label("Save as Essential…", systemSymbol: .sparkles)
-        }
-        Button {
-            model.perform(.copyID)
-        } label: {
-            Label("Copy Board ID", systemSymbol: .documentOnDocument)
-        }
-        Button {
-            model.perform(.focus)
-            windowModel.toggleFocusedBoardMaximized()
-        } label: {
-            Label(
-                windowModel.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board",
-                systemSymbol: windowModel.maximizedBoardID == board.id
-                    ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight
-            )
-        }
-        Button {
-            model.perform(.focus)
-            windowModel.centerFocusedBoard()
-        } label: {
-            Label("Center Board", systemSymbol: .scope)
-        }
-        if board.isZmx {
-            Button {
-                model.perform(.focus)
-                windowModel.showZmxSessions(selectedSessionName: board.zmxSessionName)
-            } label: {
-                Label {
-                    Text("zmx Sessions…")
-                } icon: {
-                    Image(systemSymbol: BoardSymbol.zmx.symbol)
-                }
-            }
-        }
-        Divider()
-        Button {
-            model.perform(.focus)
-            model.perform(.increaseSize)
-        } label: {
-            Label("Increase Font Size", systemSymbol: .plus)
-        }
-        Button {
-            model.perform(.focus)
-            model.perform(.decreaseSize)
-        } label: {
-            Label("Decrease Font Size", systemSymbol: .minus)
-        }
-        Button {
-            model.perform(.focus)
-            model.perform(.resetSize)
-        } label: {
-            Label("Reset Font Size", systemSymbol: .arrowCounterclockwise)
-        }
-        Button {
-            model.perform(.focus)
-            model.perform(.screenshot)
-        } label: {
-            Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
-        }
-        Divider()
-        Button {
-            model.perform(.focus)
-            model.perform(.moveLeft)
-        } label: {
-            Label("Move Board Left", systemSymbol: .arrowLeft)
-        }
-        .disabled(!model.canMoveLeft)
-        Button {
-            model.perform(.focus)
-            model.perform(.moveRight)
-        } label: {
-            Label("Move Board Right", systemSymbol: .arrowRight)
-        }
-        .disabled(!model.canMoveRight)
         if model.desks.count > 1 {
             Menu {
                 ForEach(Array(model.desks.enumerated()), id: \.element.id) { entry in
@@ -313,6 +248,72 @@ public struct TerminalBoardView: View {
                 Label("Move to Desk", systemSymbol: .rectangleStack)
             }
         }
+        Button {
+            model.perform(.focus)
+            windowModel.showSaveEssentialPanel(for: board)
+        } label: {
+            Label("Save as Essential…", systemSymbol: .sparkles)
+        }
+        Divider()
+        Button {
+            model.perform(.focus)
+            windowModel.toggleFocusedBoardMaximized()
+        } label: {
+            Label(
+                windowModel.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board",
+                systemSymbol: windowModel.maximizedBoardID == board.id
+                    ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight
+            )
+        }
+        Menu {
+            if board.isZmx {
+                Button {
+                    model.perform(.focus)
+                    windowModel.showZmxSessions(selectedSessionName: board.zmxSessionName)
+                } label: {
+                    Label {
+                        Text("zmx Sessions…")
+                    } icon: {
+                        Image(systemSymbol: BoardSymbol.zmx.symbol)
+                    }
+                }
+                Divider()
+            }
+            Menu("Font Size") {
+                Button {
+                    model.perform(.focus)
+                    model.perform(.increaseSize)
+                } label: {
+                    Label("Increase Font Size", systemSymbol: .plus)
+                }
+                Button {
+                    model.perform(.focus)
+                    model.perform(.decreaseSize)
+                } label: {
+                    Label("Decrease Font Size", systemSymbol: .minus)
+                }
+                Button {
+                    model.perform(.focus)
+                    model.perform(.resetSize)
+                } label: {
+                    Label("Reset Font Size", systemSymbol: .arrowCounterclockwise)
+                }
+            }
+            Divider()
+            Button {
+                model.perform(.focus)
+                model.perform(.screenshot)
+            } label: {
+                Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
+            }
+            Button {
+                model.perform(.copyID)
+            } label: {
+                Label("Copy Board ID", systemSymbol: .documentOnDocument)
+            }
+        } label: {
+            Label("Terminal Tools", systemSymbol: .gearshape)
+        }
         Divider()
         Button(role: .destructive) {
             model.perform(.remove)
@@ -322,6 +323,8 @@ public struct TerminalBoardView: View {
     }
 
     private var boardDeskID: DeskID? { model.boardDeskID }
+
+    private var isAnchorBoard: Bool { windowModel.focusedDesk?.anchorBoardID == board.id }
 
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(

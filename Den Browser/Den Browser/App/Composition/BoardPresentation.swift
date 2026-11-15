@@ -9,8 +9,6 @@ extension BoardSurfaceModel {
             boardDeskID: { [state = session.resources.store] in
                 state.snapshot.den.desks.first { $0.boards.contains { $0.id == board.id } }?.id
             },
-            canMoveLeft: { [movement = session.resources.boardMovement] in movement.canMove(board.id, by: -1) },
-            canMoveRight: { [movement = session.resources.boardMovement] in movement.canMove(board.id, by: 1) },
             inputSourceLabel: { [weak session] in
                 guard let session, session.configuration.preferences.rememberBoardInputMethod else { return nil }
                 return session.inputSourceTracker.shortLabel(for: board.id)
@@ -30,7 +28,12 @@ extension BoardSurfaceModel {
                 case .copyLocation: session.boardNavigation.copyBoardLocation(board.id)
                 case .inspect: session.sideBoards.createInspectionBoard(targetBoardID: board.id)
                 case .moveToDrawer: session.drawer.moveBoardToDrawer(board.id)
-                case .goToFirst: session.boardOpening.goToFirstSheetInFocusedBoard()
+                case .toggleAnchor:
+                    if let desk = session.resources.store.snapshot.den.desks.first(where: {
+                        $0.boards.contains { $0.id == board.id }
+                    }) {
+                        session.boardNavigation.toggleAnchorBoard(board.id, in: desk.id)
+                    }
                 case .toggleNavigation: session.boardNavigation.toggleBoardSheetNavigationPause(board.id)
                 case .toggleBackgroundExecution: session.boardNavigation.toggleBoardBackgroundExecution(board.id)
                 case .screenshot: session.screenshots.captureFocusedSheetScreenshot()

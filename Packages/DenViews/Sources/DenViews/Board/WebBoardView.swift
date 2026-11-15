@@ -259,12 +259,11 @@ public struct WebBoardView: View {
     @ViewBuilder
     private var boardContextMenu: some View {
         Button {
-            model.perform(.inspect)
+            model.perform(.copyLocation)
         } label: {
-            Label("Inspect Current Sheet", systemSymbol: .magnifyingglass)
+            Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
         }
-
-        Divider()
+        .disabled(board.currentSheetURL == nil && board.firstSheetURL == nil)
 
         Button {
             model.perform(.focus)
@@ -278,143 +277,27 @@ public struct WebBoardView: View {
 
         Button {
             model.perform(.focus)
+            windowModel.showRenameBoardPanel()
+        } label: {
+            Label("Rename Board", systemSymbol: .pencil)
+        }
+
+        Button {
+            model.perform(.toggleAnchor)
+        } label: {
+            Label(
+                isAnchorBoard ? "Clear Anchor Board" : "Set Anchor Board",
+                systemSymbol: .pinFill
+            )
+        }
+
+        Button {
+            model.perform(.focus)
             model.perform(.moveToDrawer)
         } label: {
             Label("Move to Drawer", systemSymbol: .trayAndArrowDown)
         }
         .disabled(!model.canMoveToDrawer(board))
-
-        Button {
-            model.perform(.focus)
-            windowModel.showSaveEssentialPanel(for: board)
-        } label: {
-            Label("Save as Essential…", systemSymbol: .sparkles)
-        }
-
-        Button {
-            model.perform(.copyID)
-        } label: {
-            Label("Copy Board ID", systemSymbol: .documentOnDocument)
-        }
-
-        Button {
-            model.perform(.copyLocation)
-        } label: {
-            Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
-        }
-        .disabled(board.currentSheetURL == nil && board.firstSheetURL == nil)
-
-        Button {
-            onReload()
-        } label: {
-            Label("Reload Current Sheet", systemSymbol: .arrowClockwise)
-        }
-
-        Button {
-            onHardReload()
-        } label: {
-            Label("Hard Reload Current Sheet", systemSymbol: .arrowClockwiseCircle)
-        }
-
-        Button {
-            model.perform(.focus)
-            model.perform(.goToFirst)
-        } label: {
-            Label("Return to First Sheet", systemSymbol: .backwardEnd)
-        }
-        .disabled(!canReturnToFirstSheet)
-
-        if model.sheetNavigationEnabled {
-            Button {
-                model.perform(.toggleNavigation)
-            } label: {
-                Label(
-                    board.sheetNavigationPaused
-                        ? "Resume Sheet Navigation for this Board"
-                        : "Pause Sheet Navigation for this Board",
-                    systemSymbol: board.sheetNavigationPaused ? .playCircle : .pauseCircle
-                )
-            }
-        }
-
-        Toggle(
-            "Run in Background",
-            isOn: Binding(
-                get: { board.backgroundExecutionEnabled },
-                set: { _ in model.perform(.toggleBackgroundExecution) }
-            )
-        )
-        .help("Keep this Board running and updating while hidden. Uses more energy.")
-
-        Button {
-            model.perform(.focus)
-            model.perform(.screenshot)
-        } label: {
-            Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
-        }
-
-        Button {
-            onPictureInPicture()
-        } label: {
-            Label("Toggle Picture in Picture", systemSymbol: .pip)
-        }
-
-        Divider()
-
-        Button {
-            model.perform(.focus)
-            model.perform(.increaseSize)
-        } label: {
-            Label("Increase Sheet Scale", systemSymbol: .plus)
-        }
-
-        Button {
-            model.perform(.focus)
-            model.perform(.decreaseSize)
-        } label: {
-            Label("Decrease Sheet Scale", systemSymbol: .minus)
-        }
-
-        Button {
-            model.perform(.focus)
-            model.perform(.resetSize)
-        } label: {
-            Label("Reset Sheet Scale", systemSymbol: .arrowCounterclockwise)
-        }
-
-        Divider()
-
-        Button {
-            model.perform(.focus)
-            windowModel.toggleFocusedBoardMaximized()
-        } label: {
-            Label(maximizationLabel, systemSymbol: maximizationSystemSymbol)
-        }
-
-        Button {
-            model.perform(.focus)
-            windowModel.centerFocusedBoard()
-        } label: {
-            Label("Center Board", systemSymbol: .scope)
-        }
-
-        Divider()
-
-        Button {
-            model.perform(.focus)
-            model.perform(.moveLeft)
-        } label: {
-            Label("Move Board Left", systemSymbol: .arrowLeft)
-        }
-        .disabled(!model.canMoveLeft)
-
-        Button {
-            model.perform(.focus)
-            model.perform(.moveRight)
-        } label: {
-            Label("Move Board Right", systemSymbol: .arrowRight)
-        }
-        .disabled(!model.canMoveRight)
 
         if model.desks.count > 1 {
             Menu {
@@ -429,6 +312,93 @@ public struct WebBoardView: View {
             } label: {
                 Label("Move to Desk", systemSymbol: .rectangleStack)
             }
+        }
+
+        Button {
+            model.perform(.focus)
+            windowModel.showSaveEssentialPanel(for: board)
+        } label: {
+            Label("Save as Essential…", systemSymbol: .sparkles)
+        }
+
+        Divider()
+
+        Button {
+            model.perform(.focus)
+            windowModel.toggleFocusedBoardMaximized()
+        } label: {
+            Label(maximizationLabel, systemSymbol: maximizationSystemSymbol)
+        }
+
+        Menu {
+            Toggle(
+                "Run in Background",
+                isOn: Binding(
+                    get: { board.backgroundExecutionEnabled },
+                    set: { _ in model.perform(.toggleBackgroundExecution) }
+                )
+            )
+            .help("Keep this Board running and updating while hidden. Uses more energy.")
+
+            Button {
+                onPictureInPicture()
+            } label: {
+                Label("Toggle Picture in Picture", systemSymbol: .pip)
+            }
+
+            Divider()
+
+            Menu("Sheet Size") {
+                Button {
+                    model.perform(.focus)
+                    model.perform(.increaseSize)
+                } label: {
+                    Label("Increase Sheet Scale", systemSymbol: .plus)
+                }
+
+                Button {
+                    model.perform(.focus)
+                    model.perform(.decreaseSize)
+                } label: {
+                    Label("Decrease Sheet Scale", systemSymbol: .minus)
+                }
+
+                Button {
+                    model.perform(.focus)
+                    model.perform(.resetSize)
+                } label: {
+                    Label("Reset Sheet Scale", systemSymbol: .arrowCounterclockwise)
+                }
+            }
+
+            Divider()
+
+            Button {
+                model.perform(.inspect)
+            } label: {
+                Label("Inspect Current Sheet", systemSymbol: .magnifyingglass)
+            }
+
+            Button {
+                onHardReload()
+            } label: {
+                Label("Hard Reload Current Sheet", systemSymbol: .arrowClockwiseCircle)
+            }
+
+            Button {
+                model.perform(.focus)
+                model.perform(.screenshot)
+            } label: {
+                Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
+            }
+
+            Button {
+                model.perform(.copyID)
+            } label: {
+                Label("Copy Board ID", systemSymbol: .documentOnDocument)
+            }
+        } label: {
+            Label("Sheet Options & Tools", systemSymbol: .gearshape)
         }
 
         Divider()
@@ -560,6 +530,8 @@ public struct WebBoardView: View {
     }
 
     private var boardDeskID: DeskID? { model.boardDeskID }
+
+    private var isAnchorBoard: Bool { windowModel.focusedDesk?.anchorBoardID == board.id }
 
     private var maximizationLabel: String {
         windowModel.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board"

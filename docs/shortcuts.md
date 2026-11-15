@@ -281,7 +281,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
 - **Board Headers**:
   - Double-click to focus and center the Board.
   - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together.
-  - Web, Terminal, and Inspection Board headers provide context menus with actions appropriate to their Board kind. Web Board actions include copying the Current Sheet URL or Board ID, moving to Drawer, duplicating, reloading, adjusting Sheet size, centering, maximizing, moving to a Desk, and removing. Tutorial Board headers have no context menu.
+  - Web, Terminal, and Inspection Board headers provide context menus with actions appropriate to their Board kind. Web Board actions include copying the Current Sheet URL, duplicating, renaming, setting or clearing the Anchor Board, moving to Drawer or a Desk, saving as an Essential, maximizing, Sheet options and tools (Run in Background, Picture in Picture, Sheet size, inspection, hard reload, screenshot, copying the Board ID), and removing. Tutorial Board headers have no context menu.
 - **BoardRail**:
   - Right-click or Control-click a Board for its context menu (set or clear Anchor, rename, duplicate, move to Desk, copy Current Sheet URL for Web Boards, remove). Opening the menu does not change focus.
 - **Board Resize**:
