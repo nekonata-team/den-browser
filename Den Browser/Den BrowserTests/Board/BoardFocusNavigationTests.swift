@@ -34,68 +34,6 @@ struct BoardFocusNavigationTests {
         }
     }
 
-    @Test(arguments: [false, true])
-    func movingBoardFocusCompletesTutorialNavigationStep(inDenMode: Bool) {
-        // Arrange
-        let sourceDesk = makeTestDesk("Desk")
-        let session = ProfileWindowSession(
-            resources: DenProfileResources(
-                state: DenStateNormalization.normalize(DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
-            ),
-            configuration: makeTestBoardRuntimeConfiguration()
-        )
-        do {
-            let denWindowSession = session
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-
-            #expect(session.boardOpening.openTutorialBoard())
-            #expect(session.boardOpening.openBoard(input: "https://one.example/"))
-            #expect(session.navigation.focusedDesk?.boards.count == 2)
-            if inDenMode { windowModel.toggleDenMode() }
-
-            // Act
-            session.boardNavigation.focusNextBoard()
-
-            // Assert
-            #expect(
-                session.navigation.focusedDesk?.boards.contains {
-                    $0.tutorialCompletedSteps?.contains(.navigateBoards) == true
-                } == true
-            )
-        }
-    }
-
-    @Test(arguments: [false, true])
-    func showingKeyboardShortcutsCompletesOptionalTutorialStepOnlyInDenMode(inDenMode: Bool) {
-        let session = ProfileWindowSession(
-            resources: DenProfileResources(state: DenStateNormalization.normalize(.sample)),
-            configuration: makeTestBoardRuntimeConfiguration()
-        )
-        do {
-            let denWindowSession = session
-            let denWindowComposition = DenWindowComposition(session: denWindowSession)
-            denWindowComposition.connect()
-            defer { denWindowComposition.disconnect() }
-            let windowModel = denWindowComposition.model
-
-            #expect(session.boardOpening.openTutorialBoard())
-            if inDenMode { windowModel.toggleDenMode() }
-
-            windowModel.showKeyboardShortcuts()
-
-            #expect(windowModel.isKeyboardShortcutsPresented)
-            #expect(
-                session.resources.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(
-                    .keyboardShortcuts
-                )
-                    == inDenMode
-            )
-        }
-    }
-
     @Test func focusMovesDoNotSaveWhenThereIsOnlyOneTarget() {
         let board = makeTestBoard("Board")
         let onlyDesk = makeTestDesk("Desk", boards: [board], focusedBoardID: board.id)

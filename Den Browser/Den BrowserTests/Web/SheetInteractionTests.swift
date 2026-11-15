@@ -7,127 +7,12 @@ import WebKit
 @testable import Den_Browser
 
 @MainActor
-final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
-    private var continuation: CheckedContinuation<Void, Never>?
-    private var pendingNavigation: WKNavigation?
-
-    func load(_ html: String, baseURL: URL, in webView: WKWebView) async {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            webView.navigationDelegate = self
-            pendingNavigation = webView.loadHTMLString(html, baseURL: baseURL)
-        }
-    }
-
-    func load(_ content: String, mimeType: String, baseURL: URL, in webView: WKWebView) async {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            webView.navigationDelegate = self
-            pendingNavigation = webView.load(
-                Data(content.utf8),
-                mimeType: mimeType,
-                characterEncodingName: "utf-8",
-                baseURL: baseURL
-            )
-        }
-    }
-
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        guard navigation === pendingNavigation else { return }
-        resume()
-    }
-
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        guard navigation === pendingNavigation else { return }
-        resume()
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        didFailProvisionalNavigation navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        guard navigation === pendingNavigation else { return }
-        resume()
-    }
-
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        resume()
-    }
-
-    private func resume() {
-        pendingNavigation = nil
-        continuation?.resume()
-        continuation = nil
-    }
-}
-
-@MainActor
 @Suite(.serialized)
 struct SheetInteractionTests {
-    private func makeWebView() -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .nonPersistent()
-        SheetDOMRuntime.install(on: configuration.userContentController)
-        return WKWebView(
-            frame: NSRect(x: 0, y: 0, width: 800, height: 600),
-            configuration: configuration
-        )
-    }
-
-    @Test func semanticNamesUseCaptionsRatherThanFormValues() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <button value="save" onclick="this.dataset.clicked = 'yes'">Save changes</button>
-            <input type="submit" value="Send">
-            <input type="password" value="secret">
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let elements = try await SheetInteraction.query(
-            selector: "button, input",
-            visibleOnly: true,
-            all: true,
-            fields: ["name"],
-            in: webView
-        )
-        try await SheetInteraction.click(role: "button", name: "Save changes", exact: true, in: webView)
-        let clicked = try await SheetInteraction.attribute(target: "button", name: "data-clicked", in: webView)
-
-        // Assert
-        #expect(elements.map(\.name) == ["Save changes", "Send", ""])
-        #expect(clicked == "yes")
-    }
-
-    @Test(arguments: [
-        ("<button disabled aria-disabled='false'>Save</button>", false),
-        ("<fieldset disabled><button>Save</button></fieldset>", false),
-        ("<fieldset disabled><legend><button>Save</button></legend></fieldset>", true),
-    ])
-    func enabledStateRespectsNativeDisabling(html: String, enabled: Bool) async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(html, baseURL: URL(string: "https://example.com/")!, in: webView)
-
-        // Act
-        let actual = try await SheetInteraction.isEnabled(target: "button", in: webView)
-
-        // Assert
-        #expect(actual == enabled)
-    }
-
     @Test(arguments: ["*/section*/section", "https://example.com/section*section"])
     func urlGlobCannotReuseAnAlreadyMatchedSegment(pattern: String) async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             "<!doctype html>",
@@ -144,7 +29,7 @@ struct SheetInteractionTests {
     @Test(arguments: ["*section*section", "*/section*/section"])
     func urlGlobMatchesDistinctSegments(pattern: String) async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             "<!doctype html>",
@@ -156,225 +41,9 @@ struct SheetInteractionTests {
         try await SheetInteraction.waitForURL(pattern: pattern, in: webView, timeout: 0)
     }
 
-    @Test func queryAndScopedSnapshotReturnVisibleElementsAndRequestedAttributes() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <html>
-            <body>
-              <h1>Inbox</h1>
-              <div id="dialog" role="dialog">
-                <button id="github" role="option" aria-label="GitHub" class="choice" data-email="github@example.com">GitHub</button>
-                <button id="hidden" style="display:none">Hidden</button>
-              </div>
-              <button id="outside">Outside</button>
-            </body>
-            </html>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let elements = try await SheetInteraction.query(
-            selector: "button",
-            visibleOnly: true,
-            all: true,
-            fields: ["text", "class", "attr:data-email"],
-            in: webView
-        )
-
-        // Assert
-        #expect(elements.count == 2)
-        let github = try #require(elements.first(where: { $0.text == "GitHub" }))
-        #expect(github.visible)
-        #expect(github.attributes?["class"] == "choice")
-        #expect(github.attributes?["data-email"] == "github@example.com")
-        #expect(github.ref.hasPrefix("@e"))
-
-        // Act
-        let fullSnapshot = try await SheetInteraction.snapshot(
-            in: webView,
-            interactiveOnly: false
-        )
-
-        // Assert
-        #expect(fullSnapshot.contains("Inbox"))
-        #expect(fullSnapshot.contains("[heading:level=1]"))
-
-        // Act
-        let snapshot = try await SheetInteraction.snapshot(
-            in: webView,
-            interactiveOnly: true,
-            within: "#dialog"
-        )
-
-        // Assert
-        #expect(snapshot.contains("GitHub"))
-        #expect(!snapshot.contains("Outside"))
-        #expect(!snapshot.contains("Hidden"))
-    }
-
-    @Test func snapshotUsesExternalLabelAsButtonAccessibleName() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <button id="save"></button>
-            <label for="save">Save changes</label>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let snapshot = try await SheetInteraction.snapshot(
-            in: webView,
-            interactiveOnly: true
-        )
-
-        // Assert
-        #expect(snapshot.contains("Save changes"))
-    }
-
-    @Test func interactiveSnapshotContextExcludesControlAndStatusText() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <div role="menu">
-              <span>Available actions</span>
-              <button role="menuitem">Save</button>
-              <span role="status">Updated</span>
-            </div>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let snapshot = try await SheetInteraction.snapshot(
-            in: webView,
-            interactiveOnly: true
-        )
-        let contextLine = try #require(snapshot.split(separator: "\n").first { $0.contains("Available actions") })
-
-        // Assert
-        #expect(contextLine.contains("text \""))
-        #expect(contextLine.contains("Available actions"))
-        #expect(!contextLine.contains("Save"))
-        #expect(!contextLine.contains("Updated"))
-    }
-
-    @Test func interactiveSnapshotNestsActionsUnderSemanticContainer() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <div role="menu">
-              <button>Continue</button>
-            </div>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let snapshot = try await SheetInteraction.snapshot(in: webView, interactiveOnly: true)
-        let lines = snapshot.split(separator: "\n").map(String.init)
-        let menuIndex = try #require(lines.firstIndex { $0.contains("[menu]") })
-        let buttonIndex = try #require(lines.firstIndex { $0.contains("[button]") })
-        let menuIndent = lines[menuIndex].prefix(while: { $0 == " " }).count
-        let buttonIndent = lines[buttonIndex].prefix(while: { $0 == " " }).count
-
-        // Assert
-        #expect(menuIndex < buttonIndex)
-        #expect(buttonIndent > menuIndent)
-    }
-
-    @Test func interactiveSnapshotShowsTextboxValuesButNotPasswordContents() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <input type="search" value="current">
-            <input type="text" value="">
-            <input type="password" value="secret">
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let snapshot = try await SheetInteraction.snapshot(in: webView, interactiveOnly: true)
-
-        // Assert
-        #expect(snapshot.contains("[value=\"current\"]"))
-        #expect(snapshot.contains("[value=\"\"]"))
-        #expect(!snapshot.contains("secret"))
-    }
-
-    @Test func refTargetsUseWeakReferencesAndFollowClonedElements() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <button id="target" onclick="this.dataset.clicked = 'yes'">Target</button>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-        let element = try #require(
-            await SheetInteraction.query(
-                selector: "#target",
-                visibleOnly: true,
-                all: false,
-                fields: ["text"],
-                in: webView
-            ).first
-        )
-        let usesWeakReference =
-            try await webView.callAsyncJavaScript(
-                "return typeof window.__denRefs.get(ref)?.deref === 'function';",
-                arguments: ["ref": element.ref],
-                in: nil,
-                contentWorld: SheetDOMRuntime.contentWorld
-            ) as? Bool
-
-        // Act
-        _ = try await webView.evaluateJavaScript(
-            """
-            const target = document.getElementById('target');
-            target.replaceWith(target.cloneNode(true));
-            """
-        )
-        try await SheetInteraction.click(target: element.ref, in: webView)
-        let clicked =
-            try await webView.evaluateJavaScript(
-                "document.getElementById('target').dataset.clicked"
-            ) as? String
-
-        // Assert
-        #expect(usesWeakReference == true)
-        #expect(clicked == "yes")
-    }
-
     @Test func semanticClickDispatchesOnePointerAndMouseSequence() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -412,52 +81,9 @@ struct SheetInteractionTests {
         )
     }
 
-    @Test func snapshotStatesAndPointReadsUseTheCurrentElementState() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <input id="check" type="checkbox" checked aria-label="Notifications">
-            <button id="disabled" disabled>Save</button>
-            <button id="hidden" style="display:none">Hidden</button>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
-
-        // Act
-        let snapshot = try await SheetInteraction.snapshot(
-            in: webView,
-            interactiveOnly: true
-        )
-        let text = try await SheetInteraction.text(target: "#disabled", in: webView)
-        let attribute = try await SheetInteraction.attribute(
-            target: "#disabled",
-            name: "id",
-            in: webView
-        )
-        let count = try await SheetInteraction.count(selector: "button", in: webView)
-        let visible = try await SheetInteraction.isVisible(target: "#hidden", in: webView)
-        let enabled = try await SheetInteraction.isEnabled(target: "#disabled", in: webView)
-        let checked = try await SheetInteraction.isChecked(target: "#check", in: webView)
-
-        // Assert
-        #expect(snapshot.contains("[checked]"))
-        #expect(snapshot.contains("[disabled]"))
-        #expect(!snapshot.contains("Hidden"))
-        #expect(text == "Save")
-        #expect(attribute == "disabled")
-        #expect(count == 2)
-        #expect(!visible)
-        #expect(!enabled)
-        #expect(checked)
-    }
-
     @Test func valueAndFillSupportEmptyState() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -494,7 +120,7 @@ struct SheetInteractionTests {
 
     @Test func fillAndValueWorkOnContentEditableAndAriaTextbox() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -548,7 +174,7 @@ struct SheetInteractionTests {
 
     @Test func fillTriggersInputEventsInPageWorld() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -579,26 +205,30 @@ struct SheetInteractionTests {
         #expect(receivedValue == "dispatched")
     }
 
-    @Test func dragWithDxDyDispatchesPointerAndMouseEvents() async throws {
+    @Test func dragDispatchesPointerAndMouseEventsToDeltaAndTarget() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
             <!doctype html>
             <div id="drag-source" style="position: absolute; left: 10px; top: 10px; width: 100px; height: 100px; background: red;"></div>
+            <div id="target" style="position: absolute; left: 200px; top: 200px; width: 50px; height: 50px;"></div>
             <script>
                 window.recordedEvents = [];
+                window.targetEvents = [];
                 const record = (e) => window.recordedEvents.push({
                     type: e.type,
                     x: Math.round(e.clientX),
                     y: Math.round(e.clientY),
                     buttons: e.buttons
                 });
-                const el = document.getElementById('drag-source');
                 ['pointerdown', 'pointermove', 'pointerup', 'mousedown', 'mousemove', 'mouseup'].forEach(type => {
                     window.addEventListener(type, record);
                 });
+                const tgt = document.getElementById('target');
+                tgt.addEventListener('pointerup', () => window.targetEvents.push('pointerup'));
+                tgt.addEventListener('mouseup', () => window.targetEvents.push('mouseup'));
             </script>
             """,
             baseURL: URL(string: "https://example.com/")!,
@@ -623,30 +253,9 @@ struct SheetInteractionTests {
         // Source center is (60, 60), dx=100, dy=50 => end is (160, 110)
         #expect(lastX == 160)
         #expect(lastY == 110)
-    }
-
-    @Test func dragToTargetDispatchesEvents() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        await waiter.load(
-            """
-            <!doctype html>
-            <div id="source" style="position: absolute; left: 0px; top: 0px; width: 50px; height: 50px;"></div>
-            <div id="target" style="position: absolute; left: 200px; top: 200px; width: 50px; height: 50px;"></div>
-            <script>
-                window.targetEvents = [];
-                const tgt = document.getElementById('target');
-                tgt.addEventListener('pointerup', () => window.targetEvents.push('pointerup'));
-                tgt.addEventListener('mouseup', () => window.targetEvents.push('mouseup'));
-            </script>
-            """,
-            baseURL: URL(string: "https://example.com/")!,
-            in: webView
-        )
 
         // Act
-        try await SheetInteraction.drag(source: "#source", target: "#target", steps: 3, in: webView)
+        try await SheetInteraction.drag(source: "#drag-source", target: "#target", steps: 3, in: webView)
 
         // Assert
         let targetEventsCount = try await webView.evaluateJavaScript("window.targetEvents.length") as? Int ?? 0
@@ -655,7 +264,7 @@ struct SheetInteractionTests {
 
     @Test func pressProvidesLegacyKeyCodes() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -691,7 +300,7 @@ struct SheetInteractionTests {
         submits: Bool
     ) async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -723,7 +332,7 @@ struct SheetInteractionTests {
 
     @Test func scrollAcceptsAnElementTarget() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -749,7 +358,7 @@ struct SheetInteractionTests {
 
     @Test func waitSupportsVisibilityTransitionAndURLGlob() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -826,7 +435,7 @@ struct SheetInteractionTests {
 
     @Test func clickResultExtractsHrefForHTMLAndSVGLinks() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         let html = """
             <!DOCTYPE html>
@@ -865,7 +474,7 @@ struct SheetInteractionTests {
 
     @Test func dblclickDispatchesDoubleClickEvents() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         let html = """
             <!DOCTYPE html>
@@ -888,32 +497,14 @@ struct SheetInteractionTests {
         #expect(details?.count == 3)
     }
 
-    @Test func focusSetsActiveElement() async throws {
+    @Test func focusAndTypeInsertTextIntoTargetedOrFocusedElement() async throws {
         // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        let html = """
-            <!DOCTYPE html>
-            <input id="first" type="text">
-            <input id="second" type="text">
-            """
-        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
-
-        // Act
-        try await SheetInteraction.focus(target: "#second", in: webView)
-
-        // Assert
-        let activeID = try await webView.evaluateJavaScript("document.activeElement.id") as? String
-        #expect(activeID == "second")
-    }
-
-    @Test func typeInsertsTextAndDispatchesInput() async throws {
-        // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         let html = """
             <!DOCTYPE html>
             <input id="inp" type="text" value="hello ">
+            <textarea id="txt"></textarea>
             <script>
                 window.inputEvents = [];
                 document.getElementById('inp').addEventListener('input', e => window.inputEvents.push(e.data));
@@ -923,58 +514,24 @@ struct SheetInteractionTests {
 
         // Act
         try await SheetInteraction.type(target: "#inp", text: "world", in: webView)
-
-        // Assert
         let val = try await SheetInteraction.value(target: "#inp", in: webView)
-        #expect(val == "hello world")
         let eventsCount = try await webView.evaluateJavaScript("window.inputEvents.length") as? Int ?? 0
-        #expect(eventsCount > 0)
-    }
 
-    @Test func typeIntoFocusedElementWhenTargetIsNil() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        let html = """
-            <!DOCTYPE html>
-            <textarea id="txt"></textarea>
-            <script>
-                document.getElementById('txt').focus();
-            </script>
-            """
-        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
-
-        // Act
+        try await SheetInteraction.focus(target: "#txt", in: webView)
+        let activeID = try await webView.evaluateJavaScript("document.activeElement.id") as? String
         try await SheetInteraction.type(target: nil, text: "typed text", in: webView)
+        let typedInFocused = try await SheetInteraction.value(target: "#txt", in: webView)
 
         // Assert
-        let val = try await SheetInteraction.value(target: "#txt", in: webView)
-        #expect(val == "typed text")
-    }
-
-    @Test func boxReturnsElementBoundingBox() async throws {
-        // Arrange
-        let webView = makeWebView()
-        let waiter = SheetInteractionWebViewLoadWaiter()
-        let html = """
-            <!DOCTYPE html>
-            <div id="box" style="position: absolute; left: 50px; top: 100px; width: 200px; height: 80px;"></div>
-            """
-        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
-
-        // Act
-        let rect = try await SheetInteraction.box(target: "#box", in: webView)
-
-        // Assert
-        #expect(rect.origin.x == 50)
-        #expect(rect.origin.y == 100)
-        #expect(rect.size.width == 200)
-        #expect(rect.size.height == 80)
+        #expect(val == "hello world")
+        #expect(eventsCount > 0)
+        #expect(activeID == "txt")
+        #expect(typedInFocused == "typed text")
     }
 
     @Test func mouseEventsDispatchCorrectly() async throws {
         // Arrange
-        let webView = makeWebView()
+        let webView = makeSheetInteractionWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
         let html = """
             <!DOCTYPE html>

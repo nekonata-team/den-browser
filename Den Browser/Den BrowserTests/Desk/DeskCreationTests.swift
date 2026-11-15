@@ -75,41 +75,28 @@ struct DeskCreationTests {
         )
     }
 
-    @Test func createsChatGPTPresetWithThreeBoards() {
+    @Test(arguments: [
+        (BuiltInDeskPreset.chatGPT.rawValue, "https://chatgpt.com/"),
+        (BuiltInDeskPreset.gemini.rawValue, "https://gemini.google.com/"),
+    ])
+    func createsBuiltInPresetWithThreeBoards(presetRawValue: String, expectedURL: String) throws {
+        let preset = try #require(BuiltInDeskPreset(rawValue: presetRawValue))
         withTestSession(
             resources: DenProfileResources(
                 state: DenStateNormalization.normalize(makeNativeTestState(desks: [makeTestDesk("First")]))
             )
         ) { session in
-            session.desks.createDesk(label: "AI", preset: .chatGPT)
+            session.desks.createDesk(label: preset.label, preset: preset)
 
             #expect(session.navigation.focusedDesk?.boards.count == 3)
             #expect(
                 session.navigation.focusedDesk?.boards.allSatisfy {
-                    $0.currentSheetURL == URL(string: "https://chatgpt.com/")
+                    $0.currentSheetURL == URL(string: expectedURL) && $0.width == 520
                 } == true
             )
-            #expect(session.navigation.focusedDesk?.boards.allSatisfy { $0.width == 520 } == true)
             #expect(
                 session.navigation.focusedDesk?.focusedBoardID
                     == session.navigation.focusedDesk?.boards.first?.id
-            )
-        }
-    }
-
-    @Test func createsGeminiPresetWithThreeBoards() {
-        withTestSession(
-            resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [makeTestDesk("First")]))
-            )
-        ) { session in
-            session.desks.createDesk(label: "Gemini", preset: .gemini)
-
-            #expect(session.navigation.focusedDesk?.boards.count == 3)
-            #expect(
-                session.navigation.focusedDesk?.boards.allSatisfy {
-                    $0.currentSheetURL == URL(string: "https://gemini.google.com/") && $0.width == 520
-                } == true
             )
         }
     }

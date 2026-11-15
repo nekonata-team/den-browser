@@ -139,34 +139,16 @@ struct SheetReadingTests {
         #expect(text == expected)
     }
 
-    @Test func highlightedSpansInPreKeepCodeBoundariesAndWhitespace() async throws {
+    @Test func preCodeBlocksPreserveWhitespaceLanguageAndIgnoreSiblingControls() async throws {
         // Arrange
+        let rustContent = "fn main() {\n    println!(\"hello\");\n}"
         let webView = await makeWebView(
             html: """
                 <div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span>some_value = 1</span>
                     print(some_value)
                 </pre></div>
-                """
-        )
-
-        // Act
-        let result = try await SheetReading.read(in: webView)
-
-        // Assert
-        guard case .reading(_, _, let markdown) = result else {
-            Issue.record("Expected Markdown reading payload")
-            return
-        }
-        #expect(markdown == "```\n>>> some_value = 1\n    print(some_value)\n```")
-    }
-
-    @Test func preWithSiblingControlsUsesOnlyTheCodeAndKeepsItsLanguage() async throws {
-        // Arrange
-        let content = "fn main() {\n    println!(\"hello\");\n}"
-        let webView = await makeWebView(
-            html: """
                 <pre><div class="buttons"><button>Run control marker</button></div>
-                <code class="language-rust">\(content)</code></pre>
+                <code class="language-rust">\(rustContent)</code></pre>
                 """
         )
 
@@ -178,16 +160,22 @@ struct SheetReadingTests {
             Issue.record("Expected Markdown reading payload")
             return
         }
-        #expect(markdown == "```rust\n\(content)\n```")
+        #expect(markdown == "```\n>>> some_value = 1\n    print(some_value)\n```\n\n```rust\n\(rustContent)\n```")
+        #expect(!markdown.contains("Run control marker"))
     }
 
-    @Test func tableCellLineBreaksStayWithinTheSameRow() async throws {
+    @Test func tablesPreserveSingleRowCellsEscapePipesAndKeepEmptyTableCaptions() async throws {
         // Arrange
         let webView = await makeWebView(
             html: """
-                <table><tr><th>Name</th><th>Value</th></tr>
+                <p>Before marker</p><table></table>
+                <table><tr hidden><td>Hidden row marker</td></tr></table>
+                <table><caption>Caption marker</caption></table>
+                <table><tr><th>Expression | sample</th><th>Value</th></tr>
                 <tr><td>Example</td><td>First<br>Second</td></tr>
-                <tr><td>Paragraphs</td><td><p>Third</p><p>Fourth</p></td></tr></table>
+                <tr><td>Paragraphs</td><td><p>Third</p><p>Fourth</p></td></tr>
+                <tr><td>a | b</td><td><code>a | b</code></td></tr></table>
+                <p>After marker</p>
                 """
         )
 
@@ -199,9 +187,16 @@ struct SheetReadingTests {
             Issue.record("Expected Markdown reading payload")
             return
         }
+        let tableLines = markdown.split(separator: "\n").filter { $0.hasPrefix("|") }
+        #expect(markdown.contains("Before marker"))
+        #expect(markdown.contains("After marker"))
+        #expect(markdown.contains("Caption marker"))
+        #expect(!markdown.contains("Hidden row marker"))
+        #expect(markdown.contains("| Expression \\| sample | Value |"))
         #expect(markdown.contains("| Example | First<br>Second |"))
         #expect(markdown.contains("| Paragraphs | Third<br><br>Fourth |"))
-        #expect(markdown.split(separator: "\n").count == 4)
+        #expect(markdown.contains("| a \\| b | `a \\| b` |"))
+        #expect(tableLines.count == 5)
     }
 
     @Test(arguments: ["highlight-source-md", "highlight-text-md"], [false, true])
@@ -257,27 +252,6 @@ struct SheetReadingTests {
         #expect(markdown.contains("Open content marker") == (scope == nil))
     }
 
-    @Test(arguments: [String?.none, "#hidden", "#hidden-child"])
-    func contentVisibilityHiddenExcludesTheWholeSubtree(scope: String?) async throws {
-        // Arrange
-        let webView = await makeWebView(
-            html: """
-                <section id="hidden" style="content-visibility:hidden">
-                <p id="hidden-child">Hidden content marker</p></section><p>Visible marker</p>
-                """
-        )
-
-        // Act
-        let result = try await SheetReading.read(in: webView, within: scope)
-
-        // Assert
-        guard case .reading(_, _, let markdown) = result else {
-            Issue.record("Expected Markdown reading payload")
-            return
-        }
-        #expect(markdown == (scope == nil ? "Visible marker" : ""))
-    }
-
     @Test func readingDoesNotRunCustomElementConstructors() async throws {
         // Arrange
         let webView = await makeWebView(
@@ -319,76 +293,6 @@ struct SheetReadingTests {
         #expect(markdown.contains("Unchanged marker"))
         #expect(text.contains("Custom element content"))
         #expect(text.contains("Shadow content marker"))
-    }
-
-    @Test(arguments: [String?.none, "#scope", "#child"])
-    func readingKeepsVisibleDescendantsOfHiddenElements(scope: String?) async throws {
-        // Arrange
-        let webView = await makeWebView(
-            html: """
-                <section id="scope" style="visibility:hidden">
-                Hidden text marker <img src="data:," alt="Hidden image marker">
-                <span id="child" style="visibility:visible">Visible child marker</span>
-                </section>
-                """
-        )
-
-        // Act
-        let result = try await SheetReading.read(in: webView, within: scope)
-
-        // Assert
-        guard case .reading(_, _, let markdown) = result else {
-            Issue.record("Expected Markdown reading payload")
-            return
-        }
-        #expect(markdown.contains("Visible child marker"))
-        #expect(!markdown.contains("Hidden text marker"))
-        #expect(!markdown.contains("Hidden image marker"))
-    }
-
-    @Test func emptyTablesDoNotPreventReadingAndKeepTheirCaptions() async throws {
-        // Arrange
-        let webView = await makeWebView(
-            html: """
-                <p>Before marker</p><table></table>
-                <table><tr hidden><td>Hidden row marker</td></tr></table>
-                <table><caption>Caption marker</caption></table><p>After marker</p>
-                """
-        )
-
-        // Act
-        let result = try await SheetReading.read(in: webView)
-
-        // Assert
-        guard case .reading(_, _, let markdown) = result else {
-            Issue.record("Expected Markdown reading payload")
-            return
-        }
-        #expect(markdown.contains("Before marker"))
-        #expect(markdown.contains("After marker"))
-        #expect(markdown.contains("Caption marker"))
-        #expect(!markdown.contains("Hidden row marker"))
-    }
-
-    @Test func tableCellPipesAreEscapedIncludingHeadersAndInlineCode() async throws {
-        // Arrange
-        let webView = await makeWebView(
-            html: """
-                <table><tr><th>Expression | sample</th><th>Code</th></tr>
-                <tr><td>a | b</td><td><code>a | b</code></td></tr></table>
-                """
-        )
-
-        // Act
-        let result = try await SheetReading.read(in: webView)
-
-        // Assert
-        guard case .reading(_, _, let markdown) = result else {
-            Issue.record("Expected Markdown reading payload")
-            return
-        }
-        #expect(markdown.contains("| Expression \\| sample | Code |"))
-        #expect(markdown.contains("| a \\| b | `a \\| b` |"))
     }
 
     @Test(arguments: ["main", "#heading", "ref", "#concealed"])

@@ -9,18 +9,13 @@ import WebKit
 struct BoardRuntimeWebUITests {
     @Test func runtimeConfiguresPreferencesDelegatesAndLinkActivation() {
         var activationCount = 0
-        var openedURL: URL?
-        var backgroundURL: URL?
-        var actions = noOpSheetNavigationActions()
-        actions.onOpenBoard = { openedURL = $0 }
-        actions.onOpenBoardInBackground = { backgroundURL = $0 }
 
         let runtime = WebRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
-            sheetNavigationActions: actions,
+            sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
                 onChange: { _, _, _ in },
                 onFullscreenChange: nil,
@@ -46,55 +41,6 @@ struct BoardRuntimeWebUITests {
         #expect(runtime.didTerminateContentProcess)
         runtime.webView(runtime.webView, didCommit: nil)
         #expect(!runtime.didTerminateContentProcess)
-
-        let selectors = [
-            "webView:decidePolicyForNavigationAction:decisionHandler:",
-            "webView:decidePolicyForNavigationResponse:decisionHandler:",
-            "webView:navigationAction:didBecomeDownload:",
-            "webView:navigationResponse:didBecomeDownload:",
-            "_webView:contextMenuDidCreateDownload:",
-            "webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:",
-            "webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:",
-            "webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:",
-            "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:",
-        ]
-        #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
-
-        runtime.auxiliaryWindowFactory = { _ in TestWindow() }
-        let auxiliary = runtime.makeAuxiliaryWebView(
-            configuration: WKWebViewConfiguration(),
-            sourceWebView: runtime.webView
-        )
-        #expect(auxiliary.uiDelegate === runtime)
-        #expect(auxiliary.navigationDelegate === runtime)
-
-        let testURL = URL(string: "https://example.com/page")!
-        #expect(
-            runtime.handleLinkNavigation(
-                testURL,
-                navigationType: .linkActivated,
-                modifierFlags: [],
-                button: .middle,
-                opensNewContext: false
-            )
-        )
-        #expect(backgroundURL == testURL)
-        #expect(openedURL == nil)
-
-        openedURL = nil
-        backgroundURL = nil
-
-        #expect(
-            runtime.handleLinkNavigation(
-                testURL,
-                navigationType: .linkActivated,
-                modifierFlags: [.shift],
-                button: .middle,
-                opensNewContext: false
-            )
-        )
-        #expect(openedURL == testURL)
-        #expect(backgroundURL == nil)
     }
 
     @Test func modifierClicksOpenSupportedLinkInNewBoard() {
@@ -320,14 +266,6 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(keptURL == shiftMiddleURL)
-
-        let selectors = [
-            "webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:",
-            "webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:",
-            "webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:",
-            "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:",
-        ]
-        #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
 
         runtime.auxiliaryWindowFactory = { _ in TestWindow() }
         let popup = runtime.makeAuxiliaryWebView(

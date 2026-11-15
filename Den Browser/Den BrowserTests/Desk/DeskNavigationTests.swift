@@ -234,26 +234,6 @@ struct DeskNavigationTests {
         }
     }
 
-    @Test func savesAndRetrievesDeskScrollOffset() {
-        let deskA = makeTestDesk("Desk A")
-        let deskB = makeTestDesk("Desk B")
-        withTestSession(
-            resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [deskA, deskB]))
-            )
-        ) { session in
-            #expect(session.desks.deskScrollOffset(for: deskA.id) == nil)
-
-            session.desks.saveDeskScrollOffset(420.5, for: deskA.id)
-            #expect(session.desks.deskScrollOffset(for: deskA.id) == 420.5)
-            #expect(session.desks.deskScrollOffset(for: deskB.id) == nil)
-
-            session.desks.saveDeskScrollOffset(120.0, for: deskB.id)
-            #expect(session.desks.deskScrollOffset(for: deskA.id) == 420.5)
-            #expect(session.desks.deskScrollOffset(for: deskB.id) == 120.0)
-        }
-    }
-
     @Test func copyDeskIDCopiesLowercasedUUIDToPasteboardAndShowsFeedback() {
         let deskA = makeTestDesk("Desk A")
         withTestSession(

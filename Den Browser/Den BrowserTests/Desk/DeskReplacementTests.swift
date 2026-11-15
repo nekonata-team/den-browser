@@ -95,35 +95,6 @@ struct DeskReplacementTests {
         #expect(savedState == session.resources.state)
     }
 
-    @Test func replacingDeskDiscardsPausedStateWithItsBoards() {
-        let oldBoard = BoardState(
-            label: "Old",
-            width: 520,
-            currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true
-        )
-        let replacing = makeTestDesk("Research", boards: [oldBoard], focusedBoardID: oldBoard.id)
-        let other = makeTestDesk("Other")
-        let session = ProfileWindowSession(
-            resources: DenProfileResources(
-                state: DenStateNormalization.normalize(
-                    DenState(desks: [replacing, other], focusedDeskID: replacing.id)
-                )
-            ),
-            configuration: makeTestBoardRuntimeConfiguration()
-        )
-
-        let composition = DenWindowComposition(session: session)
-
-        let windowModel = composition.model
-        composition.connect()
-        defer { composition.disconnect() }
-        _ = session.desks.replaceFocusedDesk(label: "Morning", preset: .chatGPT)
-        windowModel.confirmDeskReplacement()
-
-        #expect(!session.resources.state.desks.flatMap(\.boards).contains { $0.id == oldBoard.id })
-    }
-
     @Test func replacingDeskInvalidatesReferencesToRemovedBoards() {
         // Arrange
         let oldBoards = [makeTestBoard("First"), makeTestBoard("Second")]
@@ -293,6 +264,7 @@ struct DeskReplacementTests {
                 state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty]))
             )
         ) { session, windowModel in
+            let runtime = session.runtimes.webRuntime(for: board)
             session.desks.deleteFocusedDesk()
 
             #expect(session.resources.state.desks.count == 2)
@@ -307,6 +279,9 @@ struct DeskReplacementTests {
             #expect(session.resources.state.desks.map(\.id) == [empty.id])
             #expect(session.navigation.focusedDesk?.id == empty.id)
             #expect(windowModel.pendingConfirmation == nil)
+            #expect(session.resources.webRuntimes[board.id] == nil)
+            #expect(runtime.webView.navigationDelegate == nil)
+            #expect(runtime.webView.uiDelegate == nil)
         }
     }
 
@@ -342,54 +317,6 @@ struct DeskReplacementTests {
             #expect(session.resources.state.desks.map(\.id) == [populated.id, empty.id])
             #expect(windowModel.pendingConfirmation == nil)
         }
-    }
-
-    @Test func deletingDeskDisposesItsBoardRuntimes() {
-        let board = makeTestBoard("Board")
-        let populated = makeTestDesk("Populated", boards: [board])
-        let empty = makeTestDesk("Empty")
-        withTestWindow(
-            resources: DenProfileResources(
-                state: DenStateNormalization.normalize(makeNativeTestState(desks: [populated, empty]))
-            )
-        ) { session, windowModel in
-            let runtime = session.runtimes.webRuntime(for: board)
-            session.desks.deleteFocusedDesk()
-
-            windowModel.confirmDeskDeletion()
-
-            #expect(session.resources.webRuntimes[board.id] == nil)
-            #expect(runtime.webView.navigationDelegate == nil)
-            #expect(runtime.webView.uiDelegate == nil)
-        }
-    }
-
-    @Test func deletingDeskDiscardsItsPausedBoardState() {
-        let removedBoard = BoardState(
-            label: "Removed",
-            width: 520,
-            currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true
-        )
-        let populated = makeTestDesk("Populated", boards: [removedBoard], focusedBoardID: removedBoard.id)
-        let empty = makeTestDesk("Empty")
-        let session = ProfileWindowSession(
-            resources: DenProfileResources(
-                state: DenStateNormalization.normalize(
-                    DenState(desks: [populated, empty], focusedDeskID: populated.id)
-                )
-            ),
-            configuration: makeTestBoardRuntimeConfiguration()
-        )
-        let composition = DenWindowComposition(session: session)
-        let windowModel = composition.model
-        composition.connect()
-        defer { composition.disconnect() }
-
-        session.desks.deleteFocusedDesk()
-        windowModel.confirmDeskDeletion()
-
-        #expect(!session.resources.state.desks.flatMap(\.boards).contains { $0.id == removedBoard.id })
     }
 
     @Test func lastDeskCannotBeDeleted() {

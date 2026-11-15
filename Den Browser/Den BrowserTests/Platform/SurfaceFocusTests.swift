@@ -9,19 +9,16 @@ import WebKit
 
 @MainActor
 struct SurfaceFocusTests {
-    @Test func firstResponderInsideTargetDoesNotNeedActivation() {
+    @Test func needsFirstResponderActivationChecksTargetSubtree() {
+        // Arrange
         let target = NSView()
         let child = NSView()
+        let other = NSView()
         target.addSubview(child)
 
+        // Act & Assert
         #expect(!needsFirstResponderActivation(target, target: target))
         #expect(!needsFirstResponderActivation(child, target: target))
-    }
-
-    @Test func firstResponderOutsideTargetNeedsActivation() {
-        let target = NSView()
-        let other = NSView()
-
         #expect(needsFirstResponderActivation(other, target: target))
         #expect(needsFirstResponderActivation(nil, target: target))
     }

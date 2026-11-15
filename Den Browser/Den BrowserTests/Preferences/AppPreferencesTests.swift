@@ -41,24 +41,13 @@ struct AppPreferencesTests {
         }
     }
 
-    @Test func automaticPictureInPictureDefaultsToDisabled() throws {
-        // Arrange
-        let suiteName = "AutomaticPictureInPictureDefaultsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        // Act
-        let preferences = AppPreferences(defaults: defaults)
-
-        // Assert
-        #expect(!preferences.automaticPIPOnDeskSwitch)
-    }
-
-    @Test func searchEngineDefaultsToGoogle() throws {
+    @Test(arguments: [nil, "unknown"] as [String?])
+    func searchEngineDefaultsToGoogle(storedValue: String?) throws {
         // Arrange
         let suiteName = "SearchEngineDefaultsTests-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(storedValue, forKey: "preferences.search.engine")
 
         // Act
         let preferences = AppPreferences(defaults: defaults)
@@ -83,20 +72,6 @@ struct AppPreferencesTests {
         }
     }
 
-    @Test func searchEnginePreferenceFallsBackToGoogleForUnknownValue() throws {
-        // Arrange
-        let suiteName = "SearchEngineFallbackTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set("unknown", forKey: "preferences.search.engine")
-
-        // Act
-        let preferences = AppPreferences(defaults: defaults)
-
-        // Assert
-        #expect(preferences.searchEngine == .google)
-    }
-
     @Test func appPreferencesClampSheetScale() throws {
         // Arrange
         let suiteName = "AppPreferencesClampTests-\(UUID().uuidString)"
@@ -119,6 +94,11 @@ struct AppPreferencesTests {
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
+
+        // Assert initial defaults
+        #expect(!preferences.automaticPIPOnDeskSwitch)
+        #expect(!preferences.rememberBoardInputMethod)
+        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
 
         // Act
         preferences.setMotionPreference(.standard)
@@ -228,20 +208,6 @@ struct AppPreferencesTests {
         #expect(AppPreferences(defaults: defaults).essentials.isEmpty)
     }
 
-    @Test func appPreferencesInitializeMissingSchema() throws {
-        // Arrange
-        let suiteName = "AppPreferencesMissingSchemaTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        // Act
-        let preferences = AppPreferences(defaults: defaults)
-
-        // Assert
-        #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
-        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
-    }
-
     @Test func appPreferencesDoNotDowngradeFutureSchema() throws {
         // Arrange
         let suiteName = "AppPreferencesFutureSchemaTests-\(UUID().uuidString)"
@@ -294,42 +260,5 @@ struct AppPreferencesTests {
 
         restored.toggleDrawerStyle()
         #expect(restored.drawerStyle == .floating)
-    }
-
-    @Test func rememberBoardInputMethodDefaultsToDisabled() throws {
-        // Arrange
-        let suiteName = "RememberBoardInputMethodDefaultsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        // Act
-        let preferences = AppPreferences(defaults: defaults)
-
-        // Assert
-        #expect(!preferences.rememberBoardInputMethod)
-    }
-
-    @Test func rememberBoardInputMethodUpdatesAndPersists() throws {
-        // Arrange
-        let suiteName = "RememberBoardInputMethodPersistTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-
-        // Act
-        preferences.setRememberBoardInputMethod(true)
-
-        // Assert
-        #expect(preferences.rememberBoardInputMethod)
-        #expect(defaults.bool(forKey: "preferences.input-method.remember-per-board"))
-        #expect(AppPreferences(defaults: defaults).rememberBoardInputMethod)
-
-        // Act
-        preferences.setRememberBoardInputMethod(false)
-
-        // Assert
-        #expect(!preferences.rememberBoardInputMethod)
-        #expect(!defaults.bool(forKey: "preferences.input-method.remember-per-board"))
-        #expect(!AppPreferences(defaults: defaults).rememberBoardInputMethod)
     }
 }

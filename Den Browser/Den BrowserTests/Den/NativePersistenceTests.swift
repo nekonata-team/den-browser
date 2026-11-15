@@ -152,7 +152,7 @@ struct NativePersistenceTests {
         #expect(restored.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
 
-    @Test func persistedStateRestoresDeskScrollOffset() throws {
+    @Test func persistedStateRestoresAndClearsDeskScrollOffset() throws {
         // Arrange
         let first = desk("First", boards: [board("One")])
         var persistedState: DenState?
@@ -170,20 +170,6 @@ struct NativePersistenceTests {
         // Assert
         let restored = try #require(persistedState)
         #expect(restored.desks[0].scrollOffsetX == 350.0)
-    }
-
-    @Test func persistedStateClearsDeskScrollOffset() throws {
-        // Arrange
-        let first = desk("First", boards: [board("One")])
-        var persistedState: DenState?
-        let writer = DenProfileResources(
-            state: DenStateNormalization.normalize(DenState(desks: [first], focusedDeskID: first.id)),
-            onSave: { state in
-                persistedState = state
-                return true
-            }
-        )
-        writer.deskUpdates.saveScrollOffset(350.0, for: first.id)
 
         // Act
         writer.deskUpdates.saveScrollOffset(nil, for: first.id)
@@ -197,8 +183,10 @@ struct NativePersistenceTests {
         // Arrange
         let boardUUID = UUID()
         let deskUUID = UUID()
+        let profileUUID = UUID()
         let boardID = BoardID(boardUUID)
         let deskID = DeskID(deskUUID)
+        let profileID = ProfileID(profileUUID)
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
         let persistedBoard = BoardState(
@@ -224,6 +212,9 @@ struct NativePersistenceTests {
         let encodedDesk = try #require(encodedDesks.first)
         let encodedBoards = try #require(encodedDesk["boards"] as? [[String: Any]])
         let encodedBoard = try #require(encodedBoards.first)
+        let uuidData = try encoder.encode(profileUUID)
+        let profileIDData = try encoder.encode(profileID)
+        let decodedProfileID = try decoder.decode(ProfileID.self, from: uuidData)
 
         // Assert
         #expect(object["focusedDeskID"] as? String == deskUUID.uuidString)
@@ -232,6 +223,8 @@ struct NativePersistenceTests {
         #expect(encodedDesk["anchorBoardID"] as? String == boardUUID.uuidString)
         #expect(encodedBoard["id"] as? String == boardUUID.uuidString)
         #expect(decoded == state)
+        #expect(profileIDData == uuidData)
+        #expect(decodedProfileID == profileID)
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
