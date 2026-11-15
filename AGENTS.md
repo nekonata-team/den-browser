@@ -4,7 +4,7 @@
 
 Den Browser is a macOS-first companion browser for long-running web and terminal work. It is a SwiftUI app with AppKit bridges and `WKWebView`.
 
-Read [CONTEXT.md](./CONTEXT.md) when changing product behavior or user-visible wording. Do not replace project terms (Den, Desk, Board, Sheet) with browser-tab language.
+Read [CONTEXT.md](./CONTEXT.md) when discussing product design or changing product behavior or user-visible wording. Use the domain terms and meanings defined in CONTEXT.md.
 
 ## Platform baseline
 
