@@ -6,10 +6,7 @@ private enum ProfileFileLoadError: Error {
     case decode(Error)
 }
 
-@MainActor
 public final class ProfilePersistence {
-    private static let deferredSaveDelay: Duration = .milliseconds(300)
-
     public struct LoadResult {
         public var profiles: [PersistedProfile]
         public var issues: [String]
@@ -20,7 +17,6 @@ public final class ProfilePersistence {
     private let directoryURL: URL
     private let isEphemeral: Bool
     private let quarantineFile: (URL, URL) throws -> Void
-    private var deferredSaves: [ProfileID: (id: UUID, task: Task<Void, Never>)] = [:]
     public private(set) var profileSaveCount = 0
 
     public init(
@@ -115,46 +111,16 @@ public final class ProfilePersistence {
         try write(ProfileIndex(profileIDs: profileIDs), to: directoryURL.appending(path: "profile-index.json"))
     }
 
-    public var pendingDeferredSaveIDs: [ProfileID] { Array(deferredSaves.keys) }
-
-    public func scheduleDeferredSave(
-        for profileID: ProfileID,
-        operation: @escaping () -> Bool
-    ) {
-        cancelPendingDeferredSave(for: profileID)
-        let id = UUID()
-        let task = Task { [weak self] in
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: Self.deferredSaveDelay)
-                } catch {
-                    return
-                }
-                guard !Task.isCancelled else { return }
-                guard operation() else { continue }
-                if self?.deferredSaves[profileID]?.id == id {
-                    self?.deferredSaves.removeValue(forKey: profileID)
-                }
-                return
-            }
-        }
-        deferredSaves[profileID] = (id, task)
-    }
-
-    public func cancelPendingDeferredSave(for profileID: ProfileID) {
-        deferredSaves.removeValue(forKey: profileID)?.task.cancel()
-    }
-
     private func profileURL(for id: ProfileID) -> URL {
         directoryURL.appending(path: "\(id.rawValue.uuidString.lowercased()).json")
     }
 
-    public nonisolated static func defaultDirectoryURL() -> URL {
+    public static func defaultDirectoryURL() -> URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appending(path: "Den Browser/Profiles", directoryHint: .isDirectory)
     }
 
-    public nonisolated static func moveFileToQuarantine(_ source: URL, _ destination: URL) throws {
+    public static func moveFileToQuarantine(_ source: URL, _ destination: URL) throws {
         try FileManager.default.moveItem(at: source, to: destination)
     }
 

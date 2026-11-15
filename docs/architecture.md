@@ -81,7 +81,7 @@ The package graph above is compiler-enforced. Source groups inside the app descr
 and do not create additional module boundaries.
 
 Domain, Application and Models do not import UI or Runtime SDKs.
-Domain and Application are independent of MainActor and Observation.
+Domain, Application, Infrastructure and IPCProtocol are independent of MainActor and Observation.
 Callers must keep synchronous state access within the owner's isolation (MainActor in the app).
 IPC imports Application and receives state values rather than Model objects.
 Views may use drawing SDKs; Infrastructure may use independent OS/bitmap I/O SDKs.

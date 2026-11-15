@@ -5,7 +5,6 @@ import Foundation
 struct AgentVerifyScenario: DemoScenario {
     static let name = "agent-verify"
 
-    @MainActor
     func initialProfileURL(directory: URL) throws -> URL? {
         let htmlFile = URL(fileURLWithPath: "Packages/DenDemo/Resources/demo-app.html").standardizedFileURL
         guard FileManager.default.fileExists(atPath: htmlFile.path) else {

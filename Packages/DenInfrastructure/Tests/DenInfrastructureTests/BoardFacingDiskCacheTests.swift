@@ -5,7 +5,6 @@ import Testing
 
 @testable import DenInfrastructure
 
-@MainActor
 struct BoardFacingDiskCacheTests {
     @Test func pruneRemovesOrphansButKeepsExistingBoards() async throws {
         // Arrange
@@ -55,7 +54,8 @@ struct BoardFacingDiskCacheTests {
         let initial = BoardFacingDiskCache(directoryURL: directory)
         await initial.save(raster, for: first, capturedAt: Date(timeIntervalSince1970: 1))
         let url = try #require(
-            FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).first)
+            FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).first
+        )
         let size = try #require(url.resourceValues(forKeys: [.fileSizeKey]).fileSize)
         let limited = BoardFacingDiskCache(directoryURL: directory, maxCost: size)
 
@@ -88,8 +88,15 @@ struct BoardFacingDiskCacheTests {
     private func image() throws -> CGImage {
         let context = try #require(
             CGContext(
-                data: nil, width: 16, height: 12, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                data: nil,
+                width: 16,
+                height: 12,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
         context.setFillColor(CGColor(red: 0.2, green: 0.5, blue: 0.8, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 16, height: 12))
         return try #require(context.makeImage())

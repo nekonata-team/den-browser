@@ -5,7 +5,6 @@ import Foundation
 struct AgentShowMeScenario: DemoScenario {
     static let name = "agent-show-me"
 
-    @MainActor
     func initialProfileURL(directory: URL) throws -> URL? {
         let terminalBoard = BoardState(
             label: "Terminal",

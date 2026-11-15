@@ -5,7 +5,6 @@ import Testing
 
 @testable import Den_Browser
 
-@MainActor
 @Suite(.serialized)
 struct ProfilePersistenceTests {
     @Test func profileModelsRoundTrip() throws {

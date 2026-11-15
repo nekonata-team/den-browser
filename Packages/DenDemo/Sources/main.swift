@@ -9,7 +9,6 @@ do {
     exit(1)
 }
 
-@MainActor
 func main() throws {
     var scenarioName = "promotional"
     var outputPath: String?

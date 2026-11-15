@@ -1,0 +1,37 @@
+id: ui-tests-no-arbitrary-sleeps
+language: Swift
+severity: error
+message: Use assertEventually or assertValue instead of arbitrary sleeps in UI tests.
+files:
+  - "Den Browser/Den BrowserUITests/**/*.swift"
+rule:
+  any:
+    - pattern: Thread.sleep
+    - pattern: Foundation.Thread.sleep
+    - pattern: Task.sleep
+    - pattern: Swift.Task.sleep
+    - pattern: _Concurrency.Task.sleep
+    - pattern: Darwin.sleep
+    - pattern: Darwin.usleep
+    - pattern: Darwin.nanosleep
+    - kind: call_expression
+      has:
+        kind: simple_identifier
+        regex: '^(u|nano)?sleep$'
+        stopBy: neighbor
+  not:
+    inside:
+      all:
+        - kind: function_declaration
+          has:
+            field: name
+            regex: '^waitForInputSource$'
+            stopBy: neighbor
+        - inside:
+            kind: class_declaration
+            has:
+              field: name
+              regex: '^UITestCase$'
+              stopBy: neighbor
+            stopBy: end
+      stopBy: end

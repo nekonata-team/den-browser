@@ -4,7 +4,6 @@ import Testing
 
 @testable import DenInfrastructure
 
-@MainActor
 struct ProcessResourceSamplerTests {
     @Test func samplesCurrentProcessAndProcessGroup() {
         var sampler = ProcessResourceSampler()
@@ -30,9 +29,15 @@ struct ProcessResourceSamplerTests {
 
         let first = sampler.usage(key: "terminal", pids: [101], now: start)
         let changed = sampler.usage(
-            key: "terminal", pids: [202], now: start.advanced(by: .seconds(1)))
+            key: "terminal",
+            pids: [202],
+            now: start.advanced(by: .seconds(1))
+        )
         let same = sampler.usage(
-            key: "terminal", pids: [202], now: start.advanced(by: .seconds(2)))
+            key: "terminal",
+            pids: [202],
+            now: start.advanced(by: .seconds(2))
+        )
 
         #expect(first?.cpuPercent == nil)
         #expect(changed?.cpuPercent == nil)

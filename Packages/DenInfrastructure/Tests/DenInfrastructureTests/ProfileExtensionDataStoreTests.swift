@@ -4,7 +4,6 @@ import Testing
 
 @testable import DenInfrastructure
 
-@MainActor
 struct ProfileExtensionDataStoreTests {
     @Test(arguments: [true, false])
     func removesOnlyRequestedProfileAndAllowsRetry(hasExtensionData: Bool) throws {
@@ -20,7 +19,9 @@ struct ProfileExtensionDataStoreTests {
         if hasExtensionData {
             let rules = targetDirectory.appending(path: "extension/DeclarativeNetRequestContentRuleList.data")
             try FileManager.default.createDirectory(
-                at: rules.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: rules.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try Data("rules".utf8).write(to: rules)
         }
 

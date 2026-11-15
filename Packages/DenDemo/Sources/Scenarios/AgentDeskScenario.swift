@@ -5,9 +5,8 @@ import Foundation
 struct AgentDeskScenario: DemoScenario {
     static let name = "agent-desk"
 
-    nonisolated(unsafe) static var researchDeskID = DeskID()
+    static let researchDeskID = DeskID()
 
-    @MainActor
     func initialProfileURL(directory: URL) throws -> URL? {
         let terminalBoard = BoardState(
             label: "Terminal",

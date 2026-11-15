@@ -78,7 +78,6 @@ struct DemoContext {
     }
 }
 
-@MainActor
 func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = false) throws {
     let projectOutput = output?.deletingPathExtension().appendingPathExtension("openscreen")
     if let output {

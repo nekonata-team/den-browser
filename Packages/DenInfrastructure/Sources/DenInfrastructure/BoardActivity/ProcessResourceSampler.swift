@@ -15,14 +15,14 @@ public struct ProcessResourceSampler {
         let value: ProcessResourceSample
     }
 
-    private let sampleProvider: @MainActor ([pid_t]) -> ProcessResourceSample?
+    private let sampleProvider: ([pid_t]) -> ProcessResourceSample?
     private var previous: [String: PreviousSample] = [:]
 
     public init() {
         self.init(sampleProvider: Self.sample)
     }
 
-    init(sampleProvider: @escaping @MainActor ([pid_t]) -> ProcessResourceSample?) {
+    init(sampleProvider: @escaping ([pid_t]) -> ProcessResourceSample?) {
         self.sampleProvider = sampleProvider
     }
 

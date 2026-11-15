@@ -35,6 +35,8 @@ access, including `Foundation.UserDefaults.standard`. Use isolated suites or tes
 UI tests use `waitUntilExists` and `waitUntilAbsent` to check the current state before polling.
 Direct `waitForExistence` and `waitForNonExistence` references are rejected except inside
 those helper definitions in the private `XCUIElement` extension.
+UI tests also reject direct `Thread.sleep`, `Task.sleep`, `sleep`, `usleep`, and `nanosleep` calls
+outside `UITestCase.waitForInputSource`.
 
 Rule fixtures include permitted imports, forbidden imports, qualified and
 attributed imports, and comments/strings. Snapshot output is not part of
@@ -58,6 +60,6 @@ to `DenViews`; composition supplies their existing AppKit views without exposing
 UniformTypeIdentifiers, and OS diagnostics. Filesystem and image-cache I/O and process sampling
 remain independent of App, Models and Views; AppKit, WebKit and Ghostty imports are rejected.
 
-Domain and Application reject MainActor attributes. Their manifests also omit default MainActor isolation;
-nonisolated Application test suites protect synchronous use outside the UI actor.
+Domain, Application, Infrastructure, IPC protocol, the CLI, and DenDemo reject MainActor attributes. Their manifests also omit default MainActor isolation;
+nonisolated package test suites protect use outside the UI actor.
 IPC sources reject screen Model and View imports, while accepting Application operations and value snapshots.

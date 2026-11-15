@@ -10,6 +10,8 @@ import WebKit
 @MainActor
 @Observable
 final class ProfileManager {
+    private static let deferredSaveDelay: Duration = .milliseconds(300)
+
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
     private var deletingProfileIDs: Set<ProfileID> = []
@@ -22,6 +24,7 @@ final class ProfileManager {
     @ObservationIgnored private let presetFacingDirectoryURL: URL?
     @ObservationIgnored private var presetFacingDisks: [ProfileID: PresetFacingDiskStore] = [:]
     @ObservationIgnored private let persistence: ProfilePersistence
+    @ObservationIgnored private var deferredSaves: [ProfileID: (id: UUID, task: Task<Void, Never>)] = [:]
     @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
     @ObservationIgnored private var storages: [ProfileID: DenProfileResources] = [:]
@@ -774,9 +777,9 @@ final class ProfileManager {
         }
     }
 
-    // The manager chooses each snapshot from DenProfileResources; persistence owns the timer and pending Task.
+    // The manager owns the debounce timer and pending Task; persistence writes snapshots to disk.
     func flushPendingDeferredSaves() {
-        for profileID in persistence.pendingDeferredSaveIDs {
+        for profileID in Array(deferredSaves.keys) {
             guard let storage = storages[profileID] else {
                 cancelPendingDeferredSave(for: profileID)
                 continue
@@ -803,16 +806,31 @@ final class ProfileManager {
         else { return }
         refreshDenData(in: &persisted, for: profileID)
         persistedProfiles[profileID] = persisted
-        persistence.scheduleDeferredSave(for: profileID) { [weak self] in
-            guard let self, let storage = self.storages[profileID] else { return true }
-            guard storage.activeDrag == nil else { return false }
-            _ = self.saveDen(storage.state, for: profileID)
-            return true
+        cancelPendingDeferredSave(for: profileID)
+        let id = UUID()
+        let task = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: Self.deferredSaveDelay)
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled, let self else { return }
+                if let storage = self.storages[profileID] {
+                    guard storage.activeDrag == nil else { continue }
+                    _ = self.saveDen(storage.state, for: profileID)
+                }
+                if self.deferredSaves[profileID]?.id == id {
+                    self.deferredSaves.removeValue(forKey: profileID)
+                }
+                return
+            }
         }
+        deferredSaves[profileID] = (id, task)
     }
 
     private func cancelPendingDeferredSave(for profileID: ProfileID) {
-        persistence.cancelPendingDeferredSave(for: profileID)
+        deferredSaves.removeValue(forKey: profileID)?.task.cancel()
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: ProfileID) {
