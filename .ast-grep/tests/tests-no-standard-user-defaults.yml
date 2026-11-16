@@ -1,8 +1,7 @@
 id: tests-no-standard-user-defaults
 valid:
-  - 'let defaults = UserDefaults(suiteName: suiteName)'
-  - 'let defaults = Foundation.UserDefaults(suiteName: suiteName)'
   - 'let defaults = makeTestDefaults()'
+  - 'let defaults = makeTestDefaults(suiteName: suiteName)'
   - 'UserDefaults().removePersistentDomain(forName: suiteName)'
   - 'let defaults = OtherDefaults.standard'
   - 'let text = "UserDefaults.standard"'
@@ -16,3 +15,6 @@ invalid:
   - |
     let defaults = UserDefaults
         .standard
+  - 'let defaults = UserDefaults(suiteName: suiteName)'
+  - 'let defaults = Foundation.UserDefaults(suiteName: suiteName)'
+  - 'let defaults = UserDefaults()'

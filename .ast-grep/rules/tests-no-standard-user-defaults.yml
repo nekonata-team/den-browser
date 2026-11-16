@@ -1,7 +1,7 @@
 id: tests-no-standard-user-defaults
 language: Swift
 severity: error
-message: Use an isolated UserDefaults suite or test container instead of UserDefaults.standard in tests.
+message: Use makeTestDefaults() (or an in-memory UserDefaults) instead of UserDefaults.standard or UserDefaults(suiteName:) in tests.
 files:
   - "Den Browser/Den BrowserTests/**/*.swift"
   - "Den Browser/Den BrowserUITests/**/*.swift"
@@ -10,3 +10,13 @@ rule:
   any:
     - pattern: UserDefaults.standard
     - pattern: Foundation.UserDefaults.standard
+    - all:
+        - any:
+            - pattern: UserDefaults($$$)
+            - pattern: Foundation.UserDefaults($$$)
+        - not:
+            inside:
+              stopBy: end
+              any:
+                - pattern: 'UserDefaults().removePersistentDomain(forName: $SUITE)'
+                - pattern: 'Foundation.UserDefaults().removePersistentDomain(forName: $SUITE)'
