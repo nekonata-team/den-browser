@@ -13,8 +13,7 @@ struct AppPreferencesTests {
     func deskSwitcherAlignmentDefaultsToLeft(storedValue: String?) throws {
         // Arrange
         let suiteName = "DeskSwitcherAlignmentDefaultsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         defaults.set(storedValue, forKey: "preferences.appearance.desk-switcher.alignment")
 
         // Act
@@ -27,8 +26,7 @@ struct AppPreferencesTests {
     @Test func deskSwitcherAlignmentUpdatesAndPersists() throws {
         // Arrange
         let suiteName = "DeskSwitcherAlignmentPersistTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
 
         for alignment in DeskSwitcherAlignment.allCases {
@@ -45,8 +43,7 @@ struct AppPreferencesTests {
     func searchEngineDefaultsToGoogle(storedValue: String?) throws {
         // Arrange
         let suiteName = "SearchEngineDefaultsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         defaults.set(storedValue, forKey: "preferences.search.engine")
 
         // Act
@@ -59,8 +56,7 @@ struct AppPreferencesTests {
     @Test func searchEnginePreferencePersistsCustomEngine() throws {
         // Arrange
         let suiteName = "SearchEnginePersistTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
 
         for engine in SearchEngine.allCases {
@@ -75,8 +71,7 @@ struct AppPreferencesTests {
     @Test func appPreferencesClampSheetScale() throws {
         // Arrange
         let suiteName = "AppPreferencesClampTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
 
         // Act
@@ -91,8 +86,7 @@ struct AppPreferencesTests {
     func appPreferencesPersistByKey(externalLinkDestination: ExternalLinkDestination) throws {
         // Arrange
         let suiteName = "AppPreferencesTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
 
         // Assert initial defaults
@@ -140,8 +134,7 @@ struct AppPreferencesTests {
     @Test func essentialsPersistWithoutProfileOwnership() throws {
         // Arrange
         let suiteName = "AppPreferencesEssentialsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         let essentials = [
             Essential(name: "ChatGPT", key: "C", input: "https://chatgpt.com"),
@@ -159,8 +152,7 @@ struct AppPreferencesTests {
     @Test func essentialsRejectDuplicateKey() throws {
         // Arrange
         let suiteName = "AppPreferencesDuplicateKeyTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         let essentials = [
             Essential(name: "ChatGPT", key: "C", input: "https://chatgpt.com"),
@@ -177,8 +169,7 @@ struct AppPreferencesTests {
     @Test func essentialsAllowCaseSensitiveKeys() throws {
         // Arrange
         let suiteName = "AppPreferencesCaseKeyTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         let essentials = [
             Essential(name: "Upper", key: "C", input: "first"),
@@ -196,8 +187,7 @@ struct AppPreferencesTests {
     @Test func essentialsCanBeCleared() throws {
         // Arrange
         let suiteName = "AppPreferencesClearEssentialsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         preferences.setEssentials([Essential(name: "ChatGPT", key: "C", input: "https://chatgpt.com")])
 
@@ -211,8 +201,7 @@ struct AppPreferencesTests {
     @Test func appPreferencesDoNotDowngradeFutureSchema() throws {
         // Arrange
         let suiteName = "AppPreferencesFutureSchemaTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         defaults.set(2, forKey: "preferences.schema.version")
 
         // Act
@@ -245,8 +234,7 @@ struct AppPreferencesTests {
 
     @Test func drawerStylePersistsAndToggles() throws {
         let suiteName = "AppPreferencesDrawerTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
 
         #expect(preferences.drawerStyle == .floating)

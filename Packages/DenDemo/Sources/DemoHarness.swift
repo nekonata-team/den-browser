@@ -105,7 +105,12 @@ func runDemoHarness(scenario: any DemoScenario, output: URL?, overwrite: Bool = 
     defer { try? FileManager.default.removeItem(at: directory) }
 
     let suiteName = "dev.nekonata.denbrowser.demo.\(runID)"
-    defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+    defer {
+        UserDefaults().removePersistentDomain(forName: suiteName)
+        let plistURL = FileManager.default.homeDirectoryForCurrentUser
+            .appending(path: "Library/Preferences/\(suiteName).plist")
+        try? FileManager.default.removeItem(at: plistURL)
+    }
     var environment = ProcessInfo.processInfo.environment
     environment.removeValue(forKey: "DEN_PROFILE")
     environment.removeValue(forKey: "DEN_BOARD_ID")

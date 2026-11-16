@@ -38,18 +38,25 @@ func printInputSourceSummary(from url: URL) throws {
             })
         else {
             throw NSError(
-                domain: "DenBenchmark", code: 4,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid input-source measurement: \(line)"])
+                domain: "DenBenchmark",
+                code: 4,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid input-source measurement: \(line)"]
+            )
         }
         groups[match, default: []].append(
             Measurement(
-                total: total, context: Double(rawContext), carbon: Double(rawCarbon),
+                total: total,
+                context: Double(rawContext),
+                carbon: Double(rawCarbon),
                 contextLookup: fields["contextLookup"].flatMap(Double.init),
-                contextSelect: fields["contextSelect"].flatMap(Double.init)))
+                contextSelect: fields["contextSelect"].flatMap(Double.init)
+            )
+        )
     }
     guard !groups.isEmpty else {
         print(
-            "No input-source measurements found. Enable --benchmark and move between Boards before collecting the log.")
+            "No input-source measurements found. Enable --benchmark and move between Boards before collecting the log."
+        )
         return
     }
     func printDurations(_ label: String, _ values: [Double]) {
@@ -62,8 +69,14 @@ func printInputSourceSummary(from url: URL) throws {
         print(
             String(
                 format: "  %@: calls=%d total=%.3fms avg=%.3fms p95=%.3fms max=%.3fms",
-                label, values.count, values.reduce(0, +), values.reduce(0, +) / Double(values.count), p95,
-                sorted[sorted.count - 1]))
+                label,
+                values.count,
+                values.reduce(0, +),
+                values.reduce(0, +) / Double(values.count),
+                p95,
+                sorted[sorted.count - 1]
+            )
+        )
     }
     for match in ["same", "different", "unknown"] {
         guard let measurements = groups[match] else { continue }
@@ -134,7 +147,8 @@ guard settleSeconds.isFinite, settleSeconds >= 0,
 else {
     fputs(
         "Error: --settle and --duration must be finite and non-negative; --interval must be finite and positive.\n",
-        stderr)
+        stderr
+    )
     exit(2)
 }
 let benchmarkRunID = UUID().uuidString
@@ -160,6 +174,9 @@ _ = FileManager.default.createFile(atPath: traceFileURL.path, contents: Data())
 env["DEN_BENCHMARK_TRACE_FILE"] = traceFileURL.path
 defer {
     UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
+    let plistURL = FileManager.default.homeDirectoryForCurrentUser
+        .appending(path: "Library/Preferences/\(suiteName).plist")
+    try? FileManager.default.removeItem(at: plistURL)
     try? FileManager.default.removeItem(at: traceFileURL)
 }
 
@@ -194,7 +211,8 @@ final class OutputCollector {
             events.compactMap { event in
                 guard let marker = event.range(of: "webProcessPID=") else { return nil }
                 return Int32(event[marker.upperBound...].prefix { $0.isNumber })
-            })
+            }
+        )
     }
 
     func isReady(for scenario: BenchmarkScenario) -> Bool {
@@ -259,8 +277,10 @@ func benchmarkProfileSeed(for scenario: BenchmarkScenario) throws -> Data {
         let html = try? String(contentsOf: resourceURL, encoding: .utf8)
     else {
         throw NSError(
-            domain: "DenBenchmark", code: 2,
-            userInfo: [NSLocalizedDescriptionKey: "Could not load benchmark Sheet fixture."])
+            domain: "DenBenchmark",
+            code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "Could not load benchmark Sheet fixture."]
+        )
     }
     let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "#"))
     guard
@@ -268,8 +288,10 @@ func benchmarkProfileSeed(for scenario: BenchmarkScenario) throws -> Data {
         let url = URL(string: "data:text/html,\(encoded)")
     else {
         throw NSError(
-            domain: "DenBenchmark", code: 3,
-            userInfo: [NSLocalizedDescriptionKey: "Could not encode benchmark Sheet fixture."])
+            domain: "DenBenchmark",
+            code: 3,
+            userInfo: [NSLocalizedDescriptionKey: "Could not encode benchmark Sheet fixture."]
+        )
     }
     let webBoard: [String: Any] = [
         "id": "00000000-0000-0000-0000-000000000511",
@@ -390,7 +412,8 @@ func queryProcessSnapshot() -> ProcessSnapshot? {
             pid: pid,
             cpuSeconds: cpuSeconds,
             elapsedSeconds: elapsedSeconds,
-            rssMB: rssKB / 1024.0)
+            rssMB: rssKB / 1024.0
+        )
     }
 
     return ProcessSnapshot(capturedAt: Date(), processes: processes)
@@ -446,7 +469,8 @@ func makeSample(
         appRSSMB: appMetric.rssMB,
         webKitCPU: webKitCPU,
         webKitCPUSeconds: webKitCPUSeconds,
-        webKitRSSMB: webKitRSS)
+        webKitRSSMB: webKitRSS
+    )
 }
 
 let canMeasureWebKit = selectedScenario == .oneWebBoard
@@ -457,7 +481,12 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
     let formatted = String(
         format:
             "\r  [\(phase) Sample %d] App CPU: %5.1f%% | WebKit CPU: %@ | Total CPU: %@ | App RSS: %6.1fMB | WebKit RSS: %@",
-        index, sample.appCPU, webKitCPU, totalCPU, sample.appRSSMB, webKitRSS
+        index,
+        sample.appCPU,
+        webKitCPU,
+        totalCPU,
+        sample.appRSSMB,
+        webKitRSS
     )
     fputs(formatted, stdout)
     fflush(stdout)
@@ -477,8 +506,8 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
                 current: snapshot,
                 previous: previousSnapshot,
                 mainPID: mainPID,
-                webKitPIDs: collector.webKitPIDs())
-            {
+                webKitPIDs: collector.webKitPIDs()
+            ) {
                 samples.append(sample)
                 printSample(sample, index: samples.count, phase: "Startup")
             }
@@ -494,8 +523,8 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
                     current: snapshot,
                     previous: previousSnapshot,
                     mainPID: mainPID,
-                    webKitPIDs: collector.webKitPIDs())
-                {
+                    webKitPIDs: collector.webKitPIDs()
+                ) {
                     samples.append(sample)
                     printSample(sample, index: samples.count, phase: "Startup")
                 }
@@ -534,8 +563,8 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
                 current: snapshot,
                 previous: previousSnapshot,
                 mainPID: mainPID,
-                webKitPIDs: collector.webKitPIDs())
-            {
+                webKitPIDs: collector.webKitPIDs()
+            ) {
                 samples.append(sample)
                 printSample(sample, index: samples.count, phase: phase)
             }
@@ -543,7 +572,8 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
         }
         nextSampleTime = max(
             nextSampleTime.addingTimeInterval(intervalSeconds),
-            Date().addingTimeInterval(intervalSeconds))
+            Date().addingTimeInterval(intervalSeconds)
+        )
     }
     return samples
 }
@@ -561,12 +591,17 @@ func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double) {
     let appCPUAverage = appCPUSeconds / duration * 100
     print(
         String(
-            format: "  App CPU:            avg %.2f%%, max %.2f%%", appCPUAverage, appCPUs.max() ?? 0)
+            format: "  App CPU:            avg %.2f%%, max %.2f%%",
+            appCPUAverage,
+            appCPUs.max() ?? 0
+        )
     )
     print(
         String(
-            format: "  App RSS:            avg %.1f MB, latest %.1f MB", appRSS.reduce(0, +) / Double(samples.count),
-            appRSS.last ?? 0)
+            format: "  App RSS:            avg %.1f MB, latest %.1f MB",
+            appRSS.reduce(0, +) / Double(samples.count),
+            appRSS.last ?? 0
+        )
     )
 
     guard canMeasureWebKit else {
@@ -577,7 +612,10 @@ func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double) {
         print(
             String(
                 format: "  Combined RSS:       avg %.1f MB, latest %.1f MB (App only)",
-                appRSS.reduce(0, +) / Double(samples.count), appRSS.last ?? 0))
+                appRSS.reduce(0, +) / Double(samples.count),
+                appRSS.last ?? 0
+            )
+        )
         return
     }
     let webKitSamples = samples.filter { $0.webKitCPU != nil }
@@ -599,19 +637,27 @@ func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double) {
         print(
             String(
                 format: "  WebKit CPU:         avg %.2f%%, max %.2f%% (%d samples)",
-                webKitCPUAverage, webKitCPUs.max() ?? 0, webKitSamples.count)
+                webKitCPUAverage,
+                webKitCPUs.max() ?? 0,
+                webKitSamples.count
+            )
         )
     }
     if !hasCombinedCPUSample {
         print(
             String(
-                format: "  Combined CPU:       avg %.2f%%, max %.2f%% (App or combined sample)", combinedCPUAverage,
-                totalCPUmax))
+                format: "  Combined CPU:       avg %.2f%%, max %.2f%% (App or combined sample)",
+                combinedCPUAverage,
+                totalCPUmax
+            )
+        )
     } else {
         print(
             String(
                 format: "  Combined CPU:       avg %.2f%%, max %.2f%%",
-                combinedCPUAverage, totalCPUmax)
+                combinedCPUAverage,
+                totalCPUmax
+            )
         )
     }
     let webKitRSS = webKitRSSSamples.map(\.webKitRSSMB)
@@ -619,12 +665,16 @@ func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double) {
     print(
         String(
             format: "  WebKit RSS:         avg %.1f MB, latest %.1f MB",
-            webKitRSS.reduce(0, +) / Double(webKitRSSSamples.count), webKitRSS.last ?? 0)
+            webKitRSS.reduce(0, +) / Double(webKitRSSSamples.count),
+            webKitRSS.last ?? 0
+        )
     )
     print(
         String(
             format: "  Combined RSS:       avg %.1f MB, latest %.1f MB",
-            totalRSS.reduce(0, +) / Double(webKitRSSSamples.count), totalRSS.last ?? 0)
+            totalRSS.reduce(0, +) / Double(webKitRSSSamples.count),
+            totalRSS.last ?? 0
+        )
     )
 }
 
@@ -638,7 +688,8 @@ guard collector.isReady(for: selectedScenario) else {
     throw NSError(
         domain: "DenBenchmark",
         code: 1,
-        userInfo: [NSLocalizedDescriptionKey: "Benchmark window or scenario did not become ready within 30 seconds."])
+        userInfo: [NSLocalizedDescriptionKey: "Benchmark window or scenario did not become ready within 30 seconds."]
+    )
 }
 
 print("\nSampling post-ready settle for \(settleSeconds)s...")

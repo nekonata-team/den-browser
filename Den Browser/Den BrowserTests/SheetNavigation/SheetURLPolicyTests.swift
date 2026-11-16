@@ -117,8 +117,7 @@ struct SheetURLPolicyTests {
 
     @Test func sheetNavigationPreferencesPersist() {
         let suiteName = "SheetNavigationManagerTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
 
         let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
         #expect(!manager.isEnabled)
@@ -155,8 +154,7 @@ struct SheetURLPolicyTests {
             with: "if ("
         )
         let suiteName = "SheetNavigationPauseConfigurationTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let manager = SheetNavigationManager(defaults: defaults, scriptSource: source)
         let boardID = BoardID()
         let webView = makeSheetNavigationWebView(manager: manager)
@@ -188,8 +186,7 @@ struct SheetURLPolicyTests {
 
     @Test func invalidHintAlphabetIsNotPersisted() {
         let suiteName = "SheetNavigationAlphabetTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
 
         #expect(!manager.setHintAlphabet("a"))
@@ -200,8 +197,7 @@ struct SheetURLPolicyTests {
 
     @Test func invalidIgnoredSiteIsNotPersisted() {
         let suiteName = "SheetNavigationIgnoredSitesTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
 
         #expect(!manager.setIgnoredSites("https://"))

@@ -13,8 +13,7 @@ struct NativePersistenceTests {
     @Test func sheetScaleAndContentSizeAdjustmentsApplyToWebRuntime() throws {
         // Arrange
         let suiteName = "SheetScaleAndContentSizeTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         preferences.setSheetScale(80)
         let sheetNavigation = SheetNavigationManager(defaults: defaults)

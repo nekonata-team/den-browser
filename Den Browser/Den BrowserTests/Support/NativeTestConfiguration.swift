@@ -7,12 +7,91 @@ import WebKit
 
 @testable import Den_Browser
 
+final class InMemoryUserDefaults: UserDefaults, @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [String: Any] = [:]
+
+    override init?(suiteName: String?) {
+        super.init(suiteName: suiteName)
+    }
+
+    override func set(_ value: Any?, forKey defaultName: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        if let value {
+            values[defaultName] = value
+        } else {
+            values.removeValue(forKey: defaultName)
+        }
+    }
+
+    override func object(forKey defaultName: String) -> Any? {
+        lock.withLock { values[defaultName] }
+    }
+
+    override func string(forKey defaultName: String) -> String? {
+        lock.withLock { values[defaultName] as? String }
+    }
+
+    override func stringArray(forKey defaultName: String) -> [String]? {
+        lock.withLock { values[defaultName] as? [String] }
+    }
+
+    override func data(forKey defaultName: String) -> Data? {
+        lock.withLock { values[defaultName] as? Data }
+    }
+
+    override func bool(forKey defaultName: String) -> Bool {
+        lock.withLock { values[defaultName] as? Bool ?? false }
+    }
+
+    override func integer(forKey defaultName: String) -> Int {
+        lock.withLock { values[defaultName] as? Int ?? 0 }
+    }
+
+    override func double(forKey defaultName: String) -> Double {
+        lock.withLock { values[defaultName] as? Double ?? 0 }
+    }
+
+    override func array(forKey defaultName: String) -> [Any]? {
+        lock.withLock { values[defaultName] as? [Any] }
+    }
+
+    override func dictionary(forKey defaultName: String) -> [String: Any]? {
+        lock.withLock { values[defaultName] as? [String: Any] }
+    }
+
+    override func removeObject(forKey defaultName: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        values.removeValue(forKey: defaultName)
+    }
+
+    override func persistentDomain(forName domainName: String) -> [String: Any]? {
+        lock.lock()
+        defer { lock.unlock() }
+        return values.isEmpty ? nil : values
+    }
+
+    override func removePersistentDomain(forName domainName: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        values.removeAll()
+    }
+}
+
 @MainActor
 func makeTestDefaults(suiteName: String = "DenBrowserTests-\(UUID().uuidString)") -> UserDefaults {
-    guard let defaults = UserDefaults(suiteName: suiteName) else {
+    guard let defaults = InMemoryUserDefaults(suiteName: suiteName) else {
         preconditionFailure("Failed to create isolated test defaults")
     }
     return defaults
+}
+
+func removeTestPreferencesPlist(suiteName: String) {
+    let plistURL = FileManager.default.homeDirectoryForCurrentUser
+        .appending(path: "Library/Preferences/\(suiteName).plist")
+    try? FileManager.default.removeItem(at: plistURL)
 }
 
 @MainActor

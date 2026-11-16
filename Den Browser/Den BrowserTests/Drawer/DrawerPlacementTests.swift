@@ -145,8 +145,7 @@ struct DrawerPlacementTests {
         let focused = makeDrawerTestBoard("Focused", width: 880)
         let source = makeTestDesk("Desk", boards: [first, focused], focusedBoardID: focused.id)
         let suiteName = "ExternalLinkDestinationTests-\(UUID())"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         preferences.setExternalLinkDestination(.focusedBoard)
         let session = ProfileWindowSession(

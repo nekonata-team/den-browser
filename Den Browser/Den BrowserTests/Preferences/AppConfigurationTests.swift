@@ -43,6 +43,8 @@ struct AppConfigurationTests {
         defer {
             first.defaults.removePersistentDomain(forName: firstSuite)
             second.defaults.removePersistentDomain(forName: secondSuite)
+            removeTestPreferencesPlist(suiteName: firstSuite)
+            removeTestPreferencesPlist(suiteName: secondSuite)
         }
         first.defaults.set(true, forKey: "isolated")
 
@@ -69,5 +71,16 @@ struct AppConfigurationTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         #expect(try AppConfiguration.loadInitialProfile(at: url) == expected)
+    }
+
+    @Test func testDefaultsDoNotCreatePreferencesPlist() {
+        let suiteName = "DenBrowserInMemoryCheck-\(UUID().uuidString)"
+        let defaults = makeTestDefaults(suiteName: suiteName)
+        defaults.set(true, forKey: "key")
+        defaults.synchronize()
+
+        let plistURL = FileManager.default.homeDirectoryForCurrentUser
+            .appending(path: "Library/Preferences/\(suiteName).plist")
+        #expect(!FileManager.default.fileExists(atPath: plistURL.path))
     }
 }

@@ -24,10 +24,7 @@ func withSharedDrawerSessions<T>(
     body: (ProfileWindowSession, ProfileWindowSession) throws -> T
 ) rethrows -> T {
     let suiteName = "SharedDrawerStoreTests-\(UUID())"
-    guard let defaults = UserDefaults(suiteName: suiteName) else {
-        preconditionFailure("Failed to create isolated test UserDefaults")
-    }
-    defer { defaults.removePersistentDomain(forName: suiteName) }
+    let defaults = makeTestDefaults(suiteName: suiteName)
     let desks = [makeTestDesk("First"), makeTestDesk("Second")]
     let storage = DenProfileResources(
         state: DenState(

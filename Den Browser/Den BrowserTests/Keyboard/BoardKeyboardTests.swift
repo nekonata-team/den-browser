@@ -653,8 +653,7 @@ struct BoardKeyboardTests {
 
     @Test func denModeTTogglesSheetNavigationPauseForFocusedBoard() throws {
         let suiteName = "KeyboardSheetNavigationTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         let desk = DeskState(label: "Desk", boards: [makeTestBoard("First")])
         let session = ProfileWindowSession(

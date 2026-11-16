@@ -174,8 +174,7 @@ struct ProfileRuntimeSharingTests {
         let directory = makeTemporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let suiteName = "ProfileCallbackTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         navigation.setEnabled(true)

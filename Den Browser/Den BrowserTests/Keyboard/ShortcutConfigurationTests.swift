@@ -13,8 +13,7 @@ import Testing
 struct ShortcutConfigurationTests {
     @Test func shortcutOverridesPersistClearAndReset() throws {
         let suiteName = "KeyboardShortcutTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         let preferences = AppPreferences(defaults: defaults)
         let customToggle = ShortcutBinding(key: .character("."), modifiers: [.control])
         let customDeskNumber = ShortcutBinding(
@@ -90,8 +89,7 @@ struct ShortcutConfigurationTests {
 
     @Test func unreadableAndDuplicateOverridesFallBackSafely() throws {
         let suiteName = "KeyboardShortcutCorruptionTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeTestDefaults(suiteName: suiteName)
         defaults.set(
             Data("not a property list".utf8),
             forKey: "preferences.shortcuts.actions.toggle-den-mode"

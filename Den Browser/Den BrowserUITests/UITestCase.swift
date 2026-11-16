@@ -32,6 +32,9 @@ class UITestCase: XCTestCase, BDD {
         }
         for suiteName in defaultsSuiteNames {
             UserDefaults().removePersistentDomain(forName: suiteName)
+            let plistURL = FileManager.default.homeDirectoryForCurrentUser
+                .appending(path: "Library/Preferences/\(suiteName).plist")
+            try? FileManager.default.removeItem(at: plistURL)
         }
         for directory in fixtureDirectories {
             try? FileManager.default.removeItem(at: directory)
