@@ -141,16 +141,4 @@ struct BoardInputResolverTests {
         #expect(resolved.url.query == nil)
         #expect(resolved.url.fragment == nil)
     }
-
-    @Test func stripsNewlinesWithoutChangingOtherCharacters() {
-        #expect(
-            WebURLPolicy.stripNewlines("https://example.com/long-\npath/to/\r\npage")
-                == "https://example.com/long-path/to/page"
-        )
-        #expect(
-            WebURLPolicy.stripNewlines("  search query  ")
-                == "  search query  "
-        )
-        #expect(WebURLPolicy.stripNewlines("single line text") == "single line text")
-    }
 }

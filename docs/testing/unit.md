@@ -28,3 +28,4 @@ Do not add (and treat existing ones as removal candidates):
 - Group tests by responsibility with one narrow contract per file; split oversized suites rather than appending unrelated scenarios.
 - Layout: `Board/Web`, `Board/Terminal`, `Board/Inspection`; helpers in `Support`; resources in `Fixtures`. Do not mirror source folders.
 - Structure each test with `// Arrange`, `// Act`, `// Assert`; isolate preferences from `UserDefaults.standard`.
+- Verify package contract coverage and safe test pruning with [mutation testing](./mutate.md) (`just test mutate` or `just test mutate <path>`).

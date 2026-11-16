@@ -16,7 +16,8 @@ let package = Package(
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
                 .enableUpcomingFeature("NonescapableTypes"),
             ]
-        )
+        ),
+        .testTarget(name: "DenDomainTests", dependencies: ["DenDomain"]),
     ],
     swiftLanguageModes: [.v6]
 )

@@ -53,6 +53,7 @@ architecture:
 
 # Test or build all local packages, treating compiler warnings as errors.
 packages:
+    @rtk test swift test --package-path Packages/DenDomain -Xswiftc -warnings-as-errors
     @rtk test swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors
     @rtk test swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors
     @rtk test swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors
@@ -60,3 +61,7 @@ packages:
     @rtk test swift build --package-path Packages/DenViews -Xswiftc -warnings-as-errors
     @rtk test swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
     @echo "✓ Package checks passed"
+
+# Run mutation testing on package diff (default) or specified package/source paths.
+mutate *args:
+    @swift scripts/mutate.swift "$@"

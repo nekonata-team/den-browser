@@ -3,8 +3,14 @@ import DenDomain
 import Testing
 
 nonisolated struct DeskDeletionTests {
-    @Test(arguments: [false, true])
-    func choosesAvailableDeskOnLeftBeforeTryingRight(_ farLeftAvailable: Bool) throws {
+    nonisolated enum ReplacementPriority: CaseIterable, Sendable {
+        case nearestLeft
+        case farLeft
+        case rightFallback
+    }
+
+    @Test(arguments: ReplacementPriority.allCases)
+    func choosesNearestAvailableDeskOnLeftBeforeTryingRight(_ priority: ReplacementPriority) throws {
         // Arrange
         let farLeft = DeskState(label: "Far Left", boards: [])
         let nearLeft = DeskState(label: "Near Left", boards: [])
@@ -12,32 +18,29 @@ nonisolated struct DeskDeletionTests {
         let removed = DeskState(label: "Removed", boards: [board])
         let right = DeskState(label: "Right", boards: [])
         let desks = [farLeft, nearLeft, removed, right]
+        let expectedID: DeskID
+        let availableIDs: Set<DeskID>
+        switch priority {
+        case .nearestLeft:
+            expectedID = nearLeft.id
+            availableIDs = [farLeft.id, nearLeft.id, right.id]
+        case .farLeft:
+            expectedID = farLeft.id
+            availableIDs = [farLeft.id, right.id]
+        case .rightFallback:
+            expectedID = right.id
+            availableIDs = [right.id]
+        }
 
         // Act
         let deletion = try #require(
-            DeskDeletion.delete(
-                removed.id, from: desks,
-                isAvailable: { $0 == right.id || (farLeftAvailable && $0 == farLeft.id) }))
+            DeskDeletion.delete(removed.id, from: desks, isAvailable: { availableIDs.contains($0) })
+        )
 
         // Assert
         #expect(deletion.desks == [farLeft, nearLeft, right])
         #expect(deletion.removedDesk == removed)
-        #expect(deletion.replacementDeskID == (farLeftAvailable ? farLeft.id : right.id))
-    }
-
-    @Test func prefersNearestAvailableDeskOnLeft() throws {
-        // Arrange
-        let first = DeskState(label: "First", boards: [])
-        let previous = DeskState(label: "Previous", boards: [])
-        let removed = DeskState(label: "Removed", boards: [])
-        let next = DeskState(label: "Next", boards: [])
-
-        // Act
-        let deletion = try #require(
-            DeskDeletion.delete(removed.id, from: [first, previous, removed, next], isAvailable: { _ in true }))
-
-        // Assert
-        #expect(deletion.replacementDeskID == previous.id)
+        #expect(deletion.replacementDeskID == expectedID)
     }
 
     nonisolated enum UnavailableDeletion: CaseIterable, Sendable {
@@ -56,7 +59,10 @@ nonisolated struct DeskDeletionTests {
 
         // Act
         let deletion = DeskDeletion.delete(
-            deskID, from: desks, isAvailable: { _ in reason != .noAvailableReplacement })
+            deskID,
+            from: desks,
+            isAvailable: { _ in reason != .noAvailableReplacement }
+        )
 
         // Assert
         #expect(deletion == nil)

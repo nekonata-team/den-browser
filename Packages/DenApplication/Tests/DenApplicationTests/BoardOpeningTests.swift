@@ -38,11 +38,9 @@ nonisolated struct BoardOpeningTests {
         #expect(recent == (length <= BoardOpening.maximumPersistedRecentInputLength ? .search(input) : nil))
     }
 
-    @Test func sessionSelectionReturnsWithoutCreatingABoard() {
-        // Arrange
-        let input = ":zmx"
-
-        // Act
+    @Test(arguments: [":zmx", ":x"])
+    func sessionSelectionReturnsWithoutCreatingABoard(input: String) {
+        // Arrange / Act
         let decision = resolve(input)
 
         // Assert
@@ -69,11 +67,9 @@ nonisolated struct BoardOpeningTests {
         }
     }
 
-    @Test func zmxDecisionPreservesRootSessionAndHomeDirectory() {
-        // Arrange
-        let input = ":zmx project"
-
-        // Act
+    @Test(arguments: [":zmx project", ":x project"])
+    func zmxDecisionPreservesRootSessionAndHomeDirectory(input: String) {
+        // Arrange / Act
         let decision = resolve(input)
 
         // Assert
@@ -100,8 +96,9 @@ nonisolated struct BoardOpeningTests {
         #expect(recent == .terminal(workingDirectory: expectedPath))
     }
 
-    @Test func zellijAliasResolvesToZellijBoard() {
-        guard case .createBoard(let board, let recent) = resolve(":zj project") else {
+    @Test(arguments: [":zellij project", ":zj project"])
+    func zellijAliasResolvesToZellijBoard(input: String) {
+        guard case .createBoard(let board, let recent) = resolve(input) else {
             Issue.record("Expected a Zellij Board creation decision")
             return
         }
@@ -109,30 +106,23 @@ nonisolated struct BoardOpeningTests {
         #expect(recent == .zellij(sessionName: "project"))
     }
 
-    @Test func zmxAliasResolvesToZmxBoardAndSessionSelection() {
-        guard case .selectZmxSession = resolve(":x") else {
-            Issue.record("Expected Session selection for bare :x")
-            return
-        }
-
-        guard case .createBoard(let board, let recent) = resolve(":x project") else {
-            Issue.record("Expected a zmx Board creation decision for :x project")
-            return
-        }
-        #expect(board.zmxSessionName == "project")
-        #expect(recent == .zmx(sessionName: "project"))
-    }
-
     @Test(arguments: [":zmx project", ":zellij project"])
     func unconfiguredSessionToolsAreRejected(input: String) {
         // Arrange
         let configuration = BoardOpening.Configuration(
-            searchEngine: .google, zmxConfigured: false, zellijConfigured: false,
-            homeDirectory: URL(fileURLWithPath: "/home/test"))
+            searchEngine: .google,
+            zmxConfigured: false,
+            zellijConfigured: false,
+            homeDirectory: URL(fileURLWithPath: "/home/test")
+        )
 
         // Act
         let decision = BoardOpening.resolve(
-            input: input, width: 520, configuration: configuration, directoryExists: { _ in true })
+            input: input,
+            width: 520,
+            configuration: configuration,
+            directoryExists: { _ in true }
+        )
 
         // Assert
         switch decision {
@@ -166,13 +156,20 @@ nonisolated struct BoardOpeningTests {
     }
 
     private func resolve(
-        _ input: String, directoryExists: (String) -> Bool = { _ in true }
+        _ input: String,
+        directoryExists: (String) -> Bool = { _ in true }
     ) -> BoardOpening.Decision {
         BoardOpening.resolve(
-            input: input, width: 520, zmxRootSessionName: "root",
+            input: input,
+            width: 520,
+            zmxRootSessionName: "root",
             configuration: BoardOpening.Configuration(
-                searchEngine: .google, zmxConfigured: true, zellijConfigured: true,
-                homeDirectory: URL(fileURLWithPath: "/home/test")),
-            directoryExists: directoryExists)
+                searchEngine: .google,
+                zmxConfigured: true,
+                zellijConfigured: true,
+                homeDirectory: URL(fileURLWithPath: "/home/test")
+            ),
+            directoryExists: directoryExists
+        )
     }
 }

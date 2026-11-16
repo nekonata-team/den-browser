@@ -28,12 +28,6 @@ nonisolated struct DenAPISettingsTests {
         #expect(!restoredLegacy.denAPIEnabled)
     }
 
-    @Test(arguments: ["https://example.com/file.html", "file:///tmp/report.pdf", "file://remote/tmp/file.html"])
-    func rejectsUnsupportedTargets(value: String) {
-        // Arrange / Act / Assert
-        #expect(!DenAPIPolicy.isLocalHTML(URL(string: value)))
-    }
-
     @Test func permissionSaveRetainsIntendedStateOnFailureAndCanBeDisabled() {
         // Arrange
         let url = URL(fileURLWithPath: "/tmp/sketch.html")
@@ -48,7 +42,8 @@ nonisolated struct DenAPISettingsTests {
             persist: { den in
                 if canSave { saved = den }
                 return canSave
-            })
+            }
+        )
 
         // Act / Assert
         #expect(!updates.setDenAPIEnabled(board.id, enabled: true))
@@ -67,22 +62,41 @@ nonisolated struct DenAPISettingsTests {
         let reader = DenStateReader { state.snapshot }
         let writer = DenStateWriter { $0(&state.snapshot) }
         let creation = BoardCreation(
-            reader: reader, writer: writer, recents: Recents(reader: reader, writer: writer),
-            directoryExists: { _ in true })
+            reader: reader,
+            writer: writer,
+            recents: Recents(reader: reader, writer: writer),
+            directoryExists: { _ in true }
+        )
         let url = URL(fileURLWithPath: "/tmp/sketch.html")
 
         // Act
         let enabled = try #require(
             creation.createWeb(
-                urlString: url.absoluteString, width: 520, searchEngine: .google,
-                target: .init(presentedDeskID: desk.id), denAPI: true, notify: { _ in }))
+                urlString: url.absoluteString,
+                width: 520,
+                searchEngine: .google,
+                target: .init(presentedDeskID: desk.id),
+                denAPI: true,
+                notify: { _ in }
+            )
+        )
         let plain = try #require(
             creation.createWeb(
-                urlString: url.absoluteString, width: 520, searchEngine: .google,
-                target: .init(presentedDeskID: desk.id), notify: { _ in }))
+                urlString: url.absoluteString,
+                width: 520,
+                searchEngine: .google,
+                target: .init(presentedDeskID: desk.id),
+                notify: { _ in }
+            )
+        )
         let rejected = creation.createWeb(
-            urlString: "https://example.com/", width: 520, searchEngine: .google,
-            target: .init(presentedDeskID: desk.id), denAPI: true, notify: { _ in })
+            urlString: "https://example.com/",
+            width: 520,
+            searchEngine: .google,
+            target: .init(presentedDeskID: desk.id),
+            denAPI: true,
+            notify: { _ in }
+        )
 
         // Assert
         #expect(state.snapshot.den.board(for: enabled)?.denAPIEnabled == true)

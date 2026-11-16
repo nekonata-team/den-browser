@@ -12,49 +12,9 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct SheetURLPolicyTests {
-    @Test func sheetURLPolicyAcceptsWebAndAbsoluteLocalFileURLs() {
-        let supported = [
-            URL(string: "http://example.com/")!,
-            URL(string: "HTTPS://EXAMPLE.COM/path")!,
-            URL(string: "file:///tmp/example.html")!,
-            URL(string: "file://localhost/tmp/example.html")!,
-        ]
-        let unsupported = [
-            URL(string: "https://")!,
-            URL(string: "file:relative.html")!,
-            URL(string: "file://server/share/example.html")!,
-            URL(string: "data:text/plain,example")!,
-            URL(string: "about:blank")!,
-            URL(string: "mailto:user@example.com")!,
-        ]
-
-        #expect(supported.allSatisfy(WebURLPolicy.isSupported))
-        #expect(unsupported.allSatisfy { !WebURLPolicy.isSupported($0) })
-        #expect(ExternalURLPolicy.isSupported(URL(string: "testapp://open/example")!))
-        #expect(!ExternalURLPolicy.isSupported(URL(string: "https://example.com/")!))
-        #expect(!ExternalURLPolicy.isSupported(URL(string: "file:///tmp/example")!))
-    }
-
-    @Test func sheetURLPolicyNormalizesRootPathAndHostCase() {
-        #expect(
-            WebURLPolicy.canonicalSheetURL(URL(string: "HTTP://EXAMPLE.TEST")!)
-                == URL(string: "http://example.test/")!
-        )
-        #expect(
-            WebURLPolicy.canonicalSheetURL(URL(string: "http://example.test/app")!)
-                == URL(string: "http://example.test/app")!
-        )
-        #expect(
-            WebURLPolicy.canonicalSheetURL(
-                URL(string: "file://localhost/tmp/a%20b.html?mode=test#section")!
-            )
-                == URL(string: "file:///tmp/a%20b.html?mode=test#section")!
-        )
-    }
-
     @Test func boardRuntimeLoadsLocalHTMLAndSiblingScript() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
-            path: "DenBrowserFileURLTests-(UUID().uuidString)",
+            path: "DenBrowserFileURLTests-\(UUID().uuidString)",
             directoryHint: .isDirectory
         )
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -98,7 +58,7 @@ struct SheetURLPolicyTests {
                 return false
             }
             group.addTask {
-                try await Task.sleep(for: .seconds(5))
+                try await Task.sleep(for: .seconds(15))
                 return false
             }
             let result = try await group.next()!

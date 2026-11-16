@@ -7,24 +7,6 @@ import Testing
 
 @Suite(.serialized)
 struct ProfilePersistenceTests {
-    @Test func profileModelsRoundTrip() throws {
-        // Arrange
-        let profile = ProfileState(
-            id: ProfileID(),
-            name: "Work",
-            color: .purple,
-            webProfileStore: .identified(UUID())
-        )
-        let persisted = PersistedProfile(profile: profile, den: .sample)
-
-        // Act
-        let encoded = try JSONEncoder().encode(persisted)
-        let decoded = try JSONDecoder().decode(PersistedProfile.self, from: encoded)
-
-        // Assert
-        #expect(decoded == persisted)
-    }
-
     @Test func customProfileColorRoundTrips() throws {
         // Arrange
         let color = ProfileColor.custom(ProfileRGB(red: 58, green: 134, blue: 255))
@@ -48,60 +30,6 @@ struct ProfilePersistenceTests {
         #expect(decoded == .purple)
     }
 
-    @Test func profileModelsRejectUnknownSchemaVersion() {
-        // Arrange
-        let invalidData = Data("{\"schemaVersion\":5,\"profile\":{},\"den\":{}}".utf8)
-
-        // Act
-        let performDecode = {
-            try JSONDecoder().decode(PersistedProfile.self, from: invalidData)
-        }
-
-        // Assert
-        #expect(throws: ProfilePersistenceError.self, performing: performDecode)
-    }
-
-    @Test func profileIndexRejectsUnknownSchemaVersion() {
-        // Arrange
-        let invalidData = Data("{\"schemaVersion\":2,\"profileIDs\":[]}".utf8)
-
-        // Act
-        let performDecode = {
-            try JSONDecoder().decode(ProfileIndex.self, from: invalidData)
-        }
-
-        // Assert
-        #expect(throws: ProfilePersistenceError.self, performing: performDecode)
-    }
-
-    @Test func profilePersistsBoardSheetNavigationPause() throws {
-        // Arrange
-        let board = BoardState(
-            label: "Paused",
-            width: 520,
-            currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true
-        )
-        let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let profile = ProfileState(
-            id: ProfileID(),
-            name: "Work",
-            color: .purple,
-            webProfileStore: .identified(UUID())
-        )
-        let persisted = PersistedProfile(
-            profile: profile,
-            den: DenState(desks: [desk], focusedDeskID: desk.id)
-        )
-
-        // Act
-        let encoded = try JSONEncoder().encode(persisted)
-        let decoded = try JSONDecoder().decode(PersistedProfile.self, from: encoded)
-
-        // Assert
-        #expect(decoded.den.desks[0].boards[0].sheetNavigationPaused)
-    }
-
     @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
         // Arrange
         let profile = ProfileState(
@@ -122,43 +50,6 @@ struct ProfilePersistenceTests {
         // Assert
         #expect(decoded.schemaVersion == 4)
         #expect(decoded.deskPresets.isEmpty)
-    }
-
-    @Test func profileDocumentWithoutRecentItemsLoadsEmptyList() throws {
-        // Arrange
-        let profile = ProfileState(
-            id: ProfileID(),
-            name: "Work",
-            color: .purple,
-            webProfileStore: .identified(UUID())
-        )
-        let recentItems: [RecentItem] = [
-            .url(URL(string: "https://example.com")!),
-            .search("Swift"),
-            .terminal(workingDirectory: "/tmp"),
-            .zellij(sessionName: nil),
-            .zellij(sessionName: "project-a"),
-            .zmx(sessionName: "project-a"),
-        ]
-        let encoded = try JSONEncoder().encode(
-            PersistedProfile(
-                profile: profile,
-                den: .sample,
-                recentItems: recentItems
-            )
-        )
-        #expect(
-            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems == recentItems
-        )
-        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        object.removeValue(forKey: "recentItems")
-        let dataWithoutRecentItems = try JSONSerialization.data(withJSONObject: object)
-
-        // Act
-        let decoded = try JSONDecoder().decode(PersistedProfile.self, from: dataWithoutRecentItems)
-
-        // Assert
-        #expect(decoded.recentItems.isEmpty)
     }
 
     @Test func versionOneFixturesMigrateToVersionFour() throws {
