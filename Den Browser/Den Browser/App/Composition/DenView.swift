@@ -116,6 +116,10 @@ private struct DenDrawerOverlay: View {
                             return window.makeFirstResponder(runtime.terminalView)
                         }
                     )
+                    .terminalFontZoom(
+                        onStart: { windowModel.receive(.exitDenMode) },
+                        onAdjustFontSize: { runtime.adjustFontSize(by: $0) }
+                    )
                 } else {
                     DrawerWebSurface(webView: session.drawer.drawerRuntime(for: item).webView, isFocused: isFocused)
                 }

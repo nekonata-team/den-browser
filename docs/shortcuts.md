@@ -277,7 +277,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
 - **Sheets**:
   - Release the primary mouse button after clicking or dragging on a Sheet to focus its Board.
   - Pinch in or out over a Web Board to adjust the Current Sheet's scale for that Board.
-  - Pinch in or out over a Terminal Board to adjust its font size for that Board.
+  - Pinch in or out over a Terminal Board or Terminal Drawer Peek to adjust that Terminal Session's font size.
 - **Board Headers**:
   - Double-click to focus and center the Board.
   - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together.

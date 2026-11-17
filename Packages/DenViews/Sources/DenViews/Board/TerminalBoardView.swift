@@ -30,9 +30,6 @@ public struct TerminalBoardView: View {
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
 
-    @State private var isMagnifying = false
-    @State private var appliedFontSizeSteps = 0
-
     public init(
         model: BoardSurfaceModel,
         board: BoardState,
@@ -93,27 +90,10 @@ public struct TerminalBoardView: View {
                         onFocus()
                     }
             )
-            .simultaneousGesture(
-                MagnifyGesture(minimumScaleDelta: 0.01)
-                    .onChanged { value in
-                        guard isPointerFocusEnabled else { return }
-                        if !isMagnifying {
-                            isMagnifying = true
-                            appliedFontSizeSteps = 0
-                            onFocus()
-                        }
-
-                        let targetSteps = Int(
-                            ((value.magnification - 1) / 0.1).rounded(.towardZero)
-                        )
-                        let delta = targetSteps - appliedFontSizeSteps
-                        guard delta != 0 else { return }
-                        appliedFontSizeSteps += onAdjustFontSize(delta)
-                    }
-                    .onEnded { _ in
-                        isMagnifying = false
-                        appliedFontSizeSteps = 0
-                    }
+            .terminalFontZoom(
+                isEnabled: isPointerFocusEnabled,
+                onStart: onFocus,
+                onAdjustFontSize: onAdjustFontSize
             )
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
