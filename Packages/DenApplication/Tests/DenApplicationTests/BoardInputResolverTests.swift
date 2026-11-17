@@ -3,8 +3,7 @@ import DenDomain
 import Foundation
 import Testing
 
-@MainActor
-struct BoardInputResolverTests {
+nonisolated struct BoardInputResolverTests {
     @Test func resolvesZellijCommands() {
         #expect(BoardInputResolver.resolveZellijInput(":zellij") == .welcome)
         #expect(BoardInputResolver.resolveZellijInput(":zellij   ") == .welcome)

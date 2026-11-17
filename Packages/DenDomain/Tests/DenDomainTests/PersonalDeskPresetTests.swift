@@ -1,9 +1,7 @@
 import DenDomain
+import Foundation
 import Testing
 
-@testable import Den_Browser
-
-@MainActor
 struct PersonalDeskPresetTests {
     @Test(arguments: [false, true])
     func capturePreservesInspectionGroupAndFocusedBoard(focusInspection: Bool) throws {

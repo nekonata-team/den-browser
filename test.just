@@ -58,7 +58,7 @@ packages:
     @rtk test swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors
     @rtk test swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors
     @rtk test swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors
-    @rtk test swift build --package-path Packages/DenViews -Xswiftc -warnings-as-errors
+    @rtk test swift test --package-path Packages/DenViews -Xswiftc -warnings-as-errors
     @rtk test swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
     @echo "✓ Package checks passed"
 

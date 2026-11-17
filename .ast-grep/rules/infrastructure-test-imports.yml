@@ -1,0 +1,13 @@
+id: infrastructure-test-imports
+language: Swift
+severity: error
+message: DenInfrastructure tests must keep the package's dependency boundary; use its module, Testing, and permitted dependencies only.
+files:
+  - "Packages/DenInfrastructure/Tests/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(Foundation|DenDomain|DenInfrastructure|os|Darwin|CoreGraphics|ImageIO|UniformTypeIdentifiers|Testing)(\.|$)'
+    stopBy: end

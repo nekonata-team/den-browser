@@ -1,0 +1,13 @@
+id: model-test-imports
+language: Swift
+severity: error
+message: DenModels tests must keep the package's dependency boundary; use its module, Testing, and permitted dependencies only.
+files:
+  - "Packages/DenModels/Tests/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(Foundation|Observation|Synchronization|DenDomain|DenApplication|DenModels|Testing)(\.|$)'
+    stopBy: end

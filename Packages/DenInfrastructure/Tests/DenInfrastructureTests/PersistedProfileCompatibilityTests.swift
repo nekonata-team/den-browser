@@ -3,33 +3,8 @@ import DenInfrastructure
 import Foundation
 import Testing
 
-@testable import Den_Browser
-
 @Suite(.serialized)
-struct ProfilePersistenceTests {
-    @Test func customProfileColorRoundTrips() throws {
-        // Arrange
-        let color = ProfileColor.custom(ProfileRGB(red: 58, green: 134, blue: 255))
-
-        // Act
-        let encoded = try JSONEncoder().encode(color)
-        let decoded = try JSONDecoder().decode(ProfileColor.self, from: encoded)
-
-        // Assert
-        #expect(decoded == color)
-    }
-
-    @Test func profileColorDecodesPersistedPresetString() throws {
-        // Arrange
-        let data = Data("\"purple\"".utf8)
-
-        // Act
-        let decoded = try JSONDecoder().decode(ProfileColor.self, from: data)
-
-        // Assert
-        #expect(decoded == .purple)
-    }
-
+struct PersistedProfileCompatibilityTests {
     @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
         // Arrange
         let profile = ProfileState(
@@ -234,35 +209,9 @@ struct ProfilePersistenceTests {
         #expect(throws: DecodingError.self) { try PersistedProfileDocumentDecoder.decode(data) }
     }
 
-    @Test func webProfileStoreRejectsDefaultKindWithIdentifier() {
-        // Arrange
-        let invalidData = Data("{\"kind\":\"default\",\"identifier\":\"\(UUID())\"}".utf8)
-
-        // Act
-        let performDecode = {
-            try JSONDecoder().decode(WebProfileStore.self, from: invalidData)
-        }
-
-        // Assert
-        #expect(throws: DecodingError.self, performing: performDecode)
-    }
-
-    @Test func webProfileStoreRejectsIdentifiedKindWithoutIdentifier() {
-        // Arrange
-        let invalidData = Data("{\"kind\":\"identified\"}".utf8)
-
-        // Act
-        let performDecode = {
-            try JSONDecoder().decode(WebProfileStore.self, from: invalidData)
-        }
-
-        // Assert
-        #expect(throws: DecodingError.self, performing: performDecode)
-    }
-
     private func fixtureData(_ name: String) throws -> Data {
         let url = try #require(
-            Bundle(for: PersistenceFixtureBundleToken.self)
+            Bundle.module
                 .url(forResource: name, withExtension: "json")
         )
         return try Data(contentsOf: url)
@@ -272,5 +221,3 @@ struct ProfilePersistenceTests {
         try #require(JSONSerialization.jsonObject(with: data) as? NSDictionary)
     }
 }
-
-private final class PersistenceFixtureBundleToken {}

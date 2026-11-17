@@ -1,9 +1,8 @@
 import DenDomain
 import DenModels
 import DenViews
+import Foundation
 import Testing
-
-@testable import Den_Browser
 
 @MainActor
 struct BoardLayoutTests {

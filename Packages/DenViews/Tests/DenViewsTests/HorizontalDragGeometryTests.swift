@@ -1,9 +1,8 @@
 import CoreGraphics
 import DenDomain
 import DenViews
+import Foundation
 import Testing
-
-@testable import Den_Browser
 
 @MainActor
 struct HorizontalDragGeometryTests {

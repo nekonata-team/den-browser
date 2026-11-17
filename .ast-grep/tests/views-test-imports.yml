@@ -1,0 +1,23 @@
+id: views-test-imports
+valid:
+  - import SwiftUI
+  - import AppKit
+  - import CoreGraphics
+  - import Foundation
+  - import DenModels
+  - import DenDomain
+  - import DenViews
+  - import SFSafeSymbols
+  - import Testing
+  - '@testable import DenViews'
+  - import struct Foundation.URL
+  - "// import WebKit\nlet message = \"import Den_Browser\""
+invalid:
+  - import WebKit
+  - import GhosttyTerminal
+  - import DenApplication
+  - import DenInfrastructure
+  - '@testable import Den_Browser'
+  - '@preconcurrency import WebKit'
+  - import class WebKit.WKWebView
+  - import UnexpectedDependency

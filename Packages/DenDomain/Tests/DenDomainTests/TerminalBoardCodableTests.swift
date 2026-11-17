@@ -2,7 +2,6 @@ import DenDomain
 import Foundation
 import Testing
 
-@MainActor
 struct TerminalBoardCodableTests {
     @Test(arguments: [nil, "project"] as [String?])
     func zellijPreservesOptionalSessionName(sessionName: String?) throws {

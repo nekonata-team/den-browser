@@ -1,0 +1,22 @@
+id: model-test-imports
+valid:
+  - import Foundation
+  - import Observation
+  - import Synchronization
+  - import DenDomain
+  - import DenApplication
+  - import DenModels
+  - import Testing
+  - '@testable import DenModels'
+  - import struct Foundation.URL
+  - "// import WebKit\nlet message = \"import Den_Browser\""
+invalid:
+  - import SwiftUI
+  - import AppKit
+  - import WebKit
+  - import DenViews
+  - import DenInfrastructure
+  - '@testable import Den_Browser'
+  - '@preconcurrency import WebKit'
+  - import class WebKit.WKWebView
+  - import UnexpectedDependency

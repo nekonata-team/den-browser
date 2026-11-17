@@ -1,0 +1,25 @@
+id: infrastructure-test-imports
+valid:
+  - import Foundation
+  - import DenDomain
+  - import DenInfrastructure
+  - import os
+  - import Darwin
+  - import CoreGraphics
+  - import ImageIO
+  - import UniformTypeIdentifiers
+  - import Testing
+  - '@testable import DenInfrastructure'
+  - import struct Foundation.URL
+  - "// import WebKit\nlet message = \"import Den_Browser\""
+invalid:
+  - import SwiftUI
+  - import AppKit
+  - import WebKit
+  - import GhosttyTerminal
+  - import DenModels
+  - import DenViews
+  - '@testable import Den_Browser'
+  - '@preconcurrency import WebKit'
+  - import class WebKit.WKWebView
+  - import UnexpectedDependency

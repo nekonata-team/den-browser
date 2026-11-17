@@ -2,8 +2,6 @@ import DenIPCProtocol
 import Foundation
 import Testing
 
-@testable import Den_Browser
-
 struct DenIPCOperationResultTests {
     @Test func saveDialogJSONExposesResponseIDAndSuggestedFilename() throws {
         // Arrange

@@ -21,7 +21,8 @@ let package = Package(
                 .defaultIsolation(MainActor.self),
                 .enableUpcomingFeature("MemberImportVisibility"),
             ]
-        )
+        ),
+        .testTarget(name: "DenViewsTests", dependencies: ["DenViews", "DenModels", "DenDomain"]),
     ],
     swiftLanguageModes: [.v6]
 )

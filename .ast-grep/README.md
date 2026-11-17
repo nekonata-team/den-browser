@@ -24,6 +24,12 @@ destinations, and shared-state consistency. Passing this scan does not prove iso
 between app source groups.
 No automatic fixes are configured.
 
+Each package's `Tests` also has an import allowlist: its own module, `Testing`, and the
+dependencies permitted for its source layer. Domain tests allow only Foundation, DenDomain,
+and Testing. Models tests additionally allow Synchronization for Observation callbacks.
+These checks reject UI/runtime SDK imports in core tests even when the SDK is available
+to the compiler. They do not determine whether a test exercises the right package's responsibility.
+
 App-owned corners use `DenRadius` instead of literal `cornerRadius` arguments in
 Feature and DenViews sources. Geometry-derived expressions remain allowed.
 In the same sources, `RoundedRectangle` and `.rect` reject `style: .circular`;

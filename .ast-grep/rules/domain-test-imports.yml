@@ -1,0 +1,13 @@
+id: domain-test-imports
+language: Swift
+severity: error
+message: DenDomain tests must keep the package's dependency boundary; use its module, Testing, and permitted dependencies only.
+files:
+  - "Packages/DenDomain/Tests/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(Foundation|DenDomain|Testing)(\.|$)'
+    stopBy: end

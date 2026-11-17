@@ -2,8 +2,6 @@ import DenIPCProtocol
 import Foundation
 import Testing
 
-@testable import Den_Browser
-
 struct DenIPCRequestParsingTests {
     @Test func sheetGetPayloadRoundTripsThroughRequest() throws {
         let payload = try DenSheetGetAttributePayload(target: "#link", attribute: "href")

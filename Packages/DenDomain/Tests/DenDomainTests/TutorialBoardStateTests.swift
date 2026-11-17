@@ -1,10 +1,6 @@
 import DenDomain
-import DenModels
 import Testing
 
-@testable import Den_Browser
-
-@MainActor
 struct TutorialBoardStateTests {
     @Test func recordsRequiredStepsInOrderAndOptionalStepsOnce() {
         // Arrange

@@ -19,7 +19,11 @@ let package = Package(
                 .enableUpcomingFeature("NonescapableTypes"),
             ]
         ),
-        .testTarget(name: "DenInfrastructureTests", dependencies: ["DenInfrastructure", "DenDomain"]),
+        .testTarget(
+            name: "DenInfrastructureTests",
+            dependencies: ["DenInfrastructure", "DenDomain"],
+            resources: [.process("Fixtures")]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

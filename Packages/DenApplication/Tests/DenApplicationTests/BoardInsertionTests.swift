@@ -2,8 +2,7 @@ import DenApplication
 import DenDomain
 import Testing
 
-@MainActor
-struct BoardInsertionTests {
+nonisolated struct BoardInsertionTests {
     @Test(arguments: [false, true])
     func insertsBeforeWholeGroupWhenAnchoredToEitherMember(_ anchorsToSide: Bool) throws {
         // Arrange

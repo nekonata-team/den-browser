@@ -25,6 +25,7 @@ Do not add (and treat existing ones as removal candidates):
 | App | Native SDK/resource connections, Profile/window lifecycle, UI/IPC integration |
 
 - Test each component through its own interface; avoid constructing an outer app graph.
+- Tests that use only package APIs belong in that package's SwiftPM test target, without importing the App.
 - Group tests by responsibility with one narrow contract per file; split oversized suites rather than appending unrelated scenarios.
 - Layout: `Board/Web`, `Board/Terminal`, `Board/Inspection`; helpers in `Support`; resources in `Fixtures`. Do not mirror source folders.
 - Structure each test with `// Arrange`, `// Act`, `// Assert`; isolate preferences from `UserDefaults.standard`.

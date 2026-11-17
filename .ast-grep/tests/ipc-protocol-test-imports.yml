@@ -1,0 +1,19 @@
+id: ipc-protocol-test-imports
+valid:
+  - import Foundation
+  - import DenIPCProtocol
+  - import Testing
+  - '@testable import DenIPCProtocol'
+  - import struct Foundation.URL
+  - "// import WebKit\nlet message = \"import Den_Browser\""
+invalid:
+  - import SwiftUI
+  - import AppKit
+  - import WebKit
+  - import DenDomain
+  - import DenApplication
+  - import DenModels
+  - '@testable import Den_Browser'
+  - '@preconcurrency import WebKit'
+  - import class WebKit.WKWebView
+  - import UnexpectedDependency
