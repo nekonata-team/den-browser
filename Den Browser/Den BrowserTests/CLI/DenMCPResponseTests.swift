@@ -160,14 +160,8 @@ struct DenMCPResponseTests {
             let toClose = try #require(boards.first { $0["id"] as? String == firstBoard })
             let close = try ref(in: toClose, startingWith: "Close")
             let show = try ref(in: toClose, startingWith: "Show")
-            let move = try ref(in: toClose, startingWith: "Choose")
-            let destinations = try client.call("act_on_result", ["ref": move])
-            let end = try #require(
-                (destinations["destinations"] as? [[String: Any]])?.first {
-                    ($0["effect"] as? String)?.contains(secondDeskID) == true
-                }?["ref"] as? String
-            )
-            #expect(try client.call("act_on_result", ["ref": end])["board_id"] as? String == firstBoard)
+            let movedToSecond = try client.call("move_board", ["board_id": firstBoard, "desk_id": secondDeskID])
+            #expect(movedToSecond["board_id"] as? String == firstBoard)
             let moved = try client.call("move_board", ["board_id": firstBoard, "left_of": secondBoard])
             #expect(moved["board_id"] as? String == firstBoard)
             let invalidMove = try client.call("move_board", ["board_id": firstBoard], expectError: true)
@@ -177,11 +171,8 @@ struct DenMCPResponseTests {
             let stale = try client.call("act_on_result", ["ref": show], expectError: true)
             #expect((stale["error"] as? String)?.contains("search_den") == true)
 
-            let command = try #require(try client.matches("> New Desk").first)
-            let create = try ref(in: command, startingWith: "Create")
-            #expect(try client.call("act_on_result", ["ref": create])["required"] as? [String] == ["name"])
-            let named = try client.call("act_on_result", ["ref": create, "name": "Empty"])
-            let emptyDesk = try #require(named["desk_id"] as? String)
+            let createdEmpty = try client.call("create_desk", ["name": "Empty"])
+            let emptyDesk = try #require((createdEmpty["desk"] as? [String: Any])?["id"] as? String)
             let fromPreset = try client.call("create_desk", ["name": "FromPreset", "preset": "Saved"])
             let presetDeskID = try #require((fromPreset["desk"] as? [String: Any])?["id"] as? String)
             #expect(((fromPreset["desk"] as? [String: Any])?["board_count"] as? Int ?? 0) > 0)
@@ -193,33 +184,21 @@ struct DenMCPResponseTests {
             #expect((missingPreset["error"] as? String)?.contains("not found") == true)
 
             let toRemove = try #require(try client.matches(firstDeskID).first)
-            let remove = try ref(in: toRemove, startingWith: "Preview")
-            let preview = try client.call("act_on_result", ["ref": remove])
-            let confirmation = try #require((preview["confirmation"] as? [String: Any])?["ref"] as? String)
-            #expect(preview["required"] as? [String] == ["delete_boards"])
-            let blocked = try client.call("act_on_result", ["ref": confirmation])
-            #expect(blocked["removed_desk_id"] == nil)
+            let remove = try ref(in: toRemove, startingWith: "Remove")
             _ = try client.call("open_pages", ["pages": [pageURL], "desk": firstDeskID])
-            let updated = try client.call("act_on_result", ["ref": confirmation, "delete_boards": true])
-            #expect((updated["message"] as? String)?.contains("contents changed") == true)
-            let revised = try #require((updated["confirmation"] as? [String: Any])?["ref"] as? String)
-            #expect(
-                try client.call("act_on_result", ["ref": revised, "delete_boards": true])["removed_desk_id"] as? String
-                    == firstDeskID
-            )
+            let staleRemove = try client.call("act_on_result", ["ref": remove], expectError: true)
+            #expect((staleRemove["error"] as? String)?.contains("search_den") == true)
+            let refreshed = try #require(try client.matches(firstDeskID).first)
+            let freshRemove = try ref(in: refreshed, startingWith: "Remove")
+            #expect(try client.call("act_on_result", ["ref": freshRemove])["removed_desk_id"] as? String == firstDeskID)
             for deskID in [emptyDesk, presetDeskID, secondDeskID] {
                 let desk = try #require(try client.matches(deskID).first)
-                let remove = try ref(in: desk, startingWith: "Preview")
-                let preview = try client.call("act_on_result", ["ref": remove])
-                let confirm = try #require((preview["confirmation"] as? [String: Any])?["ref"] as? String)
-                #expect(
-                    try client.call("act_on_result", ["ref": confirm, "delete_boards": true])["removed_desk_id"]
-                        as? String == deskID
-                )
+                let remove = try ref(in: desk, startingWith: "Remove")
+                #expect(try client.call("act_on_result", ["ref": remove])["removed_desk_id"] as? String == deskID)
             }
             let lastDesk = try #require(try client.matches(originalDeskID).first)
-            let previewLast = try ref(in: lastDesk, startingWith: "Preview")
-            let lastError = try client.call("act_on_result", ["ref": previewLast], expectError: true)
+            let removeLast = try ref(in: lastDesk, startingWith: "Remove")
+            let lastError = try client.call("act_on_result", ["ref": removeLast], expectError: true)
             #expect((lastError["error"] as? String)?.contains("last Desk") == true)
         }.value
     }

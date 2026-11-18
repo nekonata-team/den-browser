@@ -19,7 +19,7 @@ Run `den mcp [--socket <path>] [--profile <uuid>]` as a local stdio server. The 
 |---|---|---|
 | `overview_den` | None | Ordered Desks and Boards for the selected Profile, `active_desk_id`, `focused_board_id` when present, and saved `desk_presets`. Each Board appears in its Desk only. |
 | `search_den` | `query`, optional `kinds`, optional `limit` (1–20, default 5) | Ordered Universal Search matches with `kind`, `name`, `location`, optional `id` and `detail`, and `actions`. Leaves focus and layout untouched. |
-| `act_on_result` | `ref`, optional `name`, optional `delete_boards` | Executes the action described by its ref, or returns the input or choices needed to proceed. |
+| `act_on_result` | `ref` | Executes the single-step action described by its ref. |
 | `move_board` | `board_id`, one of `desk_id`, `left_of`, `right_of` | Moves a Board Group to the end of a Desk or beside another Board without searching first. |
 | `create_desk` | `name`, optional `preset`, optional `focus` (default false) | Creates a Desk from a built-in preset (`empty`, `chatGPT`, `gemini`) or a Personal Desk Preset label or UUID. |
 | `open_pages` | `pages` (1–20 entries), optional `desk` or `new_desk` | Appends new Web Boards in input order. Returns the destination Desk and the result of each entry. Leaves the presented Desk, the original Boards, and any existing focus in place. |
@@ -32,11 +32,9 @@ Tool results contain `structuredContent` and its JSON text representation. Call 
 
 ## Search and act
 
-Search for a Board or Desk by name, keywords, or ID. Universal Search applies its existing matching and order, with actions for showing, moving, reordering, and closing Boards, showing and removing Desks, and creating Web Boards from Recent, Essentials, or the search input. A Board match shows an existing Board. A Recent match creates a new one. For an empty Desk, search for `> New Desk`, then send its action ref with `name`.
+Search for a Board or Desk by name, keywords, or ID. Universal Search applies its existing matching and order, with actions for showing and closing Boards, showing and removing Desks, and creating Web Boards from Recent, Essentials, or the search input. A Board match shows an existing Board. A Recent match creates a new one. Use `create_desk` to create a Desk and `move_board` to move or reorder a Board Group.
 
-Use `act_on_result` with the advertised ref. If a move returns `destinations`, call it again with the ref for a Desk's end or an adjacent Board. Placement moves the Board Group together. Action refs bind the Profile, target, and effect. They are temporary and may expire during an app run. Missing or changed targets return an error prompting a fresh search.
-
-Desk removal returns a preview with the Desk's Boards and a `confirmation.ref`. Pass that ref to confirm. For a nonempty Desk, also supply `delete_boards: true` to end the listed Boards' live activity. If the contents changed, review the new preview before confirming. The last Desk is retained.
+Use `act_on_result` with the advertised ref. Action refs bind the Profile, target, and effect. They are temporary and may expire during an app run. Missing or changed targets (including Desk contents changed since the search) return an error prompting a fresh search. The last Desk is retained.
 
 ## Open and read pages
 

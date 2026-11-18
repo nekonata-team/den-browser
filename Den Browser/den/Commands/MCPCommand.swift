@@ -50,7 +50,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             )
         case .search:
             return tool(
-                "Search Universal Search without changing focus. Results distinguish existing Boards from inputs that create Web Boards, and supply action refs. Use '> New Desk' to find Desk creation.",
+                "Search Universal Search without changing focus. Results distinguish existing Boards from inputs that create Web Boards, and supply action refs.",
                 [
                     "query": string("Name, URL, keywords, UUID, or Universal Search command query."),
                     "kinds": .object([
@@ -68,13 +68,9 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             )
         case .act:
             return tool(
-                "Execute the exact action identified by ref. Follow returned requirements, destination refs or Desk removal confirmation. Search again if a ref expires or its target is gone.",
+                "Execute the exact action identified by ref. Search again if a ref expires or its target changes.",
                 [
-                    "ref": string("Action ref from search_den or act_on_result.", format: "uuid"),
-                    "name": string("Label requested when creating an empty Desk."),
-                    "delete_boards": boolean(
-                        "Explicitly allow deletion of the Boards listed in the Desk removal preview."
-                    ),
+                    "ref": string("Action ref from search_den.", format: "uuid")
                 ],
                 required: ["ref"]
             )
@@ -183,13 +179,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             }
             operation = try .mcp(.search(query: query, limit: input.limit(), kinds: kinds))
         case .act:
-            operation = try .mcp(
-                .act(
-                    ref: input.required("ref", as: UUID.self),
-                    name: input.decode("name"),
-                    deleteBoards: input.decode("delete_boards") ?? false
-                )
-            )
+            operation = try .mcp(.act(ref: input.required("ref", as: UUID.self)))
         case .moveBoard:
             let boardID = try input.required("board_id", as: UUID.self)
             let deskID: UUID? = try input.decode("desk_id")
@@ -300,7 +290,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         )
     }
 
-    private static let searchKinds = ["board", "desk", "recent", "essential", "command", "input"]
+    private static let searchKinds = ["board", "desk", "recent", "essential", "input"]
 
     private var boardID: Value { string("Web Board UUID.", format: "uuid") }
 

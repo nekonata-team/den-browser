@@ -6,10 +6,9 @@ import Foundation
 @MainActor
 final class DenMCPActions {
     enum Operation {
-        case show, move, create, remove
+        case show, create
         case close(sideBoardID: BoardID?)
-        case place(DenBoardMoveDestination, deskID: DeskID)
-        case confirmRemoval([BoardID])
+        case remove(boardIDs: [BoardID])
     }
 
     struct Entry {
@@ -51,12 +50,12 @@ extension DenIPCService {
             return withDeskTarget(.automatic, context: context) {
                 search(query: query, limit: limit, kinds: kinds, at: $0)
             }
-        case .act(let ref, let name, let deleteBoards):
+        case .act(let ref):
             guard let entry = mcpActions[ref], profileID == nil || profileID == entry.profileID.rawValue else {
                 return .init(result: staleSearchResult, target: .none)
             }
             return .init(
-                result: act(entry, name: name, deleteBoards: deleteBoards),
+                result: act(entry),
                 target: .profile(profileID: entry.profileID.rawValue)
             )
         case .openPages(let pages, let desk, let newDesk):
@@ -84,10 +83,10 @@ extension DenIPCService {
         guard (1...20).contains(limit), query.utf8.count <= 8_192 else {
             return .failure("Use a shorter query and a limit between 1 and 20")
         }
-        let validKinds: Set<String> = ["board", "desk", "recent", "essential", "command", "input"]
+        let validKinds: Set<String> = ["board", "desk", "recent", "essential", "input"]
         let allowedKinds = kinds.map(Set.init)
         if let allowedKinds, allowedKinds.isEmpty || !allowedKinds.isSubset(of: validKinds) {
-            return .failure("kinds must be a non-empty subset of board, desk, recent, essential, command, input")
+            return .failure("kinds must be a non-empty subset of board, desk, recent, essential, input")
         }
         let snapshot = resolved.window.resources.snapshot
         let essentials = resolved.window.essentials()
@@ -106,7 +105,6 @@ extension DenIPCService {
             switch target {
             case .board: kind = "board"
             case .desk: kind = "desk"
-            case .command(.newDesk): kind = "command"
             case .recent: kind = "recent"
             case .essential: kind = "essential"
             case .createBoard: kind = "input"
@@ -147,17 +145,18 @@ extension DenIPCService {
                     : "Close Board and end its live activity"
                 actions = [
                     action(.show, "Show existing Board"),
-                    action(.move, "Choose where to move or reorder the Board Group"),
                     action(.close(sideBoardID: sideBoardID), close),
                 ]
             case .desk(let deskID):
+                guard let desk = snapshot.den.desks.first(where: { $0.id == deskID }) else { continue }
                 id = deskID.rawValue
                 detail = nil
-                actions = [action(.show, "Show Desk"), action(.remove, "Preview Desk removal")]
-            case .command(.newDesk):
-                id = nil
-                detail = nil
-                actions = [action(.create, "Create an empty Desk with a name")]
+                let boardIDs = desk.boards.map(\.id)
+                let removeEffect =
+                    boardIDs.isEmpty
+                    ? "Remove empty Desk"
+                    : "Remove Desk and its \(boardIDs.count) \(boardIDs.count == 1 ? "Board" : "Boards"), ending their live activity"
+                actions = [action(.show, "Show Desk"), action(.remove(boardIDs: boardIDs), removeEffect)]
             case .recent, .essential, .createBoard:
                 guard let input, web != nil else { continue }
                 id = nil
@@ -180,7 +179,7 @@ extension DenIPCService {
         return .success(.mcp(.init(matches: matches)))
     }
 
-    private func act(_ entry: DenMCPActions.Entry, name: String?, deleteBoards: Bool) -> DenIPCOperationResult {
+    private func act(_ entry: DenMCPActions.Entry) -> DenIPCOperationResult {
         let context = DenIPCCallerContext(profileID: entry.profileID.rawValue)
         let anchor: DeskTarget = .explicit(entry.deskID.rawValue)
         switch entry.target {
@@ -204,12 +203,7 @@ extension DenIPCService {
             else { return staleSearchResult }
             switch entry.target {
             case .desk:
-                return actOnDesk(entry, at: resolved, deleteBoards: deleteBoards)
-            case .command(.newDesk):
-                guard let name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    return .success(.mcp(.init(required: ["name"], message: "Provide a label for the new empty Desk.")))
-                }
-                return handleDeskNew(label: name, focus: true, target: resolved)
+                return actOnDesk(entry, at: resolved)
             case .recent, .essential, .createBoard:
                 let input = entry.target.creationInput(
                     essentials: resolved.window.essentials(),
@@ -250,55 +244,12 @@ extension DenIPCService {
             guard resources.activeDrag == nil else { return .failure("Finish the active drag and retry") }
             let result = handleBoardClose(target: resolved)
             return resources.state.board(for: board.id) == nil ? result : .failure("Could not close Board")
-        case .move:
-            guard let group = BoardGroup.containing(board.id, in: desk.boards) else { return staleSearchResult }
-            let primary = group.primaryBoard.id
-            var destinations: [DenMCPResult.Action] = []
-            for destination in resources.state.desks {
-                func choice(_ target: DenBoardMoveDestination, _ effect: String) -> DenMCPResult.Action {
-                    mcpActions.issue(
-                        .init(
-                            profileID: entry.profileID,
-                            deskID: desk.id,
-                            target: entry.target,
-                            operation: .place(target, deskID: destination.id),
-                            input: nil,
-                            url: nil
-                        ),
-                        effect: effect
-                    )
-                }
-
-                let location = "\(destination.label) [\(destination.id.rawValue)]"
-                destinations.append(choice(.endOfDesk(destination.id.rawValue), "Place at end of \(location)"))
-                for neighbor in destination.boards where !neighbor.isSideBoard && neighbor.id != primary {
-                    let label = "\(neighbor.displayName) [\(neighbor.id.rawValue)] on \(location)"
-                    destinations.append(choice(.leftOf(neighbor.id.rawValue), "Place left of \(label)"))
-                    destinations.append(choice(.rightOf(neighbor.id.rawValue), "Place right of \(label)"))
-                }
-            }
-            return .success(
-                .mcp(.init(destinations: destinations, message: "Call act_on_result with one destination ref."))
-            )
-        case .place(let destination, let deskID):
-            guard let destinationDesk = resources.state.desks.first(where: { $0.id == deskID }) else {
-                return staleSearchResult
-            }
-            if case .leftOf(let id) = destination, !destinationDesk.boards.contains(where: { $0.id.rawValue == id }) {
-                return staleSearchResult
-            }
-            if case .rightOf(let id) = destination, !destinationDesk.boards.contains(where: { $0.id.rawValue == id }) {
-                return staleSearchResult
-            }
-            return handleBoardMove(destination: destination, target: resolved)
         default:
             return staleSearchResult
         }
     }
 
-    private func actOnDesk(_ entry: DenMCPActions.Entry, at resolved: ResolvedDeskTarget, deleteBoards: Bool)
-        -> DenIPCOperationResult
-    {
+    private func actOnDesk(_ entry: DenMCPActions.Entry, at resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
         let desk = resolved.desk
         let window = resolved.window
         switch entry.operation {
@@ -306,57 +257,14 @@ extension DenIPCService {
             window.desk.focus(desk.id)
             guard window.presentedDeskID() == desk.id else { return .failure("Could not show Desk") }
             return .success(.mcp(.init(desk: deskInfo(desk, in: window))))
-        case .remove, .confirmRemoval:
+        case .remove(let expected):
             guard window.resources.state.desks.count > 1 else { return .failure("The last Desk cannot be removed") }
-            let boardIDs = desk.boards.map(\.id)
-            if case .confirmRemoval(let expected) = entry.operation {
-                guard expected == boardIDs else {
-                    return removalPreview(
-                        entry,
-                        at: resolved,
-                        message: "Desk contents changed. Review the new removal impact."
-                    )
-                }
-                if boardIDs.isEmpty || deleteBoards {
-                    guard window.resources.activeDrag == nil else {
-                        return .failure("Finish the active drag and retry")
-                    }
-                    return handleDeskRemove(force: deleteBoards, target: resolved)
-                }
-            }
-            return removalPreview(entry, at: resolved)
+            guard expected == desk.boards.map(\.id) else { return staleSearchResult }
+            guard window.resources.activeDrag == nil else { return .failure("Finish the active drag and retry") }
+            return handleDeskRemove(force: true, target: resolved)
         default:
             return staleSearchResult
         }
-    }
-
-    private func removalPreview(_ entry: DenMCPActions.Entry, at resolved: ResolvedDeskTarget, message: String? = nil)
-        -> DenIPCOperationResult
-    {
-        let desk = resolved.desk
-        let confirmation = mcpActions.issue(
-            .init(
-                profileID: entry.profileID,
-                deskID: desk.id,
-                target: entry.target,
-                operation: .confirmRemoval(desk.boards.map(\.id)),
-                input: nil,
-                url: nil
-            ),
-            effect: desk.boards.isEmpty
-                ? "Remove empty Desk" : "Remove Desk and all listed Boards, ending their live activity"
-        )
-        return .success(
-            .mcp(
-                .init(
-                    desk: deskInfo(desk, in: resolved.window, includeBoards: true),
-                    required: desk.boards.isEmpty ? nil : ["delete_boards"],
-                    message: [message, "Removing a presented Desk switches its window to a replacement Desk."]
-                        .compactMap { $0 }.joined(separator: " "),
-                    confirmation: confirmation
-                )
-            )
-        )
     }
 
     private func createDesk(name: String, preset: String?, focus: Bool, at resolved: ResolvedDeskTarget)
