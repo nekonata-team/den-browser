@@ -92,6 +92,21 @@ struct DenMCPResponseTests {
             let ordered = try #require(overview["desks"] as? [[String: Any]])
             #expect(ordered.compactMap { $0["id"] as? String } == [originalDeskID, firstDeskID, secondDeskID])
 
+            let compactOverview = try client.call(
+                "overview_den",
+                ["include_boards": false, "include_presets": false]
+            )
+            #expect(compactOverview["desk_presets"] == nil)
+            let compactDesks = try #require(compactOverview["desks"] as? [[String: Any]])
+            #expect(compactDesks.count == 3)
+            #expect(compactDesks.allSatisfy { $0["boards"] == nil && $0["board_count"] != nil })
+
+            let singleDesk = try client.call("overview_den", ["desk_id": originalDeskID])
+            let singleDesks = try #require(singleDesk["desks"] as? [[String: Any]])
+            #expect(singleDesks.compactMap { $0["id"] as? String } == [originalDeskID])
+            let missingDesk = try client.call("overview_den", ["desk_id": UUID().uuidString], expectError: true)
+            #expect((missingDesk["error"] as? String)?.contains("Desk not found") == true)
+
             let ambiguous = try client.call("open_pages", ["pages": ["current"], "desk": "research"])
             let choices = try #require(ambiguous["choices"] as? [[String: Any]])
             #expect(choices.compactMap { $0["id"] as? String } == [firstDeskID, secondDeskID])

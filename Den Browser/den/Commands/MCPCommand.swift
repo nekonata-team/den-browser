@@ -46,7 +46,12 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         switch self {
         case .overview:
             return tool(
-                "Get the current Profile's ordered Desks and Boards, including the presented Desk and focused Board."
+                "Get the current Profile's ordered Desks and Boards, including the presented Desk and focused Board.",
+                [
+                    "desk_id": string("Filter desks to a single Desk UUID.", format: "uuid"),
+                    "include_boards": boolean("Include each Desk's boards array (default true)."),
+                    "include_presets": boolean("Include saved desk_presets (default true)."),
+                ]
             )
         case .search:
             return tool(
@@ -151,7 +156,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             let operation = try tool.operation(arguments)
             let request = try DenIPCClient.makeRequest(operation: operation, profileID: profileID, callerBoardID: nil)
             let response = try DenIPCClient.sendRequest(request: request, socketPath: socketPath)
-            return try tool.result(response)
+            return try tool.result(response, arguments: arguments)
         } catch {
             return try Self.makeResult(
                 Value.object(["error": .string(error.localizedDescription)]),
@@ -165,6 +170,9 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         let operation: DenIPCOperation
         switch self {
         case .overview:
+            let _: UUID? = try input.decode("desk_id")
+            let _: Bool? = try input.decode("include_boards")
+            let _: Bool? = try input.decode("include_presets")
             operation = .inspectDen(target: .automatic)
         case .search:
             let query = try input.required("query", as: String.self)
@@ -237,7 +245,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         return operation
     }
 
-    private func result(_ response: DenIPCResponse) throws -> CallTool.Result {
+    private func result(_ response: DenIPCResponse, arguments: [String: Value]) throws -> CallTool.Result {
         let data = try JSONEncoder().encode(response.result.publicJSON)
         var output = try JSONDecoder().decode([String: Value].self, from: data)
         output.removeValue(forKey: "ok")
@@ -247,6 +255,38 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             }
             for key in ["boards", "profiles", "profile_id"] {
                 output.removeValue(forKey: key)
+            }
+            let input = DenMCPInput(arguments: arguments)
+            let deskID: UUID? = try input.decode("desk_id")
+            let includeBoards: Bool = try input.decode("include_boards") ?? true
+            let includePresets: Bool = try input.decode("include_presets") ?? true
+            if !includePresets {
+                output.removeValue(forKey: "desk_presets")
+            }
+            if case .array(let desks) = output["desks"] {
+                let filtered: [Value]
+                if let deskID {
+                    filtered = desks.filter {
+                        if case .object(let desk) = $0, case .string(let id) = desk["id"] {
+                            return id.caseInsensitiveCompare(deskID.uuidString) == .orderedSame
+                        }
+                        return false
+                    }
+                    if filtered.isEmpty {
+                        throw DenIPCInputError.usage("Desk not found: \(deskID.uuidString)")
+                    }
+                } else {
+                    filtered = desks
+                }
+                output["desks"] = .array(
+                    includeBoards
+                        ? filtered
+                        : filtered.map { item in
+                            guard case .object(var desk) = item else { return item }
+                            desk.removeValue(forKey: "boards")
+                            return .object(desk)
+                        }
+                )
             }
         } else {
             switch response.target {
