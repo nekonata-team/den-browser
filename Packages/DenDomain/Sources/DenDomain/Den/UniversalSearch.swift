@@ -151,7 +151,9 @@ public enum UniversalSearch {
     {
         let trimmed = WebURLPolicy.stripNewlines(query).trimmingCharacters(in: .whitespaces)
         let commandsOnly = isCommandsOnly(trimmed)
-        let terms = (commandsOnly ? String(trimmed.dropFirst()) : trimmed).split(whereSeparator: \.isWhitespace)
+        let queryText =
+            commandsOnly ? String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces) : trimmed
+        let terms = queryText.split(whereSeparator: \.isWhitespace).map(String.init)
         let recentResults = commandsOnly ? [] : recentResults(query: trimmed, recentItems: recentItems)
         if trimmed.isEmpty {
             let essentials = items.filter { if case .essential = $0.target { true } else { false } }
@@ -160,16 +162,20 @@ public enum UniversalSearch {
         }
         let queryID = UUID(uuidString: trimmed)
         let idMatches = items.filter { queryID != nil && $0.target.navigationID == queryID }
-        var results =
-            idMatches
-            + items.filter { item in
-                if let queryID, item.target.navigationID == queryID { return false }
-                if commandsOnly {
-                    guard case .command = item.target else { return false }
-                }
-                let searchable = "\(item.title) \(item.detail) \(item.keywords)"
-                return terms.allSatisfy { searchable.localizedCaseInsensitiveContains(String($0)) }
+        let rankedMatches = items.enumerated().compactMap {
+            index,
+            item -> (item: UniversalSearchItem, score: Int, index: Int)? in
+            if let queryID, item.target.navigationID == queryID { return nil }
+            if commandsOnly {
+                guard case .command = item.target else { return nil }
             }
+            let searchable = "\(item.title) \(item.detail) \(item.keywords)"
+            guard terms.allSatisfy({ searchable.localizedCaseInsensitiveContains($0) }) else { return nil }
+            return (item, matchScore(for: item, query: queryText, terms: terms), index)
+        }.sorted { lhs, rhs in
+            lhs.score == rhs.score ? lhs.index < rhs.index : lhs.score < rhs.score
+        }.map(\.item)
+        var results = idMatches + rankedMatches
         results += recentResults
         if !commandsOnly, !trimmed.isEmpty {
             results.append(
@@ -181,6 +187,13 @@ public enum UniversalSearch {
             )
         }
         return results
+    }
+
+    private static func matchScore(for item: UniversalSearchItem, query: String, terms: [String]) -> Int {
+        if !query.isEmpty, item.title.localizedCaseInsensitiveCompare(query) == .orderedSame { return 0 }
+        if !query.isEmpty, item.title.range(of: query, options: [.caseInsensitive, .anchored]) != nil { return 1 }
+        if !terms.isEmpty, terms.allSatisfy({ item.title.localizedCaseInsensitiveContains($0) }) { return 2 }
+        return 3
     }
 
     private static func recentResults(query: String, recentItems: [RecentItem]) -> [UniversalSearchItem] {

@@ -183,4 +183,30 @@ struct UniversalSearchModelTests {
         // Assert
         #expect(search.results.first?.target == .recent(item))
     }
+
+    @Test func exactAndPrefixTitleMatchesOutrankMetadataAndPartialMatches() {
+        let search = UniversalSearchModel()
+        let metadataOnly = UniversalSearchItem(
+            target: .board(BoardID()),
+            title: "Guide",
+            detail: "Board · Makepad",
+            keywords: "https://makepad.nl/"
+        )
+        let substringTitle = UniversalSearchItem(target: .board(BoardID()), title: "Awesome Makepad", detail: "Board")
+        let prefixTitle = UniversalSearchItem(target: .board(BoardID()), title: "Makepad Docs", detail: "Board")
+        let exactTitle = UniversalSearchItem(target: .desk(DeskID()), title: "makepad", detail: "Desk")
+        search.items = [metadataOnly, substringTitle, prefixTitle, exactTitle]
+
+        search.query = "makepad"
+
+        #expect(
+            search.results.map(\.target) == [
+                exactTitle.target,
+                prefixTitle.target,
+                substringTitle.target,
+                metadataOnly.target,
+                .createBoard("makepad"),
+            ]
+        )
+    }
 }
