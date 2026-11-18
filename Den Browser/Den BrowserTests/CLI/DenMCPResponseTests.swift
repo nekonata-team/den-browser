@@ -34,6 +34,9 @@ struct DenMCPResponseTests {
         let originalBoard = try #require(
             session.boardOpening.createBoard(urlString: page.absoluteString, recentItem: .url(page, title: "Reference"))
         )
+        let terminalBoard = try #require(
+            session.boardOpening.createTerminalBoard(workingDirectory: directory.path, focus: false)
+        )
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 480),
             styleMask: [.titled],
@@ -61,6 +64,7 @@ struct DenMCPResponseTests {
         defer { service.stop() }
         let pageURL = page.absoluteString
         let originalBoardID = originalBoard.rawValue.uuidString
+        let terminalBoardID = terminalBoard.rawValue.uuidString
         let originalDeskID = originalDesk.rawValue.uuidString
         let firstDeskID = firstDesk.rawValue.uuidString
         let secondDeskID = secondDesk.rawValue.uuidString
@@ -72,7 +76,7 @@ struct DenMCPResponseTests {
             #expect(
                 tools.compactMap { $0["name"] as? String } == [
                     "overview_den", "search_den", "act_on_result", "open_pages", "read_page", "read_selection",
-                    "list_notifications",
+                    "read_terminal", "list_notifications",
                 ]
             )
             let schemas = tools.compactMap { $0["inputSchema"] as? [String: Any] }
@@ -122,6 +126,11 @@ struct DenMCPResponseTests {
             #expect(inspection["target_board_id"] as? String == originalBoardID)
             #expect(inspection["document_id"] is String)
             #expect((inspection["selection"] as? [String: Any])?["id"] as? String == "target")
+            let terminal = try client.call("read_terminal", ["board_id": terminalBoardID, "lines": 5])
+            #expect(terminal["board_id"] as? String == terminalBoardID)
+            #expect(terminal["text"] is String)
+            let invalidLines = try client.call("read_terminal", ["lines": 0], expectError: true)
+            #expect((invalidLines["error"] as? String)?.contains("positive integer") == true)
             let unread = try client.call("list_notifications", ["unread_only": true, "limit": 2])
             let unreadIDs = (unread["notifications"] as? [[String: Any]])?.compactMap { $0["id"] as? String }
             #expect(unreadIDs == expectedUnreadIDs)

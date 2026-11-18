@@ -23,6 +23,7 @@ Run `den mcp [--socket <path>] [--profile <uuid>]` as a local stdio server. The 
 | `open_pages` | `pages` (1–20 entries), optional `desk` or `new_desk` | Appends new Web Boards in input order. Returns the destination Desk and the result of each entry. Leaves the presented Desk, the original Boards, and any existing focus in place. |
 | `read_page` | Optional `board_id` or `url` | Returns `title`, actual `url`, `markdown`, and `board_id`. With neither argument it reads the focused Web Board. A URL creates a Web Board on the presented Desk without selecting it. The Board is retained if reading fails. Retry with the returned `board_id`. |
 | `read_selection` | Optional Inspection `board_id` | Reads the human's selected element, ancestors, source URL and Board, document identity, timestamps, and connection state. Prefers the focused Inspection Board or the one attached to the focused Board. If there are multiple other Inspection Boards, returns choices. Leaves focus and selection in place. |
+| `read_terminal` | Optional Terminal `board_id`, optional `lines` (≥ 1) | Reads visible screen text or the last N retained lines from a Terminal Board without changing focus. Omit `board_id` for the focused Terminal Board. |
 | `list_notifications` | Optional `unread_only` (default false) and `limit` (1–20, default 5) | Lists retained Notifications for the current Profile, newest first. Filters before applying the limit and preserves read state. |
 
 Tool results contain `structuredContent` and its JSON text representation. Call failures set `isError` and may include recoverable details, such as a newly created `board_id` or failed entries. Choices and previews are successful calls and describe what to pass next.
@@ -51,6 +52,6 @@ For the Inspection payload's freshness fields, see [Reading inspection context](
 | `create_web_board`, `close_board` | `open_pages`, or find the relevant action using `search_den`. |
 | `read_sheet_markdown`, `read_sheet_text`, `read_inspection` | `read_page` or `read_selection`; use `den board web read`, `den board web text`, or `den board inspection read` for the previous options. |
 | `open_profile`, `create_inspection_board`, `open_sheet`, `inspect_sheet`, other Sheet tools | `den profile open`, `den board inspection new`, and `den board web` subcommands. |
-| Drawer and Terminal tools | `den drawer` and `den board terminal` subcommands. |
+| Drawer and Terminal tools | `read_terminal` for reading Terminal output; `den drawer` and `den board terminal` subcommands for Drawer and interactive Terminal control. |
 
 See the [CLI reference](cli.md) and [MCP catalog decision](adr/0074-ground-mcp-in-universal-search.md).

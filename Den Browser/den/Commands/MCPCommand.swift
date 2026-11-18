@@ -37,6 +37,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
     case openPages = "open_pages"
     case readPage = "read_page"
     case readSelection = "read_selection"
+    case readTerminal = "read_terminal"
     case notifications = "list_notifications"
 
     var definition: Tool {
@@ -90,6 +91,18 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             return tool(
                 "Read a human's Inspection selection, its ancestors, source page and freshness. An ambiguous target returns Inspection Board choices. Leaves selection and focus as they were.",
                 ["board_id": string("Inspection Board UUID.", format: "uuid")]
+            )
+        case .readTerminal:
+            return tool(
+                "Read visible screen text or recent history lines from a Terminal Board without changing focus. Omit board_id for the focused Terminal Board.",
+                [
+                    "board_id": string("Terminal Board UUID.", format: "uuid"),
+                    "lines": .object([
+                        "type": .string("integer"),
+                        "minimum": .int(1),
+                        "description": .string("Read the last N lines of retained history, including the screen."),
+                    ]),
+                ]
             )
         case .notifications:
             return tool(
@@ -147,6 +160,13 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             operation = try .mcp(.readPage(boardID: input.decode("board_id"), url: input.decode("url")))
         case .readSelection:
             operation = try .mcp(.readSelection(boardID: input.decode("board_id")))
+        case .readTerminal:
+            let lines: Int? = try input.decode("lines")
+            if let lines, lines <= 0 {
+                throw DenIPCInputError.usage("'lines' must be a positive integer")
+            }
+            let target: BoardTarget = try input.decode("board_id").map(BoardTarget.explicit) ?? .automatic
+            operation = .terminal(command: .text(lines: lines), target: target)
         case .notifications:
             operation = try .listNotifications(
                 unreadOnly: input.decode("unread_only") ?? false,
@@ -198,7 +218,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
     private func tool(_ description: String, _ properties: [String: Value] = [:], required: [String] = []) -> Tool {
         let annotations: Tool.Annotations
         switch self {
-        case .overview, .search, .readSelection, .notifications:
+        case .overview, .search, .readSelection, .readTerminal, .notifications:
             annotations = .init(readOnlyHint: true, openWorldHint: false)
         case .openPages, .readPage:
             annotations = .init(readOnlyHint: false, destructiveHint: false)
