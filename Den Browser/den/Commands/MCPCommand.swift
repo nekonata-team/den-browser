@@ -124,7 +124,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             )
         case .readTerminal:
             return tool(
-                "Read visible screen text or recent history lines from a Terminal Board without changing focus. Omit board_id for the focused Terminal Board.",
+                "Read visible screen text or recent history lines from a Terminal Board without changing focus. Omit board_id for the focused Terminal Board or the first Terminal Board on the presented Desk.",
                 [
                     "board_id": string("Terminal Board UUID.", format: "uuid"),
                     "lines": .object([
