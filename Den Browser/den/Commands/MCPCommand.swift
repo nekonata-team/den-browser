@@ -23,7 +23,7 @@ struct MCPCommand: AsyncParsableCommand {
             .init(tools: DenMCPTool.allCases.map(\.definition))
         }
         await server.withMethodHandler(CallTool.self) { params in
-            DenMCPTool.call(params, socketPath: socketPath, profileID: profileID)
+            try DenMCPTool.call(params, socketPath: socketPath, profileID: profileID)
         }
         try await server.start(transport: StdioTransport())
         await server.waitUntilCompleted()
@@ -142,7 +142,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         }
     }
 
-    static func call(_ params: CallTool.Parameters, socketPath: String?, profileID: String?) -> CallTool.Result {
+    static func call(_ params: CallTool.Parameters, socketPath: String?, profileID: String?) throws -> CallTool.Result {
         do {
             guard let tool = Self(rawValue: params.name) else {
                 throw DenIPCInputError.usage("Unknown Den tool: \(params.name)")
@@ -153,8 +153,8 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             let response = try DenIPCClient.sendRequest(request: request, socketPath: socketPath)
             return try tool.result(response)
         } catch {
-            return CallTool.Result(
-                content: [.text(text: error.localizedDescription, annotations: nil, _meta: nil)],
+            return try Self.makeResult(
+                Value.object(["error": .string(error.localizedDescription)]),
                 isError: true
             )
         }
@@ -258,14 +258,17 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
                 output["board_id"] = output["board_id"] ?? .string(boardID.uuidString)
             }
         }
-        let value = Value.object(output)
+        return try Self.makeResult(Value.object(output), isError: !response.result.isOk)
+    }
+
+    private static func makeResult(_ value: Value, isError: Bool) throws -> CallTool.Result {
         guard let text = String(bytes: try JSONEncoder().encode(value), encoding: .utf8) else {
             throw DenIPCInputError.usage("Den Browser returned an invalid result")
         }
         return try CallTool.Result(
             content: [.text(text: text, annotations: nil, _meta: nil)],
             structuredContent: value,
-            isError: !response.result.isOk
+            isError: isError
         )
     }
 
