@@ -97,10 +97,10 @@ After verifying the candidate, publish it:
 just release publish X.Y.Z
 ```
 
-This commits and pushes the version change and Appcast, creates and pushes the
-annotated tag, creates a GitHub Release with the notarized ZIP artifact and
-links to the tagged source, MPL 2.0 license, and third-party notices in its
-release notes, then opens the Homebrew Cask pull request and enables rebase
+This commits the version change and Appcast locally, creates and pushes the
+annotated tag, and creates a GitHub Release with the notarized ZIP. The release
+notes link to the tagged source, MPL 2.0 license, and third-party notices. It
+then pushes `main`, opens the Homebrew Cask pull request, and enables rebase
 auto-merge.
 
 The Appcast is generated during `prepare`, but `publish` pushes the `main`
@@ -119,8 +119,29 @@ The first Sparkle-enabled release is a bootstrap release. Users running an
 older direct-download build must install that release once manually; later
 releases can update through Sparkle.
 
-If a release stops midway, inspect what already exists before resuming. Do not
-delete or replace a tag, Release, artifact, or pull request.
+### Resume after a publish failure
+
+Check the local and remote tag, GitHub Release, `origin/main`, and Homebrew
+Cask pull request before resuming. Use the original release commit and the
+notarized ZIP under `.release/vX.Y.Z/` that matches the Appcast. If an existing
+tag points to a different commit or an uploaded ZIP differs from that candidate,
+stop and investigate. Preserve existing tags, releases, assets, and pull requests.
+
+- **Before local tag creation.** If neither a local nor a remote tag exists,
+  rerun `just release publish X.Y.Z` from the release worktree.
+- **After tag creation.** Verify that each existing copy of the tag points to
+  the release commit. Push the local tag if it is missing on `origin`. If the
+  GitHub Release is missing, create it from that tag with the original ZIP and
+  the release notes described above. If the Release exists and the ZIP is
+  missing, upload the original ZIP to it.
+- **After ZIP publication.** Verify that the ZIP is downloadable. If
+  `origin/main` does not yet contain the release commit, confirm the pending
+  `main` commits are ready to publish and push `main`. If the Homebrew
+  Cask pull request is missing and the Cask has yet to receive this version,
+  run `just release homebrew X.Y.Z`.
+- **After opening the Homebrew pull request.** If the matching pull request is
+  open, enable rebase auto-merge if needed. If it has merged, verify the Cask
+  version in the tap. Investigate a closed, unmerged pull request before proceeding.
 
 ### Homebrew (First-time setup)
 
