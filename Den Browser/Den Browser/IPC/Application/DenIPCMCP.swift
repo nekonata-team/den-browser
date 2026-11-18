@@ -47,8 +47,10 @@ extension DenIPCService {
     func handleMCP(_ command: DenMCPCommand, profileID: UUID?) async -> DenIPCResponse {
         let context = DenIPCCallerContext(profileID: profileID)
         switch command {
-        case .search(let query, let limit):
-            return withDeskTarget(.automatic, context: context) { search(query: query, limit: limit, at: $0) }
+        case .search(let query, let limit, let kinds):
+            return withDeskTarget(.automatic, context: context) {
+                search(query: query, limit: limit, kinds: kinds, at: $0)
+            }
         case .act(let ref, let name, let deleteBoards):
             guard let entry = mcpActions[ref], profileID == nil || profileID == entry.profileID.rawValue else {
                 return .init(result: staleSearchResult, target: .none)
@@ -72,9 +74,16 @@ extension DenIPCService {
         .failure("This action or its target is no longer available. Run search_den again.")
     }
 
-    private func search(query: String, limit: Int, at resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
+    private func search(query: String, limit: Int, kinds: [String]?, at resolved: ResolvedDeskTarget)
+        -> DenIPCOperationResult
+    {
         guard (1...20).contains(limit), query.utf8.count <= 8_192 else {
             return .failure("Use a shorter query and a limit between 1 and 20")
+        }
+        let validKinds: Set<String> = ["board", "desk", "recent", "essential", "command", "input"]
+        let allowedKinds = kinds.map(Set.init)
+        if let allowedKinds, allowedKinds.isEmpty || !allowedKinds.isSubset(of: validKinds) {
+            return .failure("kinds must be a non-empty subset of board, desk, recent, essential, command, input")
         }
         let snapshot = resolved.window.resources.snapshot
         let essentials = resolved.window.essentials()
@@ -89,6 +98,17 @@ extension DenIPCService {
         var matches: [DenMCPResult.Match] = []
         for item in UniversalSearch.results(query: query, items: items, recentItems: snapshot.recentItems) {
             let target = item.target
+            let kind: String
+            switch target {
+            case .board: kind = "board"
+            case .desk: kind = "desk"
+            case .command(.newDesk): kind = "command"
+            case .recent: kind = "recent"
+            case .essential: kind = "essential"
+            case .createBoard: kind = "input"
+            default: continue
+            }
+            if let allowedKinds, !allowedKinds.contains(kind) { continue }
             let input = target.creationInput(essentials: essentials, recents: snapshot.recentItems)
             let web = input.flatMap { webInput($0, window: resolved.window) }
             let desk = target.boardDesk(in: snapshot.den) ?? target.desk(in: snapshot.den) ?? resolved.desk
@@ -106,14 +126,12 @@ extension DenIPCService {
                 )
             }
 
-            let kind: String
             let actions: [DenMCPResult.Action]
             let detail: String?
             let id: UUID?
             switch target {
             case .board(let boardID):
                 guard let board = snapshot.den.board(for: boardID) else { continue }
-                kind = "board"
                 id = boardID.rawValue
                 detail =
                     board.currentSheetURL?.absoluteString ?? board.zmxSessionName ?? board.zellijSessionName
@@ -130,22 +148,15 @@ extension DenIPCService {
                 ]
             case .desk(let deskID):
                 id = deskID.rawValue
-                kind = "desk"
                 detail = nil
                 actions = [action(.show, "Show Desk"), action(.remove, "Preview Desk removal")]
             case .command(.newDesk):
                 id = nil
-                kind = "command"
                 detail = nil
                 actions = [action(.create, "Create an empty Desk with a name")]
             case .recent, .essential, .createBoard:
                 guard let input, web != nil else { continue }
                 id = nil
-                switch target {
-                case .recent: kind = "recent"
-                case .essential: kind = "essential"
-                default: kind = "input"
-                }
                 detail = input == item.title ? nil : input
                 actions = [action(.create, "Create and show a new Web Board")]
             default: continue

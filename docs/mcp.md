@@ -18,7 +18,7 @@ Run `den mcp [--socket <path>] [--profile <uuid>]` as a local stdio server. The 
 | Tool | Arguments | Result and effect |
 |---|---|---|
 | `overview_den` | None | Ordered Desks and Boards for the selected Profile, `active_desk_id`, and `focused_board_id` when present. Each Board appears in its Desk only. |
-| `search_den` | `query`, optional `limit` (1–20, default 5) | Ordered Universal Search matches with `kind`, `name`, `location`, optional `id` and `detail`, and `actions`. Leaves focus and layout untouched. |
+| `search_den` | `query`, optional `kinds`, optional `limit` (1–20, default 5) | Ordered Universal Search matches with `kind`, `name`, `location`, optional `id` and `detail`, and `actions`. Leaves focus and layout untouched. |
 | `act_on_result` | `ref`, optional `name`, optional `delete_boards` | Executes the action described by its ref, or returns the input or choices needed to proceed. |
 | `move_board` | `board_id`, one of `desk_id`, `left_of`, `right_of` | Moves a Board Group to the end of a Desk or beside another Board without searching first. |
 | `open_pages` | `pages` (1–20 entries), optional `desk` or `new_desk` | Appends new Web Boards in input order. Returns the destination Desk and the result of each entry. Leaves the presented Desk, the original Boards, and any existing focus in place. |

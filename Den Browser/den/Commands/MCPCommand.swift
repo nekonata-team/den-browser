@@ -52,6 +52,15 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
                 "Search Universal Search without changing focus. Results distinguish existing Boards from inputs that create Web Boards, and supply action refs. Use '> New Desk' to find Desk creation.",
                 [
                     "query": string("Name, URL, keywords, UUID, or Universal Search command query."),
+                    "kinds": .object([
+                        "type": .string("array"),
+                        "description": .string("Filter matches by kind. Omit to include all kinds."),
+                        "minItems": .int(1),
+                        "items": .object([
+                            "type": .string("string"),
+                            "enum": .array(DenMCPTool.searchKinds.map(Value.string)),
+                        ]),
+                    ]),
                     "limit": limit,
                 ],
                 required: ["query"]
@@ -151,7 +160,15 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         case .search:
             let query = try input.required("query", as: String.self)
             guard query.utf8.count <= 8_192 else { throw DenIPCInputError.usage("Query is too long") }
-            operation = try .mcp(.search(query: query, limit: input.limit()))
+            let kinds: [String]? = try input.decode("kinds")
+            if let kinds {
+                guard !kinds.isEmpty, kinds.allSatisfy(Self.searchKinds.contains) else {
+                    throw DenIPCInputError.usage(
+                        "'kinds' must be a non-empty array of: \(Self.searchKinds.joined(separator: ", "))"
+                    )
+                }
+            }
+            operation = try .mcp(.search(query: query, limit: input.limit(), kinds: kinds))
         case .act:
             operation = try .mcp(
                 .act(
@@ -261,6 +278,8 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
             annotations: annotations
         )
     }
+
+    private static let searchKinds = ["board", "desk", "recent", "essential", "command", "input"]
 
     private var boardID: Value { string("Web Board UUID.", format: "uuid") }
 

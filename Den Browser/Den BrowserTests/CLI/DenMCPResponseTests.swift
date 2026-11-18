@@ -148,6 +148,12 @@ struct DenMCPResponseTests {
             #expect(boards.count >= 2)
             let kinds = matches.compactMap { $0["kind"] as? String }
             #expect(kinds.contains("recent"))
+            let recentOnly = try client.call("search_den", ["query": pageURL, "kinds": ["recent"]])
+            let recentMatches = try #require(recentOnly["matches"] as? [[String: Any]])
+            #expect(!recentMatches.isEmpty)
+            #expect(recentMatches.allSatisfy { $0["kind"] as? String == "recent" })
+            let badKinds = try client.call("search_den", ["query": pageURL, "kinds": ["unknown"]], expectError: true)
+            #expect((badKinds["error"] as? String)?.contains("kinds") == true)
             let toClose = try #require(boards.first { $0["id"] as? String == firstBoard })
             let close = try ref(in: toClose, startingWith: "Close")
             let show = try ref(in: toClose, startingWith: "Show")

@@ -1,7 +1,7 @@
 import Foundation
 
 public nonisolated enum DenMCPCommand: Codable, Equatable, Sendable {
-    case search(query: String, limit: Int)
+    case search(query: String, limit: Int, kinds: [String]? = nil)
     case act(ref: UUID, name: String?, deleteBoards: Bool)
     case openPages(pages: [String], desk: String?, newDesk: String?)
     case readPage(boardID: UUID?, url: String?)
