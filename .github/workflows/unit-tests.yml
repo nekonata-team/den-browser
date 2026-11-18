@@ -56,4 +56,12 @@ jobs:
           mise install
 
       - name: Run unit tests
+        id: tests
         run: just test
+
+      - name: Print unit test failure summary
+        if: ${{ failure() && steps.tests.outcome == 'failure' }}
+        run: |
+          if [[ -d .derived-data/TestResults.xcresult ]]; then
+            just test results
+          fi
