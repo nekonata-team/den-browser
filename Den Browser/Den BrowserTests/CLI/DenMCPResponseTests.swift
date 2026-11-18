@@ -75,8 +75,8 @@ struct DenMCPResponseTests {
             let tools = try #require(listed["tools"] as? [[String: Any]])
             #expect(
                 tools.compactMap { $0["name"] as? String } == [
-                    "overview_den", "search_den", "act_on_result", "open_pages", "read_page", "read_selection",
-                    "read_terminal", "list_notifications",
+                    "overview_den", "search_den", "act_on_result", "move_board", "open_pages", "read_page",
+                    "read_selection", "read_terminal", "list_notifications",
                 ]
             )
             let schemas = tools.compactMap { $0["inputSchema"] as? [String: Any] }
@@ -159,6 +159,10 @@ struct DenMCPResponseTests {
                 }?["ref"] as? String
             )
             #expect(try client.call("act_on_result", ["ref": end])["board_id"] as? String == firstBoard)
+            let moved = try client.call("move_board", ["board_id": firstBoard, "left_of": secondBoard])
+            #expect(moved["board_id"] as? String == firstBoard)
+            let invalidMove = try client.call("move_board", ["board_id": firstBoard], expectError: true)
+            #expect((invalidMove["error"] as? String)?.contains("exactly one") == true)
             #expect(try client.call("act_on_result", ["ref": show])["board_id"] as? String == firstBoard)
             #expect(try client.call("act_on_result", ["ref": close])["closed_board_id"] as? String == firstBoard)
             let stale = try client.call("act_on_result", ["ref": show], expectError: true)

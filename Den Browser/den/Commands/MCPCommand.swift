@@ -34,6 +34,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
     case overview = "overview_den"
     case search = "search_den"
     case act = "act_on_result"
+    case moveBoard = "move_board"
     case openPages = "open_pages"
     case readPage = "read_page"
     case readSelection = "read_selection"
@@ -66,6 +67,17 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
                     ),
                 ],
                 required: ["ref"]
+            )
+        case .moveBoard:
+            return tool(
+                "Move a Board Group to the end of a Desk or beside another Board. Specify board_id and exactly one of desk_id, left_of, or right_of.",
+                [
+                    "board_id": string("Board UUID to move.", format: "uuid"),
+                    "desk_id": string("Destination Desk UUID (places at end of Desk).", format: "uuid"),
+                    "left_of": string("Place left of this Board UUID.", format: "uuid"),
+                    "right_of": string("Place right of this Board UUID.", format: "uuid"),
+                ],
+                required: ["board_id"]
             )
         case .openPages:
             return tool(
@@ -148,6 +160,20 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
                     deleteBoards: input.decode("delete_boards") ?? false
                 )
             )
+        case .moveBoard:
+            let boardID = try input.required("board_id", as: UUID.self)
+            let deskID: UUID? = try input.decode("desk_id")
+            let leftOf: UUID? = try input.decode("left_of")
+            let rightOf: UUID? = try input.decode("right_of")
+            let destination: DenBoardMoveDestination
+            switch (deskID, leftOf, rightOf) {
+            case (let id?, nil, nil): destination = .endOfDesk(id)
+            case (nil, let id?, nil): destination = .leftOf(id)
+            case (nil, nil, let id?): destination = .rightOf(id)
+            default:
+                throw DenIPCInputError.usage("Specify exactly one of 'desk_id', 'left_of', or 'right_of'")
+            }
+            operation = .moveBoard(boardID: boardID, destination: destination)
         case .openPages:
             operation = try .mcp(
                 .openPages(
@@ -220,7 +246,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         switch self {
         case .overview, .search, .readSelection, .readTerminal, .notifications:
             annotations = .init(readOnlyHint: true, openWorldHint: false)
-        case .openPages, .readPage:
+        case .moveBoard, .openPages, .readPage:
             annotations = .init(readOnlyHint: false, destructiveHint: false)
         case .act:
             annotations = .init(readOnlyHint: false, destructiveHint: true)
