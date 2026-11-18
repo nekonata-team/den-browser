@@ -99,6 +99,7 @@ public final class DenWindowModel {
     public let deskFilter: DeskFilterModel
     public let notificationList: NotificationListModel
     public var temporaryContext: TemporaryContext?
+    public var initialNewDeskPreset: DeskPresetSelection?
     public var selectedEssentialID: UUID?
     public internal(set) var essentialsPrefixOpensInDrawer = false
     public var saveEssentialDraft: SaveEssentialDraft?

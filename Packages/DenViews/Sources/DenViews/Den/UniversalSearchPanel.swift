@@ -114,7 +114,7 @@ public struct UniversalSearchPanel: View {
     private func actionSymbol(for target: UniversalSearchItem.Target) -> SFSymbol {
         switch target {
         case .board, .desk, .profile: .arrowRight
-        case .essential, .recent, .createBoard: .plusApp
+        case .essential, .recent, .createBoard, .builtInDeskPreset, .personalDeskPreset: .plusApp
         case .command: .chevronRight
         }
     }
@@ -128,6 +128,7 @@ public struct UniversalSearchPanel: View {
         case .essential: .sparkles
         case .recent: .clock
         case .createBoard: .plusRectangleOnRectangle
+        case .builtInDeskPreset, .personalDeskPreset: .rectangleStackBadgePlus
         case .command(let command):
             switch command {
             case .newDesk: .plusRectangleOnRectangle

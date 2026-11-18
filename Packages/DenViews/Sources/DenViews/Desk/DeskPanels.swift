@@ -166,14 +166,19 @@ public struct NewDeskPanel: View {
             }
         }
         .onAppear {
+            query = ""
+            isManagementPresented = false
+            if let preset = windowModel.initialNewDeskPreset, !windowModel.isReplaceDeskPanelPresented {
+                windowModel.initialNewDeskPreset = nil
+                presentDeskDetails(for: preset, label: deskPresetLabel(for: preset))
+                return
+            }
             let initialPreset: DeskPresetSelection =
                 windowModel.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
             selectedDeskPreset = initialPreset
             newDeskLabel =
                 windowModel.isReplaceDeskPanelPresented
                 ? BuiltInDeskPreset.chatGPT.label : BuiltInDeskPreset.empty.label
-            query = ""
-            isManagementPresented = false
             isChoosing = true
             didAttemptAction = false
             DispatchQueue.main.async { isSearchFocused = true }

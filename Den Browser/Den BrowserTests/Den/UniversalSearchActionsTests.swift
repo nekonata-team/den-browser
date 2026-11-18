@@ -226,4 +226,41 @@ struct UniversalSearchActionsTests {
             }
         }
     }
+
+    @Test func deskPresetTargetOpensNewDeskPanelWithPreselectedPreset() throws {
+        let board = BoardState(label: "Docs", width: 520, currentSheetURL: URL(string: "https://example.com/docs"))
+        let desk = DeskState(label: "Source", boards: [board], focusedBoardID: board.id)
+        let preset = PersonalDeskPreset(label: "Research", desk: desk)
+        let items = UniversalSearch.sourceItems(
+            state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id)),
+            essentials: [],
+            hasBoardUndoHistory: false,
+            profiles: [],
+            profileName: "personal",
+            deskPresets: [preset]
+        )
+        let results = UniversalSearch.results(query: "docs", items: items, recentItems: [])
+        #expect(results.contains { $0.target == .personalDeskPreset(preset.id) })
+        #expect(items.contains { $0.target == .builtInDeskPreset(.empty) })
+        #expect(items.contains { $0.target == .builtInDeskPreset(.chatGPT) })
+
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenStateNormalization.normalize(DenState(desks: [desk], focusedDeskID: desk.id)),
+                deskPresets: [preset]
+            )
+        ) { session, model in
+            model.showUniversalSearch()
+            let error = UniversalSearchActions.perform(
+                .personalDeskPreset(preset.id),
+                session: session,
+                windowModel: model,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
+            #expect(error == nil)
+            #expect(model.temporaryContext == .newDesk)
+            #expect(model.initialNewDeskPreset == .personal(preset.id))
+        }
+    }
 }

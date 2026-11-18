@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BuiltInDeskPreset: String, CaseIterable, Identifiable {
+public enum BuiltInDeskPreset: String, CaseIterable, Identifiable, Hashable, Sendable {
     case empty
     case chatGPT
     case gemini

@@ -14,6 +14,8 @@ public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
         case board(BoardID)
         case desk(DeskID)
         case profile(ProfileID)
+        case builtInDeskPreset(BuiltInDeskPreset)
+        case personalDeskPreset(UUID)
         case essential(UUID)
         case recent(RecentItem)
         case createBoard(String)
@@ -43,7 +45,7 @@ public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
             case .board(let id): id.rawValue
             case .desk(let id): id.rawValue
             case .profile(let id): id.rawValue
-            case .essential, .recent, .createBoard, .command: nil
+            case .essential, .recent, .createBoard, .command, .builtInDeskPreset, .personalDeskPreset: nil
             }
         }
     }
@@ -72,7 +74,8 @@ public enum UniversalSearch {
         essentials: [Essential],
         hasBoardUndoHistory: Bool,
         profiles: [ProfileState],
-        profileName: String
+        profileName: String,
+        deskPresets: [PersonalDeskPreset] = []
     ) -> [UniversalSearchItem] {
         var items: [UniversalSearchItem] = []
         for desk in state.desks {
@@ -100,6 +103,29 @@ public enum UniversalSearch {
         }
         items += state.desks.map {
             UniversalSearchItem(target: .desk($0.id), title: $0.label, detail: "Switch to Desk · \(profileName)")
+        }
+        items += BuiltInDeskPreset.allCases.map { preset in
+            let count = preset.boards.count
+            let suffix = count == 1 ? "1 Board" : "\(count) Boards"
+            return UniversalSearchItem(
+                target: .builtInDeskPreset(preset),
+                title: preset.label,
+                detail: "Create Desk from Preset · \(suffix)",
+                keywords: preset.boards.compactMap { $0.initialSheetURL?.absoluteString }.joined(separator: " ")
+            )
+        }
+        items += deskPresets.map { preset in
+            let count = preset.boards.count
+            let suffix = count == 1 ? "1 Board" : "\(count) Boards"
+            let keywords = preset.boards.flatMap { [$0.label, $0.initialSheetURL?.absoluteString] }
+                .compactMap { $0 }
+                .joined(separator: " ")
+            return UniversalSearchItem(
+                target: .personalDeskPreset(preset.id),
+                title: preset.label,
+                detail: "Create Desk from Preset · \(suffix)",
+                keywords: keywords
+            )
         }
         items += profiles.map {
             UniversalSearchItem(target: .profile($0.id), title: $0.name, detail: "Switch to Profile")

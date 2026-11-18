@@ -78,6 +78,8 @@ public extension DenWindowModel {
             if nextContext != .drawer { essentialsPrefixOpensInDrawer = false }
         case .zmxDuplication:
             zmxActions.cancelDuplication()
+        case .newDesk:
+            initialNewDeskPreset = nil
             zmxDuplicationRootSessionName = nil
         case .zmxSessions:
             let wasReturningToOpenBoard = zmxSessionsReturnToOpenBoard
@@ -235,11 +237,12 @@ public extension DenWindowModel {
         if temporaryContext == .editBoardLink { setTemporaryContext(nil) }
     }
 
-    func showNewDeskPanel() {
+    func showNewDeskPanel(preset: DeskPresetSelection? = nil) {
         guard desks.canCreateDesk else {
             windowActions.reportWarning("Desks are limited to 10.")
             return
         }
+        initialNewDeskPreset = preset
         setTemporaryContext(.newDesk)
     }
 

@@ -37,6 +37,12 @@ enum UniversalSearchActions {
                 return "This Profile could not be opened."
             }
             windowModel.hideUniversalSearch()
+        case .builtInDeskPreset(let preset):
+            windowModel.hideUniversalSearch()
+            windowModel.showNewDeskPanel(preset: .builtIn(preset))
+        case .personalDeskPreset(let id):
+            windowModel.hideUniversalSearch()
+            windowModel.showNewDeskPanel(preset: .personal(id))
         case .essential, .recent, .createBoard:
             guard
                 let input = target.creationInput(
