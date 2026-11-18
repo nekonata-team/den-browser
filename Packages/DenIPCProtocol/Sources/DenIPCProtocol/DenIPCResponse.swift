@@ -38,6 +38,25 @@ public nonisolated struct DenBoardInfo: Codable, Sendable {
     }
 }
 
+public nonisolated struct DenDeskPresetInfo: Codable, Sendable {
+    public var id: String?
+    public var label: String
+    public var boardCount: Int
+    public var kind: String?
+
+    public init(id: String? = nil, label: String, boardCount: Int, kind: String? = nil) {
+        self.id = id
+        self.label = label
+        self.boardCount = boardCount
+        self.kind = kind
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, label, kind
+        case boardCount = "board_count"
+    }
+}
+
 public nonisolated struct DenDeskInfo: Codable, Sendable {
     public var id: String
     public var label: String
@@ -345,6 +364,7 @@ public nonisolated struct DenIPCOverview: Codable, Sendable {
     public var boards: [DenBoardInfo]
     public var focusedBoardID: String?
     public var drawerItemCount: Int
+    public var deskPresets: [DenDeskPresetInfo]?
 
     public init(
         profiles: [DenProfileInfo],
@@ -354,7 +374,8 @@ public nonisolated struct DenIPCOverview: Codable, Sendable {
         activeDesk: DenDeskInfo?,
         boards: [DenBoardInfo],
         focusedBoardID: String?,
-        drawerItemCount: Int
+        drawerItemCount: Int,
+        deskPresets: [DenDeskPresetInfo]? = nil
     ) {
         self.profiles = profiles
         self.profile = profile
@@ -364,6 +385,7 @@ public nonisolated struct DenIPCOverview: Codable, Sendable {
         self.boards = boards
         self.focusedBoardID = focusedBoardID
         self.drawerItemCount = drawerItemCount
+        self.deskPresets = deskPresets
     }
 }
 
@@ -461,6 +483,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case activeDesk = "active_desk"
         case focusedBoardID = "focused_board_id"
         case drawerItemCount = "drawer_item_count"
+        case deskPresets = "desk_presets"
         case url
         case snapshot
         case elements
@@ -543,6 +566,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
             try container.encode(overview.boards, forKey: .boards)
             try container.encodeIfPresent(overview.focusedBoardID, forKey: .focusedBoardID)
             try container.encode(overview.drawerItemCount, forKey: .drawerItemCount)
+            try container.encodeIfPresent(overview.deskPresets, forKey: .deskPresets)
         case .sheet(let boardID, let url):
             try container.encode(boardID, forKey: .boardId)
             try container.encode(url, forKey: .url)

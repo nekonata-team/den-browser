@@ -63,6 +63,10 @@ extension DenIPCService {
             return withDeskTarget(.automatic, context: context) {
                 openPages(pages, destination: desk, newDesk: newDesk, at: $0)
             }
+        case .createDesk(let name, let preset, let focus):
+            return withDeskTarget(.automatic, context: context) {
+                createDesk(name: name, preset: preset, focus: focus, at: $0)
+            }
         case .readPage(let boardID, let url):
             return await readPage(boardID: boardID, url: url, context: context)
         case .readSelection(let boardID):
@@ -353,6 +357,97 @@ extension DenIPCService {
                 )
             )
         )
+    }
+
+    private func createDesk(name: String, preset: String?, focus: Bool, at resolved: ResolvedDeskTarget)
+        -> DenIPCOperationResult
+    {
+        let label = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty else { return .failure("Desk label must not be empty") }
+        let window = resolved.window
+        guard window.resources.activeDrag == nil else { return .failure("Finish the active drag and retry") }
+        guard window.resources.snapshot.den.desks.count < DeskCreation.maximumDeskCount else {
+            return .failure("Cannot create more than \(DeskCreation.maximumDeskCount) Desks")
+        }
+
+        let boards: [DeskPresetBoard]
+        let focusedBoardIndex: BoardIndex?
+        if let raw = preset?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+            let personal = window.resources.deskPresets
+            if let id = UUID(uuidString: raw), let matched = personal.first(where: { $0.id == id }) {
+                boards = matched.boards
+                focusedBoardIndex = matched.focusedBoardIndex
+            } else {
+                var candidates: [(info: DenDeskPresetInfo, boards: [DeskPresetBoard], focused: BoardIndex?)] = []
+                for builtIn in BuiltInDeskPreset.allCases
+                where builtIn.rawValue.localizedCaseInsensitiveCompare(raw) == .orderedSame
+                    || builtIn.label.localizedCaseInsensitiveCompare(raw) == .orderedSame
+                {
+                    candidates.append(
+                        (
+                            DenDeskPresetInfo(
+                                id: builtIn.rawValue,
+                                label: builtIn.label,
+                                boardCount: builtIn.boards.count,
+                                kind: "built_in"
+                            ),
+                            builtIn.boards,
+                            builtIn.focusedBoardIndex
+                        )
+                    )
+                }
+                for item in personal where item.label.localizedCaseInsensitiveCompare(raw) == .orderedSame {
+                    candidates.append(
+                        (
+                            DenDeskPresetInfo(
+                                id: item.id.uuidString,
+                                label: item.label,
+                                boardCount: item.boards.count,
+                                kind: "personal"
+                            ),
+                            item.boards,
+                            item.focusedBoardIndex
+                        )
+                    )
+                }
+                guard let selected = candidates.first else {
+                    let available =
+                        BuiltInDeskPreset.allCases.map(\.rawValue)
+                        + personal.map { "\($0.label) [\($0.id.uuidString)]" }
+                    return .failure(
+                        "Preset '\(raw)' not found. Available: \(available.joined(separator: ", "))"
+                    )
+                }
+                if candidates.count > 1 {
+                    return .success(
+                        .mcp(
+                            .init(
+                                message: "Multiple presets match '\(raw)'. Supply a preset ID.",
+                                deskPresets: candidates.map(\.info)
+                            )
+                        )
+                    )
+                }
+                boards = selected.boards
+                focusedBoardIndex = selected.focused
+            }
+        } else {
+            boards = BuiltInDeskPreset.empty.boards
+            focusedBoardIndex = BuiltInDeskPreset.empty.focusedBoardIndex
+        }
+
+        guard
+            let desk = window.resources.deskLifecycle.create(
+                label: label,
+                boards: boards,
+                focusedBoardIndex: focusedBoardIndex,
+                presentedDeskID: window.presentedDeskID(),
+                after: resolved.desk.id,
+                focus: focus,
+                notify: window.desk.lifecycleNotice
+            )
+        else { return .failure("Could not create Desk") }
+        return .success(.mcp(.init(desk: deskInfo(desk, in: window, includeBoards: true))))
     }
 
     private func openPages(_ pages: [String], destination: String?, newDesk: String?, at source: ResolvedDeskTarget)

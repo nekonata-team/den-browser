@@ -17,10 +17,11 @@ Run `den mcp [--socket <path>] [--profile <uuid>]` as a local stdio server. The 
 
 | Tool | Arguments | Result and effect |
 |---|---|---|
-| `overview_den` | None | Ordered Desks and Boards for the selected Profile, `active_desk_id`, and `focused_board_id` when present. Each Board appears in its Desk only. |
+| `overview_den` | None | Ordered Desks and Boards for the selected Profile, `active_desk_id`, `focused_board_id` when present, and saved `desk_presets`. Each Board appears in its Desk only. |
 | `search_den` | `query`, optional `kinds`, optional `limit` (1–20, default 5) | Ordered Universal Search matches with `kind`, `name`, `location`, optional `id` and `detail`, and `actions`. Leaves focus and layout untouched. |
 | `act_on_result` | `ref`, optional `name`, optional `delete_boards` | Executes the action described by its ref, or returns the input or choices needed to proceed. |
 | `move_board` | `board_id`, one of `desk_id`, `left_of`, `right_of` | Moves a Board Group to the end of a Desk or beside another Board without searching first. |
+| `create_desk` | `name`, optional `preset`, optional `focus` (default false) | Creates a Desk from a built-in preset (`empty`, `chatGPT`, `gemini`) or a Personal Desk Preset label or UUID. |
 | `open_pages` | `pages` (1–20 entries), optional `desk` or `new_desk` | Appends new Web Boards in input order. Returns the destination Desk and the result of each entry. Leaves the presented Desk, the original Boards, and any existing focus in place. |
 | `read_page` | Optional `board_id` or `url` | Returns `title`, actual `url`, `markdown`, and `board_id`. With neither argument it reads the focused Web Board. A URL creates a Web Board on the presented Desk without selecting it. The Board is retained if reading fails. Retry with the returned `board_id`. |
 | `read_selection` | Optional Inspection `board_id` | Reads the human's selected element, ancestors, source URL and Board, document identity, timestamps, and connection state. Prefers the focused Inspection Board or the one attached to the focused Board. If there are multiple other Inspection Boards, returns choices. Leaves focus and selection in place. |

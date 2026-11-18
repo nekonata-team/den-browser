@@ -51,6 +51,7 @@ struct DenMCPResponseTests {
         session.desks.createDesk(label: "Research", preset: .empty)
         let secondDesk = session.navigation.presentedDeskID
         session.boardNavigation.focusDesk(originalDesk)
+        _ = session.presets.saveFocusedDeskAsPreset(label: "Saved")
         let notifications = session.resources.notificationOperations
         let old = try #require(notifications.record(title: nil, body: "Earlier", boardID: originalBoard))
         let read = try #require(notifications.record(title: nil, body: "Read", boardID: originalBoard))
@@ -75,8 +76,8 @@ struct DenMCPResponseTests {
             let tools = try #require(listed["tools"] as? [[String: Any]])
             #expect(
                 tools.compactMap { $0["name"] as? String } == [
-                    "overview_den", "search_den", "act_on_result", "move_board", "open_pages", "read_page",
-                    "read_selection", "read_terminal", "list_notifications",
+                    "overview_den", "search_den", "act_on_result", "move_board", "create_desk", "open_pages",
+                    "read_page", "read_selection", "read_terminal", "list_notifications",
                 ]
             )
             let schemas = tools.compactMap { $0["inputSchema"] as? [String: Any] }
@@ -86,6 +87,8 @@ struct DenMCPResponseTests {
             #expect(overview["active_desk_id"] as? String == originalDeskID)
             #expect(overview["focused_board_id"] as? String == originalBoardID)
             #expect(overview["boards"] == nil)
+            let presets = try #require(overview["desk_presets"] as? [[String: Any]])
+            #expect(presets.first?["label"] as? String == "Saved")
             let ordered = try #require(overview["desks"] as? [[String: Any]])
             #expect(ordered.compactMap { $0["id"] as? String } == [originalDeskID, firstDeskID, secondDeskID])
 
@@ -179,6 +182,15 @@ struct DenMCPResponseTests {
             #expect(try client.call("act_on_result", ["ref": create])["required"] as? [String] == ["name"])
             let named = try client.call("act_on_result", ["ref": create, "name": "Empty"])
             let emptyDesk = try #require(named["desk_id"] as? String)
+            let fromPreset = try client.call("create_desk", ["name": "FromPreset", "preset": "Saved"])
+            let presetDeskID = try #require((fromPreset["desk"] as? [String: Any])?["id"] as? String)
+            #expect(((fromPreset["desk"] as? [String: Any])?["board_count"] as? Int ?? 0) > 0)
+            let missingPreset = try client.call(
+                "create_desk",
+                ["name": "Missing", "preset": "NoSuchPreset"],
+                expectError: true
+            )
+            #expect((missingPreset["error"] as? String)?.contains("not found") == true)
 
             let toRemove = try #require(try client.matches(firstDeskID).first)
             let remove = try ref(in: toRemove, startingWith: "Preview")
@@ -195,12 +207,15 @@ struct DenMCPResponseTests {
                 try client.call("act_on_result", ["ref": revised, "delete_boards": true])["removed_desk_id"] as? String
                     == firstDeskID
             )
-            for deskID in [emptyDesk, secondDeskID] {
+            for deskID in [emptyDesk, presetDeskID, secondDeskID] {
                 let desk = try #require(try client.matches(deskID).first)
                 let remove = try ref(in: desk, startingWith: "Preview")
                 let preview = try client.call("act_on_result", ["ref": remove])
                 let confirm = try #require((preview["confirmation"] as? [String: Any])?["ref"] as? String)
-                #expect(try client.call("act_on_result", ["ref": confirm])["removed_desk_id"] as? String == deskID)
+                #expect(
+                    try client.call("act_on_result", ["ref": confirm, "delete_boards": true])["removed_desk_id"]
+                        as? String == deskID
+                )
             }
             let lastDesk = try #require(try client.matches(originalDeskID).first)
             let previewLast = try ref(in: lastDesk, startingWith: "Preview")

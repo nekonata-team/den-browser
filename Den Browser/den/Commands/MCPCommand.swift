@@ -35,6 +35,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
     case search = "search_den"
     case act = "act_on_result"
     case moveBoard = "move_board"
+    case createDesk = "create_desk"
     case openPages = "open_pages"
     case readPage = "read_page"
     case readSelection = "read_selection"
@@ -87,6 +88,18 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
                     "right_of": string("Place right of this Board UUID.", format: "uuid"),
                 ],
                 required: ["board_id"]
+            )
+        case .createDesk:
+            return tool(
+                "Create a new Desk from an optional built-in preset (empty, chatGPT, gemini) or a Personal Desk Preset from overview_den. Leaves the presented Desk as it was unless focus is true.",
+                [
+                    "name": string("Label for the new Desk."),
+                    "preset": string(
+                        "Built-in preset (empty, chatGPT, gemini) or Personal Desk Preset label or UUID. Omit for an empty Desk."
+                    ),
+                    "focus": boolean("Switch to the new Desk after creating it (default false)."),
+                ],
+                required: ["name"]
             )
         case .openPages:
             return tool(
@@ -191,6 +204,14 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
                 throw DenIPCInputError.usage("Specify exactly one of 'desk_id', 'left_of', or 'right_of'")
             }
             operation = .moveBoard(boardID: boardID, destination: destination)
+        case .createDesk:
+            operation = try .mcp(
+                .createDesk(
+                    name: input.required("name", as: String.self),
+                    preset: input.decode("preset"),
+                    focus: input.decode("focus") ?? false
+                )
+            )
         case .openPages:
             operation = try .mcp(
                 .openPages(
@@ -263,7 +284,7 @@ private enum DenMCPTool: String, CaseIterable, Sendable {
         switch self {
         case .overview, .search, .readSelection, .readTerminal, .notifications:
             annotations = .init(readOnlyHint: true, openWorldHint: false)
-        case .moveBoard, .openPages, .readPage:
+        case .createDesk, .moveBoard, .openPages, .readPage:
             annotations = .init(readOnlyHint: false, destructiveHint: false)
         case .act:
             annotations = .init(readOnlyHint: false, destructiveHint: true)

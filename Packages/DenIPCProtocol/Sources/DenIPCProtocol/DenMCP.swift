@@ -4,6 +4,7 @@ public nonisolated enum DenMCPCommand: Codable, Equatable, Sendable {
     case search(query: String, limit: Int, kinds: [String]? = nil)
     case act(ref: UUID, name: String?, deleteBoards: Bool)
     case openPages(pages: [String], desk: String?, newDesk: String?)
+    case createDesk(name: String, preset: String?, focus: Bool)
     case readPage(boardID: UUID?, url: String?)
     case readSelection(boardID: UUID?)
 }
@@ -67,6 +68,12 @@ public nonisolated struct DenMCPResult: Codable, Sendable {
     public var message: String?
     public var confirmation: Action?
     public var inspections: [InspectionChoice]?
+    public var deskPresets: [DenDeskPresetInfo]?
+
+    enum CodingKeys: String, CodingKey {
+        case matches, choices, destinations, desk, pages, required, message, confirmation, inspections
+        case deskPresets = "desk_presets"
+    }
 
     public init(
         matches: [Match]? = nil,
@@ -77,7 +84,8 @@ public nonisolated struct DenMCPResult: Codable, Sendable {
         required: [String]? = nil,
         message: String? = nil,
         confirmation: Action? = nil,
-        inspections: [InspectionChoice]? = nil
+        inspections: [InspectionChoice]? = nil,
+        deskPresets: [DenDeskPresetInfo]? = nil
     ) {
         self.matches = matches
         self.choices = choices
@@ -88,6 +96,7 @@ public nonisolated struct DenMCPResult: Codable, Sendable {
         self.message = message
         self.confirmation = confirmation
         self.inspections = inspections
+        self.deskPresets = deskPresets
     }
 }
 

@@ -498,6 +498,12 @@ final class DenIPCService {
         }
         let boards = desk.boards.map { boardInfo($0, focusedBoardID: desk.focusedBoardID) }
         let activeDesk = desks.first { $0.isActive }
+        let deskPresets: [DenDeskPresetInfo]? =
+            window.resources.deskPresets.isEmpty
+            ? nil
+            : window.resources.deskPresets.map {
+                DenDeskPresetInfo(id: $0.id.uuidString, label: $0.label, boardCount: $0.boards.count)
+            }
         return .success(
             .denOverview(
                 DenIPCOverview(
@@ -508,7 +514,8 @@ final class DenIPCService {
                     activeDesk: activeDesk,
                     boards: boards,
                     focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
-                    drawerItemCount: window.resources.snapshot.den.drawerItems.count
+                    drawerItemCount: window.resources.snapshot.den.drawerItems.count,
+                    deskPresets: deskPresets
                 )
             )
         )
