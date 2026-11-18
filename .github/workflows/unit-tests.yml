@@ -42,7 +42,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 20
     env:
-      MISE_ENABLE_TOOLS: rtk,bun
+      MISE_ENABLE_TOOLS: bun
       MISE_NO_HOOKS: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,7 +54,6 @@ jobs:
           brew install just mise
           mise trust mise.toml
           mise install
-          dirname "$(mise which rtk)" >> "$GITHUB_PATH"
 
       - name: Run unit tests
         run: just test

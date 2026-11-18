@@ -73,7 +73,7 @@ architecture-check:
 # Build macOS app with development signing.
 [group("build")]
 build:
-    @rtk xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}"
+    @xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}"
 
 # Type-check embedded JavaScript sources.
 [group("quality")]

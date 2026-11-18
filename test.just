@@ -16,7 +16,7 @@ ast_grep := 'COLORFGBG="15;0" ast-grep'
 [default]
 unit: packages
     @rm -rf "{{unit_test_result}}"
-    @rtk test xcodebuild test -project "{{project}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
+    @xcodebuild test -project "{{project}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run all functional UI tests by default, or a specified class/method (e.g. just test ui PerformanceUITests Release).
@@ -28,7 +28,7 @@ ui target="" configuration="Debug":
     fi
 
     rm -rf "{{ui_test_result}}"
-    if ! rtk test xcodebuild test \
+    if ! xcodebuild test \
         -project "{{project}}" \
         -scheme "{{ui_test_scheme}}" \
         -configuration {{quote(configuration)}} \
@@ -53,13 +53,13 @@ architecture:
 
 # Test or build all local packages, treating compiler warnings as errors.
 packages:
-    @rtk test swift test --package-path Packages/DenDomain -Xswiftc -warnings-as-errors
-    @rtk test swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors
-    @rtk test swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors
-    @rtk test swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors
-    @rtk test swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors
-    @rtk test swift test --package-path Packages/DenViews -Xswiftc -warnings-as-errors
-    @rtk test swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
+    @swift test --package-path Packages/DenDomain -Xswiftc -warnings-as-errors
+    @swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors
+    @swift test --package-path Packages/DenModels -Xswiftc -warnings-as-errors
+    @swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors
+    @swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors
+    @swift test --package-path Packages/DenViews -Xswiftc -warnings-as-errors
+    @swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
     @echo "✓ Package checks passed"
 
 # Run mutation testing on package diff (default) or specified package/source paths.
