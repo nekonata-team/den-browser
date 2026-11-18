@@ -231,14 +231,19 @@ public struct BoardLayout {
         containerWidth: CGFloat
     ) -> Set<BoardID> {
         guard containerWidth > 0 else { return [] }
+        let leadingPadding = calculatePaddings(for: params).leading
+        let viewportEnd = offsetX + containerWidth
+        var precedingWidth: CGFloat = 0
         var visibleIDs = Set<BoardID>()
         for (index, board) in params.boards.enumerated() {
-            guard let range = boardContentRange(for: index, in: params) else { continue }
-            let visibleWidth = max(
-                0,
-                min(range.maxX, offsetX + containerWidth) - max(range.minX, offsetX)
-            )
-            guard visibleWidth / (range.maxX - range.minX) >= 0.05 else { continue }
+            let width = boardWidth(board, in: params)
+            let minX = leadingPadding + precedingWidth
+            let maxX = minX + width
+            precedingWidth += width
+            precedingWidth += params.spacingAfterBoard(at: index)
+
+            let visibleWidth = max(0, min(maxX, viewportEnd) - max(minX, offsetX))
+            guard visibleWidth / (maxX - minX) >= 0.05 else { continue }
             visibleIDs.insert(board.id)
         }
         return visibleIDs

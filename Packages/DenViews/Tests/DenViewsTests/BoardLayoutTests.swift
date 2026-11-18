@@ -32,6 +32,24 @@ struct BoardLayoutTests {
         #expect(emptyViewport.isEmpty)
     }
 
+    @Test func visibleBoardsRespectSpacingAndMaximizedWidthAtMinimumOverlap() {
+        let primary = BoardState(label: "Primary", width: 500, currentSheetURL: nil)
+        let side = BoardState(label: "Inspection", width: 360, targetBoardID: primary.id)
+        let next = BoardState(label: "Next", width: 300, currentSheetURL: nil)
+        let params = BoardLayout.Parameters(
+            centering: .always,
+            boards: [primary, side, next],
+            maximizedBoardID: side.id,
+            windowWidth: 1_000,
+            horizontalPadding: 10,
+            spacing: 8
+        )
+
+        #expect(BoardLayout.visibleBoardIDs(in: params, offsetX: 1_935, containerWidth: 72) == [side.id, next.id])
+        #expect(BoardLayout.visibleBoardIDs(in: params, offsetX: 1_936, containerWidth: 71) == [next.id])
+        #expect(BoardLayout.visibleBoardIDs(in: params, offsetX: 1_935, containerWidth: 71) == [side.id])
+    }
+
     @Test func appliesCenteringPaddingForEachMode() {
         #expect(paddings(for: .always, boardCount: 3) == (leading: 500, trailing: 444))
         #expect(paddings(for: .never, boardCount: 3) == (leading: 10, trailing: 10))

@@ -234,22 +234,9 @@ public struct BoardStrip<Activated: View>: View {
 
         return ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: 0) {
-                ForEach(boards) { board in
-                    let boardIndex = boards.firstIndex(where: { $0.id == board.id })
-                    let isAttachedSideBoard =
-                        boardIndex.map { index in
-                            index > 0 && board.sideBoardTargetBoardID == boards[index - 1].id
-                        } ?? false
-                    let leadingGap: CGFloat =
-                        switch boardIndex {
-                        case nil, 0?: 0
-                        default:
-                            isAttachedSideBoard
-                                ? BoardLayout.Parameters.defaultSideSpacing
-                                : boardSpacing
-                        }
-                    let trailingGap =
-                        boardIndex.map { layoutParams.spacingAfterBoard(at: $0) } ?? boardSpacing
+                ForEach(boards.enumerated(), id: \.element.id) { boardIndex, board in
+                    let leadingGap = boardIndex == 0 ? 0 : layoutParams.spacingAfterBoard(at: boardIndex - 1)
+                    let trailingGap = layoutParams.spacingAfterBoard(at: boardIndex)
                     let isFocused = focusedBoardID == board.id
                     let isVisible =
                         visibleIDs.contains(board.id) || previewVisibleBoardIDs.contains(board.id) || isFocused
@@ -287,15 +274,11 @@ public struct BoardStrip<Activated: View>: View {
                     )
                     .overlay(alignment: .trailing) {
                         if !deskFilter.isPresented && windowModel.maximizedBoardID != board.id {
-                            let canResizeWithNextBoard =
-                                boardIndex.map {
-                                    $0 + 1 < boards.count
-                                } ?? false
                             BoardResizeHandle(
                                 board: board,
                                 height: boardHeight,
                                 width: trailingGap,
-                                canResizeWithNextBoard: canResizeWithNextBoard,
+                                canResizeWithNextBoard: boardIndex + 1 < boards.count,
                                 onResizeStart: {
                                     cancelPendingBoardAlignment()
                                     resizingBoardID = board.id
