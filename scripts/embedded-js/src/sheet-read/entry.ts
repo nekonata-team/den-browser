@@ -23,28 +23,50 @@ function renderedParent(element: Element): Element | null {
   return parent instanceof ShadowRoot ? parent.host : element.parentElement;
 }
 
+const BLOCK_DISPLAY = /^(block|flow-root|flex|grid|list-item|table|table-row|table-caption)$/;
+const FLEX_GRID_DISPLAY = /^(flex|inline-flex|grid|inline-grid)$/;
+const NATIVE_BLOCK_TAGS = new Set([
+  'ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'BR', 'CAPTION', 'DD', 'DETAILS', 'DIALOG',
+  'DIV', 'DL', 'DT', 'FIELDSET', 'FIGCAPTION', 'FIGURE', 'FOOTER', 'FORM', 'H1', 'H2',
+  'H3', 'H4', 'H5', 'H6', 'HEADER', 'HGROUP', 'HR', 'LI', 'MAIN', 'NAV', 'OL', 'P',
+  'PRE', 'SECTION', 'SUMMARY', 'TABLE', 'TBODY', 'TD', 'TFOOT', 'TH', 'THEAD', 'TR', 'UL',
+]);
+
 function copyVisibleContent(root: Element): { container: HTMLElement; text: string } {
   // Import shallow nodes into an inert document so custom element constructors never run.
   const inertDocument = document.implementation.createHTMLDocument('');
   const container = inertDocument.createElement('div');
-  function copyElement(original: Element): { copy: Element; text: string } | null {
+  function copyElement(original: Element, inCode: boolean): { copy: Element; text: string; separate: boolean } | null {
     const style = getComputedStyle(original);
     if (hidesSubtree(original, style)) return null;
     const copy = inertDocument.importNode(original, false);
     const visible = style.visibility !== 'hidden' && style.visibility !== 'collapse';
     const closed = original instanceof HTMLDetailsElement && !original.open;
+    const insideCode = inCode || original.tagName === 'PRE' || original.tagName === 'CODE';
+    const isFlexOrGrid = !insideCode && FLEX_GRID_DISPLAY.test(style.display);
     let text = '';
+    let prevSeparated = false;
     for (const child of renderedChildren(original)) {
       if (child instanceof Element) {
-        const result = copyElement(child);
+        const result = copyElement(child, insideCode);
         if (result) {
+          const hasText = Boolean(result.copy.textContent?.trim());
+          if (!insideCode && copy.lastChild && (prevSeparated || (isFlexOrGrid && hasText))
+            && !/\s$/.test(copy.lastChild.textContent ?? '')) {
+            copy.append(' ');
+          }
           copy.append(result.copy);
           text += result.text;
+          prevSeparated = result.separate || (isFlexOrGrid && hasText);
         }
       } else if (child.nodeType === Node.TEXT_NODE && visible && !closed) {
-        copy.append(inertDocument.importNode(child, false));
         const value = child.textContent ?? '';
+        if (!insideCode && prevSeparated && value && !/^\s/.test(value)) {
+          copy.append(' ');
+        }
+        copy.append(inertDocument.importNode(child, false));
         text += /^(pre|break-spaces)/.test(style.whiteSpace) ? value : value.replace(/[\t\n\r\f ]+/g, ' ');
+        if (value) prevSeparated = false;
       }
     }
     if ((!visible || closed) && copy.childElementCount === 0) return null;
@@ -55,14 +77,15 @@ function copyVisibleContent(root: Element): { container: HTMLElement; text: stri
       copy.setAttribute('src', original.currentSrc || original.src);
     }
     if (visible && original instanceof HTMLBRElement) text = '\n';
-    if (text && /^(block|flow-root|flex|grid|list-item|table|table-row|table-caption)$/.test(style.display)) {
+    if (text && BLOCK_DISPLAY.test(style.display)) {
       text = (text.startsWith('\n') ? '' : '\n') + text + (text.endsWith('\n') ? '' : '\n');
     } else if (text && style.display === 'table-cell') {
       text += '\t';
     }
-    return { copy, text };
+    const separate = !insideCode && BLOCK_DISPLAY.test(style.display) && !NATIVE_BLOCK_TAGS.has(original.tagName);
+    return { copy, text, separate };
   }
-  const result = copyElement(root);
+  const result = copyElement(root, false);
   if (result) container.append(result.copy);
   return { container, text: result?.text ?? '' };
 }

@@ -495,6 +495,29 @@ struct SheetReadingTests {
         #expect(try await SheetReading.text(in: webView) == "XML result")
     }
 
+    @Test func readSeparatesBlockifiedInlineElementsAndFlexSiblingsWithSpace() async throws {
+        let webView = await makeWebView(
+            html: """
+                <style>
+                  .lead b { display: block; }
+                  .links { display: flex; gap: 8px; }
+                </style>
+                <div class="lead"><b>Step 1</b>Run the benchmark</div>
+                <nav class="links"><a href="/a">First</a><a href="/b">Second</a></nav>
+                <pre><code><span>foo</span><span>bar</span></code></pre>
+                """
+        )
+
+        let result = try await SheetReading.read(in: webView)
+        guard case .reading(_, _, let markdown) = result else {
+            Issue.record("Expected Markdown reading payload")
+            return
+        }
+        #expect(markdown.contains("**Step 1** Run the benchmark"))
+        #expect(markdown.contains("[First](https://example.com/a) [Second](https://example.com/b)"))
+        #expect(markdown.contains("foobar"))
+    }
+
     private func makeWebView(html: String) async -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
