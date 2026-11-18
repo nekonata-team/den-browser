@@ -136,5 +136,5 @@ link-check:
 
 # Run lint, TypeScript checks, and unit tests.
 [group("quality")]
-check: lint embedded-js-typecheck link-check
+check: lint test::architecture embedded-js-typecheck link-check
     just test
