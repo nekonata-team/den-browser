@@ -1,0 +1,60 @@
+name: Unit tests
+
+on:
+  pull_request:
+
+concurrency:
+  group: unit-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Check for Swift build changes
+    runs-on: ubuntu-latest
+    outputs:
+      swift: ${{ steps.filter.outputs.swift }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Check the PR merge diff
+        id: filter
+        run: |
+          files=$(git diff --name-only --no-renames HEAD^1 HEAD -- \
+            'Den Browser/' 'Packages/' 'scripts/embedded-js/' \
+            'justfile' '*.just' 'mise.toml' \
+            '.github/workflows/unit-tests.yml' '.github/workflows/resolve-swift-packages.yml')
+          if [[ -n "$files" ]]; then
+            echo 'swift=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'swift=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  unit-tests:
+    name: Unit tests
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.swift != 'false' }}
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      MISE_ENABLE_TOOLS: rtk,bun
+      MISE_NO_HOOKS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install test tools
+        run: |
+          brew install just mise
+          mise trust mise.toml
+          mise install
+          dirname "$(mise which rtk)" >> "$GITHUB_PATH"
+
+      - name: Run unit tests
+        run: just test
