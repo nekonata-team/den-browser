@@ -79,7 +79,7 @@ struct DrawerHeaderView: View {
             DenFilterField(
                 text: Binding(
                     get: { drawer.query },
-                    set: drawer.setQuery
+                    set: { drawer.setQuery($0) }
                 ),
                 prompt: "Search drawer items",
                 accessibilityLabel: "Search Drawer Items",

@@ -1,4 +1,4 @@
-public import AppKit
+import AppKit
 public import DenDomain
 public import DenModels
 import SFSafeSymbols

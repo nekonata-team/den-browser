@@ -1,6 +1,6 @@
 public import AppKit
 public import DenDomain
-public import DenModels
+import DenModels
 import SFSafeSymbols
 public import SwiftUI
 
