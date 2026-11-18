@@ -12,8 +12,7 @@ ADR-0047 avoided MCP when the CLI had a narrow operation surface. The CLI now co
 
 - Add a local stdio server as `den mcp`, connected to Den through its existing user-scoped Unix socket.
 - Implement an MCP adapter over typed IPC; do not shell out to the CLI or duplicate browser behavior.
-- Expose action-first tools with JSON Schema arguments. Keep the v1 catalog, including `inspect_den`, in [`docs/mcp.md`](../mcp.md).
-- Resolve targets independently for each call, using explicit IDs before the CLI's documented defaults. Invalid explicit targets fail without fallback.
+- Expose action-first tools with JSON Schema arguments. [ADR 0074](0074-ground-mcp-in-universal-search.md) updates the catalog and targeting; see [`docs/mcp.md`](../mcp.md).
 - Do not open a network listener in v1.
 
 ## Considered Options

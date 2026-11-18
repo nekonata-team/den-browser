@@ -1,42 +1,6 @@
 # Den MCP Server (`den mcp`)
 
-`den mcp` exposes typed tools over Den's operations and IPC. Den Browser owns Profile, Board, Sheet, and Terminal state.
-
-## 1. Tool model
-
-The CLI uses domain-first commands:
-
-```text
-den <domain> <action>
-```
-
-MCP presents a flat catalog with action-first names:
-
-```text
-inspect_den
-open_sheet
-click_sheet_element
-save_url_to_drawer
-```
-
-Clients discover JSON Schema inputs and call tools directly, without shell command strings. `inspect_den` combines reads into one consistent result; other tools map to CLI operations where possible. Product terms follow [CONTEXT.md](../CONTEXT.md).
-
-## 2. Server Lifecycle and Transport
-
-`den mcp` runs a local MCP server over standard input and standard output. An MCP client launches the process and owns its lifetime.
-
-```text
-den mcp [--socket <path>] [--profile <uuid>]
-```
-
-- MCP protocol messages use standard input and standard output. Standard output contains protocol messages only; diagnostics go to standard error.
-- The server connects to the running Den Browser app through its existing user-scoped Unix domain socket. Socket resolution follows the CLI: explicit `--socket`, `$DEN_SOCKET`, then `~/.den/den.sock`.
-- `DEN_PROFILE` and `DEN_BOARD_ID` are inherited when present. A server launched by an external MCP client may not have ambient Board context.
-- The process is not a daemon and does not open a network listener. Closing the client connection ends the server process.
-- Tool calls do not depend on session state retained by the MCP server. Each call resolves its target from explicit arguments, launch options, environment, or the active Den context.
-- If Den Browser is unavailable, tool calls return a clear error. MCP initialization alone does not imply that Den Browser is ready.
-
-Example client configuration:
+Run `den mcp [--socket <path>] [--profile <uuid>]` as a local stdio server. The MCP client owns the process. The server uses a user-scoped Unix socket to reach a running Den Browser. Socket resolution checks `--socket`, `DEN_SOCKET`, then `~/.den/den.sock`. Profile scope comes from `--profile` or `DEN_PROFILE`; with neither set, calls use the active Profile unless an explicit Board or action ref identifies its Profile. Ambient operations use the presented Desk and ignore `DEN_BOARD_ID`. Starting the server and listing tools work without a running Den Browser and do not open a window.
 
 ```json
 {
@@ -49,120 +13,44 @@ Example client configuration:
 }
 ```
 
-## 3. Tool Arguments and Targeting
+## Tools
 
-Each tool publishes an `inputSchema`. Clients call a tool by name with an `arguments` object. Invalid or unknown values fail before side effects. For example, `open_sheet` requires a URL and accepts optional targets:
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "url": { "type": "string" },
-    "profile_id": { "type": "string", "format": "uuid" },
-    "board_id": { "type": "string", "format": "uuid" }
-  },
-  "required": ["url"],
-  "additionalProperties": false
-}
-```
-
-### Common Target Arguments
-
-| Argument | Type | Description |
+| Tool | Arguments | Result and effect |
 |---|---|---|
-| `profile_id` | UUID string, optional | Overrides server `--profile`. If omitted, Profile resolution follows the CLI rules in [`cli.md`](cli.md). Invalid or windowless explicit Profiles fail without fallback. |
-| `board_id` | UUID string, optional | Pins a Board for Sheet and Terminal tools. `read_inspection` requires an Inspection Board ID. If omitted, Board resolution follows the CLI rules. Invalid explicit Boards fail without fallback. |
+| `overview_den` | None | Ordered Desks and Boards for the selected Profile, `active_desk_id`, and `focused_board_id` when present. Each Board appears in its Desk only. |
+| `search_den` | `query`, optional `limit` (1–20, default 5) | Ordered Universal Search matches with `kind`, `name`, `location`, optional `id` and `detail`, and `actions`. Leaves focus and layout untouched. |
+| `act_on_result` | `ref`, optional `name`, optional `delete_boards` | Executes the action described by its ref, or returns the input or choices needed to proceed. |
+| `open_pages` | `pages` (1–20 entries), optional `desk` or `new_desk` | Appends new Web Boards in input order. Returns the destination Desk and the result of each entry. Leaves the presented Desk, the original Boards, and any existing focus in place. |
+| `read_page` | Optional `board_id` or `url` | Returns `title`, actual `url`, `markdown`, and `board_id`. With neither argument it reads the focused Web Board. A URL creates a Web Board on the presented Desk without selecting it. The Board is retained if reading fails. Retry with the returned `board_id`. |
+| `read_selection` | Optional Inspection `board_id` | Reads the human's selected element, ancestors, source URL and Board, document identity, timestamps, and connection state. Prefers the focused Inspection Board or the one attached to the focused Board. If there are multiple other Inspection Boards, returns choices. Leaves focus and selection in place. |
+| `list_notifications` | Optional `unread_only` (default false) and `limit` (1–20, default 5) | Lists retained Notifications for the current Profile, newest first. Filters before applying the limit and preserves read state. |
 
-Board-targeted results include their effective `profile_id` and `board_id`. Pass those values to later calls to keep a workflow anchored when focus changes. `open_profile` changes the active Profile Window but not the server's launch options.
+Tool results contain `structuredContent` and its JSON text representation. Call failures set `isError` and may include recoverable details, such as a newly created `board_id` or failed entries. Choices and previews are successful calls and describe what to pass next.
 
-Tool-specific constraints:
+## Search and act
 
-- `click_sheet_element` accepts `target` or both `role` and `name`; `focus_new_board` requires `open_in_new_board`.
-- `read_sheet_element.field` is `text`, `value`, `attribute`, `count`, or `box`; `attribute` requires an attribute name.
-- `wait_for_sheet` requires exactly one of `target`, `url`, `text`, or `load_state`. `state` requires `target`. Selector states are `attached`, `visible`, `hidden`, or `detached`; load states follow [`cli.md`](cli.md).
-- `query_sheet.fields` accepts `tag`, `role`, `name`, `text`, `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, and `attr:<name>`.
-- `read_sheet_state.state` is `visible`, `enabled`, or `checked`. `scroll_sheet` accepts `direction` or `target`, not both; the default direction is `down`.
+Search for a Board or Desk by name, keywords, or ID. Universal Search applies its existing matching and order, with actions for showing, moving, reordering, and closing Boards, showing and removing Desks, and creating Web Boards from Recent, Essentials, or the search input. A Board match shows an existing Board. A Recent match creates a new one. For an empty Desk, search for `> New Desk`, then send its action ref with `name`.
 
-## 4. Tool Specification (v1)
+Use `act_on_result` with the advertised ref. If a move returns `destinations`, call it again with the ref for a Desk's end or an adjacent Board. Placement moves the Board Group together. Action refs bind the Profile, target, and effect. They are temporary and may expire during an app run. Missing or changed targets return an error prompting a fresh search.
 
-### 4.1 Den and Profile
+Desk removal returns a preview with the Desk's Boards and a `confirmation.ref`. Pass that ref to confirm. For a nonempty Desk, also supply `delete_boards: true` to end the listed Boards' live activity. If the contents changed, review the new preview before confirming. The last Desk is retained.
 
-| Tool | Arguments | Description | CLI equivalent |
-|---|---|---|---|
-| `inspect_den` | `[profile_id]` | Aggregate the Profile list, selected Profile, all Desk layouts, ambient Desk Boards and focus, and Drawer Item count into one result. | `overview` |
-| `open_profile` | `profile_id` | Open a window for a Profile or activate its existing window. | `profile open <uuid>` |
+## Open and read pages
 
-`inspect_den` returns `profiles`, `profile`, `profile_id`, `desks`, `active_desk`, `boards`, `focused_board_id`, and `drawer_item_count` from one resolved Profile/window context. Each Desk includes `boards` in layout order; `target_board_id` identifies a Side Board's Primary Board. Top-level `boards` and `focused_board_id` describe the ambient Desk. `active_desk` and `desks[].is_active` identify the Desk displayed in the resolved window, which may differ from the ambient Desk of a calling Terminal Board. Use `list_drawer_items` to retrieve individual items. It does not switch Desks.
+Supply absolute HTTP, HTTPS, or local file URLs. The special `"current"` entry in `open_pages` captures the focused Web Board's URL at the start of the call. Omit `desk` and `new_desk` to append to the presented Desk. Supply a Desk label or UUID as `desk` to use an existing Desk, or a label as `new_desk` to create one. If several Desk labels match, the result contains `choices` with Desk IDs and the call makes no changes.
 
-### 4.2 Board and Sheet
+An `open_pages` result lists each original input with its zero-based `index`. A successful entry has a `board_id`; an unsuccessful entry has an `error`. Retry only failed entries with the returned Desk ID. Creating a Web Board and reading the loaded page are separate operations.
 
-| Tool | Arguments | Description | CLI equivalent |
-|---|---|---|---|
-| `create_web_board` | `url`, `[focus]`, `[profile_id]` | Create a Web Board on the active Desk and return its ID. Accept the CLI's supported URL, hostname, or search-query inputs. | `board web new` |
-| `create_inspection_board` | `target_board_id`, `[focus]`, `[profile_id]` | Create or reuse the Inspection Board associated with the specified Web Board and return its ID. The target must be a Web Board; focus defaults to false. | `board inspection new --target` |
-| `open_sheet` | `url`, `[board_id]`, `[profile_id]` | Navigate the target Web Board's Current Sheet. Accept the same inputs and validation as `board web navigate`. | `board web navigate` |
-| `inspect_sheet` | `[board_id]`, `[profile_id]`, `[full]`, `[within]` | Return the target Board ID, Current Sheet URL, and semantic snapshot. A snapshot is always returned; `full` and `within` only control its detail. The default snapshot contains interactive elements and their semantic ancestor areas, short popup context, and compact text-control values except password inputs. | `board web url`, `board web snapshot` |
-| `read_inspection` | `board_id`, `[profile_id]` | Read inspection context from the specified Inspection Board and its target Web Board. Requires the Inspection Board ID explicitly; it does not change focus, selection, or page state. | `board inspection read --board` |
-| `read_sheet_text` | `[board_id]`, `[profile_id]` | Read visible text (`innerText`) from the Current Sheet. | `board web text` |
-| `read_sheet_markdown` | `[within]`, `[board_id]`, `[profile_id]` | Read the Current Sheet as Markdown with `title`, `url`, and `markdown`. `within` scopes to one selector or current ref; preserves structure without article extraction. See [CLI reading behavior](cli.md#33-den-board-web-web-board-and-sheet-operations). | `board web read` |
-| `query_sheet` | `selector`, `[visible]`, `[all]`, `[fields]`, `[board_id]`, `[profile_id]` | Return matching elements as structured data. `fields` is an array; defaults are `tag`, `role`, `name`, and `text`. | `board web query` |
-| `read_sheet_element` | `target`, `field`, `[attribute]`, `[board_id]`, `[profile_id]` | Read text, value, an attribute, match count, or bounding box for a target. `attribute` is required when `field` is `attribute`. | `board web get` |
-| `read_sheet_state` | `target`, `state`, `[board_id]`, `[profile_id]` | Check whether a target is visible, enabled, or checked. | `board web is` |
-| `click_sheet_element` | `target` or `role` + `name`, `[exact]`, `[open_in_new_board]`, `[focus_new_board]`, `[board_id]`, `[profile_id]` | Click by snapshot ref, selector, or accessible role and name. Optionally open a clicked link in a new Web Board. | `board web click` |
-| `fill_sheet_field` | `target`, `value`, `[board_id]`, `[profile_id]` | Fill an input, textarea, or editable element. An empty `value` clears it. | `board web fill` |
-| `type_sheet_text` | `text`, `[target]`, `[board_id]`, `[profile_id]` | Type text into a target or the currently focused element. | `board web type` |
-| `press_sheet_key` | `key`, `[board_id]`, `[profile_id]` | Dispatch a supported key to the active element. | `board web press` |
-| `scroll_sheet` | `[direction]` or `[target]`, `[board_id]`, `[profile_id]` | Scroll by direction or bring a target into view. The default direction is `down`. | `board web scroll` |
-| `wait_for_sheet` | Exactly one of `target`, `url`, `text`, or `load_state`; `[state]`, `[timeout_seconds]`, `[board_id]`, `[profile_id]` | Wait for a target state, URL, visible text, or supported load state. The default timeout is 10 seconds. | `board web wait` |
-| `navigate_sheet_history` | `direction` (`back` or `forward`), `[board_id]`, `[profile_id]` | Navigate the Sheet Stack backward or forward. | `board web back`, `board web forward` |
-| `reload_sheet` | `[board_id]`, `[profile_id]` | Reload the Current Sheet. | `board web reload` |
-| `close_board` | `board_id`, `[profile_id]` | Remove the specified Board from its Desk and end its live runtime. A Board ID is required. | `board close --board <id>` |
+For the Inspection payload's freshness fields, see [Reading inspection context](inspection.md#reading-inspection-context-with-den).
 
-MCP Sheet action tools do not include the CLI's optional `--snapshot` result. Call `inspect_sheet` separately when a snapshot is needed; it always returns one, while `full` and `within` only control its detail.
+## Migrating from the previous MCP catalog
 
-Sheet references such as `@e1` are document-scoped. They remain usable across operations in the same document and are regenerated when navigation replaces the document. Use the `board_id` returned from `inspect_sheet` for subsequent Sheet calls.
+| Previous tools | Use instead |
+|---|---|
+| `inspect_den` | `overview_den`; use `den overview` for the CLI's full Profile and ambient Board fields. |
+| `create_web_board`, `close_board` | `open_pages`, or find the relevant action using `search_den`. |
+| `read_sheet_markdown`, `read_sheet_text`, `read_inspection` | `read_page` or `read_selection`; use `den board web read`, `den board web text`, or `den board inspection read` for the previous options. |
+| `open_profile`, `create_inspection_board`, `open_sheet`, `inspect_sheet`, other Sheet tools | `den profile open`, `den board inspection new`, and `den board web` subcommands. |
+| Drawer and Terminal tools | `den drawer` and `den board terminal` subcommands. |
 
-`read_inspection` requires `board_id` and accepts only an Inspection Board. Its structured result has an `inspection` object whose shared data, freshness, and optional fields are specified in [Reading inspection context](inspection.md#reading-inspection-context-with-den). The read-only call does not change Board focus, selection, or the target Sheet. Use the returned target Web Board ID with Sheet tools for current `@e…` references or more page content.
-
-### 4.3 Drawer
-
-| Tool | Arguments | Description | CLI equivalent |
-|---|---|---|---|
-| `list_drawer_items` | `[profile_id]` | List Drawer Items by ID, type, title, and URL or Terminal configuration. | `drawer list` |
-| `save_url_to_drawer` | `url`, `[title]`, `[profile_id]` | Keep a supported URL in the Den-wide Drawer without changing Desk layout. Search queries are not accepted. | `drawer keep` |
-| `place_drawer_item` | `item_id`, `[profile_id]` | Place a Drawer Item onto the active Desk as a Web or Terminal Board and return its Board ID. | `drawer place` |
-| `discard_drawer_item` | `item_id`, `[profile_id]` | Discard a Drawer Item without placing it. It remains available through Den's current-run Drawer restoration history. | `drawer discard` |
-
-### 4.4 Terminal Boards
-
-| Tool | Arguments | Description | CLI equivalent |
-|---|---|---|---|
-| `create_terminal_board` | `[path]`, `[focus]`, `[profile_id]` | Create a Terminal Board at an optional working directory. Run a command afterward with `run_terminal_command`. | `board terminal new` |
-| `read_terminal_session` | `[board_id]`, `[profile_id]` | Read the visible Terminal Session buffer. | `board terminal text` |
-| `run_terminal_command` | `command`, `[board_id]`, `[profile_id]` | Send a shell command and press Enter in the target Terminal Session. The call does not wait for the command to finish; use `read_terminal_session` to inspect output. | `board terminal run` |
-
-## 5. Result and Error Contract
-
-- Tool input schemas use JSON objects with `snake_case` property names. Required fields, allowed values, and defaults are stated in each tool description and schema.
-- Each tool publishes an `outputSchema` matching its `structuredContent`. Successful calls also return concise text content. Board-targeted calls include `profile_id` and `board_id`; Board creation and Drawer placement include the created `board_id`.
-- An IPC failure is returned with `isError: true` and a specific message. Invalid targets do not fall back to another Profile or Board.
-- Read tools are annotated as read-only. Board removal, Drawer discard, and terminal command execution are annotated to describe their side effects. Annotations inform the MCP client; the client controls any approval UI.
-
-Example `inspect_den` result:
-
-```json
-{
-  "profiles": [{ "id": "3FA85F64-...", "name": "Default", "is_active": true, "has_window": true }],
-  "profile": { "id": "3FA85F64-...", "name": "Default" },
-  "profile_id": "3FA85F64-...",
-  "desks": [{ "id": "93F4BD61-...", "label": "Main", "is_active": true, "board_count": 1, "boards": [{ "id": "4F72344C-...", "type": "web", "label": "Example", "url": "https://example.com", "is_focused": true }] }],
-  "active_desk": { "id": "93F4BD61-...", "label": "Main", "is_active": true, "board_count": 1, "boards": [{ "id": "4F72344C-...", "type": "web", "label": "Example", "url": "https://example.com", "is_focused": true }] },
-  "boards": [{ "id": "4F72344C-...", "type": "web", "label": "Example", "url": "https://example.com", "is_focused": true }],
-  "focused_board_id": "4F72344C-...",
-  "drawer_item_count": 1
-}
-```
-
-## 6. Related decision
-
-The MCP adoption and v1 direction in this specification are approved by [ADR 0055](adr/0055-add-den-mcp-server.md). ADR 0055 supersedes only ADR 0047's decision to avoid MCP; its CLI and IPC decisions remain in effect.
+See the [CLI reference](cli.md) and [MCP catalog decision](adr/0074-ground-mcp-in-universal-search.md).

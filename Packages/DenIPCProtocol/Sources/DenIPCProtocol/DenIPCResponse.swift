@@ -300,6 +300,7 @@ public nonisolated struct DenNotificationInfo: Codable, Sendable {
 
 public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case empty
+    case mcp(DenMCPResult)
     case message(String)
     case createdBoard(id: String, message: String?, url: String?)
     case navigation(message: String, url: String)
@@ -489,6 +490,8 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
 
         guard let payload = result.payload else { return }
         switch payload {
+        case .mcp(let result):
+            try result.encode(to: encoder)
         case .empty:
             break
         case .message(let message):

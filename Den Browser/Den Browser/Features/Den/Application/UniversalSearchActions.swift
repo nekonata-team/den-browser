@@ -21,17 +21,13 @@ enum UniversalSearchActions {
         }
         switch target {
         case .board(let id):
-            guard
-                session.resources.store.snapshot.den.desks.contains(where: {
-                    $0.boards.contains(where: { $0.id == id })
-                })
-            else {
+            guard target.boardDesk(in: session.resources.state) != nil else {
                 return "This Board is no longer available."
             }
             windowModel.hideUniversalSearch()
             session.boardNavigation.focusBoard(id, exitsDenMode: true)
         case .desk(let id):
-            guard session.resources.store.snapshot.den.desks.contains(where: { $0.id == id }) else {
+            guard target.desk(in: session.resources.state) != nil else {
                 return "This Desk is no longer available."
             }
             windowModel.hideUniversalSearch()
@@ -41,17 +37,16 @@ enum UniversalSearchActions {
                 return "This Profile could not be opened."
             }
             windowModel.hideUniversalSearch()
-        case .essential(let id):
-            guard let essential = session.configuration.preferences.essentials.first(where: { $0.id == id }) else {
-                return "This Essential is no longer available."
-            }
-            return open(essential.input, session: session, windowModel: windowModel, inDrawer: inDrawer)
-        case .recent(let item):
-            guard session.resources.store.snapshot.recentItems.contains(item) else {
+        case .essential, .recent, .createBoard:
+            guard
+                let input = target.creationInput(
+                    essentials: session.configuration.preferences.essentials,
+                    recents: session.resources.recentItems
+                )
+            else {
+                if case .essential = target { return "This Essential is no longer available." }
                 return "This Recent Item is no longer available."
             }
-            return open(item.displayText, session: session, windowModel: windowModel, inDrawer: inDrawer)
-        case .createBoard(let input):
             return open(input, session: session, windowModel: windowModel, inDrawer: inDrawer)
         case .command(let command):
             windowModel.hideUniversalSearch()

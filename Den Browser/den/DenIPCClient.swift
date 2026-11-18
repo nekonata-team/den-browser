@@ -207,7 +207,7 @@ enum DenIPCClient {
 
     private static func writeTextResult(_ payload: DenIPCResultPayload, output: CLIOutputOptions) {
         switch payload {
-        case .empty, .interaction, .boardExistence:
+        case .empty, .interaction, .boardExistence, .mcp:
             break
         case .message(let message), .closedBoard(_, let message):
             print(message)

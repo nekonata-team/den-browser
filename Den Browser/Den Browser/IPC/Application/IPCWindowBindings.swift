@@ -16,6 +16,7 @@ struct IPCWindowBindings {
     }
 
     struct Desk {
+        let focus: (DeskID) -> Void
         let isAvailable: (DeskID) -> Bool
         let lifecycleNotice: (DeskLifecycle.Notice) -> Void
     }
@@ -32,6 +33,7 @@ struct IPCWindowBindings {
     let profileID: ProfileID
     let resources: DenProfileResources
     let presentedDeskID: () -> DeskID
+    let essentials: () -> [Essential]
     let searchEngine: () -> SearchEngine
     let availableBoardWidth: () -> Double?
     let inheritedBoardWidth: () -> Double

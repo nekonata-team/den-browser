@@ -70,6 +70,7 @@ public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case profileList
     case openProfile(profileID: UUID)
     case inspectDen(target: DeskTarget)
+    case mcp(DenMCPCommand)
     case health
 }
 

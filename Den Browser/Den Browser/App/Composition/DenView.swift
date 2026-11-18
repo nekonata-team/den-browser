@@ -157,7 +157,7 @@ private struct DenActivePanelOverlay: View {
         case .universalSearch:
             UniversalSearchPanel(
                 profileColor: profileColor,
-                sourceItems: UniversalSearchModel.sourceItems(
+                sourceItems: UniversalSearch.sourceItems(
                     state: session.resources.store.snapshot.den,
                     essentials: preferences.essentials,
                     hasBoardUndoHistory: !session.resources.store.snapshot.boardUndoHistory.isEmpty,

@@ -10,6 +10,7 @@ extension IPCWindowBindings {
             profileID: profileID,
             resources: session.resources,
             presentedDeskID: { [navigation = session.navigation] in navigation.presentedDeskID },
+            essentials: { session.configuration.preferences.essentials },
             searchEngine: { [preferences = session.configuration.preferences] in preferences.searchEngine },
             availableBoardWidth: { session.connection.availableBoardWidth() },
             inheritedBoardWidth: { [navigation = session.navigation] in
@@ -31,6 +32,7 @@ extension IPCWindowBindings {
                 removalNotice: session.boardRemoval.boardRemovalNotifications()
             ),
             desk: Desk(
+                focus: { session.boardNavigation.focusDesk($0) },
                 isAvailable: { session.context.canPresentDesk?($0) ?? true },
                 lifecycleNotice: session.desks.deskLifecycleNotifications()
             ),

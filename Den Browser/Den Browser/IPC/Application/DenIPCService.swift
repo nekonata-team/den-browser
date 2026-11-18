@@ -16,8 +16,9 @@ final class DenIPCService {
         let runtime: WebRuntime
     }
 
+    let mcpActions = DenMCPActions()
     private var server: DenSocketServer?
-    private weak var profileManager: ProfileManager?
+    private(set) weak var profileManager: ProfileManager?
 
     init(profileManager: ProfileManager? = nil) {
         self.profileManager = profileManager
@@ -40,6 +41,7 @@ final class DenIPCService {
     func stop() {
         server?.stop()
         server = nil
+        mcpActions.reset()
     }
 
     private func handleRawRequest(_ data: Data) async -> Data {
@@ -61,6 +63,8 @@ final class DenIPCService {
 
     func handleRequest(_ request: DenIPCRequest) async -> DenIPCResponse {
         switch request.operation {
+        case .mcp(let command):
+            return await handleMCP(command, profileID: request.context.profileID)
         case .health:
             return DenIPCResponse(result: .success(), target: .none)
         case .sheet(let command, let target):
@@ -254,7 +258,7 @@ final class DenIPCService {
         )
     }
 
-    private func withDeskTarget(
+    func withDeskTarget(
         _ requested: DeskTarget,
         context: DenIPCCallerContext,
         perform: (ResolvedDeskTarget) -> DenIPCOperationResult
@@ -388,7 +392,7 @@ final class DenIPCService {
         }
     }
 
-    private func handleInspectionRead(target: ResolvedBoardTarget) async -> DenIPCOperationResult {
+    func handleInspectionRead(target: ResolvedBoardTarget, includeEvents: Bool = true) async -> DenIPCOperationResult {
         let window = target.window
         let inspection = target.board
         guard let targetBoardID = inspection.sideBoardTargetBoardID,
@@ -407,6 +411,11 @@ final class DenIPCService {
             }
             guard generation == runtime.inspectionPageGeneration else {
                 return .failure("The target Sheet changed while reading Inspection data")
+            }
+            guard window.resources.snapshot.den.board(for: inspection.id) != nil,
+                window.resources.webRuntimes[targetBoard.id] === runtime
+            else {
+                return .failure("Inspection Board or target Web Board is no longer available")
             }
             let ancestors = page.selectionConnected == true ? Array(page.treePath.dropLast()) : []
             let result = DenInspectionReadInfo(
@@ -443,7 +452,7 @@ final class DenIPCService {
                         childCount: $0.childCount
                     )
                 },
-                events: page.events.map {
+                events: (includeEvents ? page.events : []).map {
                     DenInspectionEventInfo(
                         id: $0.id,
                         time: $0.timestamp ?? $0.time,
@@ -451,7 +460,7 @@ final class DenIPCService {
                         message: $0.message
                     )
                 },
-                eventsDropped: page.eventsDropped ?? 0
+                eventsDropped: includeEvents ? (page.eventsDropped ?? 0) : 0
             )
             return .success(.inspection(result))
         } catch {
@@ -1169,7 +1178,7 @@ final class DenIPCService {
         return .success(.board(boardInfo(resolved.board, focusedBoardID: resolved.board.id)))
     }
 
-    private func boardInfo(_ board: BoardState, focusedBoardID: BoardID?) -> DenBoardInfo {
+    func boardInfo(_ board: BoardState, focusedBoardID: BoardID?) -> DenBoardInfo {
         DenBoardInfo(
             id: board.id.rawValue.uuidString,
             type: board.isInspection
@@ -1244,7 +1253,7 @@ final class DenIPCService {
         return .success(.createdBoard(id: inspectionID.rawValue.uuidString, message: nil, url: nil))
     }
 
-    private func handleBoardMove(
+    func handleBoardMove(
         destination: DenBoardMoveDestination,
         target resolved: ResolvedBoardTarget
     ) -> DenIPCOperationResult {
@@ -1292,7 +1301,7 @@ final class DenIPCService {
         return .success(.board(boardInfo(resolved.board, focusedBoardID: focusedID)))
     }
 
-    private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
+    func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
         resolved.window.resources.boardRemoval.remove(
             resolved.board.id,
             presentedDeskID: resolved.window.presentedDeskID(),
@@ -1371,8 +1380,7 @@ final class DenIPCService {
 
     // MARK: - Desk Commands
 
-    private func handleDeskNew(label: String, focus: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult
-    {
+    func handleDeskNew(label: String, focus: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
         guard !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failure("Desk label must not be empty")
         }
@@ -1393,7 +1401,7 @@ final class DenIPCService {
         return .success(.createdDesk(id: desk.id.rawValue.uuidString))
     }
 
-    private func handleDeskRemove(force: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
+    func handleDeskRemove(force: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
         let window = resolved.window
         let desk = resolved.desk
         guard window.resources.snapshot.den.desks.count > 1 else {

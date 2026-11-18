@@ -16,905 +16,243 @@ struct MCPCommand: AsyncParsableCommand {
     var profileID: String?
 
     func run() async throws {
-        let server = Server(
-            name: "den",
-            version: "1.0.0",
-            capabilities: .init(tools: .init())
-        )
-        let runner = DenMCPToolRunner(socketPath: socketPath, profileID: profileID)
+        let server = Server(name: "den", version: "1.0.0", capabilities: .init(tools: .init()))
+        let socketPath = socketPath
+        let profileID = profileID
         await server.withMethodHandler(ListTools.self) { _ in
-            .init(tools: DenMCPToolDefinition.all.map(\.tool))
+            .init(tools: DenMCPTool.allCases.map(\.definition))
         }
         await server.withMethodHandler(CallTool.self) { params in
-            await runner.call(params)
+            DenMCPTool.call(params, socketPath: socketPath, profileID: profileID)
         }
-
         try await server.start(transport: StdioTransport())
         await server.waitUntilCompleted()
     }
 }
 
-private enum DenMCPToolName: String, Sendable {
-    case inspectDen = "inspect_den"
-    case openProfile = "open_profile"
-    case createWebBoard = "create_web_board"
-    case createInspectionBoard = "create_inspection_board"
-    case readInspection = "read_inspection"
-    case openSheet = "open_sheet"
-    case inspectSheet = "inspect_sheet"
-    case readSheetText = "read_sheet_text"
-    case readSheetMarkdown = "read_sheet_markdown"
-    case querySheet = "query_sheet"
-    case readSheetElement = "read_sheet_element"
-    case readSheetState = "read_sheet_state"
-    case clickSheetElement = "click_sheet_element"
-    case fillSheetField = "fill_sheet_field"
-    case typeSheetText = "type_sheet_text"
-    case pressSheetKey = "press_sheet_key"
-    case scrollSheet = "scroll_sheet"
-    case waitForSheet = "wait_for_sheet"
-    case navigateSheetHistory = "navigate_sheet_history"
-    case reloadSheet = "reload_sheet"
-    case closeBoard = "close_board"
-    case listDrawerItems = "list_drawer_items"
-    case saveURLToDrawer = "save_url_to_drawer"
-    case placeDrawerItem = "place_drawer_item"
-    case discardDrawerItem = "discard_drawer_item"
-    case createTerminalBoard = "create_terminal_board"
-    case readTerminalSession = "read_terminal_session"
-    case runTerminalCommand = "run_terminal_command"
-}
+private enum DenMCPTool: String, CaseIterable, Sendable {
+    case overview = "overview_den"
+    case search = "search_den"
+    case act = "act_on_result"
+    case openPages = "open_pages"
+    case readPage = "read_page"
+    case readSelection = "read_selection"
+    case notifications = "list_notifications"
 
-private enum DenMCPArgument: String, Sendable {
-    case profileID = "profile_id"
-    case boardID = "board_id"
-    case targetBoardID = "target_board_id"
-    case url
-    case width
-    case focus
-    case full
-    case within
-    case selector
-    case visible
-    case all
-    case fields
-    case target
-    case field
-    case attribute
-    case state
-    case role
-    case name
-    case exact
-    case openInNewBoard = "open_in_new_board"
-    case focusNewBoard = "focus_new_board"
-    case value
-    case text
-    case key
-    case direction
-    case loadState = "load_state"
-    case timeoutSeconds = "timeout_seconds"
-    case itemID = "item_id"
-    case title
-    case path
-    case command
-}
-
-private enum DenMCPOutputField: String {
-    case title
-    case markdown
-    case profiles
-    case profile
-    case profileID = "profile_id"
-    case desks
-    case activeDesk = "active_desk"
-    case boards
-    case focusedBoardID = "focused_board_id"
-    case drawerItemCount = "drawer_item_count"
-    case boardID = "board_id"
-    case url
-    case message
-    case snapshot
-    case text
-    case elements
-    case value
-    case attribute
-    case count
-    case box
-    case visible
-    case enabled
-    case checked
-    case closedBoardID = "closed_board_id"
-    case drawerItems = "drawer_items"
-    case drawerItemID = "drawer_item_id"
-    case inspection
-}
-
-private enum DenMCPReadSheetElementField: String, CaseIterable, Sendable {
-    case text
-    case value
-    case attribute
-    case count
-    case box
-}
-
-private enum DenMCPReadSheetState: String, CaseIterable, Sendable {
-    case visible
-    case enabled
-    case checked
-}
-
-private enum DenMCPScrollDirection: String, CaseIterable, Sendable {
-    case down
-    case upward = "up"
-    case top
-    case bottom
-}
-
-private enum DenMCPWaitState: String, CaseIterable, Sendable {
-    case attached
-    case visible
-    case hidden
-    case detached
-}
-
-private enum DenMCPLoadState: String, CaseIterable, Sendable {
-    case domContentLoaded = "domcontentloaded"
-    case load
-    case networkidle
-}
-
-private enum DenMCPHistoryDirection: String, CaseIterable, Sendable {
-    case back
-    case forward
-}
-
-private struct DenMCPToolDefinition: Sendable {
-    let name: DenMCPToolName
-    let description: String
-    let properties: [DenMCPArgument: Value]
-    let required: [DenMCPArgument]
-    let annotations: Tool.Annotations
-
-    var tool: Tool {
-        Tool(
-            name: name.rawValue,
-            description: description,
-            inputSchema: .object([
-                "type": .string("object"),
-                "properties": .object(Self.wireProperties(properties)),
-                "required": .array(required.map { .string($0.rawValue) }),
-                "additionalProperties": .bool(false),
-            ]),
-            annotations: annotations,
-            outputSchema: DenMCPToolDefinition.outputSchema(for: name)
-        )
-    }
-
-    static let all: [Self] = [
-        .init(
-            .inspectDen,
-            "Inspect Profiles, Desks, Boards, focus, and Drawer count.",
-            [.profileID: uuid()],
-            readOnly: true
-        ),
-        .init(.openProfile, "Open or activate a Profile Window.", [.profileID: uuid()], [.profileID]),
-        .init(
-            .createWebBoard,
-            "Create a Web Board from a URL, hostname, or search query; focus defaults to false. Set width to a positive point value.",
-            [.url: string(), .profileID: uuid(), .focus: bool(), .width: boardWidth()],
-            [.url]
-        ),
-        .init(
-            .createInspectionBoard,
-            "Create or reuse an Inspection Board for a Web Board; focus defaults to false.",
-            [.targetBoardID: uuid(), .profileID: uuid(), .focus: bool()],
-            [.targetBoardID]
-        ),
-        .init(
-            .readInspection,
-            "Read the selected element and collected page events from an Inspection Board.",
-            [.profileID: uuid(), .boardID: uuid()],
-            [.boardID],
-            readOnly: true
-        ),
-        .init(
-            .openSheet,
-            "Navigate the target Web Board to a URL or search query.",
-            [.url: string(), .profileID: uuid(), .boardID: uuid()],
-            [.url]
-        ),
-        .init(
-            .inspectSheet,
-            "Read the Current Sheet URL and semantic snapshot; full defaults to false.",
-            [.profileID: uuid(), .boardID: uuid(), .full: bool(), .within: string()],
-            readOnly: true
-        ),
-        .init(.readSheetText, "Read visible text from the Current Sheet.", sheetTarget, readOnly: true),
-        .init(
-            .readSheetMarkdown,
-            "Read the Current Sheet as Markdown with title and URL; within scopes to one selector or ref. No article extraction.",
-            sheetTarget.merging([.within: string()]) { _, new in new },
-            readOnly: true
-        ),
-        .init(
-            .querySheet,
-            "Return matching elements; fields defaults to tag, role, name, and text; visible and all default to false.",
-            merge(
-                sheetTarget,
+    var definition: Tool {
+        switch self {
+        case .overview:
+            return tool(
+                "Get the current Profile's ordered Desks and Boards, including the presented Desk and focused Board."
+            )
+        case .search:
+            return tool(
+                "Search Universal Search without changing focus. Results distinguish existing Boards from inputs that create Web Boards, and supply action refs. Use '> New Desk' to find Desk creation.",
                 [
-                    .selector: string(), .visible: bool(), .all: bool(),
-                    .fields: stringArray(
-                        "Use tag, role, name, text, value, checked, disabled, selected, expanded, class, or attr:<name>."
+                    "query": string("Name, URL, keywords, UUID, or Universal Search command query."),
+                    "limit": limit,
+                ],
+                required: ["query"]
+            )
+        case .act:
+            return tool(
+                "Execute the exact action identified by ref. Follow returned requirements, destination refs or Desk removal confirmation. Search again if a ref expires or its target is gone.",
+                [
+                    "ref": string("Action ref from search_den or act_on_result.", format: "uuid"),
+                    "name": string("Label requested when creating an empty Desk."),
+                    "delete_boards": boolean(
+                        "Explicitly allow deletion of the Boards listed in the Desk removal preview."
                     ),
-                ]
-            ),
-            [.selector],
-            readOnly: true
-        ),
-        .init(
-            .readSheetElement,
-            "Read an element's text, value, attribute, count, or box; attribute requires an attribute name.",
-            merge(
-                sheetTarget,
+                ],
+                required: ["ref"]
+            )
+        case .openPages:
+            return tool(
+                "Append new Web Boards in input order without switching Desks or changing existing focus. For partial success, retry only entries with an error and reuse the returned Desk ID.",
                 [
-                    .target: string(), .field: enumeration(DenMCPReadSheetElementField.self),
-                    .attribute: string(),
-                ]
-            ),
-            [.target, .field],
-            readOnly: true
-        ),
-        .init(
-            .readSheetState,
-            "Check whether a Sheet element is visible, enabled, or checked.",
-            merge(
-                sheetTarget,
-                [
-                    .target: string(), .state: enumeration(DenMCPReadSheetState.self),
-                ]
-            ),
-            [.target, .state],
-            readOnly: true
-        ),
-        .init(
-            .clickSheetElement,
-            "Click by target or by role and name; focus_new_board requires open_in_new_board.",
-            merge(
-                sheetTarget,
-                [
-                    .target: string(), .role: string(), .name: string(), .exact: bool(),
-                    .openInNewBoard: bool(), .focusNewBoard: bool(),
-                ]
-            ),
-            destructive: false
-        ),
-        .init(
-            .fillSheetField,
-            "Fill an input, textarea, or editable Sheet element.",
-            merge(
-                sheetTarget,
-                [
-                    .target: string(), .value: string(),
-                ]
-            ),
-            [.target, .value],
-            destructive: false
-        ),
-        .init(
-            .typeSheetText,
-            "Type text into a target or the focused Sheet element.",
-            merge(
-                sheetTarget,
-                [
-                    .text: string(), .target: string(),
-                ]
-            ),
-            [.text],
-            destructive: false
-        ),
-        .init(
-            .pressSheetKey,
-            "Press a supported key in the target Sheet.",
-            merge(sheetTarget, [.key: string()]),
-            [.key],
-            destructive: false
-        ),
-        .init(
-            .scrollSheet,
-            "Provide direction or target, not both; direction defaults to down.",
-            merge(
-                sheetTarget,
-                [
-                    .direction: enumeration(DenMCPScrollDirection.self), .target: string(),
-                ]
-            ),
-            destructive: false
-        ),
-        .init(
-            .waitForSheet,
-            "Wait for exactly one target, URL, text, or load_state; state requires target; timeout defaults to 10 seconds.",
-            merge(
-                sheetTarget,
-                [
-                    .target: string(), .state: enumeration(DenMCPWaitState.self),
-                    .url: string(), .text: string(),
-                    .loadState: enumeration(DenMCPLoadState.self),
-                    .timeoutSeconds: number(),
-                ]
-            ),
-            destructive: false
-        ),
-        .init(
-            .navigateSheetHistory,
-            "Move the target Sheet Stack backward or forward.",
-            merge(
-                sheetTarget,
-                [
-                    .direction: enumeration(DenMCPHistoryDirection.self)
-                ]
-            ),
-            [.direction],
-            destructive: false
-        ),
-        .init(.reloadSheet, "Reload the target Current Sheet.", sheetTarget, destructive: false),
-        .init(
-            .closeBoard,
-            "Remove a Board from its Desk and end its live runtime.",
-            [
-                .boardID: uuid(), .profileID: uuid(),
-            ],
-            [.boardID],
-            destructive: true
-        ),
-        .init(
-            .listDrawerItems,
-            "List Drawer Items by ID, type, title, and URL or Terminal session details.",
-            profileTarget,
-            readOnly: true
-        ),
-        .init(
-            .saveURLToDrawer,
-            "Keep a URL in the Den-wide Drawer.",
-            merge(
-                profileTarget,
-                [
-                    .url: string(), .title: string(),
-                ]
-            ),
-            [.url],
-            destructive: false
-        ),
-        .init(
-            .placeDrawerItem,
-            "Place a Drawer Item on the active Desk as a Board.",
-            merge(profileTarget, [.itemID: string()]),
-            [.itemID],
-            destructive: false
-        ),
-        .init(
-            .discardDrawerItem,
-            "Discard a Drawer Item.",
-            merge(profileTarget, [.itemID: string()]),
-            [.itemID],
-            destructive: true
-        ),
-        .init(
-            .createTerminalBoard,
-            "Create a Terminal Board at an optional working directory; focus defaults to false. Set width to a positive point value.",
-            merge(
-                profileTarget,
-                [
-                    .path: string(), .focus: bool(), .width: boardWidth(),
-                ]
-            ),
-            destructive: false
-        ),
-        .init(
-            .readTerminalSession,
-            "Read the visible buffer of a Terminal Session.",
-            terminalTarget,
-            readOnly: true
-        ),
-        .init(
-            .runTerminalCommand,
-            "Send a command to the target Terminal Session and press Enter.",
-            merge(
-                terminalTarget,
-                [
-                    .command: string()
-                ]
-            ),
-            [.command],
-            destructive: true
-        ),
-    ]
-
-    private static let profileTarget: [DenMCPArgument: Value] = [.profileID: uuid()]
-    private static let sheetTarget: [DenMCPArgument: Value] = [.profileID: uuid(), .boardID: uuid()]
-    private static let terminalTarget: [DenMCPArgument: Value] = [.profileID: uuid(), .boardID: uuid()]
-    private static let objectSchema: Value = .object(["type": .string("object"), "additionalProperties": .bool(true)])
-    private static let arraySchema: Value = .object([
-        "type": .string("array"),
-        "items": .object(["type": .string("object"), "additionalProperties": .bool(true)]),
-    ])
-    private static let stringSchema: Value = .object(["type": .string("string")])
-    private static let integerSchema: Value = .object(["type": .string("integer")])
-    private static let booleanSchema: Value = .object(["type": .string("boolean")])
-
-    private static func outputSchema(for name: DenMCPToolName) -> Value {
-        let profile: [DenMCPOutputField: Value] = [.profileID: stringSchema]
-        let board: [DenMCPOutputField: Value] = [.profileID: stringSchema, .boardID: stringSchema]
-        let fields: [DenMCPOutputField: Value] =
-            switch name {
-            case .inspectDen:
-                [
-                    .profiles: arraySchema, .profile: objectSchema, .profileID: stringSchema,
-                    .desks: arraySchema, .activeDesk: objectSchema, .boards: arraySchema,
-                    .focusedBoardID: stringSchema, .drawerItemCount: integerSchema,
-                ]
-            case .openProfile: profile.merging([.message: stringSchema]) { _, new in new }
-            case .createWebBoard, .createTerminalBoard:
-                profile.merging([.boardID: stringSchema]) { _, new in new }
-            case .createInspectionBoard:
-                profile.merging([.boardID: stringSchema]) { _, new in new }
-            case .readInspection:
-                board.merging([.inspection: objectSchema]) { _, new in new }
-            case .openSheet: board.merging([.url: stringSchema, .message: stringSchema]) { _, new in new }
-            case .inspectSheet: board.merging([.url: stringSchema, .snapshot: stringSchema]) { _, new in new }
-            case .readSheetText, .readTerminalSession: board.merging([.text: stringSchema]) { _, new in new }
-            case .readSheetMarkdown:
-                board.merging([.title: stringSchema, .url: stringSchema, .markdown: stringSchema]) { _, new in new }
-            case .querySheet: board.merging([.elements: arraySchema]) { _, new in new }
-            case .readSheetElement:
-                board.merging([
-                    .text: stringSchema, .value: stringSchema, .attribute: stringSchema,
-                    .count: integerSchema, .box: objectSchema,
-                ]) { _, new in new }
-            case .readSheetState:
-                board.merging([
-                    .visible: booleanSchema, .enabled: booleanSchema, .checked: booleanSchema,
-                ]) { _, new in new }
-            case .clickSheetElement:
-                board.merging([.message: stringSchema, .url: stringSchema]) { _, new in new }
-            case .closeBoard:
-                board.merging([.closedBoardID: stringSchema, .message: stringSchema]) { _, new in new }
-            case .listDrawerItems: profile.merging([.drawerItems: arraySchema]) { _, new in new }
-            case .saveURLToDrawer:
-                profile.merging([.drawerItemID: stringSchema, .message: stringSchema]) { _, new in new }
-            case .placeDrawerItem: board.merging([.message: stringSchema]) { _, new in new }
-            case .discardDrawerItem: profile.merging([.message: stringSchema]) { _, new in new }
-            case .fillSheetField, .typeSheetText, .pressSheetKey, .scrollSheet, .waitForSheet,
-                .navigateSheetHistory, .reloadSheet, .runTerminalCommand:
-                board.merging([.message: stringSchema]) { _, new in new }
-            }
-        return .object([
-            "type": .string("object"),
-            "properties": .object(wireProperties(fields)),
-            "additionalProperties": .bool(false),
-        ])
-    }
-
-    private init(
-        _ name: DenMCPToolName,
-        _ description: String,
-        _ properties: [DenMCPArgument: Value],
-        _ required: [DenMCPArgument] = [],
-        readOnly: Bool? = nil,
-        destructive: Bool? = nil
-    ) {
-        self.name = name
-        self.description = description
-        self.properties = properties
-        self.required = required
-        annotations = .init(readOnlyHint: readOnly, destructiveHint: destructive)
-    }
-
-    private static func merge<Key: Hashable>(_ first: [Key: Value], _ second: [Key: Value]) -> [Key: Value] {
-        first.merging(second) { _, new in new }
-    }
-
-    private static func wireProperties<Key: RawRepresentable>(_ properties: [Key: Value]) -> [String: Value]
-    where Key.RawValue == String {
-        Dictionary(uniqueKeysWithValues: properties.map { ($0.key.rawValue, $0.value) })
-    }
-
-    private static func string(_ description: String? = nil, format: String? = nil) -> Value {
-        var schema: [String: Value] = ["type": .string("string")]
-        if let description { schema["description"] = .string(description) }
-        if let format { schema["format"] = .string(format) }
-        return .object(schema)
-    }
-
-    private static func uuid() -> Value { string(format: "uuid") }
-    private static func bool() -> Value { .object(["type": .string("boolean")]) }
-    private static func number() -> Value { .object(["type": .string("number"), "minimum": .int(0)]) }
-    private static func boardWidth() -> Value {
-        .object(["type": .string("number"), "exclusiveMinimum": .int(0)])
-    }
-    private static func stringArray(_ description: String? = nil) -> Value {
-        var schema: [String: Value] = ["type": .string("array"), "items": string()]
-        if let description { schema["description"] = .string(description) }
-        return .object(schema)
-    }
-    private static func enumeration<Option: RawRepresentable & CaseIterable>(_ type: Option.Type) -> Value
-    where Option.RawValue == String {
-        .object(["type": .string("string"), "enum": .array(type.allCases.map { .string($0.rawValue) })])
-    }
-}
-
-private struct DenMCPToolRunner: Sendable {
-    let socketPath: String?
-    let profileID: String?
-
-    func call(_ params: CallTool.Parameters) async -> CallTool.Result {
-        guard let name = DenMCPToolName(rawValue: params.name),
-            let definition = DenMCPToolDefinition.all.first(where: { $0.name == name })
-        else {
-            return Self.error("Unknown Den tool: \(params.name)")
+                    "pages": .object([
+                        "type": .string("array"), "minItems": .int(1), "maxItems": .int(20),
+                        "items": string("Absolute URL or 'current' for the focused Web Board's page."),
+                    ]),
+                    "desk": string(
+                        "Existing Desk label or UUID. Omit for the presented Desk. An ambiguous label returns choices before making changes."
+                    ),
+                    "new_desk": string("Label for a new empty Desk. Supply this or desk."),
+                ],
+                required: ["pages"]
+            )
+        case .readPage:
+            return tool(
+                "Read title, actual URL, Markdown, and Board ID. Omit arguments for the focused Web Board's page. Providing a URL opens a new Web Board on the presented Desk without selecting it, including when reading later fails.",
+                ["board_id": boardID, "url": string("Absolute URL. Supply this or board_id.")]
+            )
+        case .readSelection:
+            return tool(
+                "Read a human's Inspection selection, its ancestors, source page and freshness. An ambiguous target returns Inspection Board choices. Leaves selection and focus as they were.",
+                ["board_id": string("Inspection Board UUID.", format: "uuid")]
+            )
+        case .notifications:
+            return tool(
+                "List retained Notifications from the current Profile, newest first, preserving read state.",
+                ["unread_only": boolean("Include only unread Notifications."), "limit": limit]
+            )
         }
+    }
 
+    static func call(_ params: CallTool.Parameters, socketPath: String?, profileID: String?) -> CallTool.Result {
         do {
-            let input = try DenMCPToolInput(params.arguments ?? [:], definition: definition)
-            let operation = try makeOperation(input, name: name)
-            let request = try DenIPCClient.makeRequest(
-                operation: operation,
-                profileID: try input.string(.profileID) ?? profileID
-            )
+            guard let tool = Self(rawValue: params.name) else {
+                throw DenIPCInputError.usage("Unknown Den tool: \(params.name)")
+            }
+            let arguments = params.arguments ?? [:]
+            let operation = try tool.operation(arguments)
+            let request = try DenIPCClient.makeRequest(operation: operation, profileID: profileID, callerBoardID: nil)
             let response = try DenIPCClient.sendRequest(request: request, socketPath: socketPath)
-            guard response.result.isOk else {
-                return Self.error(response.result.error ?? "Den Browser request failed")
-            }
-            return try Self.success(response)
+            return try tool.result(response)
         } catch {
-            return Self.error(error.localizedDescription)
+            return CallTool.Result(
+                content: [.text(text: error.localizedDescription, annotations: nil, _meta: nil)],
+                isError: true
+            )
         }
     }
 
-    private func makeOperation(_ input: DenMCPToolInput, name: DenMCPToolName) throws -> DenIPCOperation {
-        switch name {
-        case .inspectDen:
-            return .inspectDen(target: .automatic)
-        case .openProfile:
-            return .openProfile(
-                profileID: try DenIPCClient.profileToOpen(try input.requiredString(.profileID), options: CLIOptions())
-            )
-        case .createWebBoard:
-            return .createWebBoard(
-                payload: DenBoardWebNewPayload(
-                    url: try input.requiredString(.url),
-                    focus: try input.boolean(.focus),
-                    width: try input.boardWidth()
-                ),
-                destination: .automatic
-            )
-        case .createInspectionBoard:
-            return .createInspectionBoard(
-                targetBoardID: try DenIPCClient.requiredBoardID(
-                    input.requiredString(.targetBoardID),
-                    invalidMessage: "Usage: den board inspection new --target <web-board-id>"
-                ),
-                payload: DenBoardInspectionNewPayload(focus: try input.boolean(.focus))
-            )
-        case .readInspection:
-            return .readInspection(
-                boardID: try DenIPCClient.requiredBoardID(
-                    input.requiredString(.boardID),
-                    invalidMessage: "Usage: den board inspection read --board <inspection-board-id>"
+    private func operation(_ arguments: [String: Value]) throws -> DenIPCOperation {
+        let input = DenMCPInput(arguments: arguments)
+        let operation: DenIPCOperation
+        switch self {
+        case .overview:
+            operation = .inspectDen(target: .automatic)
+        case .search:
+            let query = try input.required("query", as: String.self)
+            guard query.utf8.count <= 8_192 else { throw DenIPCInputError.usage("Query is too long") }
+            operation = try .mcp(.search(query: query, limit: input.limit()))
+        case .act:
+            operation = try .mcp(
+                .act(
+                    ref: input.required("ref", as: UUID.self),
+                    name: input.decode("name"),
+                    deleteBoards: input.decode("delete_boards") ?? false
                 )
             )
-        case .openSheet:
-            return try sheetOperation(
-                .navigate(DenSheetNavigatePayload(url: try input.requiredString(.url))),
-                input: input
-            )
-        case .inspectSheet:
-            return try sheetOperation(
-                .inspect(
-                    DenSheetSnapshotPayload(full: try input.boolean(.full), within: try input.string(.within))
-                ),
-                input: input
-            )
-        case .readSheetText:
-            return try sheetOperation(.text, input: input)
-        case .readSheetMarkdown:
-            return try sheetOperation(.read(within: try input.string(.within)), input: input)
-        case .querySheet:
-            let fields = try input.strings(.fields)
-            return try sheetOperation(
-                .query(
-                    DenSheetQueryPayload(
-                        selector: try input.requiredString(.selector),
-                        visible: try input.boolean(.visible),
-                        all: try input.boolean(.all),
-                        fields: fields.isEmpty ? nil : fields.joined(separator: ",")
-                    )
-                ),
-                input: input
-            )
-        case .readSheetElement:
-            let target = try input.requiredString(.target)
-            switch try input.requiredEnum(.field, as: DenMCPReadSheetElementField.self) {
-            case .text:
-                return try sheetOperation(.get(.text(try DenSheetGetTargetPayload(target: target))), input: input)
-            case .value:
-                return try sheetOperation(.get(.value(try DenSheetGetTargetPayload(target: target))), input: input)
-            case .attribute:
-                return try sheetOperation(
-                    .get(
-                        .attribute(
-                            try DenSheetGetAttributePayload(
-                                target: target,
-                                attribute: try input.requiredString(.attribute)
-                            )
-                        )
-                    ),
-                    input: input
+        case .openPages:
+            operation = try .mcp(
+                .openPages(
+                    pages: input.required("pages", as: [String].self),
+                    desk: input.decode("desk"),
+                    newDesk: input.decode("new_desk")
                 )
-            case .count:
-                return try sheetOperation(.get(.count(try DenSheetGetTargetPayload(target: target))), input: input)
-            case .box: return try sheetOperation(.get(.box(try DenSheetGetTargetPayload(target: target))), input: input)
-            }
-        case .readSheetState:
-            let target = try DenSheetStatePayload(target: input.requiredString(.target))
-            switch try input.requiredEnum(.state, as: DenMCPReadSheetState.self) {
-            case .visible: return try sheetOperation(.isState(.visible(target)), input: input)
-            case .enabled: return try sheetOperation(.isState(.enabled(target)), input: input)
-            case .checked: return try sheetOperation(.isState(.checked(target)), input: input)
-            }
-        case .clickSheetElement:
-            let target = try input.string(.target)
-            let role = try input.string(.role)
-            let elementName = try input.string(.name)
-            let openInNewBoard = try input.boolean(.openInNewBoard)
-            let focusNewBoard = try input.boolean(.focusNewBoard)
-            guard (target != nil) != (role != nil || elementName != nil), (role == nil) == (elementName == nil) else {
-                throw input.invalid(.target, "provide target or both role and name")
-            }
-            guard !focusNewBoard || openInNewBoard else {
-                throw input.invalid(.focusNewBoard, "requires open_in_new_board")
-            }
-            return try sheetOperation(
-                .click(
-                    DenSheetClickPayload(
-                        target: target,
-                        role: role,
-                        name: elementName,
-                        exact: try input.boolean(.exact),
-                        newBoard: openInNewBoard,
-                        focus: focusNewBoard
-                    )
-                ),
-                input: input
             )
-        case .fillSheetField:
-            return try sheetOperation(
-                .fill(
-                    DenSheetFillPayload(
-                        target: try input.requiredString(.target),
-                        value: try input.requiredString(.value)
-                    )
-                ),
-                input: input
-            )
-        case .typeSheetText:
-            return try sheetOperation(
-                .type(
-                    DenSheetTypePayload(target: try input.string(.target), text: try input.requiredString(.text))
-                ),
-                input: input
-            )
-        case .pressSheetKey:
-            return try sheetOperation(.press(DenSheetPressPayload(key: try input.requiredString(.key))), input: input)
-        case .scrollSheet:
-            let direction = try input.enumValue(.direction, as: DenMCPScrollDirection.self)
-            let target = try input.string(.target)
-            guard direction == nil || target == nil else {
-                throw input.invalid(.direction, "provide direction or target")
-            }
-            return try sheetOperation(
-                .scroll(
-                    DenSheetScrollPayload(
-                        directionOrTarget: direction?.rawValue ?? target ?? DenMCPScrollDirection.down.rawValue
-                    )
-                ),
-                input: input
-            )
-        case .waitForSheet:
-            let target = try input.string(.target)
-            let url = try input.string(.url)
-            let text = try input.string(.text)
-            let loadState = try input.enumValue(.loadState, as: DenMCPLoadState.self)
-            let conditionCount = [target != nil, url != nil, text != nil, loadState != nil].filter { $0 }.count
-            guard conditionCount == 1 else {
-                throw input.invalid(.target, "provide exactly one of target, url, text, or load_state")
-            }
-            let state = try input.enumValue(.state, as: DenMCPWaitState.self)
-            guard target != nil || state == nil else {
-                throw input.invalid(.state, "requires target")
-            }
-            return try sheetOperation(
-                .wait(
-                    DenSheetWaitPayload(
-                        target: target,
-                        state: state?.rawValue,
-                        url: url,
-                        text: text,
-                        loadState: loadState?.rawValue,
-                        function: nil,
-                        timeout: try input.number(.timeoutSeconds, default: 10)
-                    )
-                ),
-                input: input
-            )
-        case .navigateSheetHistory:
-            switch try input.requiredEnum(.direction, as: DenMCPHistoryDirection.self) {
-            case .back: return try sheetOperation(.back, input: input)
-            case .forward: return try sheetOperation(.forward, input: input)
-            }
-        case .reloadSheet:
-            return try sheetOperation(.reload, input: input)
-        case .closeBoard:
-            return .boardClose(target: try DenIPCClient.boardTarget(input.requiredString(.boardID)))
-        case .listDrawerItems:
-            return .drawer(command: .list, target: .automatic)
-        case .saveURLToDrawer:
-            return .drawer(
-                command: .keep(
-                    DenDrawerKeepPayload(url: try input.requiredString(.url), title: try input.string(.title))
-                ),
-                target: .automatic
-            )
-        case .placeDrawerItem:
-            return .drawer(command: .place(id: try input.requiredString(.itemID)), target: .automatic)
-        case .discardDrawerItem:
-            return .drawer(command: .discard(id: try input.requiredString(.itemID)), target: .automatic)
-        case .createTerminalBoard:
-            let path = try input.string(.path).map { URL(fileURLWithPath: $0).standardizedFileURL.path }
-            return .createTerminalBoard(
-                payload: DenBoardTerminalNewPayload(
-                    path: path,
-                    runCommand: nil,
-                    focus: try input.boolean(.focus),
-                    width: try input.boardWidth()
-                ),
-                destination: .automatic
-            )
-        case .readTerminalSession:
-            return .terminal(
-                command: .text(),
-                target: try DenIPCClient.boardTarget(input.string(.boardID))
-            )
-        case .runTerminalCommand:
-            return .terminal(
-                command: .run(command: try input.requiredString(.command)),
-                target: try DenIPCClient.boardTarget(input.string(.boardID))
+        case .readPage:
+            operation = try .mcp(.readPage(boardID: input.decode("board_id"), url: input.decode("url")))
+        case .readSelection:
+            operation = try .mcp(.readSelection(boardID: input.decode("board_id")))
+        case .notifications:
+            operation = try .listNotifications(
+                unreadOnly: input.decode("unread_only") ?? false,
+                boardID: nil,
+                limit: input.limit()
             )
         }
-    }
-
-    private func sheetOperation(_ command: DenIPCCommand.Sheet, input: DenMCPToolInput) throws -> DenIPCOperation {
-        .sheet(command: command, target: try DenIPCClient.boardTarget(input.string(.boardID)))
-    }
-
-    private static func success(_ response: DenIPCResponse) throws -> CallTool.Result {
-        let resultData = try JSONEncoder().encode(response.result.publicJSON)
-        guard case .object(var output) = try JSONDecoder().decode(Value.self, from: resultData) else {
-            return error("Den Browser returned an invalid result")
+        if case .object(let schema) = definition.inputSchema,
+            case .object(let properties) = schema["properties"],
+            let unknown = arguments.keys.sorted().first(where: { properties[$0] == nil })
+        {
+            throw DenIPCInputError.usage("Unknown argument '\(unknown)' for \(rawValue)")
         }
+        return operation
+    }
+
+    private func result(_ response: DenIPCResponse) throws -> CallTool.Result {
+        let data = try JSONEncoder().encode(response.result.publicJSON)
+        var output = try JSONDecoder().decode([String: Value].self, from: data)
         output.removeValue(forKey: "ok")
-        output.removeValue(forKey: "error")
-
-        switch response.target {
-        case .none:
-            break
-        case .profile(let profileID):
-            output[DenMCPOutputField.profileID.rawValue] = .string(profileID.uuidString)
-        case .board(let profileID, let boardID):
-            output[DenMCPOutputField.profileID.rawValue] = .string(profileID.uuidString)
-            output[DenMCPOutputField.boardID.rawValue] =
-                output[DenMCPOutputField.boardID.rawValue] ?? .string(boardID.uuidString)
+        if self == .overview {
+            if case .object(let desk) = output.removeValue(forKey: "active_desk") {
+                output["active_desk_id"] = desk["id"]
+            }
+            for key in ["boards", "profiles", "profile_id"] {
+                output.removeValue(forKey: key)
+            }
+        } else {
+            switch response.target {
+            case .none: break
+            case .profile(let profileID):
+                output["profile_id"] = .string(profileID.uuidString)
+            case .board(let profileID, let boardID):
+                output["profile_id"] = .string(profileID.uuidString)
+                output["board_id"] = output["board_id"] ?? .string(boardID.uuidString)
+            }
         }
-
         let value = Value.object(output)
-        let data = try JSONEncoder().encode(value)
-        guard let text = String(data: data, encoding: .utf8) else {
-            return error("Den Browser returned an invalid result")
+        guard let text = String(bytes: try JSONEncoder().encode(value), encoding: .utf8) else {
+            throw DenIPCInputError.usage("Den Browser returned an invalid result")
         }
         return try CallTool.Result(
             content: [.text(text: text, annotations: nil, _meta: nil)],
             structuredContent: value,
-            isError: false
+            isError: !response.result.isOk
         )
     }
 
-    private static func error(_ message: String) -> CallTool.Result {
-        CallTool.Result(content: [.text(text: message, annotations: nil, _meta: nil)], isError: true)
+    private func tool(_ description: String, _ properties: [String: Value] = [:], required: [String] = []) -> Tool {
+        let annotations: Tool.Annotations
+        switch self {
+        case .overview, .search, .readSelection, .notifications:
+            annotations = .init(readOnlyHint: true, openWorldHint: false)
+        case .openPages, .readPage:
+            annotations = .init(readOnlyHint: false, destructiveHint: false)
+        case .act:
+            annotations = .init(readOnlyHint: false, destructiveHint: true)
+        }
+        return Tool(
+            name: rawValue,
+            description: description,
+            inputSchema: .object([
+                "type": .string("object"), "properties": .object(properties),
+                "required": .array(required.map(Value.string)), "additionalProperties": .bool(false),
+            ]),
+            annotations: annotations
+        )
+    }
+
+    private var boardID: Value { string("Web Board UUID.", format: "uuid") }
+
+    private var limit: Value {
+        .object(["type": .string("integer"), "minimum": .int(1), "maximum": .int(20), "default": .int(5)])
+    }
+
+    private func string(_ description: String, format: String? = nil) -> Value {
+        var schema: [String: Value] = ["type": .string("string"), "description": .string(description)]
+        if let format { schema["format"] = .string(format) }
+        return .object(schema)
+    }
+
+    private func boolean(_ description: String) -> Value {
+        .object(["type": .string("boolean"), "description": .string(description)])
     }
 }
 
-private struct DenMCPToolInput {
-    let arguments: [DenMCPArgument: Value]
+private struct DenMCPInput {
+    let arguments: [String: Value]
 
-    init(_ arguments: [String: Value], definition: DenMCPToolDefinition) throws {
-        var parsed: [DenMCPArgument: Value] = [:]
-        for (key, value) in arguments {
-            guard let argument = DenMCPArgument(rawValue: key) else {
-                throw DenMCPInputError("Unknown argument '\(key)' for \(definition.name.rawValue)")
-            }
-            guard definition.properties[argument] != nil else {
-                throw DenMCPInputError("Argument '\(key)' is not recognized for \(definition.name.rawValue)")
-            }
-            parsed[argument] = value
-        }
-        for key in definition.required where parsed[key] == nil {
-            throw DenMCPInputError("Invalid '\(key.rawValue)' argument: is required")
-        }
-        self.arguments = parsed
-    }
-
-    func requiredString(_ key: DenMCPArgument) throws -> String {
-        guard let value = try string(key) else { throw invalid(key, "is required") }
-        return value
-    }
-
-    func string(_ key: DenMCPArgument) throws -> String? { try decode(key, as: String.self) }
-
-    func boolean(_ key: DenMCPArgument, default defaultValue: Bool = false) throws -> Bool {
-        try decode(key, as: Bool.self) ?? defaultValue
-    }
-
-    func number(_ key: DenMCPArgument, default defaultValue: Double) throws -> Double {
-        let value = try decode(key, as: Double.self) ?? defaultValue
-        guard value.isFinite, value >= 0 else { throw invalid(key, "must be a finite non-negative number") }
-        return value
-    }
-
-    func boardWidth() throws -> Double? {
-        guard let value = try decode(.width, as: Double.self) else { return nil }
-        guard value.isFinite, value > 0 else {
-            throw invalid(.width, "must be a finite positive number of points")
-        }
-        return value
-    }
-
-    func strings(_ key: DenMCPArgument) throws -> [String] { try decode(key, as: [String].self) ?? [] }
-
-    func enumValue<Option: RawRepresentable & CaseIterable>(
-        _ key: DenMCPArgument,
-        as type: Option.Type
-    ) throws -> Option? where Option.RawValue == String {
-        guard let rawValue = try string(key) else { return nil }
-        guard let option = Option(rawValue: rawValue) else {
-            let choices = type.allCases.map(\.rawValue).joined(separator: ", ")
-            throw invalid(key, "must be one of: \(choices)")
-        }
-        return option
-    }
-
-    func requiredEnum<Option: RawRepresentable & CaseIterable>(
-        _ key: DenMCPArgument,
-        as type: Option.Type
-    ) throws -> Option where Option.RawValue == String {
-        guard let option = try enumValue(key, as: type) else { throw invalid(key, "is required") }
-        return option
-    }
-
-    func invalid(_ key: DenMCPArgument, _ reason: String) -> DenMCPInputError {
-        DenMCPInputError("Invalid '\(key.rawValue)' argument: \(reason)")
-    }
-
-    private func decode<T: Decodable>(_ key: DenMCPArgument, as type: T.Type) throws -> T? {
+    func decode<T: Decodable>(_ key: String) throws -> T? {
         guard let value = arguments[key] else { return nil }
         do {
-            return try JSONDecoder().decode(type, from: JSONEncoder().encode(value))
+            return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(value))
         } catch {
-            throw invalid(key, "has the wrong type")
+            throw DenIPCInputError.usage("Invalid '\(key)' argument")
         }
     }
-}
 
-private struct DenMCPInputError: LocalizedError {
-    let message: String
-    var errorDescription: String? { message }
-    init(_ message: String) { self.message = message }
+    func required<T: Decodable>(_ key: String, as type: T.Type) throws -> T {
+        guard let value: T = try decode(key) else { throw DenIPCInputError.usage("'\(key)' is required") }
+        return value
+    }
+
+    func limit() throws -> Int {
+        let value: Int = try decode("limit") ?? 5
+        guard (1...20).contains(value) else { throw DenIPCInputError.usage("'limit' must be between 1 and 20") }
+        return value
+    }
 }
