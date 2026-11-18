@@ -15,6 +15,7 @@ extension IPCWindowBindings {
             inheritedBoardWidth: { [navigation = session.navigation] in
                 navigation.inheritedBoardWidth ?? BuiltInDeskPreset.boardWidth
             },
+            recordNotification: session.notifications.recordNotification,
             board: Board(
                 webRuntime: { session.runtimes.webRuntime(for: $0) },
                 terminalRuntime: { session.runtimes.terminalRuntime(for: $0) },

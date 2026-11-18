@@ -165,6 +165,20 @@ final class DenIPCService {
                 }
                 return .success(.notifications(items))
             }
+        case .sendNotification(let title, let body, let boardID):
+            guard !body.isEmpty else {
+                return DenIPCResponse(result: .failure("Notification body must not be empty."), target: .none)
+            }
+            guard let source = boardID ?? request.context.callerBoardID else {
+                return DenIPCResponse(
+                    result: .failure("Pass --board <uuid> or run from a Den Terminal Board."),
+                    target: .none
+                )
+            }
+            return await withBoardTarget(.explicit(source), context: request.context, kind: .terminal) { resolved in
+                resolved.window.recordNotification(title, body, resolved.board.id)
+                return .success()
+            }
         case .setNotificationRead(let id, let isRead):
             return withDeskTarget(.automatic, context: request.context) { resolved in
                 guard resolved.window.resources.snapshot.notifications.contains(where: { $0.id == id }) else {

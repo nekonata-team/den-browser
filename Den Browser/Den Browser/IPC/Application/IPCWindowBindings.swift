@@ -35,6 +35,7 @@ struct IPCWindowBindings {
     let searchEngine: () -> SearchEngine
     let availableBoardWidth: () -> Double?
     let inheritedBoardWidth: () -> Double
+    let recordNotification: (String?, String, BoardID) -> Void
     let board: Board
     let desk: Desk
     let drawer: Drawer

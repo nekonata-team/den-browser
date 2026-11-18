@@ -86,6 +86,44 @@ struct CLIArgumentValidationTests {
     }
 
     @Test(arguments: [false, true])
+    func notificationSendForwardsUTF8BodyAndSource(explicitBoard: Bool) async throws {
+        // Arrange
+        let body = String(repeating: "ビルド完了\n", count: 4_000)
+        let inputURL = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try Data(body.utf8).write(to: inputURL)
+        defer { try? FileManager.default.removeItem(at: inputURL) }
+        let input = try FileHandle(forReadingFrom: inputURL)
+        defer { try? input.close() }
+        let boardID = UUID()
+        let callerBoardID = explicitBoard ? UUID() : boardID
+        let socketPath = makeTemporaryCLISocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            let operation = DenIPCOperation.sendNotification(
+                title: "Build",
+                body: body,
+                boardID: explicitBoard ? boardID : nil
+            )
+            let matches = request?.operation == operation && request?.context.callerBoardID == callerBoardID
+            return encodeIPCResponse(matches ? .success() : .failure("Unexpected Notification"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLITest(
+            ["notification", "send", "--title", "Build"] + (explicitBoard ? ["--board", boardID.uuidString] : []),
+            socketPath: socketPath,
+            environmentOverrides: ["DEN_BOARD_ID": callerBoardID.uuidString],
+            standardInput: input
+        )
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(try parseCLIJSON(result.output)["ok"] as? Bool == true)
+    }
+
+    @Test(arguments: [false, true])
     func notificationReadForwardsIdentity(isRead: Bool) async throws {
         // Arrange
         let id = UUID()
@@ -113,7 +151,7 @@ struct CLIArgumentValidationTests {
     @Test(arguments: [
         ["list", "--limit", "0"], ["list", "--limit", "-1"], ["list", "--limit", "1.5"],
         ["list", "--board", "invalid"], ["read", "invalid"], ["read"], ["list", "--count"],
-        ["unread", "invalid"], ["unread"],
+        ["unread", "invalid"], ["unread"], ["send", "--board", "invalid"],
     ])
     func notificationRejectsInvalidArguments(arguments: [String]) async throws {
         // Arrange

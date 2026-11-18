@@ -11,6 +11,41 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenIPCNotificationTests {
+    @Test func sendRecordsAndDeliversOnlyForATerminalSource() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeManager(directory: directory)
+        let route = ProfileWindowRoute(windowID: UUID(), profileID: manager.personalProfileID)
+        let session = try #require(manager.session(for: route))
+        let terminal = try #require(session.boardOpening.createTerminalBoard(workingDirectory: "/tmp", focus: false))
+        let web = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
+        let window = NSWindow()
+        manager.register(window: window, for: route)
+        defer { manager.unregister(window: window, for: route) }
+        let service = DenIPCService(profileManager: manager)
+        let operation = DenIPCOperation.sendNotification(title: "Build", body: "ビルド完了\n", boardID: nil)
+
+        // Act
+        let wrongSource = await service.handleRequest(
+            DenIPCRequest(operation: operation, context: .init(callerBoardID: web.rawValue))
+        )
+        let sent = await service.handleRequest(
+            DenIPCRequest(operation: operation, context: .init(callerBoardID: terminal.rawValue))
+        )
+
+        // Assert
+        #expect(!wrongSource.result.isOk)
+        #expect(sent.result.isOk)
+        let notifications = session.resources.snapshot.notifications
+        #expect(notifications.count == 1)
+        let notification = try #require(notifications.first)
+        #expect(notification.boardID == terminal)
+        #expect(notification.title == "Build")
+        #expect(notification.body == "ビルド完了\n")
+        #expect(session.feedback.latest?.target == .notification(notification.id))
+    }
+
     @Test(arguments: [false, true], [nil, 1, 10] as [Int?])
     func listingFiltersBeforeLimitingWithoutMarkingRead(unreadOnly: Bool, limit: Int?) async throws {
         // Arrange

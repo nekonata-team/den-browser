@@ -429,7 +429,8 @@ enum DenIPCClient {
         let requiresValidCallerBoardID: Bool
         switch operation {
         case .sheet(_, .automatic), .sheetWithSnapshot(_, .automatic, _),
-            .boardClose(.automatic), .boardBackgroundExecution(_, .automatic), .terminal(_, .automatic):
+            .boardClose(.automatic), .boardBackgroundExecution(_, .automatic), .terminal(_, .automatic),
+            .sendNotification(_, _, nil):
             requiresValidCallerBoardID = true
         default:
             requiresValidCallerBoardID = false
@@ -443,6 +444,10 @@ enum DenIPCClient {
             )
         } else {
             parsedCallerBoardID = nil
+        }
+
+        if case .sendNotification(_, _, nil) = operation, parsedCallerBoardID == nil {
+            throw DenIPCClientError.usage("Pass --board <uuid> or run from a Den Terminal Board.")
         }
 
         return DenIPCRequest(

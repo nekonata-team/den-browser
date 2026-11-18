@@ -28,7 +28,8 @@ func runCLITest(
     _ arguments: [String],
     socketPath: String,
     environmentOverrides: [String: String] = [:],
-    forceJSON: Bool = true
+    forceJSON: Bool = true,
+    standardInput: FileHandle? = nil
 ) async throws -> CLIInvocationResult {
     let process = Process()
     process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
@@ -44,6 +45,7 @@ func runCLITest(
     let error = Pipe()
     process.standardOutput = output
     process.standardError = error
+    if let standardInput { process.standardInput = standardInput }
 
     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
         process.terminationHandler = { _ in continuation.resume() }

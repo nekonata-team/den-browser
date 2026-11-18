@@ -364,9 +364,14 @@ These commands use the common Profile resolution and output options and do not c
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
+| `den notification send` | `[--title <title>] [--board <uuid>]` | Send a Notification with a non-empty UTF-8 body from standard input. | `den notification send --title Build < build-summary.txt` |
 | `den notification list` | `[--unread] [--board <uuid>] [--limit <N>]` | List retained Notifications, newest first, without marking them as read. | `den notification list --unread --limit 10 --json` |
 | `den notification read` | `<uuid>` | Mark one Notification as read without opening its source Board. | `den notification read <notification-id>` |
 | `den notification unread` | `<uuid>` | Mark one Notification as unread without opening its source Board. | `den notification unread <notification-id>` |
+
+`send` uses the specified Terminal Board or the calling Terminal Board identified by `DEN_BOARD_ID`.
+Outside a Den Terminal Board, pass `--board`. The source must exist in the resolved Profile.
+The command reads through EOF and preserves line breaks. With `--json`, success returns `{"ok":true}`.
 
 With no filters, `list` returns all retained Notifications in the resolved Profile, across all Desks.
 It does not implicitly filter to the caller's Board. `--board` filters by source Board UUID, including Notifications
