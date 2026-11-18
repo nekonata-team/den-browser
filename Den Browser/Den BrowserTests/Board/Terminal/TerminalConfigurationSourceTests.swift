@@ -348,7 +348,7 @@ struct TerminalConfigurationSourceTests {
         let generatedURL = root.appending(path: "generated.conf")
         try contents.write(to: generatedURL, atomically: true, encoding: .utf8)
 
-        #expect(ghostty_init(0, nil) == GHOSTTY_SUCCESS)
+        #expect(ghostty_init(0, CommandLine.unsafeArgv) == GHOSTTY_SUCCESS)
         guard let config = ghostty_config_new() else {
             Issue.record("ghostty_config_new returned nil")
             return
@@ -384,7 +384,7 @@ struct TerminalConfigurationSourceTests {
         defer { try? FileManager.default.removeItem(at: generatedURL) }
 
         // Act
-        #expect(ghostty_init(0, nil) == GHOSTTY_SUCCESS)
+        #expect(ghostty_init(0, CommandLine.unsafeArgv) == GHOSTTY_SUCCESS)
         guard let config = ghostty_config_new() else {
             Issue.record("ghostty_config_new returned nil")
             return
