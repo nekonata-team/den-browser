@@ -184,6 +184,38 @@ struct UniversalSearchModelTests {
         #expect(search.results.first?.target == .recent(item))
     }
 
+    @Test func terminalCommandsAndAliasesMatchBoardsEssentialsAndRecent() {
+        let terminal = BoardState(width: 520, workingDirectory: "/tmp/work")
+        let zellij = BoardState(width: 520, zellijSessionName: "work")
+        let zmx = BoardState(width: 520, zmxSessionName: "work")
+        let desk = DeskState(label: "Desk", boards: [terminal, zellij, zmx], focusedBoardID: terminal.id)
+        let cases: [(String, String, BoardState, RecentItem)] = [
+            (":terminal /tmp/work", ":term", terminal, .terminal(workingDirectory: "/tmp/work")),
+            (":zellij work", ":zj", zellij, .zellij(sessionName: "work")),
+            (":zmx work", ":x", zmx, .zmx(sessionName: "work")),
+        ]
+        for (input, alias, board, recent) in cases {
+            let essential = Essential(name: "Start", key: "s", input: input)
+            let search = UniversalSearchModel()
+            search.items = UniversalSearch.sourceItems(
+                state: DenState(desks: [desk], focusedDeskID: desk.id),
+                essentials: [essential],
+                hasBoardUndoHistory: false,
+                profiles: [],
+                profileName: "Personal"
+            )
+            search.recentItems = cases.map(\.3)
+            for query in [input, "\(alias) work"] {
+                search.query = query
+                #expect(
+                    search.results.map(\.target) == [
+                        .board(board.id), .essential(essential.id), .recent(recent), .createBoard(query),
+                    ]
+                )
+            }
+        }
+    }
+
     @Test func exactAndPrefixTitleMatchesOutrankMetadataAndPartialMatches() {
         let search = UniversalSearchModel()
         let metadataOnly = UniversalSearchItem(

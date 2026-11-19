@@ -29,7 +29,7 @@ public enum BoardInputResolver {
     public static func terminalArguments(_ input: String) -> Result<
         (path: String, command: String?), TerminalInputError
     >? {
-        parseArguments(input, names: [":terminal", ":term"])
+        parseArguments(input, names: TerminalBoardCommand.terminal)
     }
 
     private static func parseArguments(_ input: String, names: [String]) -> Result<
@@ -67,13 +67,13 @@ public enum BoardInputResolver {
         return .success((path, command.isEmpty ? nil : command))
     }
     public static func resolveZellijInput(_ input: String) -> ZellijInput? {
-        guard let result = parseArguments(input, names: [":zellij", ":zj"]) else { return nil }
+        guard let result = parseArguments(input, names: TerminalBoardCommand.zellij) else { return nil }
         guard case .success(let args) = result, args.command == nil else { return .invalid }
         return args.path.isEmpty ? .welcome : .session(args.path)
     }
 
     public static func resolveZmxInput(_ input: String) -> ZmxInput? {
-        guard let result = parseArguments(input, names: [":zmx", ":x"]) else { return nil }
+        guard let result = parseArguments(input, names: TerminalBoardCommand.zmx) else { return nil }
         guard case .success(let args) = result, args.command == nil else { return .invalid }
         return args.path.isEmpty ? .missingSessionName : .session(args.path)
     }

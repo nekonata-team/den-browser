@@ -29,6 +29,8 @@ Metadata matches and the creation candidate remain available; partial IDs do not
 Each whitespace-separated search term must match candidate metadata,
 case-insensitively. Query changes select the first available result; a removed selection falls back to an available
 result. Recent matches prioritize exact title or input matches, then preserve most recent use order.
+Terminal Boards, Essentials, and Recent Items match both command names and their aliases (`:terminal` / `:term`,
+`:zellij` / `:zj`, and `:zmx` / `:x`).
 This foundation does not provide fuzzy ranking or learned usage ranking.
 
 ## Extension points

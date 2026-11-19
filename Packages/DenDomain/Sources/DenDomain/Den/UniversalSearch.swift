@@ -80,15 +80,22 @@ public enum UniversalSearch {
         var items: [UniversalSearchItem] = []
         for desk in state.desks {
             for board in desk.boards {
+                let commandNames: [String] =
+                    switch board.kind {
+                    case .terminal(.shell): TerminalBoardCommand.terminal
+                    case .terminal(.zellij): TerminalBoardCommand.zellij
+                    case .terminal(.zmx): TerminalBoardCommand.zmx
+                    case .web, .inspection, .tutorial: []
+                    }
                 items.append(
                     UniversalSearchItem(
                         target: .board(board.id),
                         title: board.displayName,
                         detail: "Switch to Board · \(profileName) / \(desk.label)",
-                        keywords: [
+                        keywords: ([
                             board.currentSheetURL?.absoluteString, board.terminalWorkingDirectory,
                             board.zellijSessionName, board.zmxSessionName,
-                        ].compactMap { $0 }.joined(separator: " ")
+                        ].compactMap { $0 } + commandNames).joined(separator: " ")
                     )
                 )
             }
@@ -98,7 +105,7 @@ public enum UniversalSearch {
                 target: .essential($0.id),
                 title: $0.name,
                 detail: "Create Board from Essential · \($0.displayKey)",
-                keywords: $0.input
+                keywords: ([$0.input] + TerminalBoardCommand.names(for: $0.input)).joined(separator: " ")
             )
         }
         items += state.desks.map {
@@ -215,7 +222,12 @@ public enum UniversalSearch {
         var partial: [RecentItem] = []
         for item in recentItems {
             let input = item.displayText
-            let searchable = "\(item.title ?? "") \(input)"
+            let commandNames: [String] =
+                switch item {
+                case .terminal, .zellij, .zmx: TerminalBoardCommand.names(for: input)
+                case .url, .search: []
+                }
+            let searchable = ([item.title ?? "", input] + commandNames).joined(separator: " ")
             guard terms.allSatisfy({ searchable.localizedCaseInsensitiveContains(String($0)) }) else { continue }
             if input.localizedCaseInsensitiveCompare(query) == .orderedSame
                 || item.title?.localizedCaseInsensitiveCompare(query) == .orderedSame
