@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:Den Browser.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:../Packages/DenDomain">
+   </FileRef>
+   <FileRef
+      location = "group:../Packages/DenApplication">
+   </FileRef>
+   <FileRef
+      location = "group:../Packages/DenModels">
+   </FileRef>
+   <FileRef
+      location = "group:../Packages/DenInfrastructure">
+   </FileRef>
+   <FileRef
+      location = "group:../Packages/DenIPCProtocol">
+   </FileRef>
+   <FileRef
+      location = "group:../Packages/DenViews">
+   </FileRef>
+</Workspace>

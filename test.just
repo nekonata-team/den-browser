@@ -2,6 +2,7 @@ set shell := ["zsh", "-cu"]
 set positional-arguments := true
 
 project := "Den Browser/Den Browser.xcodeproj"
+unit_test_workspace := "Den Browser/Den Browser.xcworkspace"
 unit_test_scheme := "Den Browser UnitTests"
 ui_test_scheme := "Den Browser UITests"
 derived_data := ".derived-data"
@@ -12,11 +13,11 @@ ui_test_result := ui_test_derived_data + "/TestResults.xcresult"
 # Prevent ast-grep (terminal-light) from leaking OSC 11 background color queries.
 ast_grep := 'COLORFGBG="15;0" ast-grep'
 
-# Run unit tests without code signing. Pass NO to run the app tests serially.
+# Run app and package unit tests together. Pass NO to disable Xcode parallel testing.
 [default]
-unit parallel_testing="YES": packages
+unit parallel_testing="YES":
     @rm -rf "{{unit_test_result}}"
-    @xcodebuild test -project "{{project}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -only-testing:'Den BrowserTests' -parallel-testing-enabled {{quote(parallel_testing)}} CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
+    @xcodebuild test -workspace "{{unit_test_workspace}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -parallel-testing-enabled {{quote(parallel_testing)}} -xcconfig "Den Browser/PackageUnitTests.xcconfig" CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run all functional UI tests by default, or a specified class/method (e.g. just test ui PerformanceUITests Release).
@@ -51,7 +52,7 @@ results result_path=unit_test_result:
 architecture:
     @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
 
-# Test or build all local packages, treating compiler warnings as errors.
+# Test all local packages, treating compiler warnings as errors.
 packages:
     @swift test --package-path Packages/DenDomain -Xswiftc -warnings-as-errors
     @swift test --package-path Packages/DenApplication -Xswiftc -warnings-as-errors
@@ -59,8 +60,6 @@ packages:
     @swift test --package-path Packages/DenInfrastructure -Xswiftc -warnings-as-errors
     @swift test --package-path Packages/DenIPCProtocol -Xswiftc -warnings-as-errors
     @swift test --package-path Packages/DenViews -Xswiftc -warnings-as-errors
-    @swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
-    @echo "✓ Package checks passed"
 
 # Run mutation testing on package diff (default) or specified package/source paths.
 mutate *args:

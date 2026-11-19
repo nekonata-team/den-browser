@@ -63,6 +63,9 @@ jobs:
         with:
           cache: false
 
+      - name: Build demo CLI
+        run: just demo build
+
       - name: Run unit tests serially
         id: tests
         run: just test unit NO

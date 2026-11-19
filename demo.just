@@ -7,6 +7,10 @@ run scenario="promotional":
     just build
     just demo _run "{{scenario}}"
 
+# Build the demo CLI with compiler warnings treated as errors.
+build:
+    @swift build --package-path Packages/DenDemo -Xswiftc -warnings-as-errors
+
 # Record demo video using OpenScreen, then compress for web delivery.
 pv scenario="promotional" output="demo.mp4":
     just build

@@ -1,0 +1,69 @@
+{
+  "configurations" : [
+    {
+      "id" : "57F937D4-744A-45C6-AC84-EAB8948EDF90",
+      "name" : "Default",
+      "options" : {}
+    }
+  ],
+  "defaultOptions" : {},
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Den Browser.xcodeproj",
+        "identifier" : "530E9DE72FFFFEDB0033427C",
+        "name" : "Den BrowserTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:../Packages/DenDomain",
+        "identifier" : "DenDomainTests",
+        "name" : "DenDomainTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:../Packages/DenApplication",
+        "identifier" : "DenApplicationTests",
+        "name" : "DenApplicationTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:../Packages/DenModels",
+        "identifier" : "DenModelsTests",
+        "name" : "DenModelsTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:../Packages/DenInfrastructure",
+        "identifier" : "DenInfrastructureTests",
+        "name" : "DenInfrastructureTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:../Packages/DenIPCProtocol",
+        "identifier" : "DenIPCProtocolTests",
+        "name" : "DenIPCProtocolTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:../Packages/DenViews",
+        "identifier" : "DenViewsTests",
+        "name" : "DenViewsTests"
+      }
+    }
+  ],
+  "version" : 1
+}
