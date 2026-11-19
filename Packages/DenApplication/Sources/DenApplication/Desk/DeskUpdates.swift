@@ -5,11 +5,18 @@ public struct DeskUpdates {
     private let reader: DenStateReader
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
+    private let deferredSave: (() -> Void)?
 
-    public init(reader: DenStateReader, writer: DenStateWriter, persist: ((DenState) -> Bool)? = nil) {
+    public init(
+        reader: DenStateReader,
+        writer: DenStateWriter,
+        persist: ((DenState) -> Bool)? = nil,
+        deferredSave: (() -> Void)? = nil
+    ) {
         self.reader = reader
         self.writer = writer
         self.persist = persist
+        self.deferredSave = deferredSave
     }
 
     public func recordPresentedDesk(_ id: DeskID) {
@@ -30,11 +37,11 @@ public struct DeskUpdates {
             reader.snapshot.den.desks[index].scrollOffsetX != offset
         else { return }
         writer.update { $0.den.desks[index].scrollOffsetX = offset }
-        save()
+        save(deferred: true)
     }
 
-    private func save() {
+    private func save(deferred: Bool = false) {
         guard reader.snapshot.activeDrag == nil else { return }
-        _ = persist?(reader.snapshot.den)
+        if deferred, let deferredSave { deferredSave() } else { _ = persist?(reader.snapshot.den) }
     }
 }

@@ -1,23 +1,16 @@
 import Foundation
 
 public enum PersistedProfileDocumentDecoder {
-    private struct SchemaVersion: Decodable {
-        var schemaVersion: Int
-    }
-
     public static func decode(_ data: Data) throws -> PersistedProfile {
         let decoder = JSONDecoder()
-        let version = try decoder.decode(SchemaVersion.self, from: data).schemaVersion
-        guard (1...PersistedProfile.currentSchemaVersion).contains(version) else {
-            throw ProfilePersistenceError.unsupportedPersistedProfileSchema(version)
-        }
-
-        guard version < PersistedProfile.currentSchemaVersion else {
+        do {
             return try decoder.decode(PersistedProfile.self, from: data)
+        } catch ProfilePersistenceError.unsupportedPersistedProfileSchema(let version)
+            where (1..<PersistedProfile.currentSchemaVersion).contains(version)
+        {
+            let migratedData = try migrate(data, from: version)
+            return try decoder.decode(PersistedProfile.self, from: migratedData)
         }
-
-        let migratedData = try migrate(data, from: version)
-        return try decoder.decode(PersistedProfile.self, from: migratedData)
     }
 
     private static func migrate(_ data: Data, from version: Int) throws -> Data {

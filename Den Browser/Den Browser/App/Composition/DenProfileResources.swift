@@ -113,7 +113,12 @@ final class DenProfileResources {
         writer = shared.writer
         notificationOperations = NotificationOperations(reader: shared.reader, writer: shared.writer)
         deskLifecycle = DeskLifecycle(reader: shared.reader, writer: shared.writer, persist: persistState)
-        deskUpdates = DeskUpdates(reader: shared.reader, writer: shared.writer, persist: persistState)
+        deskUpdates = DeskUpdates(
+            reader: shared.reader,
+            writer: shared.writer,
+            persist: persistState,
+            deferredSave: onDeferredSave
+        )
         deskMovement = DeskMovement(reader: shared.reader, writer: shared.writer, persist: persistState)
         denReset = DenReset(reader: shared.reader, writer: shared.writer, persist: persistState)
         boardMovement = BoardMovement(

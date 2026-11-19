@@ -739,9 +739,9 @@ final class ProfileManager {
     }
 
     @discardableResult
-    private func saveDen(_ den: DenState, for profileID: ProfileID) -> Bool {
+    private func saveDen(_ normalizedDen: DenState, for profileID: ProfileID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
-        persisted.den = DenStateNormalization.normalize(den)
+        persisted.den = normalizedDen
         if let storage = storages[profileID] {
             persisted.deskPresets = storage.deskPresets
             persisted.recentItems = storage.recentItems
@@ -793,7 +793,7 @@ final class ProfileManager {
                     reportSaveError(error)
                 }
             } else {
-                _ = saveDen(storage.state, for: profileID)
+                _ = saveDen(DenStateNormalization.normalize(storage.state), for: profileID)
             }
         }
     }
@@ -818,7 +818,7 @@ final class ProfileManager {
                 guard !Task.isCancelled, let self else { return }
                 if let storage = self.storages[profileID] {
                     guard storage.activeDrag == nil else { continue }
-                    _ = self.saveDen(storage.state, for: profileID)
+                    _ = self.saveDen(DenStateNormalization.normalize(storage.state), for: profileID)
                 }
                 if self.deferredSaves[profileID]?.id == id {
                     self.deferredSaves.removeValue(forKey: profileID)
@@ -834,11 +834,13 @@ final class ProfileManager {
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: ProfileID) {
-        persisted.den = DenStateNormalization.normalize(persisted.den)
-        guard let storage = storages[profileID] else { return }
-        if storage.activeDrag == nil {
-            persisted.den = DenStateNormalization.normalize(storage.state)
+        guard let storage = storages[profileID] else {
+            persisted.den = DenStateNormalization.normalize(persisted.den)
+            return
         }
+        persisted.den = DenStateNormalization.normalize(
+            storage.activeDrag == nil ? storage.state : persisted.den
+        )
         persisted.deskPresets = storage.deskPresets
         persisted.recentItems = storage.recentItems
     }

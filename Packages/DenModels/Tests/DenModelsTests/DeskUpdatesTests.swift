@@ -9,16 +9,19 @@ struct DeskUpdatesTests {
     func renameNotifiesBeforeSavingEvenForEmptyInput(label: String) {
         let desk = DeskState(label: "Original", boards: [])
         let shared = DenStateStore.make(
-            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
+            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id))
+        )
         let expectedLabel = label == "   " ? desk.label : "Renamed"
         var events: [String] = []
         let updates = DeskUpdates(
-            reader: shared.reader, writer: shared.writer,
+            reader: shared.reader,
+            writer: shared.writer,
             persist: { state in
                 #expect(state.desks[0].label == expectedLabel)
                 events.append("save")
                 return false
-            })
+            }
+        )
 
         updates.rename(desk.id, to: label) {
             #expect(shared.store.snapshot.den.desks[0].label == expectedLabel)
@@ -32,14 +35,17 @@ struct DeskUpdatesTests {
     @Test func scrollSavesOnlyChangedOffsetsAndDefersDuringDrag() {
         let desk = DeskState(label: "Desk", boards: [])
         let shared = DenStateStore.make(
-            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
+            initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id))
+        )
         var savedOffsets: [Double?] = []
         let updates = DeskUpdates(
-            reader: shared.reader, writer: shared.writer,
+            reader: shared.reader,
+            writer: shared.writer,
             persist: { state in
                 savedOffsets.append(state.desks[0].scrollOffsetX)
                 return true
-            })
+            }
+        )
 
         updates.saveScrollOffset(nil, for: desk.id)
         updates.saveScrollOffset(120, for: desk.id)
@@ -50,6 +56,21 @@ struct DeskUpdatesTests {
 
         #expect(savedOffsets == [120, nil])
         #expect(shared.store.snapshot.den.desks[0].scrollOffsetX == 240)
+
+        var deferredCount = 0
+        let deferredUpdates = DeskUpdates(
+            reader: shared.reader,
+            writer: shared.writer,
+            persist: { _ in
+                Issue.record("Scroll offset should use deferredSave when provided")
+                return true
+            },
+            deferredSave: { deferredCount += 1 }
+        )
+        shared.writer.update { $0.activeDrag = nil }
+        deferredUpdates.saveScrollOffset(360, for: desk.id)
+        #expect(deferredCount == 1)
+        #expect(shared.store.snapshot.den.desks[0].scrollOffsetX == 360)
     }
 
     @Test func acceptedSelectionRecordsSharedFocusWithoutSavingAndMissingTargetsDoNothing() {
@@ -58,13 +79,19 @@ struct DeskUpdatesTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(
                 den: DenState(
-                    desks: [first, second], focusedDeskID: first.id)))
+                    desks: [first, second],
+                    focusedDeskID: first.id
+                )
+            )
+        )
         let updates = DeskUpdates(
-            reader: shared.reader, writer: shared.writer,
+            reader: shared.reader,
+            writer: shared.writer,
             persist: { _ in
                 Issue.record("These updates must not save")
                 return true
-            })
+            }
+        )
 
         updates.recordPresentedDesk(second.id)
         #expect(shared.store.snapshot.den.focusedDeskID == second.id)
