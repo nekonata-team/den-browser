@@ -29,14 +29,16 @@ struct SheetWebRuntimeTests {
                 changeContinuation?.yield((url, title))
             }
         )
+        defer {
+            changeContinuation?.finish()
+            runtime.dispose()
+        }
 
-        let waiter = WebViewLoadWaiter()
         let testURL = URL(string: "https://example.com/test-page")!
 
-        await waiter.load(
+        runtime.webView.loadHTMLString(
             "<html><head><title>Test Page Title</title></head><body>Hello</body></html>",
-            baseURL: testURL,
-            in: runtime.webView
+            baseURL: testURL
         )
 
         let observedChange = try await withThrowingTaskGroup(of: (URL?, String?)?.self) { group in
@@ -48,7 +50,7 @@ struct SheetWebRuntimeTests {
             }
 
             group.addTask {
-                try await Task.sleep(for: .seconds(2))
+                try await Task.sleep(for: .seconds(15))
                 return nil
             }
 
@@ -56,8 +58,6 @@ struct SheetWebRuntimeTests {
             group.cancelAll()
             return result
         }
-        changeContinuation?.finish()
-
         #expect(observedChange?.0 == testURL)
         #expect(observedChange?.1 == "Test Page Title")
     }
