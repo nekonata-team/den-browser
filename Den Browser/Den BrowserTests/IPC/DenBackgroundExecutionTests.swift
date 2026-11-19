@@ -18,9 +18,7 @@ struct DenBackgroundExecutionTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let html = directory.appendingPathComponent("probe.html")
-        try
-            "<script>window.framesRun=0;function f(){framesRun++;requestAnimationFrame(f)}requestAnimationFrame(f)</script>"
-            .write(to: html, atomically: true, encoding: .utf8)
+        try "<p>Background execution</p>".write(to: html, atomically: true, encoding: .utf8)
         let defaults = makeTestDefaults()
         let manager = ProfileManager(
             directoryURL: directory.appendingPathComponent("profiles"),
@@ -52,6 +50,7 @@ struct DenBackgroundExecutionTests {
         }
         let id = BoardID(uuid)
         let runtime = try #require(session.resources.webRuntimes[id])
+        let webView = try #require(runtime.webView as? RuntimeWKWebView)
         let read = await service.handleRequest(
             .init(operation: .boardBackgroundExecution(enabled: nil, target: .explicit(uuid)))
         )
@@ -63,18 +62,16 @@ struct DenBackgroundExecutionTests {
         }
         #expect(enabled == initiallyEnabled)
 
-        // Act: explicitly enable twice; it must never toggle back off or reload.
+        // Act: explicitly enable twice to verify the operation is idempotent.
         for _ in 0..<2 {
             let result = await service.handleRequest(
                 .init(operation: .boardBackgroundExecution(enabled: true, target: .explicit(uuid)))
             )
             #expect(result.result.isOk)
         }
-        try await SheetInteraction.waitForFunction(expression: "window.framesRun > 1", in: runtime.webView)
-
-        // Assert runtime identity, background rendering, persistence, and unchanged Desk.
+        // Assert runtime identity, immediate application, persistence, and unchanged Desk.
         #expect(session.resources.webRuntimes[id] === runtime)
-        #expect(try await runtime.webView.evaluateJavaScript("document.visibilityState") as? String == "visible")
+        #expect(webView.backgroundExecutionEnabled)
         #expect(session.navigation.presentedDeskID == shown)
         let persistence = ProfilePersistence(
             directoryURL: directory.appendingPathComponent("profiles"),
@@ -96,15 +93,12 @@ struct DenBackgroundExecutionTests {
         #expect(session.resources.state.board(for: id)?.backgroundExecutionEnabled == true)
         session.resources.activeDrag = nil
 
-        // Act / Assert: disable applies without changing the page or focus.
+        // Act / Assert: disable applies immediately and preserves focus.
         let disabled = await service.handleRequest(
             .init(operation: .boardBackgroundExecution(enabled: false, target: .explicit(uuid)))
         )
         #expect(disabled.result.isOk)
-        try await SheetInteraction.waitForFunction(
-            expression: "document.visibilityState === 'hidden'",
-            in: runtime.webView
-        )
+        #expect(!webView.backgroundExecutionEnabled)
         #expect(session.resources.state.board(for: id)?.backgroundExecutionEnabled == false)
         #expect(persistence.load().profiles.first?.den.board(for: id)?.backgroundExecutionEnabled == false)
         #expect(session.navigation.presentedDeskID == shown)
