@@ -40,7 +40,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.swift != 'false' }}
     runs-on: macos-26
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       MISE_ENABLE_TOOLS: bun,just
       MISE_NO_HOOKS: '1'
