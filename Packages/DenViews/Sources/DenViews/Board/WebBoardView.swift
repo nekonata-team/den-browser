@@ -122,7 +122,10 @@ public struct WebBoardView: View {
                     isHidden: !isSurfaceVisible,
                     focusRequest: focusRequest,
                     onSurfaceReady: onSurfaceReady,
-                    onBeforeHide: onBeforeHide
+                    onBeforeHide: {
+                        guard !isHiddenForBottomDrawer else { return }
+                        await onBeforeHide()
+                    }
                 )
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0)
@@ -168,8 +171,11 @@ public struct WebBoardView: View {
     }
 
     private var isSurfaceVisible: Bool {
-        isVisibleInViewport && !windowModel.isOverviewPresented
-            && !(windowModel.isDrawerPresented && model.drawerStyle == .bottom)
+        isVisibleInViewport && !windowModel.isOverviewPresented && !isHiddenForBottomDrawer
+    }
+
+    private var isHiddenForBottomDrawer: Bool {
+        windowModel.isDrawerPresented && model.drawerStyle == .bottom
     }
 
     private var initialLoadFallback: some View {

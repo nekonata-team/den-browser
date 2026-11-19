@@ -78,7 +78,10 @@ public struct TerminalBoardView: View {
             TerminalBoardSurface(
                 terminalView: surface,
                 onSurfaceVisibilityChange: onSurfaceVisibilityChange,
-                onBeforeHide: onBeforeHide,
+                onBeforeHide: {
+                    guard !isHiddenForBottomDrawer else { return }
+                    onBeforeHide()
+                },
                 isHidden: !isSurfaceVisible,
                 focusRequest: focusRequest,
                 onSurfaceReady: onSurfaceReady
@@ -114,8 +117,11 @@ public struct TerminalBoardView: View {
     }
 
     private var isSurfaceVisible: Bool {
-        isVisibleInViewport && !windowModel.isOverviewPresented
-            && !(windowModel.isDrawerPresented && model.drawerStyle == .bottom)
+        isVisibleInViewport && !windowModel.isOverviewPresented && !isHiddenForBottomDrawer
+    }
+
+    private var isHiddenForBottomDrawer: Bool {
+        windowModel.isDrawerPresented && model.drawerStyle == .bottom
     }
 
     private var isFocusModeDeemphasized: Bool {

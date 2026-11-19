@@ -1,7 +1,10 @@
 import AppKit
 import DenDomain
+import DenModels
+import DenViews
 import Foundation
 import Observation
+import SwiftUI
 import Synchronization
 import Testing
 import WebKit
@@ -166,6 +169,106 @@ struct BoardFacingCacheTests {
         // Assert
         #expect(cache.image(for: boardID) == nil)
         #expect(!cache.isCapturing(boardID))
+    }
+
+    @Test func bottomDrawerHidesBoardSurfacesWithoutCapturingFacings() async throws {
+        // Arrange
+        let terminalBoard = BoardState(width: 520, workingDirectory: "/tmp")
+        let webBoard = BoardState(label: "Web", width: 520, currentSheetURL: nil)
+        let session = try makeKeyboardTestSession(boards: [terminalBoard, webBoard])
+        session.configuration.preferences.setDrawerStyle(.bottom)
+        let composition = DenWindowComposition(session: session)
+        let terminalSurface = NSView()
+        let webSurface = NSView()
+        var terminalCaptures = 0
+        var webCaptures = 0
+        let root = HStack {
+            DenViews.TerminalBoardView(
+                model: BoardSurfaceModel(board: terminalBoard, session: session),
+                board: terminalBoard,
+                isFocused: true,
+                focusRequest: nil,
+                isDragging: false,
+                profileColor: .blue,
+                width: 520,
+                height: 400,
+                isPointerFocusEnabled: true,
+                isVisibleInViewport: true,
+                onFocus: {},
+                onRemove: {},
+                onDragChanged: { _ in },
+                onDragEnded: { _ in },
+                surface: terminalSurface,
+                onSurfaceReady: { _ in true },
+                onBeforeHide: { terminalCaptures += 1 },
+                onSurfaceVisibilityChange: { _ in },
+                onAdjustFontSize: { $0 }
+            )
+            DenViews.WebBoardView(
+                model: BoardSurfaceModel(board: webBoard, session: session),
+                board: webBoard,
+                isFocused: false,
+                focusRequest: nil,
+                isDragging: false,
+                profileColor: .blue,
+                width: 520,
+                height: 400,
+                isPointerFocusEnabled: true,
+                isVisibleInViewport: true,
+                onFocus: {},
+                onGoToFirst: {},
+                onGoBack: {},
+                onGoForward: {},
+                onRemove: {},
+                onDragChanged: { _ in },
+                onDragEnded: { _ in },
+                surface: webSurface,
+                onSurfaceReady: { _ in true },
+                onBeforeHide: { webCaptures += 1 },
+                faviconURL: nil,
+                isShowingInitialLoadFallback: false,
+                isLoading: false,
+                estimatedProgress: 0,
+                canGoBack: false,
+                canGoForward: false,
+                highlightID: nil,
+                highlightRect: nil,
+                onAppear: {},
+                onActivate: {},
+                onReload: {},
+                onHardReload: {},
+                onPictureInPicture: {}
+            )
+        }
+        .environment(composition.model)
+        .environment(composition.model.deskFilter)
+        let window = TestWindow()
+        defer { window.contentView = nil }
+        window.contentView = NSHostingView(rootView: root)
+        window.contentView?.layoutSubtreeIfNeeded()
+
+        // Act / Assert: Bottom Drawer hides surfaces without capturing facings
+        composition.model.openDrawer()
+        window.contentView?.layoutSubtreeIfNeeded()
+        for _ in 0..<5 where !webSurface.isHidden { await Task.yield() }
+        #expect(terminalSurface.isHidden)
+        #expect(webSurface.isHidden)
+        #expect(terminalCaptures == 0)
+        #expect(webCaptures == 0)
+
+        // Act / Assert: Closing Drawer restores visibility; Overview hides and captures facings
+        composition.model.closeDrawer()
+        window.contentView?.layoutSubtreeIfNeeded()
+        #expect(!terminalSurface.isHidden)
+        #expect(!webSurface.isHidden)
+
+        composition.model.showOverview()
+        window.contentView?.layoutSubtreeIfNeeded()
+        for _ in 0..<5 where !webSurface.isHidden { await Task.yield() }
+        #expect(terminalSurface.isHidden)
+        #expect(webSurface.isHidden)
+        #expect(terminalCaptures == 1)
+        #expect(webCaptures == 1)
     }
 }
 
