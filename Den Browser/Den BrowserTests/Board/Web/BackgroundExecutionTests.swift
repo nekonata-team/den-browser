@@ -88,7 +88,7 @@ struct BackgroundExecutionTests {
             """,
             baseURL: nil
         )
-        try await wait(webView, for: "typeof window.clicks === 'number'")
+        try await wait(webView, for: "document.readyState === 'complete' && typeof window.clicks === 'number'")
         webView.setBackgroundExecutionEnabled(false)
         try await wait(webView, for: "document.visibilityState === 'hidden'")
         webView.isHidden = true
@@ -128,11 +128,6 @@ struct BackgroundExecutionTests {
     }
 
     private func wait(_ webView: WKWebView, for condition: String) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(15))
-        while ContinuousClock.now < deadline {
-            if try await webView.evaluateJavaScript(condition) as? Bool == true { return }
-            try await Task.sleep(for: .milliseconds(20))
-        }
-        Issue.record("Timed out waiting for \(condition)")
+        try await SheetInteraction.waitForFunction(expression: condition, in: webView, timeout: 15)
     }
 }

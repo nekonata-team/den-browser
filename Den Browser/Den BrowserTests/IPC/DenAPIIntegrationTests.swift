@@ -22,6 +22,8 @@ struct DenAPIIntegrationTests {
             atomically: true,
             encoding: .utf8
         )
+        let destinationHTML = directory.appendingPathComponent("destination.html")
+        try "<p>Destination</p>".write(to: destinationHTML, atomically: true, encoding: .utf8)
         let defaults = makeTestDefaults()
         let manager = ProfileManager(
             directoryURL: directory.appendingPathComponent("profiles"),
@@ -32,7 +34,7 @@ struct DenAPIIntegrationTests {
         )
         let session = try #require(manager.session(for: manager.personalProfileID))
         defer { session.runtimes.releaseRuntimes() }
-        let destination = try #require(session.boardOpening.createBoard(urlString: "https://example.com/"))
+        let destination = try #require(session.boardOpening.createBoard(urlString: destinationHTML.absoluteString))
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -50,7 +52,13 @@ struct DenAPIIntegrationTests {
         }
         let id = BoardID(uuid)
         let runtime = try #require(session.resources.webRuntimes[id])
-        try await SheetInteraction.waitForFunction(expression: "window.apiAtStart === 'object'", in: runtime.webView)
+        try await SheetInteraction.waitForFunction(
+            expression: "typeof window.apiAtStart === 'string'",
+            in: runtime.webView,
+            timeout: 15
+        )
+        let apiAtStart = try await runtime.webView.evaluateJavaScript("window.apiAtStart") as? String
+        try #require(apiAtStart == "object")
         _ = try await runtime.webView.callAsyncJavaScript(
             "await den.boards.focus(id);",
             arguments: ["id": destination.rawValue.uuidString],

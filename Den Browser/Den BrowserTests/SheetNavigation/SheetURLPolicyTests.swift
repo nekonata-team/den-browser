@@ -12,7 +12,8 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct SheetURLPolicyTests {
-    @Test func boardRuntimeLoadsLocalHTMLAndSiblingScript() async throws {
+    @Test(.timeLimit(.minutes(1)))
+    func boardRuntimeLoadsLocalHTMLAndSiblingScript() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
             path: "DenBrowserFileURLTests-\(UUID().uuidString)",
             directoryHint: .isDirectory
@@ -22,7 +23,7 @@ struct SheetURLPolicyTests {
 
         let htmlURL = directory.appending(path: "index.html")
         let scriptURL = directory.appending(path: "title.js")
-        try "<html><head><script src=\"title.js\"></script></head></html>".write(
+        try "<html><head><script src=\"title.js\"></script></head><body id=\"fixture\"></body></html>".write(
             to: htmlURL,
             atomically: true,
             encoding: .utf8
@@ -33,40 +34,37 @@ struct SheetURLPolicyTests {
             encoding: .utf8
         )
 
-        var continuation: AsyncStream<(URL?, String?)>.Continuation?
-        let changes = AsyncStream<(URL?, String?)> { continuation = $0 }
         let runtime = WebRuntime(
             board: BoardState(label: "Local", width: 520, currentSheetURL: htmlURL),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: makeNoOpSheetNavigationActions(),
-            events: boardRuntimeEvents { _, url, title in
-                continuation?.yield((url, title))
-            }
+            events: boardRuntimeEvents()
         )
-        defer {
-            continuation?.finish()
-            runtime.dispose()
+        defer { runtime.dispose() }
+
+        let webView = runtime.webView
+        do {
+            try await SheetInteraction.waitForFunction(
+                expression: """
+                    location.protocol === 'file:' &&
+                    document.readyState === 'complete' &&
+                    document.body?.id === 'fixture'
+                    """,
+                in: webView,
+                timeout: 15
+            )
+        } catch {
+            let url = webView.url?.absoluteString ?? "nil"
+            let title = webView.title ?? "nil"
+            Issue.record("Local fixture did not finish loading: \(error). URL: \(url), title: \(title)")
+            return
         }
 
-        let observed = try await withThrowingTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                for await change in changes where change.1 == "Sibling script loaded" {
-                    return true
-                }
-                return false
-            }
-            group.addTask {
-                try await Task.sleep(for: .seconds(15))
-                return false
-            }
-            let result = try await group.next()!
-            group.cancelAll()
-            return result
-        }
-
-        #expect(observed)
+        #expect(webView.url?.resolvingSymlinksInPath() == htmlURL.resolvingSymlinksInPath())
+        let title = try await webView.evaluateJavaScript("document.title") as? String
+        #expect(title == "Sibling script loaded")
     }
 
     @Test func boardRuntimeAppliesSafariUserAgent() {
