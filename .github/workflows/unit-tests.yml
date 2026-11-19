@@ -63,9 +63,9 @@ jobs:
         with:
           cache: false
 
-      - name: Run unit tests
+      - name: Run unit tests serially
         id: tests
-        run: just test
+        run: just test unit NO
 
       - name: Print unit test failure summary
         if: ${{ failure() && steps.tests.outcome == 'failure' }}
