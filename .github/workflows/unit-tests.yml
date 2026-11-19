@@ -42,18 +42,26 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 20
     env:
-      MISE_ENABLE_TOOLS: bun
+      MISE_ENABLE_TOOLS: bun,just
       MISE_NO_HOOKS: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install test tools
-        run: |
-          brew install just mise
-          mise trust mise.toml
-          mise install
+      - name: Restore Swift dependencies
+        id: swift-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: &swift-dependency-paths |
+            ~/Library/Caches/org.swift.swiftpm/repositories
+            ~/Library/Caches/org.swift.swiftpm/artifacts
+            .derived-data/SourcePackages
+          key: swift-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Package.resolved', 'Packages/**/Package.swift', 'Den Browser/Den Browser.xcodeproj/project.pbxproj') }}
+
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          cache: false
 
       - name: Run unit tests
         id: tests
@@ -65,3 +73,10 @@ jobs:
           if [[ -d .derived-data/TestResults.xcresult ]]; then
             just test results
           fi
+
+      - name: Save Swift dependencies
+        if: ${{ !cancelled() && steps.swift-cache.outputs.cache-hit != 'true' && hashFiles('.derived-data/SourcePackages/workspace-state.json') != '' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: *swift-dependency-paths
+          key: ${{ steps.swift-cache.outputs.cache-primary-key }}
