@@ -12,11 +12,11 @@ ui_test_result := ui_test_derived_data + "/TestResults.xcresult"
 # Prevent ast-grep (terminal-light) from leaking OSC 11 background color queries.
 ast_grep := 'COLORFGBG="15;0" ast-grep'
 
-# Run unit tests without code signing.
+# Run unit tests without code signing. Pass NO to run the app tests serially.
 [default]
-unit: packages
+unit parallel_testing="YES": packages
     @rm -rf "{{unit_test_result}}"
-    @xcodebuild test -project "{{project}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
+    @xcodebuild test -project "{{project}}" -scheme "{{unit_test_scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" -resultBundlePath "{{unit_test_result}}" -only-testing:'Den BrowserTests' -parallel-testing-enabled {{quote(parallel_testing)}} CODE_SIGNING_ALLOWED=NO || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run all functional UI tests by default, or a specified class/method (e.g. just test ui PerformanceUITests Release).
