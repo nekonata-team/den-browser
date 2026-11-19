@@ -63,7 +63,7 @@ format-check:
 # Fail on Swift style and safety findings.
 [group("quality")]
 lint: architecture-check format-check
-    @swiftlint lint --quiet --strict
+    @swiftlint lint --quiet --strict --cache-path "{{derived_data}}/swiftlint"
 
 # Check Swift layer import rules against source files.
 [group("quality")]
