@@ -63,9 +63,10 @@ jobs:
         with:
           cache: false
 
-      - name: Run six WebKit tests serially
+      - name: Run all app unit tests serially
         id: tests
         run: |
+          just test packages
           xcodebuild test \
             -project 'Den Browser/Den Browser.xcodeproj' \
             -scheme 'Den Browser UnitTests' \
@@ -74,12 +75,7 @@ jobs:
             -resultBundlePath .derived-data/TestResults.xcresult \
             -parallel-testing-enabled NO \
             CODE_SIGNING_ALLOWED=NO \
-            '-only-testing:Den BrowserTests/SheetWebRuntimeTests/boardRuntimeObservesUrlAndTitleChanges()' \
-            '-only-testing:Den BrowserTests/SheetWebRuntimeTests/boardRuntimeFindsPageFavicon()' \
-            '-only-testing:Den BrowserTests/SheetURLPolicyTests/boardRuntimeLoadsLocalHTMLAndSiblingScript()' \
-            '-only-testing:Den BrowserTests/DenAPIIntegrationTests/cliSettingsInjectBeforePageScriptsFocusBoardsAndRestoreFromDisk()' \
-            '-only-testing:Den BrowserTests/BackgroundExecutionTests/hiddenPageReceivesClickButOnlyRendersWithBackgroundExecution()' \
-            '-only-testing:Den BrowserTests/DenMCPResponseTests/toolsUseLiveDenStateThroughStdioAndIPC()'
+            '-only-testing:Den BrowserTests'
 
       - name: Print unit test failure summary
         if: ${{ failure() && steps.tests.outcome == 'failure' }}
