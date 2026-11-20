@@ -143,7 +143,7 @@ supports is not overwritten or downgraded.
   are not supported.
 - Schema versions are bumped only for breaking persistence changes.
 - Breaking changes require a new schema version and an explicit migration before writing the new format.
-- Version 1, 2 and 3 fixtures in `Den Browser/Den BrowserTests/Fixtures` are the executable format contract.
+- Version 1, 2 and 3 fixtures in `Packages/DenInfrastructure/Tests/DenInfrastructureTests/Fixtures` are the executable format contract.
 
 Confirmed-invalid Profile documents and indexes are preserved with a `.corrupt-<timestamp>` suffix before recovery continues.
 Read failures and unsupported schema versions are reported and kept in place; they are not treated as corruption or
