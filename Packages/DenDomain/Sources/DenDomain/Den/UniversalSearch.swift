@@ -54,6 +54,7 @@ public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
     public let title: String
     public let detail: String
     public let keywords: String
+    fileprivate let searchableText: String
     public var id: Target { target }
 
     public init(target: Target, title: String, detail: String, keywords: String = "") {
@@ -61,6 +62,7 @@ public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
         self.title = title
         self.detail = detail
         self.keywords = keywords
+        self.searchableText = "\(title) \(detail) \(keywords)"
     }
 }
 
@@ -168,21 +170,23 @@ public enum UniversalSearch {
             return recentResults + essentials + otherItems
         }
         let queryID = UUID(uuidString: trimmed)
-        let idMatches = items.filter { queryID != nil && $0.target.navigationID == queryID }
-        let rankedMatches = items.enumerated().compactMap {
-            index,
-            item -> (item: UniversalSearchItem, score: Int, index: Int)? in
-            if let queryID, item.target.navigationID == queryID { return nil }
-            if commandsOnly {
-                guard case .command = item.target else { return nil }
+        var idMatches: [UniversalSearchItem] = []
+        var rankedMatches: [(item: UniversalSearchItem, score: Int, index: Int)] = []
+        for (index, item) in items.enumerated() {
+            if let queryID, item.target.navigationID == queryID {
+                idMatches.append(item)
+                continue
             }
-            let searchable = "\(item.title) \(item.detail) \(item.keywords)"
-            guard terms.allSatisfy({ searchable.localizedCaseInsensitiveContains($0) }) else { return nil }
-            return (item, matchScore(for: item, query: queryText, terms: terms), index)
-        }.sorted { lhs, rhs in
+            if commandsOnly {
+                guard case .command = item.target else { continue }
+            }
+            guard terms.allSatisfy({ item.searchableText.localizedCaseInsensitiveContains($0) }) else { continue }
+            rankedMatches.append((item, matchScore(for: item, query: queryText, terms: terms), index))
+        }
+        rankedMatches.sort { lhs, rhs in
             lhs.score == rhs.score ? lhs.index < rhs.index : lhs.score < rhs.score
-        }.map(\.item)
-        var results = idMatches + rankedMatches
+        }
+        var results = idMatches + rankedMatches.map(\.item)
         results += recentResults
         if !commandsOnly, !trimmed.isEmpty {
             results.append(

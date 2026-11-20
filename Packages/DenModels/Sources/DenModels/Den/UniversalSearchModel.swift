@@ -8,28 +8,32 @@ public final class UniversalSearchModel {
     public var query = "" {
         didSet {
             let stripped = WebURLPolicy.stripNewlines(query)
-            if query != stripped { query = stripped }
+            if query != stripped {
+                query = stripped
+                return
+            }
             selectedID = nil
+            recomputeResults()
         }
     }
-    public var items: [UniversalSearchItem] = []
-    public var recentItems: [RecentItem] = []
+    public var items: [UniversalSearchItem] = [] {
+        didSet { recomputeResults() }
+    }
+    public var recentItems: [RecentItem] = [] {
+        didSet { recomputeResults() }
+    }
     public var selectedID: UniversalSearchItem.Target?
     public var message: String?
     public private(set) var submissionRequest = 0
     public private(set) var submitsInDrawer = false
+    public private(set) var results: [UniversalSearchItem] = []
 
     public init() {}
 
     public var commandsOnly: Bool { UniversalSearch.isCommandsOnly(query) }
 
-    public var results: [UniversalSearchItem] {
-        UniversalSearch.results(query: query, items: items, recentItems: recentItems)
-    }
-
     public var selectedItem: UniversalSearchItem? {
-        let results = results
-        return results.first(where: { $0.id == selectedID }) ?? results.first
+        results.first(where: { $0.id == selectedID }) ?? results.first
     }
 
     public func prepare(commandsOnly: Bool) {
@@ -44,5 +48,9 @@ public final class UniversalSearchModel {
     public func submit(inDrawer: Bool = false) {
         submitsInDrawer = inDrawer
         submissionRequest += 1
+    }
+
+    private func recomputeResults() {
+        results = UniversalSearch.results(query: query, items: items, recentItems: recentItems)
     }
 }
