@@ -31,6 +31,7 @@ In Open Board, remove an individual Recent Item with the trash icon to the right
 | `Control` + `Command` + `P` | Open Profile panel |
 | `Shift` + `Command` + `N` | Open Private Den |
 | `Command` + `T` | Open Board panel (URL, search, `:tutorial`, `:terminal`, `:zellij`, `:zmx`) |
+| `Shift` + `Command` + `T` | New Terminal Board (inherits focused Terminal Board's Working Directory) |
 | `Command` + `P` | Universal Search (Boards, Desks, Profiles, Essentials, Recent, creation, commands) |
 | `Command` + `Shift` + `P` | Universal Search with `> ` prefilled (commands only) |
 | `Command` + `S` | Toggle Board Rail |

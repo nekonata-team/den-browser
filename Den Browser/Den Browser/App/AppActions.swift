@@ -115,6 +115,7 @@ enum BoardAction: Equatable {
     case showEditLinkPanel
     case duplicate
     case duplicateFirstSheet
+    case newTerminalBoard
     case createTerminalSideBoard
     case requestDragCancellation
 }
@@ -326,6 +327,10 @@ enum AppActionHandler {
             case .showEditLinkPanel: windowModel.showEditBoardLinkPanel()
             case .duplicate: session.zmx.duplicateFocusedBoard()
             case .duplicateFirstSheet: session.zmx.duplicateFocusedBoardFromFirstSheet()
+            case .newTerminalBoard:
+                session.boardOpening.createTerminalBoard(
+                    workingDirectory: windowModel.focusedBoard?.terminalWorkingDirectory
+                )
             case .createTerminalSideBoard:
                 if let boardID = windowModel.focusedBoard?.id {
                     session.sideBoards.createTerminalSideBoard(targetBoardID: boardID)

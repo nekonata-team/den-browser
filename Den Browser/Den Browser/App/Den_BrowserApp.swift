@@ -285,6 +285,9 @@ private struct DenCommands: Commands {
                 Button("Open Board") { perform(.board(.showOpenPanel)) }
                     .keyboardShortcut("t", modifiers: [.command])
                     .disabled(session == nil)
+                Button("New Terminal Board") { perform(.board(.newTerminalBoard)) }
+                    .keyboardShortcut("t", modifiers: [.command, .shift])
+                    .disabled(session == nil)
                 Button("Inspect Current Sheet") {
                     guard let board = windowModel?.focusedBoard, board.isWeb else { return }
                     session?.sideBoards.createInspectionBoard(targetBoardID: board.id)

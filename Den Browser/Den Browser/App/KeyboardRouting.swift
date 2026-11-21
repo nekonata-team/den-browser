@@ -191,6 +191,10 @@ enum KeyboardRouter {
             return routeDeskFilter(event, phase: phase)
         }
 
+        if character == "t", modifiers == [.command, .shift] {
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.newTerminalBoard))
+        }
+
         if character == "d", modifiers == [.command], context.focusedBoardIsTerminal {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.createTerminalSideBoard))
         }

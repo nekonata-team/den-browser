@@ -314,6 +314,65 @@ struct BoardKeyboardTests {
     }
 
     @Test(arguments: [false, true])
+    func commandShiftTCreatesTerminalBoardInEveryInputMode(_ isDenMode: Bool) throws {
+        // Arrange
+        let terminal = BoardState(label: "Terminal", width: 520, workingDirectory: "/work")
+        let session = try makeKeyboardTestSession(boards: [terminal])
+        let composition = DenWindowComposition(session: session)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        windowModel.isDenMode = isDenMode
+        let commandShiftT = try keyEvent(
+            characters: "T",
+            charactersIgnoringModifiers: "t",
+            modifiers: [.command, .shift],
+            keyCode: 17
+        )
+
+        // Act
+        let handled = KeyboardController.handle(commandShiftT, session: session, windowModel: windowModel)
+
+        // Assert
+        let newBoard = try #require(session.navigation.focusedBoard)
+        #expect(handled)
+        #expect(session.resources.state.desks[0].boards.count == 2)
+        #expect(newBoard.id != terminal.id)
+        #expect(newBoard.isTerminal)
+        #expect(!newBoard.isSideBoard)
+        #expect(newBoard.terminalWorkingDirectory == "/work")
+        #expect(!windowModel.isDenMode)
+    }
+
+    @Test func commandShiftTCreatesTerminalBoardFromWebBoard() throws {
+        // Arrange
+        let webBoard = makeTestBoard("Web")
+        let session = try makeKeyboardTestSession(boards: [webBoard])
+        let composition = DenWindowComposition(session: session)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let commandShiftT = try keyEvent(
+            characters: "T",
+            charactersIgnoringModifiers: "t",
+            modifiers: [.command, .shift],
+            keyCode: 17
+        )
+
+        // Act
+        let handled = KeyboardController.handle(commandShiftT, session: session, windowModel: windowModel)
+
+        // Assert
+        let newBoard = try #require(session.navigation.focusedBoard)
+        #expect(handled)
+        #expect(session.resources.state.desks[0].boards.count == 2)
+        #expect(newBoard.id != webBoard.id)
+        #expect(newBoard.isTerminal)
+        #expect(!newBoard.isSideBoard)
+        #expect(newBoard.terminalWorkingDirectory == FileManager.default.homeDirectoryForCurrentUser.path)
+    }
+
+    @Test(arguments: [false, true])
     func commandDCreatesTerminalSideBoardInEveryInputMode(_ isDenMode: Bool) throws {
         // Arrange
         let primary = BoardState(label: "Terminal", width: 520, workingDirectory: "/work")
