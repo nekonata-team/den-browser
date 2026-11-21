@@ -246,7 +246,11 @@ final class DrawerActions {
                 where window.windowResources?.drawerItemID == itemID {
                     window.runtimes?.releaseDrawerPeek()
                 }
-                if let terminal { runtimes.attachTerminalRuntime(terminal, to: board) }
+                if let terminal {
+                    // Detach before SwiftUI installs the Board host's layout constraints.
+                    terminal.terminalView.removeFromSuperview()
+                    runtimes.attachTerminalRuntime(terminal, to: board)
+                }
             }
             notify(notice)
         }

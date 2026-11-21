@@ -217,7 +217,7 @@ struct DrawerTerminalTests {
         #expect(runtime.terminalView.controller == nil)
     }
 
-    @Test func shellStateSurvivesUnmountingAndPlacement() async throws {
+    @Test func shellStateSurvivesPlacementWhileDrawerPeekIsMounted() async throws {
         // Arrange
         let item = DrawerItem(terminal: .shell(workingDirectory: "/tmp"))
         let (session, _) = sessions(item)
@@ -227,8 +227,10 @@ struct DrawerTerminalTests {
         session.resources.state.desks[0].focusedBoardID = board.id
         let runtime = session.runtimes.terminalRuntime(for: board)
         let window = TestWindow()
+        let peekWindow = TestWindow()
         defer {
             window.contentView = nil
+            peekWindow.contentView = nil
             session.runtimes.releaseRuntimes()
         }
         let token = UUID().uuidString.replacingOccurrences(of: "-", with: "")
@@ -244,11 +246,17 @@ struct DrawerTerminalTests {
         #expect(session.navigation.focusedDesk?.boards.isEmpty == true)
         #expect(runtime.terminalView.isHidden)
         window.contentView = nil
-        session.runtimes.releaseDrawerPeek()
+        let peek = session.drawer.drawerTerminalRuntime(for: item)
+        peekWindow.contentView = NSHostingView(rootView: surface(peek))
+        peekWindow.contentView?.layoutSubtreeIfNeeded()
+        try #require(runtime.terminalView.window === peekWindow)
+
         let boardID = try #require(session.drawer.placeDrawerItemAsBoard(item.id))
+        #expect(runtime.terminalView.superview == nil)
         let placed = try #require(session.resources.terminalRuntimes[boardID])
         window.contentView = NSHostingView(rootView: surface(placed))
         window.contentView?.layoutSubtreeIfNeeded()
+        peekWindow.contentView = nil
         placed.runCommand("printf 'drawer_continued_%s_%s\\n' '\(token)' \"$drawer_probe_value\"")
         try await waitForText("drawer_continued_\(token)_retained", runtime: placed)
 
