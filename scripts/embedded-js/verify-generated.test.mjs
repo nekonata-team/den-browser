@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const outputDir = process.env.DEN_EMBEDDED_JS_OUTPUT_DIR;
 if (!outputDir) throw new Error('Set DEN_EMBEDDED_JS_OUTPUT_DIR to the generated resource directory');
 const source = name => readFile(resolve(outputDir, name), 'utf8');
-const names = ['DenAPI.js', 'InspectionAgent.js', 'PictureInPicture.js', 'SheetDOM.js', 'SheetNavigation.js', 'SheetRead.js'];
+const names = ['DenAPI.js', 'InspectionAgent.js', 'JSONViewer.js', 'PictureInPicture.js', 'SheetDOM.js', 'SheetNavigation.js', 'SheetRead.js'];
 
 describe('generated resources', () => {
   test('generates the embedded resources', async () => {

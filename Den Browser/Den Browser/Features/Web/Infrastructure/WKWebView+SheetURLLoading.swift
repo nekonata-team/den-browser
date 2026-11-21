@@ -10,6 +10,11 @@ extension WKWebView {
         components?.query = nil
         components?.fragment = nil
         let resourceURL = components?.url ?? url
+        if resourceURL.pathExtension.lowercased() == "json",
+            let data = try? Data(contentsOf: resourceURL)
+        {
+            return load(data, mimeType: "application/json", characterEncodingName: "utf-8", baseURL: url)
+        }
         let readAccessURL =
             resourceURL.hasDirectoryPath
             ? resourceURL

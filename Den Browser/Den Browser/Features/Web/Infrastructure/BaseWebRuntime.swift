@@ -69,6 +69,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDele
 
         webView.navigationDelegate = self
         webView.uiDelegate = self
+        JSONViewerRuntime.install(on: webView.configuration.userContentController)
         geolocationProvider = WebGeolocationProvider.install(for: webView)
 
         urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in

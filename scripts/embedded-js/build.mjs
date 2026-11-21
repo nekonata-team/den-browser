@@ -39,6 +39,10 @@ const entries = [
     output: 'InspectionAgent.js',
   },
   {
+    entry: 'src/json-viewer/entry.ts',
+    output: 'JSONViewer.js',
+  },
+  {
     entry: 'src/sheet-read/browser.ts',
     output: 'SheetRead.js',
     banner: license,
