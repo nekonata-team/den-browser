@@ -247,8 +247,13 @@ let app: NSRunningApplication = try await withCheckedThrowingContinuation {
         }
     }
 }
-let mainPID = app.processIdentifier
 defer { if !app.isTerminated { _ = app.forceTerminate() } }
+let sampler = BenchmarkSampler(
+    mainPID: app.processIdentifier,
+    collector: collector,
+    traceFileURL: traceFileURL,
+    interval: intervalSeconds
+)
 
 struct Sample {
     let appCPU: Double
@@ -473,7 +478,6 @@ func makeSample(
     )
 }
 
-let canMeasureWebKit = selectedScenario == .oneWebBoard
 func printSample(_ sample: Sample, index: Int, phase: String) {
     let webKitCPU = sample.webKitCPU.map { String(format: "%5.1f%%", $0) } ?? "  N/A "
     let totalCPU = sample.totalCPU.map { String(format: "%5.1f%%", $0) } ?? "  N/A "
@@ -492,93 +496,98 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
     fflush(stdout)
 }
 
-@MainActor func collectStartupSamples(prelaunchSnapshot: ProcessSnapshot?) async -> [Sample] {
-    var samples: [Sample] = []
-    var nextSampleTime = Date()
-    var previousSnapshot = prelaunchSnapshot
-    var lastSampleTime: Date?
-    let deadline = Date().addingTimeInterval(30)
+@MainActor struct BenchmarkSampler {
+    let mainPID: Int32
+    let collector: OutputCollector
+    let traceFileURL: URL
+    let interval: Double
 
-    while Date() < deadline && !app.isTerminated {
-        collector.readNewLines(from: traceFileURL)
-        if Date() >= nextSampleTime, let snapshot = queryProcessSnapshot() {
-            if let sample = makeSample(
-                current: snapshot,
-                previous: previousSnapshot,
-                mainPID: mainPID,
-                webKitPIDs: collector.webKitPIDs()
-            ) {
-                samples.append(sample)
-                printSample(sample, index: samples.count, phase: "Startup")
+    func collectStartupSamples(
+        app: NSRunningApplication,
+        scenario: BenchmarkScenario,
+        prelaunchSnapshot: ProcessSnapshot?
+    ) async -> [Sample] {
+        var samples: [Sample] = []
+        var nextSampleTime = Date()
+        var previousSnapshot = prelaunchSnapshot
+        var lastSampleTime: Date?
+        let deadline = Date().addingTimeInterval(30)
+
+        while Date() < deadline && !app.isTerminated {
+            collector.readNewLines(from: traceFileURL)
+            if Date() >= nextSampleTime, let snapshot = queryProcessSnapshot() {
+                recordSample(snapshot, after: previousSnapshot, phase: "Startup", in: &samples)
+                previousSnapshot = snapshot
+                lastSampleTime = snapshot.capturedAt
+                nextSampleTime = snapshot.capturedAt.addingTimeInterval(interval)
             }
-            previousSnapshot = snapshot
-            lastSampleTime = snapshot.capturedAt
-            nextSampleTime = snapshot.capturedAt.addingTimeInterval(intervalSeconds)
-        }
-        if collector.isReady(for: selectedScenario) {
-            if lastSampleTime.map({ Date().timeIntervalSince($0) > 0.05 }) ?? true,
-                let snapshot = queryProcessSnapshot()
-            {
-                if let sample = makeSample(
-                    current: snapshot,
-                    previous: previousSnapshot,
-                    mainPID: mainPID,
-                    webKitPIDs: collector.webKitPIDs()
-                ) {
-                    samples.append(sample)
-                    printSample(sample, index: samples.count, phase: "Startup")
+            if collector.isReady(for: scenario) {
+                if lastSampleTime.map({ Date().timeIntervalSince($0) > 0.05 }) ?? true,
+                    let snapshot = queryProcessSnapshot()
+                {
+                    recordSample(snapshot, after: previousSnapshot, phase: "Startup", in: &samples)
                 }
+                return samples
             }
-            return samples
-        }
-        do {
-            try await Task.sleep(for: .milliseconds(100))
-        } catch {
-            return samples
-        }
-    }
-    return samples
-}
-
-@MainActor func collectSamples(for duration: Double, phase: String) async -> [Sample] {
-    var samples: [Sample] = []
-    collector.readNewLines(from: traceFileURL)
-    guard var previousSnapshot = queryProcessSnapshot() else { return samples }
-    var nextSampleTime = previousSnapshot.capturedAt.addingTimeInterval(intervalSeconds)
-    let endTime = previousSnapshot.capturedAt.addingTimeInterval(duration)
-
-    while nextSampleTime <= endTime {
-        let sleepDuration = nextSampleTime.timeIntervalSinceNow
-        if sleepDuration > 0 {
             do {
-                try await Task.sleep(for: .seconds(sleepDuration))
+                try await Task.sleep(for: .milliseconds(100))
             } catch {
                 return samples
             }
         }
+        return samples
+    }
 
+    func collectSamples(for duration: Double, phase: String) async -> [Sample] {
+        var samples: [Sample] = []
         collector.readNewLines(from: traceFileURL)
-        if let snapshot = queryProcessSnapshot() {
-            if let sample = makeSample(
+        guard var previousSnapshot = queryProcessSnapshot() else { return samples }
+        var nextSampleTime = previousSnapshot.capturedAt.addingTimeInterval(interval)
+        let endTime = previousSnapshot.capturedAt.addingTimeInterval(duration)
+
+        while nextSampleTime <= endTime {
+            let sleepDuration = nextSampleTime.timeIntervalSinceNow
+            if sleepDuration > 0 {
+                do {
+                    try await Task.sleep(for: .seconds(sleepDuration))
+                } catch {
+                    return samples
+                }
+            }
+
+            collector.readNewLines(from: traceFileURL)
+            if let snapshot = queryProcessSnapshot() {
+                recordSample(snapshot, after: previousSnapshot, phase: phase, in: &samples)
+                previousSnapshot = snapshot
+            }
+            nextSampleTime = max(
+                nextSampleTime.addingTimeInterval(interval),
+                Date().addingTimeInterval(interval)
+            )
+        }
+        return samples
+    }
+
+    private func recordSample(
+        _ snapshot: ProcessSnapshot,
+        after previousSnapshot: ProcessSnapshot?,
+        phase: String,
+        in samples: inout [Sample]
+    ) {
+        guard
+            let sample = makeSample(
                 current: snapshot,
                 previous: previousSnapshot,
                 mainPID: mainPID,
                 webKitPIDs: collector.webKitPIDs()
-            ) {
-                samples.append(sample)
-                printSample(sample, index: samples.count, phase: phase)
-            }
-            previousSnapshot = snapshot
-        }
-        nextSampleTime = max(
-            nextSampleTime.addingTimeInterval(intervalSeconds),
-            Date().addingTimeInterval(intervalSeconds)
-        )
+            )
+        else { return }
+        samples.append(sample)
+        printSample(sample, index: samples.count, phase: phase)
     }
-    return samples
 }
 
-func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double) {
+func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double, canMeasureWebKit: Bool) {
     print("\n--- \(phase) (Samples: \(samples.count)) ---")
     guard !samples.isEmpty else {
         print("  No samples recorded")
@@ -679,11 +688,16 @@ func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double) {
 }
 
 print("\nSampling startup until the scenario is ready...")
-let startupSamples = await collectStartupSamples(prelaunchSnapshot: prelaunchSnapshot)
+let startupSamples = await sampler.collectStartupSamples(
+    app: app,
+    scenario: selectedScenario,
+    prelaunchSnapshot: prelaunchSnapshot
+)
 collector.readNewLines(from: traceFileURL)
 let startupDuration = Date().timeIntervalSince(launchRequestedAt)
+let canMeasureWebKit = selectedScenario == .oneWebBoard
 guard collector.isReady(for: selectedScenario) else {
-    printPhaseSummary("Startup", samples: startupSamples, duration: startupDuration)
+    printPhaseSummary("Startup", samples: startupSamples, duration: startupDuration, canMeasureWebKit: canMeasureWebKit)
     _ = app.forceTerminate()
     throw NSError(
         domain: "DenBenchmark",
@@ -693,10 +707,10 @@ guard collector.isReady(for: selectedScenario) else {
 }
 
 print("\nSampling post-ready settle for \(settleSeconds)s...")
-let settleSamples = await collectSamples(for: settleSeconds, phase: "Settle")
+let settleSamples = await sampler.collectSamples(for: settleSeconds, phase: "Settle")
 
 print("\nSampling idle performance for \(durationSeconds)s...")
-let idleSamples = await collectSamples(for: durationSeconds, phase: "Idle")
+let idleSamples = await sampler.collectSamples(for: durationSeconds, phase: "Idle")
 
 print("\n\nTerminating app...")
 _ = app.terminate()
@@ -725,7 +739,22 @@ if events.isEmpty {
 print("\n--- 2. Benchmark Scenario ---")
 print("  Name:                \(selectedScenario.rawValue)")
 print(String(format: "  Launch requested → scenario ready: %.2fs", startupDuration))
-printPhaseSummary("3. Startup until ready", samples: startupSamples, duration: startupDuration)
-printPhaseSummary("4. Post-ready settle", samples: settleSamples, duration: settleSeconds)
-printPhaseSummary("5. Post-settle idle", samples: idleSamples, duration: durationSeconds)
+printPhaseSummary(
+    "3. Startup until ready",
+    samples: startupSamples,
+    duration: startupDuration,
+    canMeasureWebKit: canMeasureWebKit
+)
+printPhaseSummary(
+    "4. Post-ready settle",
+    samples: settleSamples,
+    duration: settleSeconds,
+    canMeasureWebKit: canMeasureWebKit
+)
+printPhaseSummary(
+    "5. Post-settle idle",
+    samples: idleSamples,
+    duration: durationSeconds,
+    canMeasureWebKit: canMeasureWebKit
+)
 print("============================================================")
