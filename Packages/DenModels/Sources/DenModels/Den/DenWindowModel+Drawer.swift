@@ -21,10 +21,18 @@ public extension DenWindowModel {
         if drawer.expandedItemID != nil { isDenMode = false }
     }
 
-    func focusDrawerItem(_ itemID: UUID) {
-        guard drawer.focusItem(itemID) else { return }
+    @discardableResult
+    func focusDrawerItem(_ itemID: UUID) -> Bool {
+        guard drawer.focusItem(itemID) else { return false }
+        let previousContext = temporaryContext
         setTemporaryContext(.drawer)
+        // Opening Drawer can discard an expired Item before its Peek is presented.
+        guard drawer.expandedItemID == itemID else {
+            setTemporaryContext(previousContext)
+            return false
+        }
         isDenMode = false
+        return true
     }
 
     func closeDrawer() {

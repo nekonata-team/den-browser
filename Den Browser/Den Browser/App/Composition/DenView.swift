@@ -163,7 +163,8 @@ private struct DenActivePanelOverlay: View {
                     hasBoardUndoHistory: !session.resources.store.snapshot.boardUndoHistory.isEmpty,
                     profiles: profileManager.profiles,
                     profileName: profileName ?? "",
-                    deskPresets: session.resources.store.snapshot.deskPresets
+                    deskPresets: session.resources.store.snapshot.deskPresets,
+                    drawerItems: session.resources.store.snapshot.den.drawerItems
                 ),
                 recentItems: session.resources.store.snapshot.recentItems,
                 boards: session.resources.store.snapshot.den.desks.flatMap(\.boards),

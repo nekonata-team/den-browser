@@ -40,6 +40,58 @@ struct UniversalSearchActionsTests {
         }
     }
 
+    @Test(arguments: [false, true])
+    func drawerItemSearchOpensExistingPeekWithoutCreatingBoard(expired: Bool) throws {
+        let url = try #require(URL(string: "https://example.com/draft"))
+        var item = DrawerItem(url: url, title: "Notes")
+        if expired { item.touchedAt = .distantPast }
+        let desk = DeskState(label: "Desk", boards: [], focusedBoardID: nil)
+        withTestWindow(
+            resources: DenProfileResources(
+                state: DenState(desks: [desk], focusedDeskID: desk.id, drawerItems: [item])
+            )
+        ) { session, model in
+            model.isDenMode = true
+            model.showUniversalSearch()
+            session.configuration.preferences.setDrawerAutoCleanup(expired)
+            let items = UniversalSearch.sourceItems(
+                state: session.resources.state,
+                essentials: [],
+                hasBoardUndoHistory: false,
+                profiles: [],
+                profileName: "Test",
+                drawerItems: session.resources.state.drawerItems
+            )
+            let query = "notes draft"
+            let target = UniversalSearchItem.Target.drawerItem(item.id)
+            let results = UniversalSearch.results(query: query, items: items, recentItems: [])
+            #expect(results.first?.target == target)
+            let commands = UniversalSearch.results(query: "> draft", items: items, recentItems: [])
+            #expect(!commands.contains { $0.target == target })
+
+            let error = UniversalSearchActions.perform(
+                target,
+                session: session,
+                windowModel: model,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
+
+            if expired {
+                #expect(error != nil)
+                #expect(model.temporaryContext == .universalSearch)
+                #expect(model.drawer.expandedItemID == nil)
+            } else {
+                #expect(error == nil)
+                #expect(model.temporaryContext == .drawer)
+                #expect(model.drawer.expandedItemID == item.id)
+                #expect(!model.isDenMode)
+                #expect(session.resources.state.drawerItems.map(\.id) == [item.id])
+            }
+            #expect(session.resources.state.desks.flatMap(\.boards).isEmpty)
+        }
+    }
+
     @Test func essentialCreatesBoardEvenWhenMatchingBoardExists() throws {
         // Arrange
         let input = "https://example.com/"

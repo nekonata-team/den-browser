@@ -39,7 +39,7 @@ public struct UniversalSearchPanel: View {
         let selectedID = results.first(where: { $0.id == search.selectedID })?.id ?? results.first?.id
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemSymbol: search.commandsOnly ? .chevronRight : .magnifyingglass) {
-                TextField("Search Boards, Desks, Profiles, Essentials, Recent, or > commands", text: $search.query)
+                TextField("Search Boards, Desks, Drawer Items, or > commands", text: $search.query)
                     .denPanelHeaderField()
                     .focused($isFocused)
                     .accessibilityIdentifier("universal-search-input")
@@ -113,7 +113,7 @@ public struct UniversalSearchPanel: View {
 
     private func actionSymbol(for target: UniversalSearchItem.Target) -> SFSymbol {
         switch target {
-        case .board, .desk, .profile: .arrowRight
+        case .board, .drawerItem, .desk, .profile: .arrowRight
         case .essential, .recent, .createBoard, .builtInDeskPreset, .personalDeskPreset: .plusApp
         case .command: .chevronRight
         }
@@ -123,6 +123,7 @@ public struct UniversalSearchPanel: View {
         switch target {
         case .board(let id):
             boards.first(where: { $0.id == id }).map { boardSymbol(for: $0.kind) } ?? .rectangle
+        case .drawerItem: .tray
         case .desk: .rectangleStack
         case .profile: .personFill
         case .essential: .sparkles

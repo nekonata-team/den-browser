@@ -10,6 +10,9 @@ show a validation message instead. The palette stays open when the input cannot 
 
 - Search Board labels, Current Sheet URLs, Terminal working directories, and Zellij/zmx session names in the current Profile.
 - Switch to a Desk in the current Profile or open/activate a Profile window by Profile name.
+- Find Drawer Items in the current Den by name, URL, Terminal working directory, or session name.
+  Return opens the Item's Drawer Peek without placing it on a Desk.
+- Create a Desk from a Built-in or Personal Desk Preset.
 - Paste a full Board, Desk, or Profile UUID from CLI output to find an exact ID match, case-insensitively.
   Board and Desk ID search stays within the current Profile; Profile ID search uses the Profile list.
 - Search Essential names, keys, and inputs; selecting an Essential creates a Board in the current Desk.
@@ -19,12 +22,14 @@ show a validation message instead. The palette stays open when the input cannot 
 - Run New Desk, Open Profile, Open Settings, Toggle Zen View, Toggle Focus Mode, and Undo Board Operation.
   Undo is offered only when the Board Undo history is nonempty.
 
-With empty input, display Recent (the five newest items), Essentials, Boards, Desks, Profiles, then commands.
+With empty input, display Recent (the five newest items), Essentials, Boards, Desks, Desk Presets, Profiles,
+Drawer Items, then commands.
 Boards include all Desks in the current Profile, preserving Desk and Board order.
 
 Boards, Essentials, and Recent are separate candidates even when names or URLs match. Creation is always
-an explicit candidate, even when a Board matches. With input, ordering is Boards, Essentials, Desks,
-Profiles, commands, Recent, then creation. Exact UUID matches precede metadata matches, keeping their source order.
+an explicit candidate, even when a Board matches. With input, exact UUID matches come first, followed by
+exact title matches, title prefix matches, titles containing all terms, and other metadata matches.
+Ties keep their source order. Recent and the creation candidate come last.
 Metadata matches and the creation candidate remain available; partial IDs do not match by ID.
 Each whitespace-separated search term must match candidate metadata,
 case-insensitively. Query changes select the first available result; a removed selection falls back to an available

@@ -38,7 +38,8 @@ Package responsibilities are defined in [Architecture](docs/architecture.md).
   Show a secondary `⌘P` hint after its Search label.
   All entrances open the same palette; use `>` to restrict results to commands. Keep candidate actions explicit:
   switching to an existing Board and creating a Board from an Essential or Recent Item are distinct results.
-  With empty input, show Recent (at most five), Essentials, Boards, Desks, Profiles, then commands.
+  With empty input, show Recent (at most five), Essentials, Boards, Desks, Desk Presets, Profiles, Drawer Items, then commands.
+  Label Drawer Item results with their kind, identifying detail, and `Open Peek` action.
   Boards include all Desks in the current Profile, preserving Desk and Board order.
   With input, search all Recent Items and show at most five matches alongside the other candidate types.
   Recent results use a leading clock symbol and the trailing creation symbol.

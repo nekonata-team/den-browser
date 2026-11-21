@@ -12,6 +12,7 @@ public enum UniversalSearchCommand: String, CaseIterable, Sendable {
 public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
     public enum Target: Hashable, Sendable {
         case board(BoardID)
+        case drawerItem(UUID)
         case desk(DeskID)
         case profile(ProfileID)
         case builtInDeskPreset(BuiltInDeskPreset)
@@ -45,7 +46,7 @@ public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
             case .board(let id): id.rawValue
             case .desk(let id): id.rawValue
             case .profile(let id): id.rawValue
-            case .essential, .recent, .createBoard, .command, .builtInDeskPreset, .personalDeskPreset: nil
+            case .drawerItem, .essential, .recent, .createBoard, .command, .builtInDeskPreset, .personalDeskPreset: nil
             }
         }
     }
@@ -77,7 +78,8 @@ public enum UniversalSearch {
         hasBoardUndoHistory: Bool,
         profiles: [ProfileState],
         profileName: String,
-        deskPresets: [PersonalDeskPreset] = []
+        deskPresets: [PersonalDeskPreset] = [],
+        drawerItems: [DrawerItem] = []
     ) -> [UniversalSearchItem] {
         var items: [UniversalSearchItem] = []
         for desk in state.desks {
@@ -138,6 +140,15 @@ public enum UniversalSearch {
         }
         items += profiles.map {
             UniversalSearchItem(target: .profile($0.id), title: $0.name, detail: "Switch to Profile")
+        }
+        items += drawerItems.map { item in
+            let sessionName = if case .zmx(let session)? = item.terminal { session.sessionName } else { "" }
+            return UniversalSearchItem(
+                target: .drawerItem(item.id),
+                title: item.displayName,
+                detail: "Drawer Item · Open Peek · \(item.detail)",
+                keywords: sessionName
+            )
         }
         for command in UniversalSearchCommand.allCases {
             if command == .undoBoardOperation, !hasBoardUndoHistory { continue }

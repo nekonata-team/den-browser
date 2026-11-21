@@ -26,6 +26,10 @@ enum UniversalSearchActions {
             }
             windowModel.hideUniversalSearch()
             session.boardNavigation.focusBoard(id, exitsDenMode: true)
+        case .drawerItem(let id):
+            guard windowModel.focusDrawerItem(id) else {
+                return "This Drawer Item is no longer available."
+            }
         case .desk(let id):
             guard target.desk(in: session.resources.state) != nil else {
                 return "This Desk is no longer available."
