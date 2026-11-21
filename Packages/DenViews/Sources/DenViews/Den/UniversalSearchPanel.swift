@@ -14,6 +14,7 @@ public struct UniversalSearchPanel: View {
     private let sourceItems: [UniversalSearchItem]
     private let recentItems: [RecentItem]
     private let boards: [BoardState]
+    private let commandShortcut: (UniversalSearchCommand) -> (binding: ShortcutBinding, denModeOnly: Bool)?
     private let perform: (UniversalSearchItem.Target, Bool) -> String?
     private let restoreInput: () -> Void
 
@@ -22,6 +23,7 @@ public struct UniversalSearchPanel: View {
         sourceItems: [UniversalSearchItem],
         recentItems: [RecentItem],
         boards: [BoardState],
+        commandShortcut: @escaping (UniversalSearchCommand) -> (binding: ShortcutBinding, denModeOnly: Bool)?,
         perform: @escaping (UniversalSearchItem.Target, Bool) -> String?,
         restoreInput: @escaping () -> Void
     ) {
@@ -29,6 +31,7 @@ public struct UniversalSearchPanel: View {
         self.sourceItems = sourceItems
         self.recentItems = recentItems
         self.boards = boards
+        self.commandShortcut = commandShortcut
         self.perform = perform
         self.restoreInput = restoreInput
     }
@@ -66,6 +69,7 @@ public struct UniversalSearchPanel: View {
                                         Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                                     }
                                     Spacer(minLength: 8)
+                                    shortcutHint(for: item.target)
                                     Image(systemSymbol: actionSymbol(for: item.target))
                                         .font(.body.weight(.medium))
                                         .foregroundStyle(.secondary)
@@ -111,6 +115,18 @@ public struct UniversalSearchPanel: View {
         }
     }
 
+    @ViewBuilder
+    private func shortcutHint(for target: UniversalSearchItem.Target) -> some View {
+        if case .command(let command) = target, let shortcut = commandShortcut(command) {
+            let mode = shortcut.denModeOnly ? "Den Mode" : "Sheet Input"
+            Text("\(shortcut.binding.displayName) · \(mode)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize()
+                .accessibilityLabel("Shortcut: \(shortcut.binding.accessibilityLabel), \(mode)")
+        }
+    }
+
     private func actionSymbol(for target: UniversalSearchItem.Target) -> SFSymbol {
         switch target {
         case .board, .drawerItem, .desk, .profile: .arrowRight
@@ -138,6 +154,7 @@ public struct UniversalSearchPanel: View {
             case .toggleZenView: .rectangle
             case .toggleFocusMode: .eye
             case .undoBoardOperation: .arrowCounterclockwise
+            case .showKeyboardShortcuts: .keyboard
             }
         }
     }

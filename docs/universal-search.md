@@ -19,8 +19,10 @@ show a validation message instead. The palette stays open when the input cannot 
 - Search all Recent titles and inputs in the current Profile, showing at most five matches.
   Selecting a Recent Item creates another Board in the current Desk.
 - Open a URL, local path, web search, or existing `:terminal`, `:tutorial`, `:zellij`, and `:zmx` Board input.
-- Run New Desk, Open Profile, Open Settings, Toggle Zen View, Toggle Focus Mode, and Undo Board Operation.
-  Undo is offered only when the Board Undo history is nonempty.
+- Run New Desk, Open Profile, Open Settings, Toggle Zen View, Toggle Focus Mode, Undo Board Operation,
+  and Show Keyboard Shortcuts. Undo is offered only when the Board Undo history is nonempty.
+  Command rows show the keys and input mode for invoking the action outside the palette.
+  Search `> shortcuts` to open the Keyboard Shortcuts guide.
 
 With empty input, display Recent (the five newest items), Essentials, Boards, Desks, Desk Presets, Profiles,
 Drawer Items, then commands.

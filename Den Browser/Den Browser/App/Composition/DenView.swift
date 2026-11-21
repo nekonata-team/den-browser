@@ -155,6 +155,7 @@ private struct DenActivePanelOverlay: View {
     private func activePanel(_ context: TemporaryContext, newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch context {
         case .universalSearch:
+            let configuration = ShortcutConfiguration(preferences: preferences)
             UniversalSearchPanel(
                 profileColor: profileColor,
                 sourceItems: UniversalSearch.sourceItems(
@@ -168,6 +169,7 @@ private struct DenActivePanelOverlay: View {
                 ),
                 recentItems: session.resources.store.snapshot.recentItems,
                 boards: session.resources.store.snapshot.den.desks.flatMap(\.boards),
+                commandShortcut: { UniversalSearchActions.shortcut(for: $0, configuration: configuration) },
                 perform: { target, inDrawer in
                     UniversalSearchActions.perform(
                         target,

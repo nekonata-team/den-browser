@@ -7,6 +7,7 @@ public enum UniversalSearchCommand: String, CaseIterable, Sendable {
     case toggleZenView
     case toggleFocusMode
     case undoBoardOperation
+    case showKeyboardShortcuts
 }
 
 public struct UniversalSearchItem: Identifiable, Equatable, Sendable {
@@ -160,6 +161,7 @@ public enum UniversalSearch {
             case .toggleZenView: title = "Toggle Zen View"
             case .toggleFocusMode: title = "Toggle Focus Mode"
             case .undoBoardOperation: title = "Undo Board Operation"
+            case .showKeyboardShortcuts: title = "Show Keyboard Shortcuts"
             }
             items.append(UniversalSearchItem(target: .command(command), title: title, detail: "Command"))
         }

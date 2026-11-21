@@ -623,6 +623,14 @@ enum KeyboardRouter {
         event.modifiers == [.shift] && (event.characters == "?" || event.baseCharacter == "/")
     }
 
+    static func denModeShortcut(for action: AppAction) -> ShortcutBinding? {
+        switch action {
+        case .application(.openSettings): binding(",")
+        case .application(.showKeyboardShortcuts): binding("?")
+        default: denModeCommands.first(where: { $0.value.action == action })?.key
+        }
+    }
+
     private static let denModeCommands: [ShortcutBinding: KeyboardCommand] = [
         binding("i"): KeyboardCommand(action: .notifications(.toggle)),
         binding("n"): KeyboardCommand(action: .board(.showOpenPanel)),

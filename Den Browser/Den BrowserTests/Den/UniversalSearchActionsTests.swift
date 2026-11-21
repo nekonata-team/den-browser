@@ -8,6 +8,43 @@ import Testing
 
 @MainActor
 struct UniversalSearchActionsTests {
+    @Test func shortcutsCommandOpensGuideFromSearch() throws {
+        let desk = DeskState(label: "Desk", boards: [], focusedBoardID: nil)
+        let resources = DenProfileResources(state: makeNativeTestState(desks: [desk]))
+        try withTestWindow(resources: resources) { session, model in
+            model.showUniversalSearch(commandsOnly: true)
+            let items = UniversalSearch.sourceItems(
+                state: session.resources.state,
+                essentials: [],
+                hasBoardUndoHistory: false,
+                profiles: [],
+                profileName: "Test"
+            )
+            let results = UniversalSearch.results(query: "> shortcuts", items: items, recentItems: [])
+            let target = try #require(results.first?.target)
+            #expect(target == .command(.showKeyboardShortcuts))
+            let error = UniversalSearchActions.perform(
+                target,
+                session: session,
+                windowModel: model,
+                openProfile: { _ in false },
+                openSettings: {}
+            )
+            #expect(error == nil)
+            #expect(model.temporaryContext == .keyboardShortcuts)
+        }
+    }
+
+    @Test func profileShortcutHintDisappearsWhenBindingIsReassigned() throws {
+        let preferences = try makeKeyboardTestPreferences()
+        let original = ShortcutConfiguration(preferences: preferences)
+        let hint = try #require(UniversalSearchActions.shortcut(for: .openProfile, configuration: original))
+        #expect(!hint.denModeOnly)
+        #expect(preferences.setShortcut(hint.binding, for: .toggleBoardRail) == nil)
+        let updated = ShortcutConfiguration(preferences: preferences)
+        #expect(UniversalSearchActions.shortcut(for: .openProfile, configuration: updated) == nil)
+    }
+
     @Test func switchingToBoardDoesNotCreateOrDuplicateIt() {
         // Arrange
         let target = BoardState(label: "Target", width: 520, currentSheetURL: URL(string: "https://example.com/"))

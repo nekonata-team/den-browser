@@ -5,6 +5,22 @@ import Foundation
 
 @MainActor
 enum UniversalSearchActions {
+    static func shortcut(
+        for command: UniversalSearchCommand,
+        configuration: ShortcutConfiguration
+    ) -> (binding: ShortcutBinding, denModeOnly: Bool)? {
+        if command == .openProfile {
+            // The native Open Profile menu shortcut is reached only if the key router does not claim it.
+            let binding = ShortcutBinding(key: .character("p"), modifiers: [.control, .command])
+            guard configuration.shortcut(matching: binding) == nil else { return nil }
+            return (binding, false)
+        }
+        guard let action = action(for: command), let binding = KeyboardRouter.denModeShortcut(for: action) else {
+            return nil
+        }
+        return (binding, true)
+    }
+
     static func perform(
         _ target: UniversalSearchItem.Target,
         session: ProfileWindowSession,
@@ -60,16 +76,9 @@ enum UniversalSearchActions {
             return open(input, session: session, windowModel: windowModel, inDrawer: inDrawer)
         case .command(let command):
             windowModel.hideUniversalSearch()
-            let action: AppAction
-            switch command {
-            case .newDesk: action = .desk(.showNewPanel)
-            case .openProfile:
+            guard let action = action(for: command) else {
                 windowModel.setTemporaryContext(.profilePicker)
                 return nil
-            case .openSettings: action = .application(.openSettings)
-            case .toggleZenView: action = .application(.toggleZenView)
-            case .toggleFocusMode: action = .application(.toggleFocusMode)
-            case .undoBoardOperation: action = .board(.undo)
             }
             AppActionHandler.perform(
                 action,
@@ -79,6 +88,18 @@ enum UniversalSearchActions {
             )
         }
         return nil
+    }
+
+    private static func action(for command: UniversalSearchCommand) -> AppAction? {
+        switch command {
+        case .newDesk: .desk(.showNewPanel)
+        case .openProfile: nil
+        case .openSettings: .application(.openSettings)
+        case .toggleZenView: .application(.toggleZenView)
+        case .toggleFocusMode: .application(.toggleFocusMode)
+        case .undoBoardOperation: .board(.undo)
+        case .showKeyboardShortcuts: .application(.showKeyboardShortcuts)
+        }
     }
 
     private static func open(
