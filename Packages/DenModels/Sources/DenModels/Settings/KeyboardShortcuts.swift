@@ -134,6 +134,8 @@ public enum ShortcutKey: Codable, Hashable {
 }
 
 public struct ShortcutBinding: Codable, Hashable {
+    public static var openProfile: Self { Self(key: .character("p"), modifiers: [.control, .command]) }
+
     public let key: ShortcutKey
     public let modifiers: ShortcutModifiers
 

@@ -1,7 +1,9 @@
 import DenApplication
 import DenDomain
 import DenModels
+import DenViews
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import Den_Browser
@@ -40,6 +42,10 @@ struct UniversalSearchActionsTests {
         let original = ShortcutConfiguration(preferences: preferences)
         let hint = try #require(UniversalSearchActions.shortcut(for: .openProfile, configuration: original))
         #expect(!hint.denModeOnly)
+        let menuShortcut = try #require(ShortcutBinding.openProfile.characterKeyboardShortcut)
+        #expect(menuShortcut.key.character == "p")
+        #expect(menuShortcut.modifiers == [.control, .command])
+        #expect(hint.binding == .openProfile)
         #expect(preferences.setShortcut(hint.binding, for: .toggleBoardRail) == nil)
         let updated = ShortcutConfiguration(preferences: preferences)
         #expect(UniversalSearchActions.shortcut(for: .openProfile, configuration: updated) == nil)

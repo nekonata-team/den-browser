@@ -45,7 +45,7 @@ This foundation does not provide fuzzy ranking or learned usage ranking.
 - Search candidates, matching, and ranking: [`UniversalSearch.swift`](../Packages/DenDomain/Sources/DenDomain/Den/UniversalSearch.swift).
 - Result rows and shortcut hints: [`UniversalSearchPanel.swift`](../Packages/DenViews/Sources/DenViews/Den/UniversalSearchPanel.swift).
 - Result execution and the actions behind shortcut hints: [`UniversalSearchActions.swift`](../Den%20Browser/Den%20Browser/Features/Den/Application/UniversalSearchActions.swift).
-- Key bindings: [`KeyboardRouting.swift`](../Den%20Browser/Den%20Browser/App/KeyboardRouting.swift) for routed shortcuts; [`Den_BrowserApp.swift`](../Den%20Browser/Den%20Browser/App/Den_BrowserApp.swift) and [`DenHeader.swift`](../Packages/DenViews/Sources/DenViews/Profiles/DenHeader.swift) for the native Open Profile shortcut.
+- Key bindings: [`KeyboardRouting.swift`](../Den%20Browser/Den%20Browser/App/KeyboardRouting.swift) for routed shortcuts; [`KeyboardShortcuts.swift`](../Packages/DenModels/Sources/DenModels/Settings/KeyboardShortcuts.swift) for the shared native Open Profile shortcut.
 
 ## Extension points
 

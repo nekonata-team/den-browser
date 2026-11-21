@@ -3,6 +3,7 @@ import DenApplication
 import DenDomain
 import DenInfrastructure
 import DenModels
+import DenViews
 import Sparkle
 import SwiftUI
 
@@ -256,7 +257,7 @@ private struct DenCommands: Commands {
                 Button("Open Profile…") {
                     windowModel?.setTemporaryContext(.profilePicker)
                 }
-                .keyboardShortcut("p", modifiers: [.control, .command])
+                .keyboardShortcut(ShortcutBinding.openProfile.characterKeyboardShortcut)
 
                 SettingsLink { Text("New Profile…") }
                 SettingsLink { Text("Manage Profiles…") }

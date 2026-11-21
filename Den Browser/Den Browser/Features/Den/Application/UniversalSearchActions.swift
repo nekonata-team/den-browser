@@ -11,7 +11,7 @@ enum UniversalSearchActions {
     ) -> (binding: ShortcutBinding, denModeOnly: Bool)? {
         if command == .openProfile {
             // The native Open Profile menu shortcut is reached only if the key router does not claim it.
-            let binding = ShortcutBinding(key: .character("p"), modifiers: [.control, .command])
+            let binding = ShortcutBinding.openProfile
             guard configuration.shortcut(matching: binding) == nil else { return nil }
             return (binding, false)
         }

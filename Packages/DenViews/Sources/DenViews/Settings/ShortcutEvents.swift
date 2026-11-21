@@ -1,6 +1,7 @@
 import AppKit
 import DenModels
 import Foundation
+import SwiftUI
 
 public extension ShortcutModifiers {
     init(_ flags: NSEvent.ModifierFlags) {
@@ -75,6 +76,16 @@ public extension ShortcutKey {
 }
 
 public extension ShortcutBinding {
+    var characterKeyboardShortcut: KeyboardShortcut? {
+        guard case .character(let string) = key, string.count == 1, let character = string.first else { return nil }
+        var flags: EventModifiers = []
+        if modifiers.contains(.control) { flags.insert(.control) }
+        if modifiers.contains(.option) { flags.insert(.option) }
+        if modifiers.contains(.shift) { flags.insert(.shift) }
+        if modifiers.contains(.command) { flags.insert(.command) }
+        return KeyboardShortcut(KeyEquivalent(character), modifiers: flags)
+    }
+
     init?(event: NSEvent) {
         guard let key = ShortcutKey(event: event) else { return nil }
         self.init(key: key, modifiers: ShortcutModifiers(event.modifierFlags))

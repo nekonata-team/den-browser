@@ -277,7 +277,7 @@ public struct ProfileMenu: View {
             Button("Open Profile…") {
                 windowModel.setTemporaryContext(.profilePicker)
             }
-            .keyboardShortcut("p", modifiers: [.control, .command])
+            .keyboardShortcut(ShortcutBinding.openProfile.characterKeyboardShortcut)
 
             Button("Clear Browsing Data…") {
                 clearBrowsingData()
