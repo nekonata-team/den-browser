@@ -469,6 +469,9 @@ enum KeyboardRouter {
         if character == "w", modifiers == [] {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.hideWidthPanel))
         }
+        if character == "r", modifiers == [] {
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.cycleWidth))
+        }
         if character == "-", modifiers == [] { return .perform(.desk(.adjustBoardWidths(-80))) }
         if character == "=", modifiers == [] || modifiers == [.shift] {
             return .perform(.desk(.adjustBoardWidths(80)))

@@ -127,6 +127,45 @@ struct BoardKeyboardTests {
         }
     }
 
+    @Test(arguments: [1_840.0, 580.0])
+    func denModeWRWrapsThroughDistinctWidthsOfOnlyTheFocusedBoard(availableWidth: Double) throws {
+        let focused = makeTestBoard("Focused", width: 520)
+        let other = makeTestBoard("Other", width: 760)
+        let session = try makeKeyboardTestSession(boards: [focused, other])
+        let composition = DenWindowComposition(session: session)
+        composition.connect()
+        defer { composition.disconnect() }
+        let model = composition.model
+        model.isDenMode = true
+        model.updateBoardLayout(availableWidth: availableWidth, spacing: 20)
+        let width = try keyEvent(characters: "w", charactersIgnoringModifiers: "w", keyCode: 13)
+        let cycle = try keyEvent(characters: "r", charactersIgnoringModifiers: "r", keyCode: 15)
+        let repeated = try keyEvent(characters: "r", charactersIgnoringModifiers: "r", isARepeat: true, keyCode: 15)
+        let escape = try keyEvent(characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+        let expectedWidths = availableWidth == 1_840 ? [600.0, 910, 1_220, 1_840, 600] : [580.0, 280, 380, 580, 280]
+
+        #expect(KeyboardController.handle(width, session: session, windowModel: model))
+        for expectedWidth in expectedWidths {
+            #expect(
+                KeyboardController.decision(for: repeated, session: session, windowModel: model)
+                    == .consume(.ignoredRepeat)
+            )
+            #expect(KeyboardController.handle(cycle, session: session, windowModel: model))
+            #expect(model.temporaryContext == .boardWidth)
+            #expect(model.isDenMode)
+            let appliedWidth = try #require(session.navigation.focusedBoard?.width)
+            #expect(abs(appliedWidth - expectedWidth) < 0.001)
+            #expect(session.navigation.focusedDesk?.boards.last?.width == other.width)
+        }
+        #expect(KeyboardController.handle(escape, session: session, windowModel: model))
+        #expect(model.temporaryContext == nil)
+        #expect(model.isDenMode)
+        #expect(
+            KeyboardController.decision(for: cycle, session: session, windowModel: model)
+                == .perform(.board(.showRenamePanel))
+        )
+    }
+
     @Test func denModeAngleBracketsBrowseBoardsWithoutChangingFocus() throws {
         let first = makeTestBoard("First")
         let second = makeTestBoard("Second")

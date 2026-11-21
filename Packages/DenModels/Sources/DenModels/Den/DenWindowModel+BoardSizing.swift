@@ -45,6 +45,26 @@ public extension DenWindowModel {
         if temporaryContext == .boardWidth { setTemporaryContext(nil) }
     }
 
+    func cycleFocusedBoardWidth() {
+        guard let board = navigation.focusedBoard, let layout = boardLayoutMetrics,
+            layout.availableWidth.isFinite, layout.availableWidth >= BoardState.minimumWidth
+        else { return }
+
+        let widths = [1.0 / 3, 1.0 / 2, 2.0 / 3, 1.0].map { fraction in
+            max(BoardState.minimumWidth, (layout.availableWidth + layout.spacing) * fraction - layout.spacing)
+        }
+        let width = widths.first { $0 > board.width + 0.001 } ?? widths[0]
+        if width != board.width,
+            boardSizing.setBoardWidth(board.id, to: width, maximumWidth: layout.availableWidth) == nil
+        {
+            boardWidthPanelMessage = "Could not save Board width"
+            return
+        }
+        maximizedBoardID = nil
+        boardWidthPanelMessage = nil
+        centerFocusedBoard()
+    }
+
     @discardableResult
     func resizeFocusedDeskBoards(toFit count: Int) -> Bool {
         guard let deskID = navigation.focusedDesk?.id, let width = boardWidth(toFit: count) else {

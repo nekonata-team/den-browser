@@ -90,6 +90,7 @@ enum BoardAction: Equatable {
     case openClipboardInDrawer
     case showWidthPanel
     case hideWidthPanel
+    case cycleWidth
     case adjustWidth(Double)
     case toggleMaximized
     case center
@@ -290,6 +291,7 @@ enum AppActionHandler {
             case .openClipboardInDrawer: session.input.openBoardFromClipboard(inDrawer: true)
             case .showWidthPanel: windowModel.showBoardWidthPanel()
             case .hideWidthPanel: windowModel.hideBoardWidthPanel()
+            case .cycleWidth: windowModel.cycleFocusedBoardWidth()
             case .adjustWidth(let amount): windowModel.adjustFocusedBoardWidth(by: amount)
             case .toggleMaximized: windowModel.toggleFocusedBoardMaximized()
             case .center: windowModel.centerFocusedBoard()

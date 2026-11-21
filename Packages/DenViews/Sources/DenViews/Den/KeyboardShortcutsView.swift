@@ -103,6 +103,7 @@ public struct KeyboardShortcutsView: View {
                     item(["r"], "Den Mode: Rename Board"),
                     item(["-", "/", "="], "Den Mode: Narrow / widen Board"),
                     item(["w", "then", "- / = / 1–9"], "Den Mode: Resize all Boards"),
+                    item(["w", "then", "r"], "Den Mode: Cycle Focused Board width"),
                     item(["⌘", "+", "/", "-"], "Increase / decrease Current Sheet size"),
                     item(["⌘", "0"], "Reset Current Sheet size"),
                     item(["f"], "Den Mode: Toggle maximized Board"),

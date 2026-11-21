@@ -102,6 +102,7 @@ Reordering a Desk preserves the focused Desk and Board and keeps Den Mode active
 | `Shift` + `[` / `Shift` + `]` | Jump to First / latest Sheet |
 | `-` / `=` | Narrow / widen Focused Board |
 | `w`, then `-` / `=` / `1`–`9` | Resize all Primary Boards (adjust by 80pt or fit to window width) |
+| `w`, then `r` | Cycle Focused Board width through ⅓, ½, ⅔, and 100% of the available width, accounting for spacing and minimum width. Press `r` again to continue or `Escape` to close the width panel. |
 | `f` | Toggle maximized Focused Board |
 | `c` | Center Focused Board |
 | `m` | Set / clear Anchor Board for Focused Desk |

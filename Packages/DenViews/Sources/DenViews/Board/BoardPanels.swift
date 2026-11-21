@@ -501,7 +501,10 @@ public struct BoardWidthPanel: View {
             if let message = windowModel.boardWidthPanelMessage {
                 DenValidationMessage(message)
             } else {
-                DenPanelHint("Changes every Primary Board in the Focused Desk. Press - / = or 1–9, then Escape.")
+                DenPanelHint(
+                    "- / = or 1–9 resize all Primary Boards. "
+                        + "On the Focused Board, r cycles ⅓ → ½ → ⅔ → 1. Esc closes."
+                )
             }
         }
         .denPanel()
