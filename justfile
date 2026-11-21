@@ -112,8 +112,9 @@ den *args:
 
 # Benchmark startup and idle resource usage.
 [group("development")]
-benchmark scenario *args: build
-    swift scripts/measure.swift --scenario "{{scenario}}" {{args}}
+benchmark scenario *args:
+    @just build >&2
+    @swift scripts/measure.swift --scenario "{{scenario}}" {{args}}
 
 # Remove all derived data build directories.
 [group("development")]

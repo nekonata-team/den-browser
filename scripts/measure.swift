@@ -1,23 +1,23 @@
 import AppKit
 import Foundation
 
-if CommandLine.arguments.dropFirst().first == "--input-source-log" {
-    guard CommandLine.arguments.count == 3 else {
-        fputs("Usage: swift scripts/measure.swift --input-source-log <trace-file>\n", stderr)
-        exit(2)
-    }
-    try printInputSourceSummary(from: URL(fileURLWithPath: CommandLine.arguments[2]))
-    exit(0)
+func writeJSON(_ result: some Encodable) throws {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .sortedKeys
+    var data = try encoder.encode(result)
+    data.append(0x0A)
+    try FileHandle.standardOutput.write(contentsOf: data)
 }
 
-func printInputSourceSummary(from url: URL) throws {
-    struct Measurement {
-        let total: Double
-        let context: Double?
-        let carbon: Double?
-        let contextLookup: Double?
-        let contextSelect: Double?
+func writeInputSourceMeasurements(from url: URL) throws {
+    struct Measurement: Encodable {
+        let durationMS: Double
+        let contextMS: Double?
+        let carbonMS: Double?
+        let contextLookupMS: Double?
+        let contextSelectMS: Double?
     }
+
     var groups: [String: [Measurement]] = [:]
     let text = try String(contentsOf: url, encoding: .utf8)
     for line in text.split(whereSeparator: \.isNewline) where line.contains("[PERF:INPUTSOURCE]") {
@@ -26,16 +26,14 @@ func printInputSourceSummary(from url: URL) throws {
             let pair = token.split(separator: "=", maxSplits: 1)
             if pair.count == 2 { fields[String(pair[0])] = String(pair[1]) }
         }
+        func duration(_ key: String) -> Double? {
+            fields[key].flatMap(Double.init).flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        }
+        let stages = ["context", "carbon", "contextLookup", "contextSelect"]
         guard let match = fields["match"], ["same", "different", "unknown"].contains(match),
-            let total = fields["duration"].flatMap(Double.init), total.isFinite, total >= 0,
-            let rawContext = fields["context"],
-            rawContext == "none" || (Double(rawContext).map { $0.isFinite && $0 >= 0 } ?? false),
-            let rawCarbon = fields["carbon"],
-            rawCarbon == "none" || (Double(rawCarbon).map { $0.isFinite && $0 >= 0 } ?? false),
-            ["contextLookup", "contextSelect"].allSatisfy({ key in
-                guard let raw = fields[key] else { return true }
-                return raw == "none" || (Double(raw).map { $0.isFinite && $0 >= 0 } ?? false)
-            })
+            let total = duration("duration"),
+            fields["context"] != nil, fields["carbon"] != nil,
+            stages.allSatisfy({ fields[$0] == nil || fields[$0] == "none" || duration($0) != nil })
         else {
             throw NSError(
                 domain: "DenBenchmark",
@@ -45,237 +43,46 @@ func printInputSourceSummary(from url: URL) throws {
         }
         groups[match, default: []].append(
             Measurement(
-                total: total,
-                context: Double(rawContext),
-                carbon: Double(rawCarbon),
-                contextLookup: fields["contextLookup"].flatMap(Double.init),
-                contextSelect: fields["contextSelect"].flatMap(Double.init)
+                durationMS: total,
+                contextMS: duration("context"),
+                carbonMS: duration("carbon"),
+                contextLookupMS: duration("contextLookup"),
+                contextSelectMS: duration("contextSelect")
             )
         )
     }
-    guard !groups.isEmpty else {
-        print(
-            "No input-source measurements found. Enable --benchmark and move between Boards before collecting the log."
-        )
-        return
-    }
-    func printDurations(_ label: String, _ values: [Double]) {
-        guard !values.isEmpty else {
-            print("  \(label): calls=0")
-            return
-        }
-        let sorted = values.sorted()
-        let p95 = sorted[Int(ceil(Double(sorted.count) * 0.95)) - 1]
-        print(
-            String(
-                format: "  %@: calls=%d total=%.3fms avg=%.3fms p95=%.3fms max=%.3fms",
-                label,
-                values.count,
-                values.reduce(0, +),
-                values.reduce(0, +) / Double(values.count),
-                p95,
-                sorted[sorted.count - 1]
-            )
-        )
-    }
-    for match in ["same", "different", "unknown"] {
-        guard let measurements = groups[match] else { continue }
-        print("Input source: \(match)")
-        printDurations("restore", measurements.map(\.total))
-        printDurations("context", measurements.compactMap(\.context))
-        printDurations("contextLookup", measurements.compactMap(\.contextLookup))
-        printDurations("contextSelect", measurements.compactMap(\.contextSelect))
-        printDurations("carbon", measurements.compactMap(\.carbon))
-    }
+    try writeJSON(groups)
 }
 
-let appBundlePath = ".derived-data/Build/Products/Debug/Den Browser.app"
-let appPath = "\(appBundlePath)/Contents/MacOS/Den Browser"
-
-guard FileManager.default.fileExists(atPath: appPath) else {
-    fputs("Error: App binary not found at \(appPath). Run 'just build' first.\n", stderr)
-    exit(1)
-}
-
-var appArgs: [String] = []
-var selectedScenario: BenchmarkScenario?
-var settleSeconds: Double = 4.0
-var durationSeconds: Double = 10.0
-var intervalSeconds: Double = 1.0
-
-let cliArgs = Array(CommandLine.arguments.dropFirst())
-var index = 0
-while index < cliArgs.count {
-    let arg = cliArgs[index]
-    if arg == "--scenario" {
-        guard index + 1 < cliArgs.count else {
-            fputs("Error: --scenario requires a value.\n", stderr)
-            exit(2)
-        }
-        let value = cliArgs[index + 1]
-        guard let scenario = BenchmarkScenario(rawValue: value) else {
-            fputs("Error: Unsupported benchmark scenario '\(value)'.\n", stderr)
-            exit(2)
-        }
-        selectedScenario = scenario
-        index += 2
-    } else if arg == "--" {
-        index += 1
-    } else if arg == "--settle", index + 1 < cliArgs.count {
-        settleSeconds = Double(cliArgs[index + 1]) ?? 4.0
-        index += 2
-    } else if arg == "--duration", index + 1 < cliArgs.count {
-        durationSeconds = Double(cliArgs[index + 1]) ?? 10.0
-        index += 2
-    } else if arg == "--interval", index + 1 < cliArgs.count {
-        intervalSeconds = Double(cliArgs[index + 1]) ?? 1.0
-        index += 2
-    } else {
-        appArgs.append(arg)
-        index += 1
-    }
-}
-
-guard let selectedScenario else {
-    let choices = BenchmarkScenario.allCases.map(\.rawValue).joined(separator: "|")
-    fputs("Usage: just benchmark <\(choices)> [-- --settle seconds --duration seconds --interval seconds]\n", stderr)
-    exit(2)
-}
-guard settleSeconds.isFinite, settleSeconds >= 0,
-    durationSeconds.isFinite, durationSeconds >= 0,
-    intervalSeconds.isFinite, intervalSeconds > 0
-else {
-    fputs(
-        "Error: --settle and --duration must be finite and non-negative; --interval must be finite and positive.\n",
-        stderr
-    )
-    exit(2)
-}
-let benchmarkRunID = UUID().uuidString
-let suiteName = "dev.nekonata.denbrowser.benchmark.\(benchmarkRunID)"
-let runDirectory = FileManager.default.temporaryDirectory
-    .appending(path: "DenBrowserBenchmark", directoryHint: .isDirectory)
-    .appending(path: benchmarkRunID, directoryHint: .isDirectory)
-defer { try? FileManager.default.removeItem(at: runDirectory) }
-let seedURL = runDirectory.appending(path: "initial-profile.json")
-try FileManager.default.createDirectory(at: runDirectory, withIntermediateDirectories: true)
-try benchmarkProfileSeed(for: selectedScenario).write(to: seedURL, options: .atomic)
-appArgs.append(contentsOf: [
-    "--benchmark-scenario", selectedScenario.rawValue,
-    "--initial-profile", seedURL.path,
-])
-
-var env = ProcessInfo.processInfo.environment
-env["DEN_BENCHMARK"] = "1"
-env["DEN_BENCHMARK_RUN_ID"] = benchmarkRunID
-let traceFileURL = FileManager.default.temporaryDirectory
-    .appending(path: "den-benchmark-\(benchmarkRunID).log")
-_ = FileManager.default.createFile(atPath: traceFileURL.path, contents: Data())
-env["DEN_BENCHMARK_TRACE_FILE"] = traceFileURL.path
-defer {
-    UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
-    let plistURL = FileManager.default.homeDirectoryForCurrentUser
-        .appending(path: "Library/Preferences/\(suiteName).plist")
-    try? FileManager.default.removeItem(at: plistURL)
-    try? FileManager.default.removeItem(at: traceFileURL)
-}
-
-print("Launching: \(appPath) \(appArgs.joined(separator: " "))")
-let prelaunchSnapshot = queryProcessSnapshot()
-
-final class OutputCollector {
-    private var events: [String] = []
-    private var lineCount = 0
-
-    func add(_ line: String) {
-        events.append(line)
-        print("  \(line)")
-        fflush(stdout)
-    }
-
-    func readNewLines(from url: URL) {
-        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
-        let lines = text.split(whereSeparator: \.isNewline)
-        for line in lines.dropFirst(lineCount) {
-            add(String(line))
-        }
-        lineCount = lines.count
-    }
-
-    func all() -> [String] {
-        events
-    }
-
-    func webKitPIDs() -> Set<Int32> {
-        Set(
-            events.compactMap { event in
-                guard let marker = event.range(of: "webProcessPID=") else { return nil }
-                return Int32(event[marker.upperBound...].prefix { $0.isNumber })
-            }
-        )
-    }
-
-    func isReady(for scenario: BenchmarkScenario) -> Bool {
-        let windowIsPresented = events.contains {
-            $0.contains("ProfileWindowView.onAppear (window content presented)")
-        }
-        let webBoardHasFinishedNavigation = events.contains {
-            $0.contains("BoardRuntime.didFinish navigation")
-        }
-        return windowIsPresented
-            && (scenario != .oneWebBoard || (webBoardHasFinishedNavigation && !webKitPIDs().isEmpty))
-    }
-}
-
-let collector = OutputCollector()
-let launchConfiguration = NSWorkspace.OpenConfiguration()
-launchConfiguration.arguments = appArgs
-launchConfiguration.environment = env
-launchConfiguration.activates = true
-launchConfiguration.createsNewApplicationInstance = true
-let launchRequestedAt = Date()
-let app: NSRunningApplication = try await withCheckedThrowingContinuation {
-    (continuation: CheckedContinuation<NSRunningApplication, Error>) in
-    NSWorkspace.shared.openApplication(
-        at: URL(fileURLWithPath: appBundlePath),
-        configuration: launchConfiguration
-    ) { app, error in
-        if let app {
-            continuation.resume(returning: app)
-        } else {
-            continuation.resume(throwing: error ?? NSError(domain: "DenBenchmark", code: 1))
-        }
-    }
-}
-defer { if !app.isTerminated { _ = app.forceTerminate() } }
-let sampler = BenchmarkSampler(
-    mainPID: app.processIdentifier,
-    collector: collector,
-    traceFileURL: traceFileURL,
-    interval: intervalSeconds
-)
-
-struct Sample {
-    let appCPU: Double
+struct Sample: Encodable {
+    let appCPUPercent: Double
     let appCPUSeconds: Double
     let appRSSMB: Double
-    let webKitCPU: Double?
-    let webKitCPUSeconds: Double
-    let webKitRSSMB: Double
-    var totalCPU: Double? {
-        guard let webKitCPU else { return nil }
-        return appCPU + webKitCPU
-    }
-    var totalRSSMB: Double { appRSSMB + webKitRSSMB }
+    let webKitCPUPercent: Double?
+    let webKitCPUSeconds: Double?
+    let webKitRSSMB: Double?
 }
 
-enum BenchmarkScenario: String, CaseIterable {
+struct BenchmarkPhase: Encodable {
+    let durationSeconds: Double
+    let samples: [Sample]
+}
+
+struct BenchmarkResult: Encodable {
+    let scenario: BenchmarkScenario
+    let intervalSeconds: Double
+    let startup: BenchmarkPhase
+    let settle: BenchmarkPhase
+    let idle: BenchmarkPhase
+}
+
+enum BenchmarkScenario: String, CaseIterable, Encodable {
     case emptyDesk = "empty-desk"
     case oneTerminalBoard = "one-terminal-board"
     case oneWebBoard = "one-web-board"
 }
 
-func benchmarkProfileSeed(for scenario: BenchmarkScenario) throws -> Data {
+func benchmarkProfileSeed(for scenario: BenchmarkScenario, appBundlePath: String) throws -> Data {
     guard
         let bundle = Bundle(url: URL(fileURLWithPath: appBundlePath)),
         let resourceURL = bundle.url(forResource: "interaction-basics", withExtension: "html"),
@@ -341,6 +148,38 @@ func benchmarkProfileSeed(for scenario: BenchmarkScenario) throws -> Data {
         "deskPresets": [],
     ]
     return try JSONSerialization.data(withJSONObject: seed)
+}
+
+final class BenchmarkTrace {
+    private var events: [String] = []
+    private var lineCount = 0
+
+    func readNewLines(from url: URL) {
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        let lines = text.split(whereSeparator: \.isNewline)
+        events.append(contentsOf: lines.dropFirst(lineCount).map(String.init))
+        lineCount = lines.count
+    }
+
+    func webKitPIDs() -> Set<Int32> {
+        Set(
+            events.compactMap { event in
+                guard let marker = event.range(of: "webProcessPID=") else { return nil }
+                return Int32(event[marker.upperBound...].prefix { $0.isNumber })
+            }
+        )
+    }
+
+    func isReady(for scenario: BenchmarkScenario) -> Bool {
+        let windowIsPresented = events.contains {
+            $0.contains("ProfileWindowView.onAppear (window content presented)")
+        }
+        let webBoardHasFinishedNavigation = events.contains {
+            $0.contains("BoardRuntime.didFinish navigation")
+        }
+        return windowIsPresented
+            && (scenario != .oneWebBoard || (webBoardHasFinishedNavigation && !webKitPIDs().isEmpty))
+    }
 }
 
 struct ProcessMetric {
@@ -454,51 +293,27 @@ func makeSample(
         let appCPU = processCPU(for: mainPID, current: current, previous: previous)
     else { return nil }
 
-    let webKitMetrics = webKitPIDs.compactMap { pid -> (ProcessMetric, Double, Double)? in
+    let webKitMetrics = webKitPIDs.compactMap { pid -> (rssMB: Double, seconds: Double, interval: Double)? in
         guard let metric = current.processes[pid],
             let cpu = processCPU(for: pid, current: current, previous: previous)
         else { return nil }
-        return (metric, cpu.seconds, cpu.interval)
+        return (metric.rssMB, cpu.seconds, cpu.interval)
     }
-    let webKitCPUSeconds = webKitMetrics.reduce(0) { $0 + $1.1 }
-    let interval = webKitMetrics.map(\.2).max() ?? 0
-    let webKitCPU =
-        interval > 0
-        ? webKitMetrics.reduce(0) { $0 + $1.1 / $1.2 * 100 }
-        : nil
-    let webKitRSS = webKitMetrics.reduce(0) { $0 + $1.0.rssMB }
+    let webKitRSS = webKitMetrics.reduce(0) { $0 + $1.rssMB }
 
     return Sample(
-        appCPU: appCPU.seconds / appCPU.interval * 100,
+        appCPUPercent: appCPU.seconds / appCPU.interval * 100,
         appCPUSeconds: appCPU.seconds,
         appRSSMB: appMetric.rssMB,
-        webKitCPU: webKitCPU,
-        webKitCPUSeconds: webKitCPUSeconds,
-        webKitRSSMB: webKitRSS
+        webKitCPUPercent: webKitMetrics.isEmpty ? nil : webKitMetrics.reduce(0) { $0 + $1.seconds / $1.interval * 100 },
+        webKitCPUSeconds: webKitMetrics.isEmpty ? nil : webKitMetrics.reduce(0) { $0 + $1.seconds },
+        webKitRSSMB: webKitRSS > 0 ? webKitRSS : nil
     )
-}
-
-func printSample(_ sample: Sample, index: Int, phase: String) {
-    let webKitCPU = sample.webKitCPU.map { String(format: "%5.1f%%", $0) } ?? "  N/A "
-    let totalCPU = sample.totalCPU.map { String(format: "%5.1f%%", $0) } ?? "  N/A "
-    let webKitRSS = sample.webKitRSSMB > 0 ? String(format: "%6.1fMB", sample.webKitRSSMB) : "    N/A"
-    let formatted = String(
-        format:
-            "\r  [\(phase) Sample %d] App CPU: %5.1f%% | WebKit CPU: %@ | Total CPU: %@ | App RSS: %6.1fMB | WebKit RSS: %@",
-        index,
-        sample.appCPU,
-        webKitCPU,
-        totalCPU,
-        sample.appRSSMB,
-        webKitRSS
-    )
-    fputs(formatted, stdout)
-    fflush(stdout)
 }
 
 @MainActor struct BenchmarkSampler {
     let mainPID: Int32
-    let collector: OutputCollector
+    let trace: BenchmarkTrace
     let traceFileURL: URL
     let interval: Double
 
@@ -514,18 +329,18 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
         let deadline = Date().addingTimeInterval(30)
 
         while Date() < deadline && !app.isTerminated {
-            collector.readNewLines(from: traceFileURL)
+            trace.readNewLines(from: traceFileURL)
             if Date() >= nextSampleTime, let snapshot = queryProcessSnapshot() {
-                recordSample(snapshot, after: previousSnapshot, phase: "Startup", in: &samples)
+                recordSample(snapshot, after: previousSnapshot, in: &samples)
                 previousSnapshot = snapshot
                 lastSampleTime = snapshot.capturedAt
                 nextSampleTime = snapshot.capturedAt.addingTimeInterval(interval)
             }
-            if collector.isReady(for: scenario) {
+            if trace.isReady(for: scenario) {
                 if lastSampleTime.map({ Date().timeIntervalSince($0) > 0.05 }) ?? true,
                     let snapshot = queryProcessSnapshot()
                 {
-                    recordSample(snapshot, after: previousSnapshot, phase: "Startup", in: &samples)
+                    recordSample(snapshot, after: previousSnapshot, in: &samples)
                 }
                 return samples
             }
@@ -538,9 +353,9 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
         return samples
     }
 
-    func collectSamples(for duration: Double, phase: String) async -> [Sample] {
+    func collectSamples(for duration: Double) async -> [Sample] {
         var samples: [Sample] = []
-        collector.readNewLines(from: traceFileURL)
+        trace.readNewLines(from: traceFileURL)
         guard var previousSnapshot = queryProcessSnapshot() else { return samples }
         var nextSampleTime = previousSnapshot.capturedAt.addingTimeInterval(interval)
         let endTime = previousSnapshot.capturedAt.addingTimeInterval(duration)
@@ -555,9 +370,9 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
                 }
             }
 
-            collector.readNewLines(from: traceFileURL)
+            trace.readNewLines(from: traceFileURL)
             if let snapshot = queryProcessSnapshot() {
-                recordSample(snapshot, after: previousSnapshot, phase: phase, in: &samples)
+                recordSample(snapshot, after: previousSnapshot, in: &samples)
                 previousSnapshot = snapshot
             }
             nextSampleTime = max(
@@ -571,7 +386,6 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
     private func recordSample(
         _ snapshot: ProcessSnapshot,
         after previousSnapshot: ProcessSnapshot?,
-        phase: String,
         in samples: inout [Sample]
     ) {
         guard
@@ -579,182 +393,183 @@ func printSample(_ sample: Sample, index: Int, phase: String) {
                 current: snapshot,
                 previous: previousSnapshot,
                 mainPID: mainPID,
-                webKitPIDs: collector.webKitPIDs()
+                webKitPIDs: trace.webKitPIDs()
             )
         else { return }
         samples.append(sample)
-        printSample(sample, index: samples.count, phase: phase)
     }
 }
 
-func printPhaseSummary(_ phase: String, samples: [Sample], duration: Double, canMeasureWebKit: Bool) {
-    print("\n--- \(phase) (Samples: \(samples.count)) ---")
-    guard !samples.isEmpty else {
-        print("  No samples recorded")
-        return
+@MainActor func runBenchmark(_ cliArgs: [String]) async throws -> BenchmarkResult {
+    let appBundlePath = ".derived-data/Build/Products/Debug/Den Browser.app"
+    let appPath = "\(appBundlePath)/Contents/MacOS/Den Browser"
+
+    guard FileManager.default.fileExists(atPath: appPath) else {
+        fputs("Error: App binary not found at \(appPath). Run 'just build' first.\n", stderr)
+        exit(1)
     }
 
-    let appCPUSeconds = samples.reduce(0) { $0 + $1.appCPUSeconds }
-    let appCPUs = samples.map(\.appCPU)
-    let appRSS = samples.map(\.appRSSMB)
-    let appCPUAverage = appCPUSeconds / duration * 100
-    print(
-        String(
-            format: "  App CPU:            avg %.2f%%, max %.2f%%",
-            appCPUAverage,
-            appCPUs.max() ?? 0
+    var appArgs: [String] = []
+    var selectedScenario: BenchmarkScenario?
+    var settleSeconds: Double = 4.0
+    var durationSeconds: Double = 10.0
+    var intervalSeconds: Double = 1.0
+
+    var index = 0
+    while index < cliArgs.count {
+        let arg = cliArgs[index]
+        if arg == "--scenario" {
+            guard index + 1 < cliArgs.count else {
+                fputs("Error: --scenario requires a value.\n", stderr)
+                exit(2)
+            }
+            let value = cliArgs[index + 1]
+            guard let scenario = BenchmarkScenario(rawValue: value) else {
+                fputs("Error: Unsupported benchmark scenario '\(value)'.\n", stderr)
+                exit(2)
+            }
+            selectedScenario = scenario
+            index += 2
+        } else if arg == "--" {
+            index += 1
+        } else if arg == "--settle", index + 1 < cliArgs.count {
+            settleSeconds = Double(cliArgs[index + 1]) ?? 4.0
+            index += 2
+        } else if arg == "--duration", index + 1 < cliArgs.count {
+            durationSeconds = Double(cliArgs[index + 1]) ?? 10.0
+            index += 2
+        } else if arg == "--interval", index + 1 < cliArgs.count {
+            intervalSeconds = Double(cliArgs[index + 1]) ?? 1.0
+            index += 2
+        } else {
+            appArgs.append(arg)
+            index += 1
+        }
+    }
+
+    guard let selectedScenario else {
+        let choices = BenchmarkScenario.allCases.map(\.rawValue).joined(separator: "|")
+        fputs(
+            "Usage: just benchmark <\(choices)> [-- --settle seconds --duration seconds --interval seconds]\n",
+            stderr
         )
+        exit(2)
+    }
+    guard settleSeconds.isFinite, settleSeconds >= 0,
+        durationSeconds.isFinite, durationSeconds >= 0,
+        intervalSeconds.isFinite, intervalSeconds > 0
+    else {
+        fputs(
+            "Error: --settle and --duration must be finite and non-negative; --interval must be finite and positive.\n",
+            stderr
+        )
+        exit(2)
+    }
+    let benchmarkRunID = UUID().uuidString
+    let suiteName = "dev.nekonata.denbrowser.benchmark.\(benchmarkRunID)"
+    let runDirectory = FileManager.default.temporaryDirectory
+        .appending(path: "DenBrowserBenchmark", directoryHint: .isDirectory)
+        .appending(path: benchmarkRunID, directoryHint: .isDirectory)
+    defer { try? FileManager.default.removeItem(at: runDirectory) }
+    let seedURL = runDirectory.appending(path: "initial-profile.json")
+    try FileManager.default.createDirectory(at: runDirectory, withIntermediateDirectories: true)
+    try benchmarkProfileSeed(for: selectedScenario, appBundlePath: appBundlePath).write(to: seedURL, options: .atomic)
+    appArgs.append(contentsOf: [
+        "--benchmark-scenario", selectedScenario.rawValue,
+        "--initial-profile", seedURL.path,
+    ])
+
+    var env = ProcessInfo.processInfo.environment
+    env["DEN_BENCHMARK"] = "1"
+    env["DEN_BENCHMARK_RUN_ID"] = benchmarkRunID
+    let traceFileURL = FileManager.default.temporaryDirectory
+        .appending(path: "den-benchmark-\(benchmarkRunID).log")
+    _ = FileManager.default.createFile(atPath: traceFileURL.path, contents: Data())
+    env["DEN_BENCHMARK_TRACE_FILE"] = traceFileURL.path
+    defer {
+        UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
+        let plistURL = FileManager.default.homeDirectoryForCurrentUser
+            .appending(path: "Library/Preferences/\(suiteName).plist")
+        try? FileManager.default.removeItem(at: plistURL)
+        try? FileManager.default.removeItem(at: traceFileURL)
+    }
+
+    let prelaunchSnapshot = queryProcessSnapshot()
+
+    let trace = BenchmarkTrace()
+    let launchConfiguration = NSWorkspace.OpenConfiguration()
+    launchConfiguration.arguments = appArgs
+    launchConfiguration.environment = env
+    launchConfiguration.activates = true
+    launchConfiguration.createsNewApplicationInstance = true
+    let launchRequestedAt = Date()
+    let app: NSRunningApplication = try await withCheckedThrowingContinuation {
+        (continuation: CheckedContinuation<NSRunningApplication, Error>) in
+        NSWorkspace.shared.openApplication(
+            at: URL(fileURLWithPath: appBundlePath),
+            configuration: launchConfiguration
+        ) { app, error in
+            if let app {
+                continuation.resume(returning: app)
+            } else {
+                continuation.resume(throwing: error ?? NSError(domain: "DenBenchmark", code: 1))
+            }
+        }
+    }
+    defer { if !app.isTerminated { _ = app.forceTerminate() } }
+    let sampler = BenchmarkSampler(
+        mainPID: app.processIdentifier,
+        trace: trace,
+        traceFileURL: traceFileURL,
+        interval: intervalSeconds
     )
-    print(
-        String(
-            format: "  App RSS:            avg %.1f MB, latest %.1f MB",
-            appRSS.reduce(0, +) / Double(samples.count),
-            appRSS.last ?? 0
-        )
+
+    let startupSamples = await sampler.collectStartupSamples(
+        app: app,
+        scenario: selectedScenario,
+        prelaunchSnapshot: prelaunchSnapshot
     )
-
-    guard canMeasureWebKit else {
-        print("  WebKit:             N/A (no Web Board)")
-        print(
-            String(format: "  Combined CPU:       avg %.2f%%, max %.2f%% (App only)", appCPUAverage, appCPUs.max() ?? 0)
+    trace.readNewLines(from: traceFileURL)
+    let startupDuration = Date().timeIntervalSince(launchRequestedAt)
+    guard trace.isReady(for: selectedScenario) else {
+        throw NSError(
+            domain: "DenBenchmark",
+            code: 1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Benchmark window or scenario did not become ready within 30 seconds."
+            ]
         )
-        print(
-            String(
-                format: "  Combined RSS:       avg %.1f MB, latest %.1f MB (App only)",
-                appRSS.reduce(0, +) / Double(samples.count),
-                appRSS.last ?? 0
-            )
-        )
-        return
-    }
-    let webKitSamples = samples.filter { $0.webKitCPU != nil }
-    let webKitRSSSamples = samples.filter { $0.webKitRSSMB > 0 }
-    guard !webKitRSSSamples.isEmpty else {
-        print("  WebKit/combined:    N/A (no WebKit process PID during this phase)")
-        return
     }
 
-    let webKitCPUSeconds = webKitSamples.reduce(0) { $0 + $1.webKitCPUSeconds }
-    let webKitCPUs = webKitSamples.compactMap(\.webKitCPU)
-    let combinedCPUAverage = (appCPUSeconds + webKitCPUSeconds) / duration * 100
-    let hasCombinedCPUSample = samples.contains { $0.totalCPU != nil }
-    let totalCPUmax = max(appCPUs.max() ?? 0, samples.compactMap(\.totalCPU).max() ?? 0)
-    if webKitSamples.isEmpty {
-        print("  WebKit CPU:         N/A (no full interval measured)")
+    let settleSamples = await sampler.collectSamples(for: settleSeconds)
+    let idleSamples = await sampler.collectSamples(for: durationSeconds)
+
+    _ = app.terminate()
+    for _ in 0..<20 where !app.isTerminated {
+        try await Task.sleep(for: .milliseconds(100))
+    }
+
+    return BenchmarkResult(
+        scenario: selectedScenario,
+        intervalSeconds: intervalSeconds,
+        startup: BenchmarkPhase(durationSeconds: startupDuration, samples: startupSamples),
+        settle: BenchmarkPhase(durationSeconds: settleSeconds, samples: settleSamples),
+        idle: BenchmarkPhase(durationSeconds: durationSeconds, samples: idleSamples)
+    )
+}
+
+let arguments = Array(CommandLine.arguments.dropFirst())
+do {
+    if arguments.first == "--input-source-log" {
+        guard arguments.count == 2 else {
+            fputs("Usage: swift scripts/measure.swift --input-source-log <trace-file>\n", stderr)
+            exit(2)
+        }
+        try writeInputSourceMeasurements(from: URL(fileURLWithPath: arguments[1]))
     } else {
-        let webKitCPUAverage = webKitCPUSeconds / duration * 100
-        print(
-            String(
-                format: "  WebKit CPU:         avg %.2f%%, max %.2f%% (%d samples)",
-                webKitCPUAverage,
-                webKitCPUs.max() ?? 0,
-                webKitSamples.count
-            )
-        )
+        try await writeJSON(runBenchmark(arguments))
     }
-    if !hasCombinedCPUSample {
-        print(
-            String(
-                format: "  Combined CPU:       avg %.2f%%, max %.2f%% (App or combined sample)",
-                combinedCPUAverage,
-                totalCPUmax
-            )
-        )
-    } else {
-        print(
-            String(
-                format: "  Combined CPU:       avg %.2f%%, max %.2f%%",
-                combinedCPUAverage,
-                totalCPUmax
-            )
-        )
-    }
-    let webKitRSS = webKitRSSSamples.map(\.webKitRSSMB)
-    let totalRSS = webKitRSSSamples.map(\.totalRSSMB)
-    print(
-        String(
-            format: "  WebKit RSS:         avg %.1f MB, latest %.1f MB",
-            webKitRSS.reduce(0, +) / Double(webKitRSSSamples.count),
-            webKitRSS.last ?? 0
-        )
-    )
-    print(
-        String(
-            format: "  Combined RSS:       avg %.1f MB, latest %.1f MB",
-            totalRSS.reduce(0, +) / Double(webKitRSSSamples.count),
-            totalRSS.last ?? 0
-        )
-    )
+} catch {
+    fputs("Error: \(error.localizedDescription)\n", stderr)
+    exit(1)
 }
-
-print("\nSampling startup until the scenario is ready...")
-let startupSamples = await sampler.collectStartupSamples(
-    app: app,
-    scenario: selectedScenario,
-    prelaunchSnapshot: prelaunchSnapshot
-)
-collector.readNewLines(from: traceFileURL)
-let startupDuration = Date().timeIntervalSince(launchRequestedAt)
-let canMeasureWebKit = selectedScenario == .oneWebBoard
-guard collector.isReady(for: selectedScenario) else {
-    printPhaseSummary("Startup", samples: startupSamples, duration: startupDuration, canMeasureWebKit: canMeasureWebKit)
-    _ = app.forceTerminate()
-    throw NSError(
-        domain: "DenBenchmark",
-        code: 1,
-        userInfo: [NSLocalizedDescriptionKey: "Benchmark window or scenario did not become ready within 30 seconds."]
-    )
-}
-
-print("\nSampling post-ready settle for \(settleSeconds)s...")
-let settleSamples = await sampler.collectSamples(for: settleSeconds, phase: "Settle")
-
-print("\nSampling idle performance for \(durationSeconds)s...")
-let idleSamples = await sampler.collectSamples(for: durationSeconds, phase: "Idle")
-
-print("\n\nTerminating app...")
-_ = app.terminate()
-for _ in 0..<20 where !app.isTerminated {
-    try await Task.sleep(for: .milliseconds(100))
-}
-if !app.isTerminated {
-    _ = app.forceTerminate()
-}
-collector.readNewLines(from: traceFileURL)
-
-print("\n============================================================")
-print("         PERFORMANCE MEASUREMENT SUMMARY")
-print("============================================================")
-
-print("\n--- 1. Trace Milestones ---")
-let events = collector.all()
-if events.isEmpty {
-    print("  (No trace events recorded)")
-} else {
-    for event in events {
-        print("  \(event)")
-    }
-}
-
-print("\n--- 2. Benchmark Scenario ---")
-print("  Name:                \(selectedScenario.rawValue)")
-print(String(format: "  Launch requested → scenario ready: %.2fs", startupDuration))
-printPhaseSummary(
-    "3. Startup until ready",
-    samples: startupSamples,
-    duration: startupDuration,
-    canMeasureWebKit: canMeasureWebKit
-)
-printPhaseSummary(
-    "4. Post-ready settle",
-    samples: settleSamples,
-    duration: settleSeconds,
-    canMeasureWebKit: canMeasureWebKit
-)
-printPhaseSummary(
-    "5. Post-settle idle",
-    samples: idleSamples,
-    duration: durationSeconds,
-    canMeasureWebKit: canMeasureWebKit
-)
-print("============================================================")

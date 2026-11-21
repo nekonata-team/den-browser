@@ -4,6 +4,9 @@ Use these measurements to investigate startup time and resource use. They are
 diagnostic measurements, separate from the correctness checks in interaction
 tests.
 
+The measurement script emits one JSON object on standard output when it
+succeeds. Diagnostics and build logs go to standard error.
+
 ## Input source restoration timing
 
 Launch a development build with tracing enabled, then move between Boards
@@ -14,24 +17,25 @@ just build
 ".derived-data/Build/Products/Debug/Den Browser.app/Contents/MacOS/Den Browser" --benchmark > /tmp/den-input-source.log 2>&1
 ```
 
-Aggregate the recorded calls without launching another app:
+Read the recorded calls without launching another app:
 
 ```sh
 swift scripts/measure.swift --input-source-log /tmp/den-input-source.log
 ```
 
-Results group calls by whether the current Carbon input source ID matched the
-requested ID before restoration (`same`, `different`, or `unknown`). Each group
-reports count, total, average, nearest-rank p95, and maximum elapsed milliseconds.
-`restore` covers the whole restoration, `context` covers acquiring the AppKit
-input context and setting its source, and `carbon` covers `TISSelectInputSource`
-when called. The stage times are included in `restore`; do not sum them with it.
-`contextLookup` measures acquiring `NSTextInputContext.current`, and
-`contextSelect` measures setting `selectedKeyboardInputSource` when a context
-exists. Both are included in `context`. Older logs omit these two fields and
-are still accepted by the summary script.
-Stages skipped because the current source already matches are recorded as
-`none` and excluded from that stage's call count and duration statistics.
+The JSON object maps each observed group (`same`, `different`, or `unknown`) to
+its calls in log order. The group records whether the current Carbon input
+source ID matched the requested ID before restoration. An empty log yields
+`{}`.
+
+Each call has `durationMS` for the whole restoration. Optional fields include
+`contextMS` for acquiring the AppKit input context and setting its source,
+`contextLookupMS` for acquiring `NSTextInputContext.current`,
+`contextSelectMS` for setting `selectedKeyboardInputSource`, and `carbonMS`
+for `TISSelectInputSource`. The stage times are included in `durationMS`, and
+the lookup and select times are included in `contextMS`. The script omits
+skipped stages and accepts older logs without lookup and select timing.
+
 These are synchronous call durations on the main thread, including any OS waits,
 not isolated XPC wait times. Logging occurs after timing ends. Input source IDs
 are not written to the trace. Only completed calls produce a duration record;
@@ -135,9 +139,14 @@ when the Profile window is presented; for `one-web-board`, it also waits for the
 Sheet navigation and a reported WebKit process ID. It then samples post-ready
 settle and post-settle idle as separate phases.
 
+The JSON result contains `scenario`, `intervalSeconds`, and three phase objects
+named `startup`, `settle`, and `idle`. Each phase contains an ordered `samples`
+array and `durationSeconds`. This is the time from launch request to readiness
+for startup and the configured duration for the other phases.
+
+Each sample contains `appCPUPercent`, `appCPUSeconds`, and `appRSSMB`, plus
+`webKitCPUPercent`, `webKitCPUSeconds`, and `webKitRSSMB` when available.
 CPU percentages use process CPU-time deltas between snapshots. RSS is read from
-each process snapshot. Startup CPU sampling uses a prelaunch baseline; RSS
-sampling starts when the app PID is available. WebKit metrics include only PIDs
-reported by Board runtimes. They can be `N/A` before a WebKit PID is reported or
-after that process exits. The number of active WebKit runtimes can vary with
-which Boards are in the viewport.
+each process snapshot. Startup CPU sampling uses a prelaunch baseline. WebKit
+metrics include only PIDs reported by Board runtimes. The number of active
+WebKit runtimes can vary with which Boards are in the viewport.
