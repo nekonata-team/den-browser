@@ -199,6 +199,34 @@ struct SheetReadingTests {
         #expect(tableLines.count == 5)
     }
 
+    @Test func readingKeepsLabelsButOmitsEmbeddedDataURLsAndTableMarkup() async throws {
+        let webView = await makeWebView(
+            html: """
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
+                <p>Before: <img alt="Chart [1] &lt;sample&gt;" src="data:image/png;base64,AAAA">
+                <img src="data:image/png;base64,BBBB"></p>
+                <p><a href="data:image/png;base64,CCCC"><strong>Download</strong></a></p>
+                <table class="layout"><tr><td>Alpha</td><td><button>Open</button></td></tr>
+                <tr><td><img alt="Diagram" src="data:image/png;base64,DDDD"></td><td>Beta</td></tr></table>
+                <pre><code>&lt;table&gt;&lt;/table&gt;</code></pre>
+                """
+        )
+
+        let result = try await SheetReading.read(in: webView)
+
+        guard case .reading(_, _, let markdown) = result else {
+            Issue.record("Expected Markdown reading payload")
+            return
+        }
+        #expect(markdown.contains(#"Before: Chart \[1\] &lt;sample>"#))
+        #expect(markdown.contains("**Download**"))
+        #expect(markdown.contains("| Alpha | Open |\n| Diagram | Beta |"))
+        #expect(markdown.contains("```\n<table></table>\n```"))
+        #expect(!markdown.contains("data:image/"))
+        #expect(!markdown.contains("<table class="))
+        #expect(!markdown.contains("<button>"))
+    }
+
     @Test(arguments: ["highlight-source-md", "highlight-text-md"], [false, true])
     func highlightedCodeUsesAFenceLongerThanItsContent(highlightClass: String, wrapped: Bool) async throws {
         // Arrange

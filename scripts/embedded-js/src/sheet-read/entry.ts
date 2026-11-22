@@ -143,8 +143,23 @@ export function read(within: string | null = null): { title: string; url: string
     pre.replaceChildren(code);
   }
 
-  const converter = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+  const converter = new TurndownService({
+    headingStyle: 'atx',
+    codeBlockStyle: 'fenced',
+    // The GFM plugin keeps tables without a heading row. Use the converted cells, not outerHTML.
+    keepReplacement: content => '\n\n' + content.trim() + '\n\n',
+  });
   converter.use([strikethrough, tables, taskListItems]);
+  converter.addRule('embeddedDataURL', {
+    filter: node => {
+      const attribute = node.nodeName === 'IMG' ? 'src' : node.nodeName === 'A' ? 'href' : null;
+      return attribute !== null && /^data:/i.test(node.getAttribute(attribute) ?? '');
+    },
+    replacement: (content, node) => node.nodeName === 'IMG'
+      ? converter.escape((node.getAttribute('alt') ?? '').replace(/\s+/g, ' ').trim())
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      : content,
+  });
   converter.addRule('escapedTableCell', {
     filter: ['th', 'td'],
     replacement: (content, node) => {
