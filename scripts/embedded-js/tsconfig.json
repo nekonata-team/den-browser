@@ -20,6 +20,7 @@
     "src/picture-in-picture/entry.ts",
     "src/picture-in-picture/browser.ts",
     "src/inspection/entry.ts",
-    "src/json-viewer/entry.ts"
+    "src/json-viewer/entry.ts",
+    "src/web-notification/entry.ts"
   ]
 }

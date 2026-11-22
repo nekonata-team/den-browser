@@ -43,6 +43,10 @@ const entries = [
     output: 'JSONViewer.js',
   },
   {
+    entry: 'src/web-notification/entry.ts',
+    output: 'WebNotification.js',
+  },
+  {
     entry: 'src/sheet-read/browser.ts',
     output: 'SheetRead.js',
     banner: license,

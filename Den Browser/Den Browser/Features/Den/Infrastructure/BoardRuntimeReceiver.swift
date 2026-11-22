@@ -165,6 +165,17 @@ final class BoardRuntimeReceiver {
                     throw DenAPIBridge.Failure(message: "Toast display is unavailable")
                 }
                 feedback.publish(title: nil, body: message, severity: severity, target: .board(board.id))
+            },
+            onWebNotification: { [weak self, connection] title, body in
+                guard
+                    let notification = self?.storage?.notificationOperations.record(
+                        title: title,
+                        body: body,
+                        boardID: board.id
+                    )
+                else { return }
+                connection.onWindowEffect?(.notificationAdded(notification.id))
+                connection.feedback?.publish(title: title, body: body, target: .notification(notification.id))
             }
         )
     }

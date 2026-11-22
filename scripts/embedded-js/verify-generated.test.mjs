@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const outputDir = process.env.DEN_EMBEDDED_JS_OUTPUT_DIR;
 if (!outputDir) throw new Error('Set DEN_EMBEDDED_JS_OUTPUT_DIR to the generated resource directory');
 const source = name => readFile(resolve(outputDir, name), 'utf8');
-const names = ['DenAPI.js', 'InspectionAgent.js', 'JSONViewer.js', 'PictureInPicture.js', 'SheetDOM.js', 'SheetNavigation.js', 'SheetRead.js'];
+const names = ['DenAPI.js', 'InspectionAgent.js', 'JSONViewer.js', 'PictureInPicture.js', 'SheetDOM.js', 'SheetNavigation.js', 'SheetRead.js', 'WebNotification.js'];
 
 describe('generated resources', () => {
   test('generates the embedded resources', async () => {
@@ -66,6 +66,32 @@ describe('public API', () => {
     const context = vm.createContext({ window: {} });
     vm.runInContext(await source('SheetDOM.js'), context);
     expect(vm.runInContext('typeof window.__denSheetDOM.denResolveRef', context)).toBe('function');
+  });
+
+  test('WebNotification intercepts window.Notification and sw.showNotification', async () => {
+    const messages = [];
+    class FakeSWRegistration {
+      showNotification() { return Promise.resolve(); }
+    }
+    const windowObj = {
+      ServiceWorkerRegistration: FakeSWRegistration,
+      webkit: { messageHandlers: { denWebNotification: { postMessage: message => messages.push(message) } } },
+    };
+    const context = vm.createContext({
+      window: windowObj,
+      EventTarget,
+      Event,
+      queueMicrotask,
+    });
+    vm.runInContext(await source('WebNotification.js'), context);
+    expect(vm.runInContext('window.Notification.permission', context)).toBe('granted');
+    expect(await vm.runInContext('window.Notification.requestPermission()', context)).toBe('granted');
+    vm.runInContext('new window.Notification("ChatGPT", { body: "Response ready", tag: "resp-1" })', context);
+    await vm.runInContext('new window.ServiceWorkerRegistration().showNotification("SW Title", { body: "From SW" })', context);
+    expect(JSON.parse(JSON.stringify(messages))).toEqual([
+      { channel: 'window.Notification', title: 'ChatGPT', body: 'Response ready', tag: 'resp-1' },
+      { channel: 'sw.showNotification', title: 'SW Title', body: 'From SW', tag: null },
+    ]);
   });
 });
 

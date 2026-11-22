@@ -28,6 +28,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         var restoreFocusedFirstResponder: () -> Void = {}
         var onDenAPIFocus: ((BoardID) throws -> Void)?
         var onDenAPIToast: ((String, DenFeedback.Severity) throws -> Void)?
+        var onWebNotification: ((String?, String) -> Void)?
     }
 
     struct ActionHighlight: Equatable {
@@ -51,6 +52,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     private var inspectionCollectionUserScript: WKUserScript?
     private var navigationHTTPStatusCode: Int?
     private var denAPI: DenAPIBridge?
+    private var webNotification: WebNotificationBridge?
 
     var httpStatusCode: Int? {
         webView.isLoading ? nil : navigationHTTPStatusCode
@@ -185,6 +187,10 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         )
         setDenAPIEnabled(denAPIEnabled)
         setBackgroundExecutionEnabled(backgroundExecutionEnabled)
+        webNotification = WebNotificationBridge(webView: webView) { [weak self] title, body in
+            guard let self, self.presentation == .board else { return }
+            self.events.onWebNotification?(title, body)
+        }
         if let webExtensionHost, let webExtensionWindow {
             webExtensionHost.register(
                 webView: webView,
@@ -370,6 +376,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         setBackgroundExecutionEnabled(false)
         denAPI?.dispose()
         denAPI = nil
+        webNotification?.dispose()
+        webNotification = nil
         stopInspection()
         actionHighlightTask?.cancel()
         actionHighlightTask = nil

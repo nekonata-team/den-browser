@@ -85,7 +85,7 @@ A temporary live list of named zmx sessions that can attach a session to a Termi
 _Avoid_: Session manager, terminal tab list
 
 **Notification**:
-A temporary message from a Terminal Board that calls attention to an event while Den Browser is running. It appears in the Den's notification list and can return focus to its originating Board, including when that Board is on another Desk; Notifications are not retained after Den Browser exits.
+A temporary message from a Terminal Board or a Web Board that calls attention to an event while Den Browser is running. It appears in the Den's notification list and can return focus to its originating Board, including when that Board is on another Desk; Notifications are not retained after Den Browser exits.
 _Avoid_: Toast, terminal output, log, history entry
 
 **Board Label**:
