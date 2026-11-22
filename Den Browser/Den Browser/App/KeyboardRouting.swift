@@ -199,7 +199,10 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.createTerminalSideBoard))
         }
 
-        if context.mode == .den, character == ",", modifiers == [] {
+        if context.mode == .den,
+            character.map(ShortcutKey.character) == settingsShortcut.key,
+            modifiers == settingsShortcut.modifiers
+        {
             return .perform(.application(.openSettings))
         }
 
@@ -619,14 +622,19 @@ enum KeyboardRouter {
         }
     }
 
+    static let settingsShortcut = binding(",")
+    private static let shortcutsGuideShortcut = binding("?")
+
     private static func isQuestionMark(_ event: KeyEvent) -> Bool {
-        event.modifiers == [.shift] && (event.characters == "?" || event.baseCharacter == "/")
+        // Keep accepting Shift + the slash key even if it produces a different character.
+        event.modifiers == [.shift]
+            && (event.characters.map(ShortcutKey.character) == shortcutsGuideShortcut.key || event.baseCharacter == "/")
     }
 
     static func denModeShortcut(for action: AppAction) -> ShortcutBinding? {
         switch action {
-        case .application(.openSettings): binding(",")
-        case .application(.showKeyboardShortcuts): binding("?")
+        case .application(.openSettings): settingsShortcut
+        case .application(.showKeyboardShortcuts): shortcutsGuideShortcut
         default: denModeCommands.first(where: { $0.value.action == action })?.key
         }
     }

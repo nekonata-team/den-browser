@@ -137,6 +137,9 @@ struct ShortcutRoutingTests {
             keyCode: 43
         )
 
+        let settingsHint = KeyboardRouter.denModeShortcut(for: .application(.openSettings))
+        #expect(settingsHint == KeyEvent(comma).binding)
+        #expect(settingsHint == KeyboardRouter.settingsShortcut)
         #expect(!KeyboardController.handle(comma, session: session, windowModel: windowModel))
 
         windowModel.isDenMode = true
@@ -228,6 +231,8 @@ struct ShortcutRoutingTests {
             )
         )
         #expect(windowModel.isKeyboardShortcutsPresented)
+        let guideHint = KeyboardRouter.denModeShortcut(for: .application(.showKeyboardShortcuts))
+        #expect(guideHint?.displayName == KeyEvent(question).characters)
         let movement = try keyEvent(characters: "h", charactersIgnoringModifiers: "h", keyCode: 4)
         #expect(
             !KeyboardController.handle(

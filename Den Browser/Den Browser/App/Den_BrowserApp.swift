@@ -443,7 +443,7 @@ private struct DenCommands: Commands {
                     openSettings: { openSettingsCoordinator.open() }
                 )
             }
-            .keyboardShortcut(",", modifiers: [])
+            .keyboardShortcut(KeyboardRouter.settingsShortcut.characterKeyboardShortcut)
             .disabled(windowModel?.isDenMode != true || windowModel?.temporaryContext != nil)
 
             Divider()
