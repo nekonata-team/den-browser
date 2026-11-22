@@ -248,6 +248,8 @@ Both readers include open shadow DOM in slot order. Closed roots, iframe content
 
 Use `read --within main` to read only the page's main region, or pass a CSS selector or current `@e…` reference to choose another element. The selected element and its descendants are converted; title and URL still identify the Current Sheet. A selector must match exactly one element and does not cross shadow boundaries. Missing, stale, invalid, or ambiguous scopes fail without falling back to the whole page. Omitting `--within` reads the whole body; it does not automatically select `main` or `article`.
 
+For live pages to check manually, see the [`read` case register](testing/den-read.md).
+
 #### Download save dialogs
 
 `den board web dialog` operates on pending download save panels owned by the resolved Web Board, not DOM dialogs or arbitrary macOS windows. These commands accept `--board`, `--socket`, and `--json`; they do not capture a DOM snapshot.
