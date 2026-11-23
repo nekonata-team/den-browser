@@ -1,6 +1,7 @@
 import AppKit
 import DenDomain
 import DenModels
+import DenViews
 import Foundation
 import Testing
 import WebKit
@@ -125,6 +126,147 @@ struct BackgroundExecutionTests {
         try await Task.sleep(for: .milliseconds(150))
         #expect(try await webView.evaluateJavaScript("window.clicks") as? Int == 3)
         #expect(try await webView.evaluateJavaScript("window.rendered") as? Int == 2)
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func temporaryBackgroundExecutionKeepsHiddenPageActiveWithoutChangingPersistedSetting() async throws {
+        _ = NSApplication.shared
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = RuntimeWKWebView(
+            frame: NSRect(x: 0, y: 0, width: 800, height: 600),
+            configuration: configuration
+        )
+        defer {
+            webView.setBackgroundExecutionEnabled(false)
+            webView.setTemporaryBackgroundExecutionEnabled(false)
+            webView.stopLoading()
+        }
+        webView.loadHTMLString("<script>window.ready = true;</script>", baseURL: nil)
+        try await wait(webView, for: "window.ready === true")
+        webView.isHidden = true
+        try await wait(webView, for: "document.visibilityState === 'hidden'")
+
+        webView.setTemporaryBackgroundExecutionEnabled(true)
+        #expect(!webView.backgroundExecutionEnabled)
+        #expect(webView.temporaryBackgroundExecutionEnabled)
+        #expect(webView.isEffectiveBackgroundExecutionEnabled)
+        try await wait(webView, for: "document.visibilityState === 'visible'")
+        #expect(webView.window != nil)
+
+        // Persisted setting stays independent when toggled alongside temporary execution.
+        webView.setBackgroundExecutionEnabled(true)
+        webView.setTemporaryBackgroundExecutionEnabled(false)
+        #expect(webView.backgroundExecutionEnabled)
+        #expect(!webView.temporaryBackgroundExecutionEnabled)
+        #expect(webView.isEffectiveBackgroundExecutionEnabled)
+        #expect(webView.window != nil)
+
+        webView.setBackgroundExecutionEnabled(false)
+        #expect(!webView.isEffectiveBackgroundExecutionEnabled)
+        try await wait(webView, for: "document.visibilityState === 'hidden'")
+        #expect(webView.window == nil)
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func pictureInPictureEventsToggleTemporaryBackgroundExecution() async throws {
+        _ = NSApplication.shared
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = RuntimeWKWebView(
+            frame: NSRect(x: 0, y: 0, width: 800, height: 600),
+            configuration: configuration
+        )
+        let bridge = PictureInPictureStateBridge(webView: webView) { active in
+            webView.setTemporaryBackgroundExecutionEnabled(active)
+        }
+        defer {
+            bridge.dispose()
+            webView.setTemporaryBackgroundExecutionEnabled(false)
+            webView.stopLoading()
+        }
+        webView.loadHTMLString("<video id='v'></video>", baseURL: nil)
+        try await wait(webView, for: "document.readyState === 'complete' && document.getElementById('v') !== null")
+
+        _ = try await webView.evaluateJavaScript(
+            "document.getElementById('v').dispatchEvent(new Event('enterpictureinpicture'))"
+        )
+        try await waitUntil("enterpictureinpicture") { webView.temporaryBackgroundExecutionEnabled }
+        #expect(!webView.backgroundExecutionEnabled)
+
+        _ = try await webView.evaluateJavaScript(
+            "document.getElementById('v').dispatchEvent(new Event('leavepictureinpicture'))"
+        )
+        try await waitUntil("leavepictureinpicture") { !webView.temporaryBackgroundExecutionEnabled }
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            (() => {
+                const v = document.getElementById('v');
+                Object.defineProperty(v, 'webkitPresentationMode', { value: 'picture-in-picture', configurable: true });
+                v.dispatchEvent(new Event('webkitpresentationmodechanged'));
+            })()
+            """,
+            in: nil,
+            in: .defaultClient
+        )
+        try await waitUntil("webkitpresentationmodechanged enter") { webView.temporaryBackgroundExecutionEnabled }
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            (() => {
+                const v = document.getElementById('v');
+                Object.defineProperty(v, 'webkitPresentationMode', { value: 'inline', configurable: true });
+                v.dispatchEvent(new Event('webkitpresentationmodechanged'));
+            })()
+            """,
+            in: nil,
+            in: .defaultClient
+        )
+        try await waitUntil("webkitpresentationmodechanged exit") { !webView.temporaryBackgroundExecutionEnabled }
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func surfaceHostReclaimsWebViewAfterBackgroundHosting() async throws {
+        _ = NSApplication.shared
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = RuntimeWKWebView(
+            frame: NSRect(x: 0, y: 0, width: 800, height: 600),
+            configuration: configuration
+        )
+        defer {
+            webView.setTemporaryBackgroundExecutionEnabled(false)
+            webView.stopLoading()
+        }
+        webView.setTemporaryBackgroundExecutionEnabled(true)
+
+        let surfaceHost = SurfaceHost<BoardFocusRequest, NSView>(content: webView)
+        // Let RuntimeWKWebView's detached hosting task reclaim webView while SurfaceHost is off-window.
+        try await waitUntil("background window reclaims off-window webView") {
+            webView.superview !== surfaceHost && webView.window != nil
+        }
+
+        let hostWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        hostWindow.contentView?.addSubview(surfaceHost)
+        #expect(webView.superview === surfaceHost)
+        #expect(webView.window === hostWindow)
+    }
+
+    private func waitUntil(_ label: String, _ condition: @MainActor () -> Bool) async throws {
+        let deadline = ContinuousClock.now + .seconds(15)
+        while !condition() {
+            guard ContinuousClock.now < deadline else {
+                Issue.record("Timed out waiting for \(label)")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(20))
+        }
     }
 
     private func wait(_ webView: WKWebView, for condition: String) async throws {

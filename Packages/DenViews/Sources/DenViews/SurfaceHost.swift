@@ -16,14 +16,7 @@ public final class SurfaceHost<Request: Equatable, Content: NSView>: NSView {
     public init(content: Content) {
         self.content = content
         super.init(frame: .zero)
-        content.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(content)
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: trailingAnchor),
-            content.topAnchor.constraint(equalTo: topAnchor),
-            content.bottomAnchor.constraint(equalTo: bottomAnchor),
-        ])
+        attachContentIfNeeded()
     }
 
     public required init?(coder: NSCoder) { return nil }
@@ -44,7 +37,20 @@ public final class SurfaceHost<Request: Equatable, Content: NSView>: NSView {
             handledWindow = nil
             return
         }
+        attachContentIfNeeded()
         notifyIfReady()
+    }
+
+    private func attachContentIfNeeded() {
+        guard content.superview !== self else { return }
+        content.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(content)
+        NSLayoutConstraint.activate([
+            content.leadingAnchor.constraint(equalTo: leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: trailingAnchor),
+            content.topAnchor.constraint(equalTo: topAnchor),
+            content.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 
     private func notifyIfReady() {

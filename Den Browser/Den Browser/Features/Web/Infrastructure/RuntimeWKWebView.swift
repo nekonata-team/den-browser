@@ -5,12 +5,16 @@ final class RuntimeWKWebView: WKWebView {
     var isFocusAllowed: () -> Bool = { false }
     var onRejectedFocus: (() -> Void)?
     private(set) var backgroundExecutionEnabled = false
+    private(set) var temporaryBackgroundExecutionEnabled = false
+    var isEffectiveBackgroundExecutionEnabled: Bool {
+        backgroundExecutionEnabled || temporaryBackgroundExecutionEnabled
+    }
     private var backgroundWindow: WebBackgroundWindow?
     private var previousOcclusionDetection = true
 
     // WebKit uses this query independently of NSView's actual drawing visibility.
     override var isHiddenOrHasHiddenAncestor: Bool {
-        backgroundExecutionEnabled ? false : super.isHiddenOrHasHiddenAncestor
+        isEffectiveBackgroundExecutionEnabled ? false : super.isHiddenOrHasHiddenAncestor
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
@@ -28,8 +32,22 @@ final class RuntimeWKWebView: WKWebView {
 
     func setBackgroundExecutionEnabled(_ enabled: Bool) {
         guard enabled != backgroundExecutionEnabled else { return }
+        let wasActive = isEffectiveBackgroundExecutionEnabled
         backgroundExecutionEnabled = enabled
-        if enabled {
+        updateBackgroundHosting(wasActive: wasActive)
+    }
+
+    func setTemporaryBackgroundExecutionEnabled(_ enabled: Bool) {
+        guard enabled != temporaryBackgroundExecutionEnabled else { return }
+        let wasActive = isEffectiveBackgroundExecutionEnabled
+        temporaryBackgroundExecutionEnabled = enabled
+        updateBackgroundHosting(wasActive: wasActive)
+    }
+
+    private func updateBackgroundHosting(wasActive: Bool) {
+        let isActive = isEffectiveBackgroundExecutionEnabled
+        guard isActive != wasActive else { return }
+        if isActive {
             previousOcclusionDetection = _windowOcclusionDetectionEnabled
             _windowOcclusionDetectionEnabled = false
             hostInBackgroundIfDetached()
@@ -45,7 +63,7 @@ final class RuntimeWKWebView: WKWebView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        guard backgroundExecutionEnabled, window == nil else { return }
+        guard isEffectiveBackgroundExecutionEnabled, window == nil else { return }
         // A new SurfaceHost may be taking ownership during the same run loop.
         Task { @MainActor [weak self] in
             self?.hostInBackgroundIfDetached()
@@ -53,7 +71,7 @@ final class RuntimeWKWebView: WKWebView {
     }
 
     private func hostInBackgroundIfDetached() {
-        guard backgroundExecutionEnabled, window == nil else { return }
+        guard isEffectiveBackgroundExecutionEnabled, window == nil else { return }
         if backgroundWindow == nil {
             let size = NSSize(
                 width: frame.width > 0 ? frame.width : 800,

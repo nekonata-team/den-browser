@@ -53,6 +53,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     private var navigationHTTPStatusCode: Int?
     private var denAPI: DenAPIBridge?
     private var webNotification: WebNotificationBridge?
+    private var pictureInPictureState: PictureInPictureStateBridge?
 
     var httpStatusCode: Int? {
         webView.isLoading ? nil : navigationHTTPStatusCode
@@ -191,6 +192,10 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             guard let self, self.presentation == .board else { return }
             self.events.onWebNotification?(title, body)
         }
+        pictureInPictureState = PictureInPictureStateBridge(webView: webView) { [weak self] active in
+            guard let self, self.presentation == .board else { return }
+            self.setTemporaryBackgroundExecutionEnabled(active)
+        }
         if let webExtensionHost, let webExtensionWindow {
             webExtensionHost.register(
                 webView: webView,
@@ -237,6 +242,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     func presentInDrawer(sheetNavigationActions: SheetNavigationManager.Actions, events: Events) {
         setDenAPIEnabled(false)
         setBackgroundExecutionEnabled(false)
+        setTemporaryBackgroundExecutionEnabled(false)
         presentation = .drawer
         webView.configuration.preferences.isElementFullscreenEnabled = false
         updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
@@ -344,6 +350,10 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         (webView as? RuntimeWKWebView)?.setBackgroundExecutionEnabled(enabled)
     }
 
+    func setTemporaryBackgroundExecutionEnabled(_ enabled: Bool) {
+        (webView as? RuntimeWKWebView)?.setTemporaryBackgroundExecutionEnabled(enabled)
+    }
+
     private static func configureNativePictureInPicture(
         preferences: WKPreferences
     ) {
@@ -374,10 +384,13 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
 
     override func dispose() {
         setBackgroundExecutionEnabled(false)
+        setTemporaryBackgroundExecutionEnabled(false)
         denAPI?.dispose()
         denAPI = nil
         webNotification?.dispose()
         webNotification = nil
+        pictureInPictureState?.dispose()
+        pictureInPictureState = nil
         stopInspection()
         actionHighlightTask?.cancel()
         actionHighlightTask = nil
@@ -624,6 +637,9 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         )
         traceWebProcessIdentifier()
         didTerminateContentProcess = false
+        if webView === self.webView {
+            setTemporaryBackgroundExecutionEnabled(false)
+        }
         guard isShowingInitialLoadFallback else { return }
         DispatchQueue.main.async { [weak self] in
             self?.isShowingInitialLoadFallback = false
