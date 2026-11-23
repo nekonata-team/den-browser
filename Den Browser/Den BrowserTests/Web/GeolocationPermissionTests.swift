@@ -1,4 +1,3 @@
-import AppKit
 import CoreLocation
 import Foundation
 import Testing
@@ -9,31 +8,25 @@ import WebKit
 @MainActor
 struct GeolocationPermissionTests {
     @Test(.timeLimit(.minutes(1)))
-    func websiteGeolocationRequestsRequireUserConfirmation() async {
+    func websiteGeolocationRequestsRequireUserConfirmation() async throws {
         // Arrange
         let runtime = GeolocationPermissionRuntime(
             id: UUID(),
             initialURL: nil,
             websiteDataStore: .nonPersistent(),
             userContentController: nil,
-            sheetScale: 100
+            sheetScale: 100,
+            makeWebView: { RuntimeWKWebView(frame: .zero, configuration: $0) }
         )
         defer { runtime.dispose() }
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 240),
-            styleMask: [.titled],
-            backing: .buffered,
-            defer: false
-        )
-        window.isReleasedWhenClosed = false
-        window.contentView = runtime.webView
-        window.orderFront(nil)
-        defer { window.close() }
+        let webView = try #require(runtime.webView as? RuntimeWKWebView)
+        webView.setBackgroundExecutionEnabled(true)
+        defer { webView.setBackgroundExecutionEnabled(false) }
 
         // Act
         let decision = await withCheckedContinuation { continuation in
             runtime.permissionCompletion = continuation
-            runtime.webView.loadHTMLString(
+            webView.loadHTMLString(
                 "<script>navigator.geolocation.getCurrentPosition(() => {}, () => {});</script>",
                 baseURL: URL(string: "https://example.com/")!
             )
@@ -60,7 +53,7 @@ struct GeolocationPermissionTests {
         // Arrange
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = RuntimeWKWebView(frame: .zero, configuration: configuration)
         let source = TestLocationManager()
         source.denied = scenario == .denied
         let watches = scenario == .networkRecovery || scenario == .permissionRecovery
@@ -79,16 +72,8 @@ struct GeolocationPermissionTests {
         let messages = LocationResultHandler()
         configuration.userContentController.add(messages, name: "locationResult")
         defer { configuration.userContentController.removeScriptMessageHandler(forName: "locationResult") }
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 240),
-            styleMask: [.titled],
-            backing: .buffered,
-            defer: false
-        )
-        window.isReleasedWhenClosed = false
-        window.contentView = webView
-        window.orderFront(nil)
-        defer { window.close() }
+        webView.setBackgroundExecutionEnabled(true)
+        defer { webView.setBackgroundExecutionEnabled(false) }
 
         // Act
         var results = messages.results.makeAsyncIterator()
